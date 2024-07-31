@@ -1,7 +1,7 @@
 SHELL := /bin/sh
 
 CC = gcc
-CFLAGS = -Iinclude
+CFLAGS = -I./src
 
 DEBUG_CFLAGS = -Wall -Wextra -g
 RELEASE_CFLAGS = -Wall -Wextra -O3
