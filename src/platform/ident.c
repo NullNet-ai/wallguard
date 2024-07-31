@@ -1,5 +1,5 @@
 #include <platform/ident.h>
-#include <platform/pfsense.c>
+#include <platform/pfsense.h>
 
 platform ident()
 {
