@@ -4,3 +4,5 @@ ColumnLimit: 120
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 IndentWidth: 4
+SortIncludes: false
+IncludeBlocks: Preserve
