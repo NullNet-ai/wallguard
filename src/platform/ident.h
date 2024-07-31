@@ -4,11 +4,10 @@
 /**
  * @brief Enumeration to represent different platform types.
  */
-typedef enum
-{
+typedef enum {
     PLATFORM_PFSENSE,
     PLATFORM_OPNSENSE,
-    PLATFORM_UNDEFINED
+    PLATFORM_UNSUPPORTED
 } platform;
 
 /**

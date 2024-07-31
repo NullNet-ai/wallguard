@@ -9,8 +9,9 @@ int main(int argc, char **argv)
     (void)argv;
 
     const platform pl = ident();
-    const char *pl_name = platform_name(pl);
 
+    const char *pl_name = platform_name(pl);
     printf("Identified platform:\t%s\n", pl_name);
+    
     return EXIT_SUCCESS;
 }
