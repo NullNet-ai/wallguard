@@ -1,5 +1,6 @@
 #include <platform/device.h>
 #include <utils/file_utils.h>
+#include <utils/common.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,9 +16,8 @@ static int dmidecode_available() { return file_exists(DMIDECODE_PATH); }
 
 static int dmidecode_uuid(char* uuid, size_t size) {
     int   retval = 1;
-    FILE* pipe   = NULL;
+    FILE* pipe   = popen("dmidecode -s system-uuid", "r");
 
-    pipe = popen("dmidecode -s system-uuid", "r");
     if (!pipe) {
         retval = 0;
         goto __exit;
@@ -40,11 +40,44 @@ __exit:
     return retval;
 }
 
+#if defined(__FreeBSD__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+static int systctl_uuid(char* uuid, size_t size) {
+    int mib[2];
+
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_HOSTUUID;
+
+    size_t len = size;
+    return sysctl(mib, ARRAY_SIZE(mib), uuid, &len, NULL, 0) != -1;
+}
+
+#endif
+
 int device_uuid(char* uuid, size_t size) {
-    // @TODO: check buffer and size and ensure null-ternmiantion
-    if (dmidecode_available()) {
-        return dmidecode_uuid(uuid, size);
+    if (size == 0 || !uuid) {
+        return 0;
     }
 
-    return 0;
+    int retval = 0;
+    if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
+        retval = 1;
+        goto __exit;
+    }
+
+#if defined(__FreeBSD__)
+    if (!retval && systctl_uuid(uuid, size)) {
+        retval = 1;
+        goto __exit;
+    }
+#endif
+
+__exit:
+    if (retval) {
+        uuid[size - 1] = '\0';
+    }
+
+    return retval;
 }

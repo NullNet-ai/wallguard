@@ -1,15 +1,12 @@
 #include <platform/ident.h>
 #include <utils/file_utils.h>
+#include <utils/common.h>
 
 /**
  * @brief List of files and directories that are likely to be found on a pfSense system
  */
 static const char *pfsense_files[] = {
-    "/conf/config.xml",
-    "/usr/local/pfSense",
-    "/etc/platform",
-    "/etc/version",
-    "/usr/local/sbin/pfSsh.php",
+    "/conf/config.xml", "/usr/local/pfSense", "/etc/platform", "/etc/version", "/usr/local/sbin/pfSsh.php",
 };
 
 /**
@@ -23,11 +20,11 @@ static const char *opnsense_files[] = {
 };
 
 platform ident() {
-    if (files_exist(pfsense_files, sizeof(pfsense_files) / sizeof(pfsense_files[0]))) {
+    if (files_exist(pfsense_files, ARRAY_SIZE(pfsense_files))) {
         return PLATFORM_PFSENSE;
     }
 
-    if (files_exist(opnsense_files, sizeof(pfsense_files) / sizeof(pfsense_files[0]))) {
+    if (files_exist(opnsense_files, ARRAY_SIZE(opnsense_files))) {
         return PLATFORM_OPNSENSE;
     }
 
