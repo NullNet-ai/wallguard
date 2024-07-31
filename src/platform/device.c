@@ -6,13 +6,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int dmidecode_available() {
 #if defined(__FreeBSD__)
-#define DMIDECODE_PATH "/usr/local/sbin/dmidecode"
+    const char* dmidecode_path = "/usr/local/sbin/dmidecode";
 #else
-#define DMIDECODE_PATH "/usr/sbin/dmidecode"
+    const char* dmidecode_path = "/usr/sbin/dmidecode";
 #endif
-
-static int dmidecode_available() { return file_exists(DMIDECODE_PATH); }
+    return file_exists(dmidecode_path);
+}
 
 static int dmidecode_uuid(char* uuid, size_t size) {
     int   retval = 1;
