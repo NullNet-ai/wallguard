@@ -1,7 +1,13 @@
 #include <platform/ident.h>
+#include <platform/pfsense.c>
 
 platform ident()
 {
+    if (is_pfsense())
+    {
+        return PLATFORM_PFSENSE;
+    }
+
     return PLATFORM_UNDEFINED;
 }
 
