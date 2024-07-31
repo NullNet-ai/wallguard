@@ -1,3 +1,5 @@
+SHELL := /bin/sh
+
 CC = gcc
 CFLAGS = -Iinclude
 
@@ -5,7 +7,7 @@ DEBUG_CFLAGS = -Wall -Wextra -g
 RELEASE_CFLAGS = -Wall -Wextra -O3
 
 SRCS = $(shell find src -type f -name '*.c')
-OBJS = $(SRCS:.c=.o)
+OBJS = $(patsubst src/%.c, src/%.o, $(SRCS))
 
 # Name of the produced artifact
 EXEC = wallmon
