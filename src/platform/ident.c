@@ -6,7 +6,11 @@
  * @brief List of files and directories that are likely to be found on a pfSense system
  */
 static const char *pfsense_files[] = {
-    "/conf/config.xml", "/usr/local/pfSense", "/etc/platform", "/etc/version", "/usr/local/sbin/pfSsh.php",
+    "/conf/config.xml", 
+    "/usr/local/pfSense", 
+    "/etc/platform", 
+    "/etc/version", 
+    "/usr/local/sbin/pfSsh.php",
 };
 
 /**
