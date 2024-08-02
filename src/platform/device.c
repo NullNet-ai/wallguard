@@ -6,6 +6,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+static size_t clamp(size_t value, size_t min, size_t max) {
+    if (value < min) {
+        return min;
+    } else if (value > max) {
+        return max;
+    } else {
+        return value;
+    }
+}
+
 static int dmidecode_available() {
 #if defined(__FreeBSD__)
     const char* dmidecode_path = "/usr/local/sbin/dmidecode";
@@ -30,9 +40,8 @@ static int dmidecode_uuid(char* uuid, size_t size) {
     }
 
     size_t len = strcspn(uuid, "\n");
-    if (len < size) {
-        uuid[len] = '\0';
-    }
+
+    uuid[clamp(len, 0, size - 1)] = '\0';
 
 __exit:
     if (pipe) {
@@ -51,8 +60,11 @@ static int systctl_uuid(char* uuid, size_t size) {
     mib[0] = CTL_KERN;
     mib[1] = KERN_HOSTUUID;
 
-    size_t len = size;
-    return sysctl(mib, ARRAY_SIZE(mib), uuid, &len, NULL, 0) != -1;
+    size_t len    = size;
+    int    result = sysctl(mib, ARRAY_SIZE(mib), uuid, &len, NULL, 0) != -1;
+
+    uuid[clamp(len, 0, size - 1)] = '\0';
+    return result;
 }
 
 #endif
@@ -62,23 +74,15 @@ int device_uuid(char* uuid, size_t size) {
         return 0;
     }
 
-    int retval = 0;
     if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
-        retval = 1;
-        goto __exit;
+        return 1;
     }
 
 #if defined(__FreeBSD__)
-    if (!retval && systctl_uuid(uuid, size)) {
-        retval = 1;
-        goto __exit;
+    if (systctl_uuid(uuid, size)) {
+        return 1;
     }
 #endif
 
-__exit:
-    if (retval) {
-        uuid[size - 1] = '\0';
-    }
-
-    return retval;
+    return 0;
 }
