@@ -2,6 +2,7 @@ SHELL := /bin/sh
 
 CC = gcc
 CFLAGS = -I./src
+LDFLAGS = -lssl -lcrypto
 
 DEBUG_CFLAGS = -Wall -Wextra -g
 RELEASE_CFLAGS = -Wall -Wextra -O3
@@ -22,7 +23,7 @@ debug: CFLAGS += $(DEBUG_CFLAGS)
 debug: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS)
+	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS) $(LDFLAGS)
 
 src/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
