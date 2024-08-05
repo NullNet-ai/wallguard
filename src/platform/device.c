@@ -16,7 +16,7 @@ static size_t clamp(size_t value, size_t min, size_t max) {
     }
 }
 
-static int dmidecode_available() {
+static boolean_t dmidecode_available() {
 #if defined(__FreeBSD__)
     const char* dmidecode_path = "/usr/local/sbin/dmidecode";
 #else
@@ -25,17 +25,17 @@ static int dmidecode_available() {
     return file_exists(dmidecode_path);
 }
 
-static int dmidecode_uuid(char* uuid, size_t size) {
-    int   retval = 1;
-    FILE* pipe   = popen("dmidecode -s system-uuid", "r");
+static boolean_t dmidecode_uuid(char* uuid, size_t size) {
+    boolean_t retval = WM_TRUE;
+    FILE*     pipe   = popen("dmidecode -s system-uuid", "r");
 
     if (!pipe) {
-        retval = 0;
+        retval = WM_FALSE;
         goto __exit;
     }
 
     if (fgets(uuid, size, pipe) == NULL) {
-        retval = 0;
+        retval = WM_FALSE;
         goto __exit;
     }
 
@@ -54,14 +54,14 @@ __exit:
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
-static int systctl_uuid(char* uuid, size_t size) {
+static boolean_t systctl_uuid(char* uuid, size_t size) {
     int mib[2];
 
     mib[0] = CTL_KERN;
     mib[1] = KERN_HOSTUUID;
 
-    size_t len    = size;
-    int    result = sysctl(mib, ARRAY_SIZE(mib), uuid, &len, NULL, 0) != -1;
+    size_t    len    = size;
+    boolean_t result = sysctl(mib, ARRAY_SIZE(mib), uuid, &len, NULL, 0) != -1;
 
     uuid[clamp(len, 0, size - 1)] = '\0';
     return result;
@@ -69,20 +69,22 @@ static int systctl_uuid(char* uuid, size_t size) {
 
 #endif
 
-int device_uuid(char* uuid, size_t size) {
+boolean_t device_uuid(char* uuid, size_t size) {
     if (size == 0 || !uuid) {
-        return 0;
+        return WM_FALSE;
     }
 
     if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
-        return 1;
+        return WM_TRUE;
     }
 
 #if defined(__FreeBSD__)
     if (systctl_uuid(uuid, size)) {
-        return 1;
+        return WM_TRUE;
     }
 #endif
 
-    return 0;
+    return WM_FALSE;
 }
+
+// @TODO: Read `/sys/class/dmi/id/product_uuid` file for the system UUID on Linux

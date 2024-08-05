@@ -13,139 +13,194 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 
-boolean_t https_request(const char* hostname, int port, void* data, size_t len) {
-    char response[4096];
+#define BUFFER_SIZE 8192
+
+uint8_t* request_tls(const char* hostname, int port, uint8_t* data, size_t len) {
+    if (hostname == NULL || port < 0 || data == NULL || len == 0) {
+        return NULL;
+    }
+
+    SSL_CTX* ctx      = NULL;
+    BIO*     bio      = NULL;
+    SSL*     ssl      = NULL;
+    uint8_t* response = NULL;
 
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
 
-    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    ctx = SSL_CTX_new(TLS_client_method());
     if (ctx == NULL) {
         ERR_print_errors_fp(stderr);
-        return WM_FALSE;
+        goto __exit;
     }
 
     if (!SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION)) {
         ERR_print_errors_fp(stderr);
-        SSL_CTX_free(ctx);
-        return WM_FALSE;
+        goto __exit;
     }
 
-    BIO* bio = BIO_new_ssl_connect(ctx);
+    bio = BIO_new_ssl_connect(ctx);
     if (bio == NULL) {
         ERR_print_errors_fp(stderr);
-        SSL_CTX_free(ctx);
-        return WM_FALSE;
+        goto __exit;
     }
 
     char conn_string[256];
+    memset(conn_string, 0, sizeof(conn_string));
     snprintf(conn_string, sizeof(conn_string), "%s:%d", hostname, port);
     BIO_set_conn_hostname(bio, conn_string);
 
-    SSL* ssl;
     BIO_get_ssl(bio, &ssl);
     if (ssl == NULL) {
         ERR_print_errors_fp(stderr);
-        BIO_free_all(bio);
-        SSL_CTX_free(ctx);
-        return WM_FALSE;
+        goto __exit;
     }
 
     SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
 
     if (BIO_do_connect(bio) <= 0) {
         ERR_print_errors_fp(stderr);
-        BIO_free_all(bio);
-        SSL_CTX_free(ctx);
-        return WM_FALSE;
+        goto __exit;
     }
 
     if (BIO_do_handshake(bio) <= 0) {
         ERR_print_errors_fp(stderr);
-        BIO_free_all(bio);
-        SSL_CTX_free(ctx);
-        return WM_FALSE;
+        goto __exit;
     }
 
     if (BIO_write(bio, data, len) <= 0) {
         if (!BIO_should_retry(bio)) {
             ERR_print_errors_fp(stderr);
-            BIO_free_all(bio);
-            SSL_CTX_free(ctx);
-            return WM_FALSE;
+            goto __exit;
         }
     }
 
+    size_t total_len = 0;
+    size_t capacity  = BUFFER_SIZE;
+
+    response = malloc(capacity);
+    if (response == NULL) {
+        goto __exit;
+    }
+
+    uint8_t buffer[BUFFER_SIZE];
     while (WM_TRUE) {
-        int len = BIO_read(bio, response, sizeof(response) - 1);
-        if (len <= 0) {
+        memset(buffer, 0, sizeof(buffer));
+        int bytes = BIO_read(bio, buffer, sizeof(buffer) - 1);
+
+        if (bytes <= 0) {
             break;
         }
-        response[len] = '\0';
-        printf("%s", response);
+
+        if (total_len + bytes >= capacity) {
+            capacity *= 2;
+
+            uint8_t* r = realloc(response, capacity);
+            if (r == NULL) {
+                free(response);
+                response = NULL;
+                goto __exit;
+            }
+
+            response = r;
+        }
+
+        memcpy(response + total_len, buffer, bytes);
+        total_len += bytes;
     }
 
-    BIO_free_all(bio);
-    SSL_CTX_free(ctx);
-    EVP_cleanup();
+    response[total_len] = '\0';
 
-    return WM_TRUE;
+__exit:
+    if (bio) {
+        BIO_free_all(bio);
+    }
+
+    if (ctx) {
+        SSL_CTX_free(ctx);
+    }
+
+    EVP_cleanup();
+    return response;
 }
 
-boolean_t http_request(const char* hostname, int port, void* data, size_t len) {
-    int                sockfd, n;
-    struct sockaddr_in serv_addr;
-    struct hostent*    server;
-    char               response[4096];
+uint8_t* request_tcp(const char* hostname, int port, uint8_t* data, size_t len) {
+    if (hostname == NULL || port < 0 || data == NULL || len == 0) {
+        return NULL;
+    }
 
-    // Create socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    uint8_t* response = NULL;
+
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
         fprintf(stderr, "Cannot open a socket\n");
-        return WM_FALSE;
+        goto __exit;
     }
 
-    // Get server by hostname
-    server = gethostbyname(hostname);
+    struct hostent* server = gethostbyname(hostname);
     if (server == NULL) {
         fprintf(stderr, "ERROR, no such host\n");
-        close(sockfd);
-
-        return WM_FALSE;
+        goto __exit;
     }
 
-    bzero((char*)&serv_addr, sizeof(serv_addr));
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    bcopy((char*)server->h_addr, (char*)&serv_addr.sin_addr.s_addr, server->h_length);
+    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);
     serv_addr.sin_port = htons(port);
 
     if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         fprintf(stderr, "ERROR connecting");
-        close(sockfd);
-        return WM_FALSE;
+        goto __exit;
     }
 
-    n = write(sockfd, data, len);
-    if (n < 0) {
+    if (write(sockfd, data, len) < 0) {
         fprintf(stderr, "ERROR writing to socket");
-        close(sockfd);
-        return WM_FALSE;
+        goto __exit;
     }
 
-    bzero(response, sizeof(response));
-    n = read(sockfd, response, sizeof(response) - 1);
-    if (n < 0) {
-        fprintf(stderr, "ERROR reading from socket");
-        close(sockfd);
-        return WM_FALSE;
+    size_t total_len = 0;
+    size_t capacity  = BUFFER_SIZE;
+
+    response = malloc(capacity);
+    if (response == NULL) {
+        goto __exit;
     }
 
-    printf("%s\n", response);
-    close(sockfd);
-    return WM_TRUE;
+    uint8_t buffer[BUFFER_SIZE];
+    while (WM_TRUE) {
+        memset(buffer, 0, sizeof(buffer));
+        int bytes = read(sockfd, buffer, sizeof(buffer) - 1);
+
+        if (bytes <= 0) {
+            break;
+        }
+
+        if (total_len + bytes >= capacity) {
+            capacity *= 2;
+
+            uint8_t* r = realloc(response, capacity);
+            if (r == NULL) {
+                free(response);
+                response = NULL;
+                goto __exit;
+            }
+
+            response = r;
+        }
+
+        memcpy(response + total_len, buffer, bytes);
+        total_len += bytes;
+    }
+
+    response[total_len] = '\0';
+
+__exit:
+    if (sockfd >= 0) {
+        close(sockfd);
+    }
+    return response;
 }
 
-// @TODO: cleanup logig
-// @TODO no bcopy and bzeroP
-// @TODO: error logging / handling
+// @TODO: Better Error handling
