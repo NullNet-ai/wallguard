@@ -3,38 +3,54 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "platform/ident.h"
-#include "platform/device.h"
-#include "utils/file_utils.h"
-#include "network/request.h"
-#include "network/http.h"
+#include "network/tls.h"
+
+#define BUFFER_SIZE 8192
 
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    http_header headers[] = {
-        {.key = "Connection", .value = "close"},
-    };
+    tls_handle* handle   = NULL;
+    const char* hostname = "example.com";
+    int         port     = 443;
 
-    http_request r;
-    memset(&r, 0, sizeof(http_request));
-
-    r.headers = headers;
-    r.hlen    = ARRAY_SIZE(headers);
-    r.url     = "http://192.168.2.19:8000";
-
-    http_response* res = fetch(r);
-
-    printf("Response status: %d\n", res->status);
-
-    for (size_t i = 0; i < res->hlen; ++i) {
-        printf("|%s|: |%s|\n", res->headers[i].key, res->headers[i].value);
+    // Initialize TLS connection
+    if (!tls_start(&handle, hostname, port)) {
+        fprintf(stderr, "Failed to establish TLS connection\n");
+        return EXIT_FAILURE;
     }
 
-    printf("Body:\n%s\n", res->body);
+    // Create HTTP GET request
+    const char* request = "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n";
 
-    free_http_response(res);
+    // Send HTTP GET request
+    if (tls_write(handle, (uint8_t*)request, strlen(request)) < 0) {
+        fprintf(stderr, "Failed to send HTTP GET request\n");
+        tls_end(handle);
+        return EXIT_FAILURE;
+    }
+
+    // Buffer to store the response
+    uint8_t buffer[BUFFER_SIZE];
+    memset(buffer, 0, BUFFER_SIZE);
+
+    // Read the response
+    ssize_t bytes_read;
+    while ((bytes_read = tls_read(handle, buffer, BUFFER_SIZE - 1)) > 0) {
+        printf("%s", buffer);
+        memset(buffer, 0, BUFFER_SIZE);  // Clear buffer for next read
+    }
+
+    if (bytes_read < 0) {
+        fprintf(stderr, "Error reading from socket\n");
+    }
+
+    // Close TLS connection
+    if (!tls_end(handle)) {
+        fprintf(stderr, "Failed to close TLS connection\n");
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

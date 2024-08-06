@@ -121,7 +121,6 @@ __exit:
         SSL_CTX_free(ctx);
     }
 
-    EVP_cleanup();
     return response;
 }
 
