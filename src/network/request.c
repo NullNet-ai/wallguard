@@ -64,4 +64,6 @@ boolean_t request_end(request_handle* handle) {
     } else {
         return tcp_end(handle->hdl);
     }
+
+    free(handle);
 }

@@ -13,18 +13,18 @@
  * @param tls If `WM_TRUE`, a TLS connection is used; otherwise, a TCP connection is used.
  * @return `WM_TRUE` on success, `WM_FALSE` on failure.
  */
-boolean_t download(const char* hostname, int port, const char* path, const char* local_file, boolean_t tls);
+boolean_t download(const char* hostname, int port, const char* file_path, const char* local_file, boolean_t tls);
 
 /**
  * @brief Uploads a local file to an HTTP server.
  *
  * @param hostname The hostname of the HTTP server.
  * @param port The port number of the HTTP server.
- * @param file_path The server path.
+ * @param path The server path.
  * @param local_file The path of the local file to be uploaded.
  * @param tls If `WM_TRUE`, a TLS connection is used; otherwise, a TCP connection is used.
  * @return `WM_TRUE` on success, `WM_FALSE` on failure.
  */
-boolean_t upload(const char* hostname, int port, const char* file_path, const char* local_file, boolean_t tls);
+boolean_t upload(const char* hostname, int port, const char* path, const char* local_file, boolean_t tls);
 
 #endif
