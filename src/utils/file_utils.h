@@ -21,6 +21,25 @@ boolean_t file_exists(const char *path);
 boolean_t files_exist(const char *files[], size_t count);
 
 /**
+ * @brief Get the size of a file.
+ *
+ *
+ * @param path The path to the file whose size is to be determined.
+ * @return The size of the file in bytes, or `-1` if an error occurs.
+ */
+ssize_t file_size(const char* path);
+
+/**
+ * Extracts the filename from a given file path.
+ *
+ * @param path The full file path as a string.
+ * @return A pointer to the filename within the given path.
+ *         If the path does not contain any directory separators, 
+ *         the original path is returned.
+ */
+const char * filename(const char* path);
+
+/**
  * @brief Struct representing a file monitor.
  */
 typedef struct {

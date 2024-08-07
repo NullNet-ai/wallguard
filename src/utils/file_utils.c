@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
+#include <string.h>
 
 boolean_t file_exists(const char *path) { return access(path, F_OK) == 0; }
 
@@ -13,6 +14,24 @@ boolean_t files_exist(const char *files[], size_t count) {
     }
 
     return WM_TRUE;
+}
+
+ssize_t file_size(const char *path) {
+    struct stat st;
+    if (stat(path, &st) == 0) {
+        return st.st_size;
+    } else {
+        return -1;
+    }
+}
+
+const char *filename(const char *path) {
+    const char *slash = strrchr(path, '/');
+    if (slash) {
+        return slash + 1;
+    } else {
+        return path;
+    }
 }
 
 boolean_t file_monitor_init(file_monitor *monitor, const char *filepath) {
