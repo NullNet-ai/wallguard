@@ -15,7 +15,7 @@ typedef struct {
 /**
  * @brief Obtains the revision information based on the platform type.
  *
- * @param platform The type of platform (PF_SENSE or OPN_SENSE).
+ * @param platform The type of platform.
  * @param rev Pointer to the revision structure to store the parsed data.
  * @return `WM_TRUE` if the revision information was successfully obtained, `WM_FALSE` otherwise.
  */
