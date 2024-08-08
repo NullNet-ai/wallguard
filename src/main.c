@@ -5,9 +5,10 @@
 
 #include "platform/revision.h"
 #include "utils/file_utils.h"
+#include "utils/url.h"
 #include "network/file_transfer.h"
 
-int test_run(boolean_t dev) {
+int test_run(const char* url, boolean_t dev) {
     if (!dev) {
         platform_type platform = ident();
         if (platform == PLATFORM_UNSUPPORTED) {
@@ -27,6 +28,15 @@ int test_run(boolean_t dev) {
         return EXIT_FAILURE;
     }
 
+    boolean_t tls  = WM_FALSE;
+    int       port = 0;
+    char      hostname[256];
+
+    memset(hostname, 0, sizeof(hostname));
+    parse_url(url, hostname, &port, &tls);
+
+    printf("Parsed URL:\nHostname: %s\nPort: %d\nUse TLS: %s\n", hostname, port, tls ? "True" : "False");
+
     printf("Start monitoring ...\n");
     for (;;) {
         sleep(1);
@@ -36,8 +46,8 @@ int test_run(boolean_t dev) {
         }
 
         printf("%s has been changed, uploading to server\n", cfg);
+        boolean_t ur = upload(hostname, port, "/upload", cfg, tls);
 
-        boolean_t ur = upload("192.168.2.19", 3000, "/upload", cfg, WM_FALSE);
         if (ur) {
             printf("Upload successful!\n");
         } else {
@@ -52,5 +62,10 @@ int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    return test_run(WM_FALSE);
+    if (argc < 2) {
+        printf("Not enough arguments...\n");
+        return EXIT_FAILURE;
+    }
+
+    return test_run(argv[1], WM_TRUE);
 }
