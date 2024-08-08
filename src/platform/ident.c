@@ -23,7 +23,7 @@ static const char *opnsense_files[] = {
     "/usr/local/sbin/pluginctl",
 };
 
-platform ident() {
+platform_type ident() {
     if (files_exist(pfsense_files, ARRAY_SIZE(pfsense_files))) {
         return PLATFORM_PFSENSE;
     }
@@ -35,7 +35,7 @@ platform ident() {
     return PLATFORM_UNSUPPORTED;
 }
 
-const char *platform_name(platform platform) {
+const char *platform_name(platform_type platform) {
     switch (platform) {
         case PLATFORM_PFSENSE:
             return "pfSense";

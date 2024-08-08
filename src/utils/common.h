@@ -4,8 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <time.h>
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+#define STATIC_ASSERT _Static_assert
 
 typedef enum {
     WM_FALSE = 0,

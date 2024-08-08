@@ -7,22 +7,22 @@
 typedef enum {
     PLATFORM_PFSENSE,
     PLATFORM_OPNSENSE,
-    PLATFORM_UNSUPPORTED
-} platform;
+    PLATFORM_UNSUPPORTED,
+} platform_type;
 
 /**
  * @brief Identifies the current platform.
  *
- * @return platform Enum value indicating the platform type.
+ * @return `platform_type` enum value indicating the platform type.
  */
-platform ident();
+platform_type ident();
 
 /**
  * @brief Returns the name of the given platform.
  *
- * @param platform The platform enum value.
+ * @param platform The `platform_type` enum value.
  * @return const char* A string representing the platform name.
  */
-const char *platform_name(platform platform);
+const char *platform_name(platform_type platform);
 
-#endif // PLATFORM_IDENT_H
+#endif  // PLATFORM_IDENT_H

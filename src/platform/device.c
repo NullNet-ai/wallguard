@@ -66,7 +66,27 @@ static boolean_t systctl_uuid(char* uuid, size_t size) {
     uuid[clamp(len, 0, size - 1)] = '\0';
     return result;
 }
+#endif
 
+#if defined(__linux__)
+static const char l_uuid_filename[] = "/sys/class/dmi/id/product_uuid";
+
+static boolean_t linux_uuid(char* uuid, size_t size) {
+    if (!file_exists(l_uuid_filename)) {
+        return WM_FALSE;
+    }
+
+    FILE* file = fopen(l_uuid_filename, "r");
+    if (!file) {
+        return WM_FALSE;
+    }
+
+    size_t len = fread(uuid, sizeof(char), size, file);
+
+    uuid[clamp(len, 0, size - 1)] = '\0';
+    fclose(file);
+    return WM_TRUE;
+}
 #endif
 
 boolean_t device_uuid(char* uuid, size_t size) {
@@ -74,17 +94,19 @@ boolean_t device_uuid(char* uuid, size_t size) {
         return WM_FALSE;
     }
 
-    if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
-        return WM_TRUE;
-    }
-
 #if defined(__FreeBSD__)
     if (systctl_uuid(uuid, size)) {
         return WM_TRUE;
     }
+#elif defined(__linux__)
+    if (linux_uuid(uuid, size)) {
+        return WM_TRUE;
+    }
 #endif
+
+    if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
+        return WM_TRUE;
+    }
 
     return WM_FALSE;
 }
-
-// @TODO: Read `/sys/class/dmi/id/product_uuid` file for the system UUID on Linux

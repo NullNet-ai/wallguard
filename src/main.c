@@ -3,17 +3,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "network/file_transfer.h"
-
-#define BUFFER_SIZE 8192
+#include "platform/revision.h"
 
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
-    boolean_t r = upload("192.168.2.19", 3000, "/upload", "/home/anton/WallMon/README.md", WM_FALSE);
+    revision r;
+    obtain_revision(PLATFORM_OPNSENSE, &r);
 
-    printf("File uploaded: %d\n", r);
+    printf("Rev time: %ld\nRev username: %s\n", r.time, r.username);
 
     return EXIT_SUCCESS;
 }

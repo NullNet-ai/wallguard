@@ -21,23 +21,40 @@ boolean_t file_exists(const char *path);
 boolean_t files_exist(const char *files[], size_t count);
 
 /**
+ * @brief Checks if a directory exists.
+ *
+ * @param path The path of the directory to check.
+ * @return `WM_TRUE` if the directory exists, `WM_FALSE` otherwise.
+ */
+boolean_t directory_exists(const char *path);
+
+/**
  * @brief Get the size of a file.
  *
  *
  * @param path The path to the file whose size is to be determined.
  * @return The size of the file in bytes, or `-1` if an error occurs.
  */
-ssize_t file_size(const char* path);
+ssize_t file_size(const char *path);
 
 /**
  * Extracts the filename from a given file path.
  *
  * @param path The full file path as a string.
  * @return A pointer to the filename within the given path.
- *         If the path does not contain any directory separators, 
+ *         If the path does not contain any directory separators,
  *         the original path is returned.
  */
-const char * filename(const char* path);
+const char *filename(const char *path);
+
+/**
+ * @brief Copies the content of the source file to the destination file.
+ *
+ * @param source The path to the source file.
+ * @param destination The path to the destination file.
+ * @return `WM_TRUE` if the file is successfully copied, `WM_FALSE` otherwise.
+ */
+boolean_t copy_file(const char *source, const char *destination);
 
 /**
  * @brief Struct representing a file monitor.
@@ -60,7 +77,7 @@ boolean_t file_monitor_init(file_monitor *monitor, const char *filepath);
  * @brief Checks if the monitored file has been updated.
  *
  * @param monitor A pointer to the file_monitor structure.
- * @return 1 if the file was updated, 0 if not, and -1 on error.
+ * @return `1` if the file was updated, `0` if not, and `-1` on error.
  */
 int file_monitor_check(file_monitor *monitor);
 

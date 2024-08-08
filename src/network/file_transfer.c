@@ -97,13 +97,11 @@ boolean_t upload(const char* hostname, int port, const char* path, const char* l
         return WM_FALSE;
     }
 
-    // Send the initial part of the multipart content
     if (request_write(handle, (uint8_t*)initial_headers, strlen(initial_headers)) < 0) {
         request_end(handle);
         return WM_FALSE;
     }
 
-    // Send the file content
     FILE* file = fopen(local_file, "rb");
     if (!file) {
         request_end(handle);

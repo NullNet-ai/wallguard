@@ -2,6 +2,8 @@
 
 #include <unistd.h>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 boolean_t file_exists(const char *path) { return access(path, F_OK) == 0; }
@@ -14,6 +16,16 @@ boolean_t files_exist(const char *files[], size_t count) {
     }
 
     return WM_TRUE;
+}
+
+boolean_t directory_exists(const char *path) {
+    struct stat statbuf;
+
+    if (stat(path, &statbuf) != 0) {
+        return WM_FALSE;
+    }
+
+    return S_ISDIR(statbuf.st_mode);
 }
 
 ssize_t file_size(const char *path) {
@@ -32,6 +44,35 @@ const char *filename(const char *path) {
     } else {
         return path;
     }
+}
+
+boolean_t copy_file(const char *source, const char *destination) {
+    if (file_exists(source)) {
+        return WM_FALSE;
+    }
+
+    FILE *source_file = fopen(source, "rb");
+    if (!source_file) {
+        return WM_FALSE;
+    }
+
+    FILE *destination_file = fopen(destination, "wb");
+    if (!destination_file) {
+        fclose(source_file);
+        return WM_FALSE;
+    }
+
+    size_t  bytes;
+    uint8_t buffer[1024];
+
+    while ((bytes = fread(buffer, sizeof(buffer[0]), sizeof(buffer), source_file)) > 0) {
+        fwrite(buffer, sizeof(buffer[0]), bytes, destination_file);
+    }
+
+    fclose(source_file);
+    fclose(destination_file);
+
+    return WM_TRUE;
 }
 
 boolean_t file_monitor_init(file_monitor *monitor, const char *filepath) {

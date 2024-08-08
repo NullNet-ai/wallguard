@@ -2,7 +2,15 @@ SHELL := /bin/sh
 
 CC = gcc
 CFLAGS = -I./src
-LDFLAGS = -lssl -lcrypto
+LDFLAGS = -lssl -lcrypto -lxml2
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),FreeBSD)
+    CFLAGS += -I/usr/local/include/libxml2
+else
+    CFLAGS += -I/usr/include/libxml2
+endif
 
 DEBUG_CFLAGS = -Wall -Wextra -g
 RELEASE_CFLAGS = -Wall -Wextra -O3
@@ -30,8 +38,3 @@ src/%.o: src/%.c
 
 clean:
 	rm -f $(EXEC) $(OBJS)
-
-# @TODO
-test: $(EXEC)
-	@echo "Running tests..."
-	@$(EXEC) --test
