@@ -33,7 +33,10 @@ int test_run(const char* url, boolean_t dev) {
     char      hostname[256];
 
     memset(hostname, 0, sizeof(hostname));
-    parse_url(url, hostname, &port, &tls);
+    if (!parse_url(url, hostname, &port, &tls)) {
+        printf("Failed to parse the server URL ...\n");
+        return EXIT_FAILURE;
+    }
 
     printf("Parsed URL:\nHostname: %s\nPort: %d\nUse TLS: %s\n", hostname, port, tls ? "True" : "False");
 
