@@ -57,11 +57,4 @@ typedef struct {
  */
 http_response* fetch(const char* hostname, const char* path, int port, boolean_t tls, http_request* request);
 
-/**
- * @brief Frees the memory allocated for the response.
- *
- * @param response The response structure to free.
- */
-void release_response(http_response* response);
-
 #endif

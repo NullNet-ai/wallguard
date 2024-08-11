@@ -1,6 +1,7 @@
 #include <server_api/request_registration.h>
 #include <network/http.h>
 #include <utils/url.h>
+#include <utils/net.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -43,7 +44,11 @@ boolean_t request_registration(const char* server_url, platform_info* info) {
     request.headers_count = ARRAY_SIZE(headers);
 
     http_response* response = fetch(hostname, endpoint, port, tls, &request);
-    boolean_t      success  = response->status_code >= 200 && response->status_code < 300;
+    if (!response) {
+        return WM_FALSE;
+    }
+
+    boolean_t success = response->status_code >= 200 && response->status_code < 300;
     release_response(response);
     return success;
 }

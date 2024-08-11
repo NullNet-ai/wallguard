@@ -6,8 +6,10 @@
 #include "platform/revision.h"
 #include "utils/file_utils.h"
 #include "utils/url.h"
-#include "network/file_transfer.h"
 #include "server_api/request_registration.h"
+#include "server_api/upload_configuration.h"
+
+#include "network/file_transfer.h"
 
 int test_run(const char* url, boolean_t dev) {
     platform_info* info;
@@ -45,36 +47,36 @@ int test_run(const char* url, boolean_t dev) {
         printf("Registration successful.\n");
     }
 
-    // const char* cfg = "/conf/config.xml";
+    const char* cfg = "/conf/config.xml";
 
-    // file_monitor mnt;
-    // if (!file_monitor_init(&mnt, cfg)) {
-    //     printf("Failed to initialize file monitor, verify file exists %s\n", cfg);
+    file_monitor mnt;
+    if (!file_monitor_init(&mnt, cfg)) {
+        printf("Failed to initialize file monitor, verify file exists %s\n", cfg);
 
-    //     if (!dev) {
-    //         release_platform_info(info);
-    //     }
+        if (!dev) {
+            release_platform_info(info);
+        }
 
-    //     return EXIT_FAILURE;
-    // }
+        return EXIT_FAILURE;
+    }
 
-    // printf("Start monitoring ...\n");
-    // for (;;) {
-    //     sleep(1);
+    printf("Start monitoring ...\n");
+    for (;;) {
+        sleep(1);
 
-    //     if (!file_monitor_check(&mnt)) {
-    //         continue;
-    //     }
+        if (!file_monitor_check(&mnt)) {
+            continue;
+        }
 
-    //     printf("%s has been changed, uploading to server\n", cfg);
-    //     boolean_t ur = upload(hostname, port, "/upload", cfg, tls);
+        printf("%s has been changed, uploading to server\n", cfg);
+        // boolean_t ur = ;
 
-    //     if (ur) {
-    //         printf("Upload successful!\n");
-    //     } else {
-    //         printf("Upload failed!\n");
-    //     }
-    // }
+        if (upload_configuration(url, cfg, info)) {
+            printf("Upload successful!\n");
+        } else {
+            printf("Upload failed!\n");
+        }
+    }
 
     return EXIT_SUCCESS;
 }
@@ -88,5 +90,5 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    return test_run(argv[1], WM_FALSE);
+    return test_run(argv[1], WM_TRUE);
 }
