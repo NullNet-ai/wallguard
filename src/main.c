@@ -7,56 +7,74 @@
 #include "utils/file_utils.h"
 #include "utils/url.h"
 #include "network/file_transfer.h"
+#include "server_api/request_registration.h"
 
 int test_run(const char* url, boolean_t dev) {
+    platform_info* info;
+
     if (!dev) {
-        platform_type platform = ident();
-        if (platform == PLATFORM_UNSUPPORTED) {
-            printf("Unsopported platform, aborting ...\n");
-            return EXIT_FAILURE;
-        }
+        info = get_platform_info();
+    } else {
+        static platform_info dummy;
+        dummy.model   = "Test";
+        dummy.version = "1.0.0";
+        dummy.type    = -1;
 
-        const char* pname = platform_name(platform);
-        printf("Platform has been identified as %s\n", pname);
+        void* dummy_uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+        memcpy(dummy.uuid, dummy_uuid, 37);
+
+        info = &dummy;
     }
 
-    const char* cfg = "/conf/config.xml";
-
-    file_monitor mnt;
-    if (!file_monitor_init(&mnt, cfg)) {
-        printf("Failed to initialize file monitor, verify file exists %s\n", cfg);
+    if (info == NULL) {
+        printf("Failed to obtain platfrom info, aborting ...\n");
         return EXIT_FAILURE;
     }
 
-    boolean_t tls  = WM_FALSE;
-    int       port = 0;
-    char      hostname[256];
+    printf("Platform:\nModel: %s\nVersion: %s\nUUID: %s\n\n", info->model, info->version, info->uuid);
 
-    memset(hostname, 0, sizeof(hostname));
-    if (!parse_url(url, hostname, &port, &tls)) {
-        printf("Failed to parse the server URL ...\n");
+    if (!request_registration(url, info)) {
+        printf("Regsitration request to the central server failed, aborting ...\n");
+
+        if (!dev) {
+            release_platform_info(info);
+        }
+
         return EXIT_FAILURE;
+    } else {
+        printf("Registration successful.\n");
     }
 
-    printf("Parsed URL:\nHostname: %s\nPort: %d\nUse TLS: %s\n", hostname, port, tls ? "True" : "False");
+    // const char* cfg = "/conf/config.xml";
 
-    printf("Start monitoring ...\n");
-    for (;;) {
-        sleep(1);
+    // file_monitor mnt;
+    // if (!file_monitor_init(&mnt, cfg)) {
+    //     printf("Failed to initialize file monitor, verify file exists %s\n", cfg);
 
-        if (!file_monitor_check(&mnt)) {
-            continue;
-        }
+    //     if (!dev) {
+    //         release_platform_info(info);
+    //     }
 
-        printf("%s has been changed, uploading to server\n", cfg);
-        boolean_t ur = upload(hostname, port, "/upload", cfg, tls);
+    //     return EXIT_FAILURE;
+    // }
 
-        if (ur) {
-            printf("Upload successful!\n");
-        } else {
-            printf("Upload failed!\n");
-        }
-    }
+    // printf("Start monitoring ...\n");
+    // for (;;) {
+    //     sleep(1);
+
+    //     if (!file_monitor_check(&mnt)) {
+    //         continue;
+    //     }
+
+    //     printf("%s has been changed, uploading to server\n", cfg);
+    //     boolean_t ur = upload(hostname, port, "/upload", cfg, tls);
+
+    //     if (ur) {
+    //         printf("Upload successful!\n");
+    //     } else {
+    //         printf("Upload failed!\n");
+    //     }
+    // }
 
     return EXIT_SUCCESS;
 }
@@ -70,5 +88,5 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    return test_run(argv[1], WM_TRUE);
+    return test_run(argv[1], WM_FALSE);
 }

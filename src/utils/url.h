@@ -15,6 +15,6 @@
  * @param tls A pointer to a `boolean_t` to indicate if the URL uses HTTPS (`WM_TRUE`) or HTTP (`WM_FALSE`).
  * @return Returns `WM_TRUE` if the URL was successfully parsed, `WM_FALSE` if the URL format was invalid.
  */
-boolean_t parse_url(const char* url, char* hostname, int* port, boolean_t* tls);
+boolean_t parse_url(const char* url, char* hostname, char* path, int* port, boolean_t* tls);
 
 #endif

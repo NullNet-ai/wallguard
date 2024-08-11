@@ -1,7 +1,8 @@
 #include <utils/file_utils.h>
 
-#include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,4 +108,27 @@ int file_monitor_check(file_monitor *monitor) {
     }
 
     return 0;
+}
+
+uint8_t *read_file_content(const char *path) {
+    FILE *file = fopen(path, "rb");
+    if (!file) {
+        return NULL;
+    }
+
+    struct stat buffer;
+    memset(&buffer, 0, sizeof(struct stat));
+
+    if (stat(path, &buffer) != 0) {
+        fclose(file);
+        return NULL;
+    }
+
+    uint8_t *content = malloc(buffer.st_size + 1);
+
+    fread(content, sizeof(content[0]), buffer.st_size, file);
+    fclose(file);
+
+    content[buffer.st_size] = '\0';
+    return content;
 }

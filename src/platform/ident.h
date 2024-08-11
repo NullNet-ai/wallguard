@@ -2,7 +2,7 @@
 #define PLATFORM_IDENT_H
 
 /**
- * @brief Enumeration to represent different platform types.
+ * @brief Enum representing different supported platforms.
  */
 typedef enum {
     PLATFORM_PFSENSE,
@@ -11,18 +11,29 @@ typedef enum {
 } platform_type;
 
 /**
- * @brief Identifies the current platform.
- *
- * @return `platform_type` enum value indicating the platform type.
+ * @brief Structure holding information about the platform.
  */
-platform_type ident();
+typedef struct {
+    platform_type type;
+    const char*   model;
+    const char*   version;
+    char          uuid[37];  // 36 chars for formatter UUID string + 1 for null-terminator
+} platform_info;
 
 /**
- * @brief Returns the name of the given platform.
+ * Identifies the current platform by examining specific system characteristics.
  *
- * @param platform The `platform_type` enum value.
- * @return const char* A string representing the platform name.
+ * @return A pointer to a `platform_info` structure containing information
+ *         about the platform. The caller is responsible for freeing this
+ *         structure using the `release_platform_info` function.
  */
-const char *platform_name(platform_type platform);
+platform_info* get_platform_info();
+
+/**
+ * Frees the memory allocated for the `platform_info` structure.
+ *
+ * @param info A pointer to the `platform_info` structure to be freed.
+ */
+void release_platform_info(platform_info* info);
 
 #endif  // PLATFORM_IDENT_H

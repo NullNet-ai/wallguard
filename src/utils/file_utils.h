@@ -81,4 +81,13 @@ boolean_t file_monitor_init(file_monitor *monitor, const char *filepath);
  */
 int file_monitor_check(file_monitor *monitor);
 
+/**
+ * @brief Reads the content of a file and returns it as a dynamically allocated
+ * buffer of `uint8_t`. The caller is responsible for freeing the memory.
+ *
+ * @param path The path to the file to be read.
+ * @return A pointer to the file's content as a `uint8_t` buffer, or `NULL` if an error occurred.
+ */
+uint8_t *read_file_content(const char *path);
+
 #endif  // FILE_UTILS_H
