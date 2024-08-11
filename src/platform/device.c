@@ -81,9 +81,12 @@ static boolean_t linux_uuid(char* uuid, size_t size) {
         return WM_FALSE;
     }
 
-    size_t len = fread(uuid, sizeof(char), size, file);
-
+    size_t len                    = fread(uuid, sizeof(char), size, file);
     uuid[clamp(len, 0, size - 1)] = '\0';
+
+    len                           = strcspn(uuid, "\n");
+    uuid[clamp(len, 0, size - 1)] = '\0';
+
     fclose(file);
     return WM_TRUE;
 }

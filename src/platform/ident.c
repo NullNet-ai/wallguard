@@ -5,6 +5,7 @@
 #include <utils/common.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * @brief List of files and directories that are likely to be found on a pfSense system
@@ -41,8 +42,18 @@ static const char *get_platform_version(platform_type platform) {
             return NULL;
 
         case PLATFORM_PFSENSE:
-            return (const char *)read_file_content("/etc/version");
+            char *str = (char *)read_file_content("/etc/version");
 
+            if (str != NULL) {
+                size_t len = strcspn(str, "\n");
+                size_t tln = strlen(str);
+
+                if (len < tln) {
+                    str[len] = '\0';
+                }
+            }
+
+            return str;
         default:
             return NULL;
     }
