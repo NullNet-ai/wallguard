@@ -69,7 +69,6 @@ int test_run(const char* url, boolean_t dev) {
         }
 
         printf("%s has been changed, uploading to server\n", cfg);
-        // boolean_t ur = ;
 
         if (upload_configuration(url, cfg, info)) {
             printf("Upload successful!\n");
@@ -90,5 +89,5 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    return test_run(argv[1], WM_TRUE);
+    return test_run(argv[1], WM_FALSE);
 }
