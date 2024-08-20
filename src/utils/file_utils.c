@@ -110,6 +110,7 @@ int file_monitor_check(file_monitor *monitor) {
     return 0;
 }
 
+// #TODO: Do i need this function ?
 uint8_t *read_file_content(const char *path) {
     FILE *file = fopen(path, "rb");
     if (!file) {
@@ -126,7 +127,8 @@ uint8_t *read_file_content(const char *path) {
 
     uint8_t *content = malloc(buffer.st_size + 1);
 
-    fread(content, sizeof(content[0]), buffer.st_size, file);
+    size_t rb = fread(content, sizeof(content[0]), buffer.st_size, file);
+    (void)rb;
     fclose(file);
 
     content[buffer.st_size] = '\0';

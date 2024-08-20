@@ -2,7 +2,19 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
+      "label": "build-wallmon",
+      "type": "shell",
+      "command": "make debug",
+      "args": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "detail": "Generated task to build the project using Makefile"
+    },
+    {
+      "label": "build-tests",
       "type": "shell",
       "command": "make debug",
       "args": [],

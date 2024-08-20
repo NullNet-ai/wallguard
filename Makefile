@@ -47,7 +47,7 @@ TEST_OBJS = $(patsubst tests/%.c, tests/%.o, $(TEST_SRCS))
 
 # Test build
 # TODO: Test on a FreeBSD system
-test: CFLAGS += -I/usr/include/CUnit
+test: CFLAGS += -I/usr/include/CUnit -g
 test: LDFLAGS += -lcunit
 test: $(EXEC_TEST)
 

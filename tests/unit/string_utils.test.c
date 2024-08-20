@@ -27,7 +27,7 @@ static void test_generate_random_string_length_one(void) {
 }
 
 void add_string_utils_tests() {
-    CU_pSuite suite = CU_add_suite("Str Utils Tests", 0, 0);
+    CU_pSuite suite = CU_add_suite("Str Utils Tests", NULL, NULL);
 
     CU_add_test(suite, "test_generate_random_string_null_buffer", test_generate_random_string_null_buffer);
     CU_add_test(suite, "test_generate_random_string_length", test_generate_random_string_length);
