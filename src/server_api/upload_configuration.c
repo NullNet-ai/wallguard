@@ -23,7 +23,7 @@ boolean_t upload_configuration(const char* server_url, const char* path, platfor
     int       port = 0;
     boolean_t tls  = WM_FALSE;
 
-    if (!parse_url(server_url, hostname, NULL, &port, &tls)) {
+    if (!parse_url(server_url, hostname, sizeof(hostname), NULL, 0, &port, &tls)) {
         return WM_FALSE;
     }
 

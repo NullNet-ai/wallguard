@@ -7,7 +7,8 @@
 static const char http_prefix[]  = "http://";
 static const char https_prefix[] = "https://";
 
-boolean_t parse_url(const char* url, char* hostname, char* path, int* port, boolean_t* tls) {
+boolean_t parse_url(const char* url, char* hostname, size_t hostname_maxlen, char* path, size_t path_maxsize, int* port,
+                    boolean_t* tls) {
     const char* hostname_start = NULL;
 
     if (strncmp(url, https_prefix, strlen(https_prefix)) == 0) {
@@ -63,13 +64,22 @@ boolean_t parse_url(const char* url, char* hostname, char* path, int* port, bool
 
     if (path) {
         if (path_start != NULL && *path_start == '/') {
-            strncpy(path, path_start, strlen(path_start));
+            size_t path_size = strlen(path_start);
+            if (path_size >= path_maxsize) {
+                return WM_FALSE;
+            }
+
+            strncpy(path, path_start, path_size);
         } else {
             strcpy(path, "/");
         }
     }
 
     if (hostname) {
+        if (hostname_length >= hostname_maxlen || hostname_length == 0) {
+            return WM_FALSE;
+        }
+
         strncpy(hostname, hostname_start, hostname_length);
         hostname[hostname_length] = '\0';
     }
