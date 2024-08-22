@@ -7,7 +7,7 @@
 
 #include <utils/net.h>
 
-void test_parse_response_valid() {
+static void test_parse_response_valid() {
     char   raw_response[] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 13\r\n\r\nHello, world!";
     size_t response_len   = strlen(raw_response);
 
@@ -26,7 +26,7 @@ void test_parse_response_valid() {
     release_response(response);
 }
 
-void test_parse_response_no_headers() {
+static void test_parse_response_no_headers() {
     char   raw_response[] = "HTTP/1.1 200 OK\r\n\r\nHello, world!";
     size_t response_len   = strlen(raw_response);
 
@@ -41,7 +41,7 @@ void test_parse_response_no_headers() {
     release_response(response);
 }
 
-void test_parse_response_no_body() {
+static void test_parse_response_no_body() {
     char   raw_response[] = "HTTP/1.1 204 No Content\r\n\r\n";
     size_t response_len   = strlen(raw_response);
 
@@ -56,7 +56,7 @@ void test_parse_response_no_body() {
     release_response(response);
 }
 
-void test_parse_response_invalid_format() {
+static void test_parse_response_invalid_format() {
     char   raw_response[] = "INVALID RESPONSE";
     size_t response_len   = strlen(raw_response);
 
@@ -65,7 +65,7 @@ void test_parse_response_invalid_format() {
     CU_ASSERT_PTR_NULL(response);
 }
 
-void test_parse_response_missing_status_code() {
+static void test_parse_response_missing_status_code() {
     char   raw_response[] = "HTTP/1.1 \r\n\r\n";
     size_t response_len   = strlen(raw_response);
 
@@ -74,7 +74,7 @@ void test_parse_response_missing_status_code() {
     CU_ASSERT_PTR_NULL(response);
 }
 
-void test_parse_response_missing_header_value() {
+static void test_parse_response_missing_header_value() {
     char   raw_response[] = "HTTP/1.1 200 OK\r\nContent-Type:\r\n\r\n";
     size_t response_len   = strlen(raw_response);
 
@@ -91,7 +91,7 @@ void test_parse_response_missing_header_value() {
     release_response(response);
 }
 
-void test_parse_response_malformed_headers() {
+static void test_parse_response_malformed_headers() {
     char   raw_response[] = "HTTP/1.1 200 OK\r\nContent-Type text/html\r\n\r\n";
     size_t response_len   = strlen(raw_response);
 
@@ -107,7 +107,7 @@ void test_parse_response_malformed_headers() {
     release_response(response);
 }
 
-void test_parse_response_large_body() {
+static void test_parse_response_large_body() {
     char   raw_response[] = "HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\n";
     size_t response_len   = strlen(raw_response) + 1000000;
 
