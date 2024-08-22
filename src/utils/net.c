@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 http_response* parse_response(char* raw_response, size_t response_len) {
     http_response* response = malloc(sizeof(http_response));
@@ -31,8 +32,19 @@ http_response* parse_response(char* raw_response, size_t response_len) {
     strncpy(status_line, raw_response, status_line_end - raw_response);
     status_line[status_line_end - raw_response] = '\0';
 
-    char* status_code_str = strchr(status_line, ' ') + 1;
-    response->status_code = atoi(status_code_str);
+    char* status_code_str = strchr(status_line, ' ');
+    if (status_code_str == NULL || *(status_code_str + 1) == '\0') {
+        free(response);
+        return NULL;
+    }
+
+    status_code_str++;
+    if (isdigit(*status_code_str)) {
+        response->status_code = atoi(status_code_str);
+    } else {
+        free(response);
+        return NULL;
+    }
 
     char* header_start      = status_line_end + 2;
     char* header_current    = header_start;
@@ -45,8 +57,12 @@ http_response* parse_response(char* raw_response, size_t response_len) {
             break;
         }
 
-        char* value_start = colon + 2;
-        char* line_end    = strstr(header_current, "\r\n");
+        char* value_start = colon + 1;
+        while (*value_start == ' ' && value_start < header_end) {
+            value_start++;
+        }
+
+        char* line_end = strstr(header_current, "\r\n");
         if (line_end == NULL) {
             break;
         }
@@ -74,11 +90,12 @@ http_response* parse_response(char* raw_response, size_t response_len) {
         }
     }
 
-    response->body = malloc(body_len + 1);
-    memcpy(response->body, body_start, body_len);
-
-    response->body[body_len] = '\0';
-    response->body_len       = body_len;
+    if (body_len > 0) {
+        response->body = malloc(body_len + 1);
+        memcpy(response->body, body_start, body_len);
+        response->body[body_len] = '\0';
+        response->body_len       = body_len;
+    }
 
     return response;
 }
