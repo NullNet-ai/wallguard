@@ -182,6 +182,28 @@ static void test_parse_url_missing_hostname(void) {
     CU_ASSERT_EQUAL(result, WM_FALSE);
 }
 
+static void test_parse_url_ignore_port(void) {
+    char      url[] = "https://example:8000/";
+    char      hostname[50];
+    char      path[50];
+    boolean_t tls;
+
+    boolean_t result = parse_url(url, hostname, sizeof(hostname), path, sizeof(path), NULL, &tls);
+
+    CU_ASSERT_EQUAL(result, WM_TRUE);
+}
+
+static void test_parse_url_ignore_tls(void) {
+    char url[] = "https://example:8000/";
+    char hostname[50];
+    char path[50];
+    int  port;
+
+    boolean_t result = parse_url(url, hostname, sizeof(hostname), path, sizeof(path), &port, NULL);
+
+    CU_ASSERT_EQUAL(result, WM_TRUE);
+}
+
 void add_url_utils_tests() {
     CU_pSuite suite = CU_add_suite("Parse URL Tests", NULL, NULL);
 
@@ -200,4 +222,6 @@ void add_url_utils_tests() {
     CU_add_test(suite, "test_parse_url_exact_hostname_buffer", test_parse_url_exact_hostname_buffer);
     CU_add_test(suite, "test_parse_url_exact_path_buffer", test_parse_url_exact_path_buffer);
     CU_add_test(suite, "test_parse_url_missing_hostname", test_parse_url_missing_hostname);
+    CU_add_test(suite, "test_parse_url_ignore_port", test_parse_url_ignore_port);
+    CU_add_test(suite, "test_parse_url_ignore_tls", test_parse_url_ignore_tls);
 }

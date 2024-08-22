@@ -22,6 +22,8 @@ RELEASE_CFLAGS = -O3
 SRCS = $(shell find src -type f -name '*.c')
 OBJS = $(patsubst src/%.c, src/%.o, $(filter-out src/main.c, $(SRCS)))
 
+MAIN_OBJ = src/main.o
+
 # Executables
 EXEC = wallmon
 EXEC_TEST = $(EXEC)_test
@@ -38,8 +40,8 @@ debug: CFLAGS += $(DEBUG_CFLAGS)
 debug: $(EXEC)
 
 # Link the main executable
-$(EXEC): $(OBJS) src/main.o
-	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS) src/main.o $(LDFLAGS)
+$(EXEC): $(OBJS) $(MAIN_OBJ)
+	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS) $(MAIN_OBJ) $(LDFLAGS)
 
 # Test source and object files
 TEST_SRCS = $(shell find tests -type f -name '*.c')
@@ -57,6 +59,6 @@ $(EXEC_TEST): $(OBJS) $(TEST_OBJS)
 
 # Clean up generated files
 clean:
-	rm -f $(EXEC) $(EXEC_TEST) $(OBJS) $(TEST_OBJS)
+	rm -f $(EXEC) $(EXEC_TEST) $(OBJS) $(TEST_OBJS) $(MAIN_OBJ)
 
 .PHONY: all release debug test clean

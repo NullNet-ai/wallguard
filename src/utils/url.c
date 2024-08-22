@@ -104,12 +104,15 @@ static boolean_t parse_hostname(const char* hostname_start, size_t hostname_leng
 
 boolean_t parse_url(const char* url, char* hostname, size_t hostname_maxlen, char* path, size_t path_maxsize, int* port,
                     boolean_t* tls) {
+
+    boolean_t tls_retval = WM_FALSE;
+
     const char* hostname_start;
-    if (!parse_protocol(url, &hostname_start, tls)) {
+    if (!parse_protocol(url, &hostname_start, &tls_retval)) {
         return WM_FALSE;
     }
 
-    const char* port_start = parse_port(hostname_start, port, *tls);
+    const char* port_start = parse_port(hostname_start, port, tls_retval);
 
     if (!parse_hostname(hostname_start, port_start - hostname_start, hostname, hostname_maxlen)) {
         return WM_FALSE;
@@ -117,6 +120,10 @@ boolean_t parse_url(const char* url, char* hostname, size_t hostname_maxlen, cha
 
     if (!parse_path(hostname_start, path, path_maxsize)) {
         return WM_FALSE;
+    }
+
+    if (tls) {
+        *tls = tls_retval;
     }
 
     return WM_TRUE;
