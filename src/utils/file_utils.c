@@ -48,7 +48,7 @@ const char *filename(const char *path) {
 }
 
 boolean_t copy_file(const char *source, const char *destination) {
-    if (file_exists(source)) {
+    if (!file_exists(source)) {
         return WM_FALSE;
     }
 
