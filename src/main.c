@@ -3,7 +3,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "platform/revision.h"
 #include "utils/file_utils.h"
 #include "utils/url.h"
 #include "server_api/request_registration.h"
