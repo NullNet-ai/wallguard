@@ -3,16 +3,10 @@ SHELL := /bin/sh
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -I./src
-LDFLAGS = -lssl -lcrypto -lxml2
+LDFLAGS = -lssl -lcrypto
 
 # Platform-specific flags
 UNAME_S := $(shell uname -s)
-
-ifeq ($(UNAME_S),FreeBSD)
-    CFLAGS += -I/usr/local/include/libxml2
-else
-    CFLAGS += -I/usr/include/libxml2
-endif
 
 # Build type flags
 DEBUG_CFLAGS = -g
