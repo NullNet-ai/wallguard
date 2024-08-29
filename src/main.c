@@ -8,7 +8,7 @@
 #include "utils/url.h"
 #include "server_api/request_registration.h"
 #include "server_api/upload_configuration.h"
-#include "server_api/notify_configuration_reload.c"
+#include "server_api/notify_configuration_reload.h"
 
 #include "network/file_transfer.h"
 
