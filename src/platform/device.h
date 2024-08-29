@@ -1,5 +1,5 @@
-#ifndef PLATFORM_DEVICE_H
-#define PLATFORM_DEVICE_H
+#ifndef _PLATFORM_DEVICE_H_
+#define _PLATFORM_DEVICE_H_
 
 #include <utils/common.h>
 

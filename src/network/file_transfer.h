@@ -1,5 +1,5 @@
-#ifndef NETWORK_FILE_TRANSFER_H
-#define NETWORK_FILE_TRANSFER_H
+#ifndef _NETWORK_FILE_TRANSFER_H_
+#define _NETWORK_FILE_TRANSFER_H_
 
 #include <utils/common.h>
 #include <platform/ident.h>

@@ -1,5 +1,5 @@
-#ifndef UTILS_URL_H
-#define UTILS_URL_H
+#ifndef _UTILS_URL_H_
+#define _UTILS_URL_H_
 
 #include <utils/common.h>
 

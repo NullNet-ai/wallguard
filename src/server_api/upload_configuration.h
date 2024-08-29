@@ -1,5 +1,5 @@
-#ifndef SERVER_API_UPLOAD_CONFIGURATION_H
-#define SERVER_API_UPLOAD_CONFIGURATION_H
+#ifndef _SERVER_API_UPLOAD_CONFIGURATION_H_
+#define _SERVER_API_UPLOAD_CONFIGURATION_H_
 
 #include <utils/common.h>
 #include <platform/ident.h>

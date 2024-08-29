@@ -1,5 +1,5 @@
-#ifndef NETWORK_TCP_H
-#define NETWORK_TCP_H
+#ifndef _NETWORK_TCP_H_
+#define _NETWORK_TCP_H_
 
 #include <utils/common.h>
 

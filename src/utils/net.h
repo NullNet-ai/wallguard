@@ -1,5 +1,5 @@
-#ifndef UTILS_NET_H
-#define UTILS_NET_H
+#ifndef _UTILS_NET_H_
+#define _UTILS_NET_H_
 
 #include <network/http.h>
 #include <network/request.h>

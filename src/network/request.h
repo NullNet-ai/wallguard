@@ -1,5 +1,5 @@
-#ifndef NET_REQUEST_H
-#define NET_REQUEST_H
+#ifndef _NET_REQUEST_H_
+#define _NET_REQUEST_H_
 
 #include <utils/common.h>
 

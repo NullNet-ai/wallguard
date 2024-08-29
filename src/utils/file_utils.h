@@ -1,5 +1,5 @@
-#ifndef FILE_UTILS_H
-#define FILE_UTILS_H
+#ifndef _FILE_UTILS_H_
+#define _FILE_UTILS_H_
 
 #include <utils/common.h>
 

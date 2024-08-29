@@ -1,5 +1,5 @@
-#ifndef PLATFORM_IDENT_H
-#define PLATFORM_IDENT_H
+#ifndef _PLATFORM_IDENT_H_
+#define _PLATFORM_IDENT_H_
 
 /**
  * @brief Enum representing different supported platforms.
