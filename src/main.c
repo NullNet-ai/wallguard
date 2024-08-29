@@ -22,7 +22,7 @@ static boolean_t is_system_dirty() {
     struct dirent* info;
     while ((info = readdir(directory)) != NULL) {
         const char* ext = extension(info->d_name);
-        if (strcmp(ext, "dirty") == 0) {
+        if (ext && strcmp(ext, "dirty") == 0) {
             retval = WM_TRUE;
             break;
         }
