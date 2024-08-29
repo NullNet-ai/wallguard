@@ -10,7 +10,7 @@
 #include <assert.h>
 
 static const char* endpoint      = "/firewall/registration";
-static const char* body_template = "{\"uuid\":\"%s\",\"model\":\"%s\",\"version\":\"%s\"}";
+static const char* body_template = "{\"uuid\":\"%s\",\"make\":\"%s\",\"version\":\"%s\"}";
 
 boolean_t request_registration(const char* server_url, platform_info* info) {
     char      hostname[256] = {0};

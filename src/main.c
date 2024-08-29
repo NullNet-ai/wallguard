@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "utils/file_utils.h"
 #include "utils/url.h"
@@ -9,6 +10,27 @@
 #include "server_api/upload_configuration.h"
 
 #include "network/file_transfer.h"
+
+static boolean_t is_system_dirty() {
+    DIR* directory = opendir("/var/run/");
+    if (!directory) {
+        return WM_FALSE;
+    }
+
+    int8_t retval = WM_FALSE;
+
+    struct dirent* info;
+    while ((info = readdir(directory)) != NULL) {
+        const char* ext = extension(info->d_name);
+        if (strcmp(ext, "dirty") == 0) {
+            retval = WM_TRUE;
+            break;
+        }
+    }
+
+    closedir(directory);
+    return retval;
+}
 
 int test_run(const char* url, boolean_t dev) {
     platform_info* info;
@@ -60,19 +82,34 @@ int test_run(const char* url, boolean_t dev) {
     }
 
     printf("Start monitoring ...\n");
+
+    boolean_t current_state = WM_FALSE;
+
     for (;;) {
         sleep(1);
 
-        if (!file_monitor_check(&mnt)) {
-            continue;
+        if (file_monitor_check(&mnt)) {
+            printf("%s has been changed, uploading to server\n", cfg);
+
+            if (upload_configuration(url, cfg, info)) {
+                printf("Upload successful!\n");
+            } else {
+                printf("Upload failed!\n");
+            }
         }
 
-        printf("%s has been changed, uploading to server\n", cfg);
+        boolean_t state = is_system_dirty();
 
-        if (upload_configuration(url, cfg, info)) {
-            printf("Upload successful!\n");
-        } else {
-            printf("Upload failed!\n");
+        if (state ^ current_state) {
+            current_state = state;
+
+            // if dirty
+            if (current_state) {
+                continue;
+            }
+
+            printf("Configuration has been reloaded.\n");
+            // TODO: notify server
         }
     }
 

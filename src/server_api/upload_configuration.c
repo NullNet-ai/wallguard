@@ -11,7 +11,7 @@
 
 #define BUFFER_SIZE 4096
 
-static const char* endpoint = "/firewall/configuration";
+static const char* endpoint = "/history/update";
 
 boolean_t upload_configuration(const char* server_url, const char* path, platform_info* info) {
     ssize_t file_bytes = file_size(path);
