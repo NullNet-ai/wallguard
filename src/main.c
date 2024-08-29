@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <stdarg.h>
 
 #include "utils/file_utils.h"
 #include "utils/url.h"
@@ -11,6 +12,15 @@
 #include "server_api/upload_configuration.h"
 #include "server_api/notify_configuration_reload.h"
 #include "server_api/heartbeat.h"
+
+#define RED "\x1B[31m"
+#define GRN "\x1B[32m"
+#define YEL "\x1B[33m"
+#define RESET "\x1B[0m"
+
+#define LOG_STEP(text) printf(text " -> ")
+#define LOG_STEP_SUCCESS() printf(GRN "Success" RESET "\n")
+#define LOG_STEP_FAILURE() printf(RED "Failure" RESET "\n")
 
 static boolean_t is_system_dirty() {
     DIR* directory = opendir("/var/run/");
@@ -33,60 +43,43 @@ static boolean_t is_system_dirty() {
     return retval;
 }
 
-int wallmon_main(const char* url, boolean_t dev) {
-    platform_info* info;
+int wallmon_main(const char* url) {
+    LOG_STEP("Obtaining platform info");
 
-    if (!dev) {
-        info = get_platform_info();
-    } else {
-        static platform_info dummy;
-        dummy.model   = "Test";
-        dummy.version = "1.0.0";
-        dummy.type    = -1;
-
-        void* dummy_uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-        memcpy(dummy.uuid, dummy_uuid, 37);
-
-        info = &dummy;
-    }
-
+    platform_info* info = get_platform_info();
     if (info == NULL) {
-        printf("Failed to obtain platfrom info, aborting ...\n");
-        return EXIT_FAILURE;
-    }
-
-    printf("Platform:\nModel: %s\nVersion: %s\nUUID: %s\n\n", info->model, info->version, info->uuid);
-
-    if (!request_registration(url, info)) {
-        printf("Regsitration request to the central server failed, aborting ...\n");
-
-        if (!dev) {
-            release_platform_info(info);
-        }
-
+        LOG_STEP_FAILURE();
         return EXIT_FAILURE;
     } else {
-        printf("Registration successful.\n");
+        LOG_STEP_SUCCESS();
     }
 
-    const char* cfg = "/conf/config.xml";
+    printf("Model: " YEL " %s " RESET "\nVersion:" YEL " %s " RESET " \nUUID: " YEL " %s " RESET " \n", info->model,
+           info->version, info->uuid);
 
+    LOG_STEP("Initializing configuration monitor");
+
+    const char*  cfg = "/conf/config.xml";
     file_monitor mnt;
     if (!file_monitor_init(&mnt, cfg)) {
-        printf("Failed to initialize file monitor, verify file exists %s\n", cfg);
-
-        if (!dev) {
-            release_platform_info(info);
-        }
-
+        LOG_STEP_FAILURE();
+        release_platform_info(info);
         return EXIT_FAILURE;
+    } else {
+        LOG_STEP_SUCCESS();
     }
 
-    printf("Start monitoring ...\n");
+    LOG_STEP("Requesting registation");
+    if (!request_registration(url, info)) {
+        LOG_STEP_FAILURE();
+        release_platform_info(info);
+        return EXIT_FAILURE;
+    } else {
+        LOG_STEP_SUCCESS();
+    }
 
-    boolean_t current_state = WM_FALSE;
-
-    time_t last_heartbeat = 0;
+    boolean_t current_state  = WM_FALSE;
+    time_t    last_heartbeat = 0;
 
     for (;;) {
         // Send heartbeat every 60 seconds
@@ -94,21 +87,20 @@ int wallmon_main(const char* url, boolean_t dev) {
         if ((now - last_heartbeat) >= 60) {
             last_heartbeat = now;
 
-            printf("Sending heartbeat -> ");
+            LOG_STEP("Sending heartbeat");
             if (heartbeat_request(url, info)) {
-                printf("Success\n");
+                LOG_STEP_SUCCESS();
             } else {
-                printf("Failure\n");
+                LOG_STEP_FAILURE();
             }
         }
 
         if (file_monitor_check(&mnt) == 1) {
-            printf("%s has been changed, uploading to server -> ", cfg);
-
+            LOG_STEP("Notifying configuration change");
             if (upload_configuration(url, cfg, info)) {
-                printf("Success\n");
+                LOG_STEP_SUCCESS();
             } else {
-                printf("Failure\n");
+                LOG_STEP_FAILURE();
             }
         }
 
@@ -122,18 +114,18 @@ int wallmon_main(const char* url, boolean_t dev) {
                 continue;
             }
 
-            printf("Configuration has been reloaded, notifying the server -> ");
-
+            LOG_STEP("Notifying configuration reload");
             if (notify_configuration_reload(url, info)) {
-                printf("Success\n");
+                LOG_STEP_SUCCESS();
             } else {
-                printf("Failure\n");
+                LOG_STEP_FAILURE();
             }
         }
 
         sleep(1);
     }
 
+    release_platform_info(info);
     return EXIT_SUCCESS;
 }
 
@@ -146,5 +138,5 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    return wallmon_main(argv[1], WM_TRUE);
+    return wallmon_main(argv[1]);
 }
