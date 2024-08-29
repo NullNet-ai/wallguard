@@ -6,11 +6,11 @@
 
 #include "utils/file_utils.h"
 #include "utils/url.h"
+
 #include "server_api/request_registration.h"
 #include "server_api/upload_configuration.h"
 #include "server_api/notify_configuration_reload.h"
-
-#include "network/file_transfer.h"
+#include "server_api/heartbeat.h"
 
 static boolean_t is_system_dirty() {
     DIR* directory = opendir("/var/run/");
@@ -33,7 +33,7 @@ static boolean_t is_system_dirty() {
     return retval;
 }
 
-int test_run(const char* url, boolean_t dev) {
+int wallmon_main(const char* url, boolean_t dev) {
     platform_info* info;
 
     if (!dev) {
@@ -86,16 +86,29 @@ int test_run(const char* url, boolean_t dev) {
 
     boolean_t current_state = WM_FALSE;
 
-    for (;;) {
-        sleep(1);
+    time_t last_heartbeat = 0;
 
-        if (file_monitor_check(&mnt)) {
-            printf("%s has been changed, uploading to server\n", cfg);
+    for (;;) {
+        // Send heartbeat every 60 seconds
+        time_t now = time(NULL);
+        if ((now - last_heartbeat) >= 60) {
+            last_heartbeat = now;
+
+            printf("Sending heartbeat -> ");
+            if (heartbeat_request(url, info)) {
+                printf("Success\n");
+            } else {
+                printf("Failure\n");
+            }
+        }
+
+        if (file_monitor_check(&mnt) == 1) {
+            printf("%s has been changed, uploading to server -> ", cfg);
 
             if (upload_configuration(url, cfg, info)) {
-                printf("Upload successful!\n");
+                printf("Success\n");
             } else {
-                printf("Upload failed!\n");
+                printf("Failure\n");
             }
         }
 
@@ -109,14 +122,16 @@ int test_run(const char* url, boolean_t dev) {
                 continue;
             }
 
-            printf("Configuration has been reloaded.\n");
+            printf("Configuration has been reloaded, notifying the server -> ");
 
             if (notify_configuration_reload(url, info)) {
-                printf("Notification successful!\n");
+                printf("Success\n");
             } else {
-                printf("Notification failed!\n");
+                printf("Failure\n");
             }
         }
+
+        sleep(1);
     }
 
     return EXIT_SUCCESS;
@@ -131,5 +146,5 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    return test_run(argv[1], WM_FALSE);
+    return wallmon_main(argv[1], WM_TRUE);
 }
