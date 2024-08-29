@@ -47,6 +47,16 @@ const char *filename(const char *path) {
     }
 }
 
+const char *extension(const char *path) {
+    const char *dot = strrchr(path, '.');
+
+    if (dot && *(dot + 1) != '\0') {
+        return dot + 1;
+    } else {
+        return NULL;
+    }
+}
+
 boolean_t copy_file(const char *source, const char *destination) {
     if (!file_exists(source)) {
         return WM_FALSE;

@@ -154,6 +154,28 @@ static void test_read_file_content(void) {
     remove(file_path);
 }
 
+static void test_extension(void) {
+    const char *ext;
+
+    ext = extension("file.txt");
+    CU_ASSERT_STRING_EQUAL(ext, "txt");
+
+    ext = extension("hello.world.cpp");
+    CU_ASSERT_STRING_EQUAL(ext, ".cpp");
+
+    ext = extension("file");
+    CU_ASSERT_PTR_NULL(ext);
+
+    ext = extension("");
+    CU_ASSERT_PTR_NULL(ext);
+
+    ext = extension(".");
+    CU_ASSERT_PTR_NULL(ext);
+
+    ext = extension("file.");
+    CU_ASSERT_PTR_NULL(ext);
+}
+
 void add_file_utils_tests(void) {
     CU_pSuite suite = CU_add_suite("File Utils Tests", NULL, NULL);
 
@@ -166,4 +188,5 @@ void add_file_utils_tests(void) {
     CU_add_test(suite, "test_file_monitor_init", test_file_monitor_init);
     CU_add_test(suite, "test_file_monitor_check", test_file_monitor_check);
     CU_add_test(suite, "test_read_file_content", test_read_file_content);
+    CU_add_test(suite, "test_extension", test_extension);
 }

@@ -48,6 +48,16 @@ ssize_t file_size(const char *path);
 const char *filename(const char *path);
 
 /**
+ * Extracts the extension from a given file path.
+ *
+ * @param path The full file path as a string.
+ * @return A pointer to the extension within the given path.
+ *         If the path does not contain any dots,
+ *         `NULL` is returned.
+ */
+const char *extension(const char * path);
+
+/**
  * @brief Copies the content of the source file to the destination file.
  *
  * @param source The path to the source file.
