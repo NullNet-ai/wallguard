@@ -8,6 +8,7 @@
 #include "utils/url.h"
 #include "server_api/request_registration.h"
 #include "server_api/upload_configuration.h"
+#include "server_api/notify_configuration_reload.c"
 
 #include "network/file_transfer.h"
 
@@ -109,7 +110,12 @@ int test_run(const char* url, boolean_t dev) {
             }
 
             printf("Configuration has been reloaded.\n");
-            // TODO: notify server
+
+            if (notify_configuration_reload(url, info)) {
+                printf("Notification successful!\n");
+            } else {
+                printf("Notification failed!\n");
+            }
         }
     }
 
