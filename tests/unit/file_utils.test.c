@@ -161,7 +161,7 @@ static void test_extension(void) {
     CU_ASSERT_STRING_EQUAL(ext, "txt");
 
     ext = extension("hello.world.cpp");
-    CU_ASSERT_STRING_EQUAL(ext, ".cpp");
+    CU_ASSERT_STRING_EQUAL(ext, "cpp");
 
     ext = extension("file");
     CU_ASSERT_PTR_NULL(ext);
