@@ -1,4 +1,4 @@
-#include <utils/str.h>
+#include <stdlib.h>
 
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
@@ -24,7 +24,15 @@ int main() {
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
+
+    CU_ErrorCode error    = CU_get_error();
+    int          failures = CU_get_number_of_failures();
+
     CU_cleanup_registry();
 
-    return CU_get_error();
+    if (error != CUE_SUCCESS || failures > 0) {
+        return EXIT_FAILURE;
+    } else {
+        return EXIT_SUCCESS;
+    }
 }
