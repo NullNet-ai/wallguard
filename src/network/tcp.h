@@ -39,8 +39,7 @@ ssize_t tcp_read(tcp_handle* handle, uint8_t* data, size_t len);
  * @brief Ends the TCP connection.
  *
  * @param handle The TCP handle.
- * @return `WM_TRUE` on success, `WM_FALSE` on failure.
  */
-boolean_t tcp_end(tcp_handle* handle);
+void tcp_end(tcp_handle* handle);
 
 #endif

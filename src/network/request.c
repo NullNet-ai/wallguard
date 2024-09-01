@@ -18,7 +18,6 @@ boolean_t request_start(request_handle** handle, const char* hostname, int port,
 
     if (tls) {
         res = tls_start((tls_handle**)&((*handle)->hdl), hostname, port);
-
     } else {
         res = tcp_start((tcp_handle**)&((*handle)->hdl), hostname, port);
     }
@@ -54,15 +53,11 @@ ssize_t request_read(request_handle* handle, uint8_t* data, size_t len) {
     }
 }
 
-boolean_t request_end(request_handle* handle) {
-    if (!handle) {
-        return WM_FALSE;
-    }
-
+void request_end(request_handle* handle) {
     if (handle->tls) {
-        return tls_end(handle->hdl);
+        tls_end(handle->hdl);
     } else {
-        return tcp_end(handle->hdl);
+        tcp_end(handle->hdl);
     }
 
     free(handle);

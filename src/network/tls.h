@@ -39,8 +39,7 @@ ssize_t tls_read(tls_handle* handle, uint8_t* data, size_t len);
  * @brief Ends the TLS connection.
  *
  * @param handle The TLS handle.
- * @return `WM_TRUE` on success, `WM_FALSE` on failure.
  */
-boolean_t tls_end(tls_handle* handle);
+void tls_end(tls_handle* handle);
 
 #endif

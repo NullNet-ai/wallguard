@@ -61,12 +61,7 @@ ssize_t tcp_read(tcp_handle* handle, uint8_t* data, size_t len) {
     return read(handle->socket, data, len);
 }
 
-boolean_t tcp_end(tcp_handle* handle) {
-    if (!handle) {
-        return WM_FALSE;
-    }
-
+void tcp_end(tcp_handle* handle) {
     close(handle->socket);
     free(handle);
-    return WM_TRUE;
 }

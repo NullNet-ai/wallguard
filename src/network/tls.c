@@ -10,7 +10,7 @@ struct tls_handle {
 };
 
 boolean_t tls_start(tls_handle** handle, const char* hostname, int port) {
-    if (!handle || !hostname || port < 0) {
+    if (!hostname || port < 0) {
         return WM_FALSE;
     }
 
@@ -93,14 +93,8 @@ ssize_t tls_read(tls_handle* handle, uint8_t* data, size_t len) {
     return BIO_read(handle->bio, data, len);
 }
 
-boolean_t tls_end(tls_handle* handle) {
-    if (!handle) {
-        return WM_FALSE;
-    }
-
+void tls_end(tls_handle* handle) {
     BIO_free_all(handle->bio);
     SSL_CTX_free(handle->ctx);
-
     free(handle);
-    return WM_TRUE;
 }

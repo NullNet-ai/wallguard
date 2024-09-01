@@ -44,7 +44,8 @@ static size_t calculate_request_size(http_request* request, const char* path) {
 
 static boolean_t construct_request(const char* path, http_request* request, uint8_t** data, size_t* len) {
     size_t   total_bytes  = calculate_request_size(request, path);
-    uint8_t* request_data = malloc(total_bytes);
+    uint8_t* request_data = malloc(total_bytes + 1);
+
     if (!request_data) {
         return WM_FALSE;
     }

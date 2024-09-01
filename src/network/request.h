@@ -40,8 +40,7 @@ ssize_t request_read(request_handle* handle, uint8_t* data, size_t len);
  * @brief Ends the network connection.
  *
  * @param handle The request handle.
- * @return `WM_TRUE` on success, `WM_FALSE` on failure.
  */
-boolean_t request_end(request_handle* handle);
+void request_end(request_handle* handle);
 
 #endif
