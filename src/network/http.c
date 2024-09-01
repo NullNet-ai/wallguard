@@ -70,9 +70,9 @@ static boolean_t construct_request(const char* path, http_request* request, uint
 }
 
 http_response* fetch(const char* hostname, const char* path, int port, boolean_t tls, http_request* request) {
-    assert(hostname != NULL);
-    assert(path != NULL);
-    assert(port > 0);
+    if(!hostname || !path || port <= 0) {
+        return NULL;
+    }
 
     uint8_t* request_data   = NULL;
     size_t   request_length = 0;
@@ -87,6 +87,7 @@ http_response* fetch(const char* hostname, const char* path, int port, boolean_t
     }
 
     if (!request_write(handle, request_data, request_length)) {
+        request_end(handle);
         free(request_data);
         return NULL;
     }
@@ -97,10 +98,12 @@ http_response* fetch(const char* hostname, const char* path, int port, boolean_t
     size_t response_len  = 0;
 
     if (!read_response_full(handle, (uint8_t**)&response_data, &response_len, WM_TRUE)) {
+        request_end(handle);
         return NULL;
     }
 
     http_response* response = parse_response(response_data, response_len);
     free(response_data);
+    request_end(handle);
     return response;
 }
