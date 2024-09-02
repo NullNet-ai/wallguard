@@ -53,6 +53,7 @@ dkms.conf
 
 # WallMon artifacts
 wallmon
+wallmon_d
 wallmon_test
 
 # Test server's files

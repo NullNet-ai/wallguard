@@ -1,58 +1,45 @@
 SHELL := /bin/sh
 
-# Compiler and flags
+PROJECT_NAME = wallmon
+
+EXEC_RELEASE = $(PROJECT_NAME)
+EXEC_DEBUG = $(PROJECT_NAME)_d
+EXEC_TEST = $(PROJECT_NAME)_test
+
 CC = gcc
 CFLAGS = -Wall -Wextra -I./src
 LDFLAGS = -lssl -lcrypto
 
-# Platform-specific flags
 UNAME_S := $(shell uname -s)
 
-# Build type flags
 DEBUG_CFLAGS = -g
 RELEASE_CFLAGS = -O3
 
-# Source and object files
 SRCS = $(shell find src -type f -name '*.c')
 OBJS = $(patsubst src/%.c, src/%.o, $(filter-out src/main.c, $(SRCS)))
-
 MAIN_OBJ = src/main.o
 
-# Executables
-EXEC = wallmon
-EXEC_TEST = $(EXEC)_test
-
-# Default target
-all: debug
-
-# Release build
-release: CFLAGS += $(RELEASE_CFLAGS)
-release: $(EXEC)
-
-# Debug build
-debug: CFLAGS += $(DEBUG_CFLAGS)
-debug: $(EXEC)
-
-# Link the main executable
-$(EXEC): $(OBJS) $(MAIN_OBJ)
-	$(CC) $(CFLAGS) -o $(EXEC) $(OBJS) $(MAIN_OBJ) $(LDFLAGS)
-
-# Test source and object files
 TEST_SRCS = $(shell find tests -type f -name '*.c')
 TEST_OBJS = $(patsubst tests/%.c, tests/%.o, $(TEST_SRCS))
 
-# Test build
-# TODO: Test on a FreeBSD system
+debug: CFLAGS += $(DEBUG_CFLAGS)
+debug: EXECUTABLE = $(EXEC_DEBUG)
+
+release: CFLAGS += $(RELEASE_CFLAGS)
+release: EXECUTABLE = $(EXEC_RELEASE)
+
+debug release: $(OBJS) $(MAIN_OBJ)
+	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(OBJS) $(MAIN_OBJ) $(LDFLAGS)
+
+
 test: CFLAGS += -I/usr/include/CUnit -g
 test: LDFLAGS += -lcunit
-test: $(EXEC_TEST)
+debug: EXECUTABLE = $(EXEC_TEST)
 
-# Link the test executable
-$(EXEC_TEST): $(OBJS) $(TEST_OBJS)
-	$(CC) $(CFLAGS) -o $(EXEC_TEST) $(OBJS) $(TEST_OBJS) $(LDFLAGS)
+test: $(OBJS) $(TEST_OBJS)
+	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(OBJS) $(TEST_OBJS) $(LDFLAGS)
 
-# Clean up generated files
 clean:
-	rm -f $(EXEC) $(EXEC_TEST) $(OBJS) $(TEST_OBJS) $(MAIN_OBJ)
+	rm -f $(EXEC_TEST) $(EXEC_DEBUG) $(EXEC_RELEASE) $(OBJS) $(MAIN_OBJ) $(TEST_OBJS) 
 
-.PHONY: all release debug test clean
+.PHONY: release debug test clean
