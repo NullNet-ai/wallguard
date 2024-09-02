@@ -34,7 +34,7 @@ debug release: $(OBJS) $(MAIN_OBJ)
 
 test: CFLAGS += -I/usr/include/CUnit -g
 test: LDFLAGS += -lcunit
-debug: EXECUTABLE = $(EXEC_TEST)
+test: EXECUTABLE = $(EXEC_TEST)
 
 test: $(OBJS) $(TEST_OBJS)
 	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(OBJS) $(TEST_OBJS) $(LDFLAGS)
