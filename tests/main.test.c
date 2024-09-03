@@ -9,6 +9,7 @@
 #include "unit/file_utils.test.h"
 
 #include "integration/fetch.test.h"
+#include "integration/bootstrap.test.h"
 
 int main() {
     CU_initialize_registry();
@@ -21,6 +22,7 @@ int main() {
 
     // Integration
     add_fetch_tests();
+    add_bootstrap_tests();
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
