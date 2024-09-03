@@ -48,7 +48,7 @@ static boolean_t check_if_first_launch() {
 }
 
 static void initial_configuration_upload(const char* url, const char* cfg, platform_info* info) {
-    if (check_if_first_launch()) {
+    if (!check_if_first_launch()) {
         return;
     }
 
