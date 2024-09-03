@@ -97,6 +97,10 @@ boolean_t device_uuid(char* uuid, size_t size) {
         return WM_FALSE;
     }
 
+    if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
+        return WM_TRUE;
+    }
+
 #if defined(__FreeBSD__)
     if (systctl_uuid(uuid, size)) {
         return WM_TRUE;
@@ -106,10 +110,6 @@ boolean_t device_uuid(char* uuid, size_t size) {
         return WM_TRUE;
     }
 #endif
-
-    if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
-        return WM_TRUE;
-    }
 
     return WM_FALSE;
 }

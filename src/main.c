@@ -22,6 +22,25 @@
 #define LOG_STEP_SUCCESS() printf(GRN "Success" RESET "\n")
 #define LOG_STEP_FAILURE() printf(RED "Failure" RESET "\n")
 
+static boolean_t check_if_first_launch() {
+    const char lockfile = "/var/lock/wallmon.lock";
+    if (file_exists(lockfile)) {
+        return WM_TRUE;
+    }
+
+    LOG_STEP("First launch, writing lock file");
+
+    FILE* file = fopen(lockfile, "w");
+    if (file) {
+        LOG_STEP_SUCCESS();
+        fclose(file);
+    } else {
+        LOG_STEP_FAILURE();
+    }
+
+    return WM_TRUE;
+}
+
 static boolean_t is_system_dirty() {
     DIR* directory = opendir("/var/run/");
     if (!directory) {
@@ -76,6 +95,15 @@ int wallmon_main(const char* url) {
         return EXIT_FAILURE;
     } else {
         LOG_STEP_SUCCESS();
+    }
+
+    if (check_if_first_launch()) {
+        LOG_STEP("First launch, uploading configuration");
+        if (upload_configuration(url, cfg, info)) {
+            LOG_STEP_SUCCESS();
+        } else {
+            LOG_STEP_FAILURE();
+        }
     }
 
     boolean_t current_state  = WM_FALSE;
