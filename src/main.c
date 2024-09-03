@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <stdarg.h>
+#include <sys/stat.h>
 
 #include "utils/file_utils.h"
 #include "utils/url.h"
@@ -24,8 +25,13 @@
 
 static boolean_t check_if_first_launch() {
     const char* lockfile = "/var/lock/wallmon.lock";
+
     if (file_exists(lockfile)) {
         return WM_TRUE;
+    }
+
+    if (!directory_exists("/var/lock")) {
+        mkdir("/var/lock", 0777);
     }
 
     LOG_STEP("First launch, writing lock file");
@@ -73,7 +79,7 @@ int wallmon_main(const char* url) {
         LOG_STEP_SUCCESS();
     }
 
-    printf("Model: " YEL " %s " RESET "\nVersion:" YEL " %s " RESET " \nUUID: " YEL " %s " RESET " \n", info->model,
+    printf("Model:" YEL " %s" RESET "\nVersion:" YEL " %s" RESET "\nUUID:" YEL " %s" RESET "\n", info->model,
            info->version, info->uuid);
 
     LOG_STEP("Initializing configuration monitor");
