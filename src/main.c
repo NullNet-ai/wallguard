@@ -47,6 +47,24 @@ static boolean_t check_if_first_launch() {
     return WM_TRUE;
 }
 
+static void initial_configuration_upload(const char* url, const char* cfg, platform_info* info) {
+    if (check_if_first_launch()) {
+        return;
+    }
+
+    // On first lauch, we want to upload the current version of the firewall configuration
+
+    LOG_STEP("Uploading initial configuration");
+    if (upload_configuration(url, cfg, info) && notify_configuration_reload(url, info)) {
+        LOG_STEP_SUCCESS();
+    } else {
+        LOG_STEP_FAILURE();
+    }
+
+    // @TODO: Currently done in 2 steps: Upload and Confirm
+    // Probably should have its own endpoint and done in 1 API call
+}
+
 static boolean_t is_system_dirty() {
     DIR* directory = opendir("/var/run/");
     if (!directory) {
@@ -103,14 +121,7 @@ int wallmon_main(const char* url) {
         LOG_STEP_SUCCESS();
     }
 
-    if (check_if_first_launch()) {
-        LOG_STEP("First launch, uploading configuration");
-        if (upload_configuration(url, cfg, info)) {
-            LOG_STEP_SUCCESS();
-        } else {
-            LOG_STEP_FAILURE();
-        }
-    }
+    initial_configuration_upload(url, cfg, info);
 
     boolean_t current_state  = WM_FALSE;
     time_t    last_heartbeat = 0;
