@@ -23,7 +23,7 @@
 #define LOG_STEP_FAILURE() printf(RED "Failure" RESET "\n")
 
 static boolean_t check_if_first_launch() {
-    const char lockfile = "/var/lock/wallmon.lock";
+    const char* lockfile = "/var/lock/wallmon.lock";
     if (file_exists(lockfile)) {
         return WM_TRUE;
     }
