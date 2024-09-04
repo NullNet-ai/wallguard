@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 
 #include "logger/logger.h"
-
+#include "platform/bootstrap.h"
 #include "utils/file_utils.h"
 #include "utils/url.h"
 
@@ -23,43 +23,7 @@ const char* start_message =
     "  \\ V  V / (_| | | | | | | | | (_) | | | |\n"
     "   \\_/\\_/ \\__,_|_|_|_| |_| |_|\\___/|_| |_|\n";
 
-static boolean_t check_if_first_launch() {
-    const char* lockfile = "/var/lock/wallmon.lock";
-
-    if (file_exists(lockfile)) {
-        return WM_TRUE;
-    }
-
-    if (!directory_exists("/var/lock")) {
-        mkdir("/var/lock", 0777);
-    }
-
-    FILE* file = fopen(lockfile, "w");
-    if (file) {
-        WLOG_INFO("First launch detected, wrote lockfile %s", lockfile);
-        fclose(file);
-    } else {
-        WLOG_INFO("Failed to write lockfile to %s", lockfile);
-    }
-
-    return WM_TRUE;
-}
-
-static void initial_configuration_upload(const char* url, const char* cfg, platform_info* info) {
-    if (!check_if_first_launch()) {
-        return;
-    }
-
-    if (upload_configuration(url, cfg, info) && notify_configuration_reload(url, info)) {
-        WLOG_INFO("Successfully uploaded initial configuration to the server");
-    } else {
-        WLOG_ERROR("Failed to upload  initial configuration to the server");
-    }
-
-    // @TODO: Currently done in 2 steps: Upload and Confirm
-    // Probably should have its own endpoint and done in 1 API call
-}
-
+// @TODO: the criteria need to be refined
 static boolean_t is_system_dirty() {
     DIR* directory = opendir("/var/run/");
     if (!directory) {
@@ -100,15 +64,28 @@ int wallmon_main(const char* url) {
 
     WLOG_INFO("Successfully initialized configuration monitor");
 
-    if (!request_registration(url, info)) {
-        WLOG_ERROR("Registration failed.");
-        release_platform_info(info);
-        return EXIT_FAILURE;
+    if (!system_locked()) {
+        WLOG_INFO("No lockfile found, considering this as the first launch.");
+
+        if (!request_registration(url, info)) {
+            WLOG_ERROR("Registration failed.");
+            release_platform_info(info);
+            return EXIT_FAILURE;
+        }
+
+        // @TODO: Send all the data in 1 API call with FormData
+        if (upload_configuration(url, cfg, info) && notify_configuration_reload(url, info)) {
+            WLOG_INFO("Successfully uploaded initial configuration to the server");
+        } else {
+            WLOG_ERROR("Failed to upload  initial configuration to the server");
+        }
+
+        WLOG_INFO("Registration successfull");
+    } else {
+        // @TODO: Probaly here it would be beneficial to check if server's
+        // configuration matches the current. It not - resend.
+        WLOG_INFO("Lockfile found, procceeding without action");
     }
-
-    WLOG_INFO("Registration successfull");
-
-    initial_configuration_upload(url, cfg, info);
 
     boolean_t current_state  = WM_FALSE;
     time_t    last_heartbeat = 0;
