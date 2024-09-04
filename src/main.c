@@ -61,7 +61,7 @@ int wallmon_main(const char* url) {
         release_platform_info(info);
         return EXIT_FAILURE;
     }
-    
+
     WLOG_INFO("Successfully initialized configuration monitor");
 
     if (!system_locked() || !validate_lock(info)) {
@@ -89,7 +89,7 @@ int wallmon_main(const char* url) {
     } else {
         // @TODO: Probaly here it would be beneficial to check if server's
         // configuration matches the current. It not - resend.
-        WLOG_INFO("Lockfile found, procceeding without action");
+        WLOG_INFO("Lockfile found, proceeding without action");
     }
 
     boolean_t current_state  = WM_FALSE;
