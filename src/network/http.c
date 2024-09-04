@@ -1,6 +1,6 @@
+#include <logger/logger.h>
 #include <network/http.h>
 #include <network/request.h>
-
 #include <utils/net.h>
 
 #include <assert.h>
@@ -71,15 +71,19 @@ static boolean_t construct_request(const char* path, http_request* request, uint
 }
 
 http_response* fetch(const char* hostname, const char* path, int port, boolean_t tls, http_request* request) {
-    if(!hostname || !path || port <= 0) {
+    if (!hostname || !path || port <= 0) {
+        WLOG_ERROR("Fetch: invalid arguments");
         return NULL;
     }
 
     uint8_t* request_data   = NULL;
     size_t   request_length = 0;
     if (!construct_request(path, request, &request_data, &request_length)) {
+        WLOG_ERROR("Fetch: failed to construct request");
         return NULL;
     }
+
+    WLOG_INFO("Fetch: Request Data:\n%s", request_data);
 
     request_handle* handle = NULL;
     if (!request_start(&handle, hostname, port, tls)) {
@@ -103,7 +107,14 @@ http_response* fetch(const char* hostname, const char* path, int port, boolean_t
         return NULL;
     }
 
+    WLOG_INFO("Fetch: Response Data:\n%s", response_data);
+
     http_response* response = parse_response(response_data, response_len);
+
+    if (!response) {
+        WLOG_ERROR("Fetch: failed to parse response");
+    }
+
     free(response_data);
     request_end(handle);
     return response;

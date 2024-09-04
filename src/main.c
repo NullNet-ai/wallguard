@@ -6,6 +6,8 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
+#include "logger/logger.h"
+
 #include "utils/file_utils.h"
 #include "utils/url.h"
 
@@ -14,14 +16,12 @@
 #include "server_api/notify_configuration_reload.h"
 #include "server_api/heartbeat.h"
 
-#define RED "\x1B[31m"
-#define GRN "\x1B[32m"
-#define YEL "\x1B[33m"
-#define RESET "\x1B[0m"
-
-#define LOG_STEP(text) printf(text " -> ")
-#define LOG_STEP_SUCCESS() printf(GRN "Success" RESET "\n")
-#define LOG_STEP_FAILURE() printf(RED "Failure" RESET "\n")
+const char* start_message =
+    "               | | | \n"
+    " __      ____ _| | |_ __ ___   ___  _ __  \n"
+    " \\ \\ /\\ / / _` | | | '_ ` _ \\ / _ \\| '_ \\ \n"
+    "  \\ V  V / (_| | | | | | | | | (_) | | | |\n"
+    "   \\_/\\_/ \\__,_|_|_|_| |_| |_|\\___/|_| |_|\n";
 
 static boolean_t check_if_first_launch() {
     const char* lockfile = "/var/lock/wallmon.lock";
@@ -34,14 +34,12 @@ static boolean_t check_if_first_launch() {
         mkdir("/var/lock", 0777);
     }
 
-    LOG_STEP("First launch, writing lock file");
-
     FILE* file = fopen(lockfile, "w");
     if (file) {
-        LOG_STEP_SUCCESS();
+        WLOG_INFO("First launch detected, wrote lockfile %s", lockfile);
         fclose(file);
     } else {
-        LOG_STEP_FAILURE();
+        WLOG_INFO("Failed to write lockfile to %s", lockfile);
     }
 
     return WM_TRUE;
@@ -52,13 +50,10 @@ static void initial_configuration_upload(const char* url, const char* cfg, platf
         return;
     }
 
-    // On first lauch, we want to upload the current version of the firewall configuration
-
-    LOG_STEP("Uploading initial configuration");
     if (upload_configuration(url, cfg, info) && notify_configuration_reload(url, info)) {
-        LOG_STEP_SUCCESS();
+        WLOG_INFO("Successfully uploaded initial configuration to the server");
     } else {
-        LOG_STEP_FAILURE();
+        WLOG_ERROR("Failed to upload  initial configuration to the server");
     }
 
     // @TODO: Currently done in 2 steps: Upload and Confirm
@@ -87,39 +82,31 @@ static boolean_t is_system_dirty() {
 }
 
 int wallmon_main(const char* url) {
-    LOG_STEP("Obtaining platform info");
-
     platform_info* info = get_platform_info();
     if (info == NULL) {
-        LOG_STEP_FAILURE();
+        WLOG_ERROR("Failed to obtain the platform info");
         return EXIT_FAILURE;
-    } else {
-        LOG_STEP_SUCCESS();
     }
 
-    printf("Model:" YEL " %s" RESET "\nVersion:" YEL " %s" RESET "\nUUID:" YEL " %s" RESET "\n", info->model,
-           info->version, info->uuid);
-
-    LOG_STEP("Initializing configuration monitor");
+    WLOG_INFO("%10s : %s\n%10s : %s\n%10s : %s\n", "Model", info->model, "Version", info->version, "UUID", info->uuid);
 
     const char*  cfg = "/conf/config.xml";
     file_monitor mnt;
     if (!file_monitor_init(&mnt, cfg)) {
-        LOG_STEP_FAILURE();
+        WLOG_ERROR("Failed to initialize configuration monitor");
         release_platform_info(info);
         return EXIT_FAILURE;
-    } else {
-        LOG_STEP_SUCCESS();
     }
 
-    LOG_STEP("Requesting registation");
+    WLOG_INFO("Successfully initialized configuration monitor");
+
     if (!request_registration(url, info)) {
-        LOG_STEP_FAILURE();
+        WLOG_ERROR("Registration failed.");
         release_platform_info(info);
         return EXIT_FAILURE;
-    } else {
-        LOG_STEP_SUCCESS();
     }
+
+    WLOG_INFO("Registration successfull");
 
     initial_configuration_upload(url, cfg, info);
 
@@ -132,20 +119,18 @@ int wallmon_main(const char* url) {
         if ((now - last_heartbeat) >= 60) {
             last_heartbeat = now;
 
-            LOG_STEP("Sending heartbeat");
             if (heartbeat_request(url, info)) {
-                LOG_STEP_SUCCESS();
+                WLOG_INFO("Heartbeat sent");
             } else {
-                LOG_STEP_FAILURE();
+                WLOG_ERROR("Heartbeat failed");
             }
         }
 
         if (file_monitor_check(&mnt) == 1) {
-            LOG_STEP("Notifying configuration change");
             if (upload_configuration(url, cfg, info)) {
-                LOG_STEP_SUCCESS();
+                WLOG_INFO("Configuration uploaded successfully");
             } else {
-                LOG_STEP_FAILURE();
+                WLOG_ERROR("Failed to upload configuration");
             }
         }
 
@@ -159,11 +144,11 @@ int wallmon_main(const char* url) {
                 continue;
             }
 
-            LOG_STEP("Notifying configuration reload");
             if (notify_configuration_reload(url, info)) {
-                LOG_STEP_SUCCESS();
+                WLOG_INFO("Successfully notified about the configuration reload");
+
             } else {
-                LOG_STEP_FAILURE();
+                WLOG_ERROR("Reload notification failed");
             }
         }
 
@@ -174,12 +159,24 @@ int wallmon_main(const char* url) {
     return EXIT_SUCCESS;
 }
 
+#include <logger/logger.h>
+
+static void initialize_logger(void) {
+    WLOG_SET_TYPE_FLAG(LOGGER_TYPE_CONSOLE);
+    WLOG_SET_TYPE_FLAG(LOGGER_TYPE_FILE);
+
+    WLOG_SET_LOG_LEVEL(LOG_SEVERITY_INFO);
+}
+
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
 
+    initialize_logger();
+    WLOG_INFO(start_message);
+
     if (argc < 2) {
-        printf("Not enough arguments...\n");
+        WLOG_ERROR("Not enought arguments, aborting");
         return EXIT_FAILURE;
     }
 

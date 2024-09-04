@@ -5,7 +5,7 @@
       "name": "GDB: Wallmon",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/wallmon",
+      "program": "${workspaceFolder}/wallmon_d",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

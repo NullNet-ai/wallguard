@@ -1,3 +1,4 @@
+#include <logger/logger.h>
 #include <server_api/upload_configuration.h>
 #include <network/request.h>
 #include <utils/url.h>
@@ -8,14 +9,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define BUFFER_SIZE 4096
 
 static const char* endpoint = "/history/update";
 
 boolean_t upload_configuration(const char* server_url, const char* path, platform_info* info) {
+    WLOG_INFO("Start uploading %s file to the server %s", path, server_url);
+
     ssize_t file_bytes = file_size(path);
     if (file_bytes <= 0) {
+        WLOG_ERROR("Error reading %s. %s", path, strerror(errno));
         return WM_FALSE;
     }
 
@@ -24,6 +29,7 @@ boolean_t upload_configuration(const char* server_url, const char* path, platfor
     boolean_t tls  = WM_FALSE;
 
     if (!parse_url(server_url, hostname, sizeof(hostname), NULL, 0, &port, &tls)) {
+        WLOG_ERROR("Failed to parse URL: %s", server_url);
         return WM_FALSE;
     }
 
@@ -70,6 +76,7 @@ boolean_t upload_configuration(const char* server_url, const char* path, platfor
 
     FILE* file = fopen(path, "rb");
     if (!file) {
+        WLOG_ERROR("Error reading %s. %s", path, strerror(errno));
         request_end(handle);
         return WM_FALSE;
     }
@@ -100,10 +107,14 @@ boolean_t upload_configuration(const char* server_url, const char* path, platfor
 
     request_end(handle);
 
+    WLOG_INFO("Server response:\n%s", response_data);
+
     http_response* response = parse_response(response_data, response_length);
+
     free(response_data);
 
     if (!response) {
+        WLOG_ERROR("Failed to parse server's response:\n%s", response_data);
         return WM_FALSE;
     }
 

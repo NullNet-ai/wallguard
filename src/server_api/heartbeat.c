@@ -1,3 +1,4 @@
+#include <logger/logger.h>
 #include <server_api/heartbeat.h>
 #include <utils/url.h>
 #include <utils/net.h>
@@ -11,6 +12,7 @@ boolean_t heartbeat_request(const char* server_url, platform_info* info) {
     boolean_t tls           = WM_FALSE;
 
     if (!parse_url(server_url, hostname, sizeof(hostname), NULL, 0, &port, &tls)) {
+        WLOG_ERROR("Failed to parse URL: %s", server_url);
         return WM_FALSE;
     }
 

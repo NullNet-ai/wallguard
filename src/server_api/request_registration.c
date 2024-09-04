@@ -1,3 +1,4 @@
+#include <logger/logger.h>
 #include <server_api/request_registration.h>
 #include <network/http.h>
 #include <utils/url.h>
@@ -18,6 +19,7 @@ boolean_t request_registration(const char* server_url, platform_info* info) {
     boolean_t tls           = WM_FALSE;
 
     if (!parse_url(server_url, hostname, sizeof(hostname), NULL, 0, &port, &tls)) {
+        WLOG_ERROR("Failed to parse URL: %s", server_url);
         return WM_FALSE;
     }
 
