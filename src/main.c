@@ -61,11 +61,15 @@ int wallmon_main(const char* url) {
         release_platform_info(info);
         return EXIT_FAILURE;
     }
-
+    
     WLOG_INFO("Successfully initialized configuration monitor");
 
-    if (!system_locked()) {
-        WLOG_INFO("No lockfile found, considering this as the first launch.");
+    if (!system_locked() || !validate_lock(info)) {
+        WLOG_INFO("No lockfile found or lockfile is invalid, considering this as the first launch.");
+
+        // @TODO: Send all the data in 1 API call:
+        // - Registraion
+        // - Required data
 
         if (!request_registration(url, info)) {
             WLOG_ERROR("Registration failed.");
@@ -73,14 +77,15 @@ int wallmon_main(const char* url) {
             return EXIT_FAILURE;
         }
 
-        // @TODO: Send all the data in 1 API call with FormData
+        WLOG_INFO("Registration successfull");
+
         if (upload_configuration(url, cfg, info) && notify_configuration_reload(url, info)) {
             WLOG_INFO("Successfully uploaded initial configuration to the server");
         } else {
             WLOG_ERROR("Failed to upload  initial configuration to the server");
         }
 
-        WLOG_INFO("Registration successfull");
+        lock_system(info);
     } else {
         // @TODO: Probaly here it would be beneficial to check if server's
         // configuration matches the current. It not - resend.
