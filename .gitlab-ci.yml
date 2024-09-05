@@ -9,4 +9,3 @@ main_build:
       - FreeBSD
     script:
       - echo "Hello World"
-      - dmidecode -s system-uuid
