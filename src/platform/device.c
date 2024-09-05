@@ -50,48 +50,6 @@ __exit:
     return retval;
 }
 
-#if defined(__FreeBSD__)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-
-static boolean_t systctl_uuid(char* uuid, size_t size) {
-    int mib[2];
-
-    mib[0] = CTL_KERN;
-    mib[1] = KERN_HOSTUUID;
-
-    size_t    len    = size;
-    boolean_t result = sysctl(mib, ARRAY_SIZE(mib), uuid, &len, NULL, 0) != -1;
-
-    uuid[clamp(len, 0, size - 1)] = '\0';
-    return result;
-}
-#endif
-
-#if defined(__linux__)
-static const char l_uuid_filename[] = "/sys/class/dmi/id/product_uuid";
-
-static boolean_t linux_uuid(char* uuid, size_t size) {
-    if (!file_exists(l_uuid_filename)) {
-        return WM_FALSE;
-    }
-
-    FILE* file = fopen(l_uuid_filename, "r");
-    if (!file) {
-        return WM_FALSE;
-    }
-
-    size_t len                    = fread(uuid, sizeof(char), size, file);
-    uuid[clamp(len, 0, size - 1)] = '\0';
-
-    len                           = strcspn(uuid, "\n");
-    uuid[clamp(len, 0, size - 1)] = '\0';
-
-    fclose(file);
-    return WM_TRUE;
-}
-#endif
-
 boolean_t device_uuid(char* uuid, size_t size) {
     if (size == 0 || !uuid) {
         return WM_FALSE;
@@ -100,16 +58,6 @@ boolean_t device_uuid(char* uuid, size_t size) {
     if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
         return WM_TRUE;
     }
-
-#if defined(__FreeBSD__)
-    if (systctl_uuid(uuid, size)) {
-        return WM_TRUE;
-    }
-#elif defined(__linux__)
-    if (linux_uuid(uuid, size)) {
-        return WM_TRUE;
-    }
-#endif
 
     return WM_FALSE;
 }

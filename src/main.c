@@ -17,6 +17,7 @@
 #include "server_api/heartbeat.h"
 
 const char* start_message =
+    "\n"
     "               | | | \n"
     " __      ____ _| | |_ __ ___   ___  _ __  \n"
     " \\ \\ /\\ / / _` | | | '_ ` _ \\ / _ \\| '_ \\ \n"
@@ -65,31 +66,35 @@ int wallmon_main(const char* url) {
     WLOG_INFO("Successfully initialized configuration monitor");
 
     if (!system_locked() || !validate_lock(info)) {
-        WLOG_INFO("No lockfile found or lockfile is invalid, considering this as the first launch.");
-
-        // @TODO: Send all the data in 1 API call:
-        // - Registraion
-        // - Required data
+        WLOG_INFO("No lock file found or lock file is invalid, considering this as the first launch.");
 
         if (!request_registration(url, info)) {
-            WLOG_ERROR("Registration failed.");
+            WLOG_ERROR("Registration failed, aborting ...");
             release_platform_info(info);
             return EXIT_FAILURE;
         }
 
         WLOG_INFO("Registration successfull");
 
-        if (upload_configuration(url, cfg, info) && notify_configuration_reload(url, info)) {
-            WLOG_INFO("Successfully uploaded initial configuration to the server");
-        } else {
-            WLOG_ERROR("Failed to upload  initial configuration to the server");
+        if (lock_system(info)) {
+            WLOG_ERROR("Failed wto write the lock file, aborting ...");
+            release_platform_info(info);
+            return EXIT_FAILURE;
         }
 
-        lock_system(info);
+        WLOG_INFO("Successfully written the lock file");
     } else {
-        // @TODO: Probaly here it would be beneficial to check if server's
-        // configuration matches the current. It not - resend.
-        WLOG_INFO("Lockfile found, proceeding without action");
+        WLOG_INFO("Lock file found, proceeding without action");
+    }
+
+    // Send to the server the most recent configuration
+
+    if (!upload_configuration(url, cfg, info, WM_TRUE)) {
+        WLOG_ERROR("Failed to upload the intial configuration to the server, aborting ... ");
+        release_platform_info(info);
+        return EXIT_FAILURE;
+    } else {
+        WLOG_INFO("Successfully uploaded the initial configuration to the server.");
     }
 
     boolean_t current_state  = WM_FALSE;
@@ -108,15 +113,16 @@ int wallmon_main(const char* url) {
             }
         }
 
+            boolean_t state = is_system_dirty();
+
         if (file_monitor_check(&mnt) == 1) {
-            if (upload_configuration(url, cfg, info)) {
+            if (upload_configuration(url, cfg, info, !state)) {
                 WLOG_INFO("Configuration uploaded successfully");
             } else {
                 WLOG_ERROR("Failed to upload configuration");
             }
         }
 
-        boolean_t state = is_system_dirty();
 
         if (state ^ current_state) {
             current_state = state;

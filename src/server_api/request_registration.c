@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-static const char* endpoint      = "/firewall/registration";
+static const char* endpoint      = "/wallmon/registration";
 static const char* body_template = "{\"uuid\":\"%s\",\"make\":\"%s\",\"version\":\"%s\"}";
 
 boolean_t request_registration(const char* server_url, platform_info* info) {

@@ -13,10 +13,10 @@
 
 #define BUFFER_SIZE 4096
 
-static const char* endpoint = "/history/update";
+static const char* endpoint = "/wallmon/cfg/upload";
 
-boolean_t upload_configuration(const char* server_url, const char* path, platform_info* info) {
-    WLOG_INFO("Start uploading %s file to the server %s", path, server_url);
+boolean_t upload_configuration(const char* server_url, const char* path, platform_info* info, boolean_t applied) {
+    WLOG_INFO("Uploading %s file to the server %s. UUID: %s, Applied: %d", path, server_url, info->uuid, applied);
 
     ssize_t file_bytes = file_size(path);
     if (file_bytes <= 0) {
@@ -45,9 +45,15 @@ boolean_t upload_configuration(const char* server_url, const char* path, platfor
     char initial_headers[BUFFER_SIZE];
     snprintf(initial_headers, sizeof(initial_headers),
              "--%s\r\n"
+             "Content-Disposition: form-data; name=\"uuid\"\r\n\r\n"
+             "%s\r\n"
+             "--%s\r\n"
+             "Content-Disposition: form-data; name=\"applied\"\r\n\r\n"
+             "%d\r\n"
+             "--%s\r\n"
              "Content-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
              "Content-Type: application/octet-stream\r\n\r\n",
-             boundary, filename(path));
+             boundary, info->uuid, boundary, applied, boundary, filename(path));
 
     char end_boundary[BUFFER_SIZE] = {0};
     snprintf(end_boundary, sizeof(end_boundary), "\r\n--%s--\r\n", boundary);
@@ -60,9 +66,8 @@ boolean_t upload_configuration(const char* server_url, const char* path, platfor
              "Host: %s\r\n"
              "Content-Type: multipart/form-data; boundary=%s\r\n"
              "Content-Length: %zd\r\n"
-             "X-Wallmon-UUID: %s\r\n"
              "Connection: close\r\n\r\n",
-             endpoint, hostname, boundary, content_length, info->uuid);
+             endpoint, hostname, boundary, content_length);
 
     if (request_write(handle, (uint8_t*)request, strlen(request)) < 0) {
         request_end(handle);

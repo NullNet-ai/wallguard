@@ -15,9 +15,11 @@
  * @param info       A pointer to a platform_info structure that contains
  *                   platform-specific data that will be included in the
  *                   upload request.
+ * @param applied    A value indicating if the configuration file
+ *                   is applied or being pending.
  *
  * @return The function returns `WM_TRUE` if the upload is successful, and `WM_FALSE` if it fails.
  */
-boolean_t upload_configuration(const char* server_url, const char* path, platform_info* info);
+boolean_t upload_configuration(const char* server_url, const char* path, platform_info* info, boolean_t applied);
 
 #endif

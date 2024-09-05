@@ -4,7 +4,11 @@
 #include <utils/net.h>
 #include <network/http.h>
 
-static const char* endpoint = "/heartbeat/";
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+static const char* endpoint = "/wallmon/heartbeat";
 
 boolean_t heartbeat_request(const char* server_url, platform_info* info) {
     char      hostname[256] = {0};
@@ -16,16 +20,27 @@ boolean_t heartbeat_request(const char* server_url, platform_info* info) {
         return WM_FALSE;
     }
 
+    char buffer[64];
+    memset(buffer, 0, sizeof(buffer));
+    snprintf(buffer, sizeof(buffer) - 1, "{\"uuid\":\"%s\"}", info->uuid);
+
+    size_t body_len = strlen(buffer);
+
+    char buf[32];
+    snprintf(buf, sizeof(buf) - 1, "%ld", body_len);
+
     http_header headers[] = {
+        {.key = "Content-Type", .value = "application/json"},
+        {.key = "Accept", .value = "application/json"},
         {.key = "Connection", .value = "close"},
+        {.key = "Content-Length", .value = buf},
         {.key = "Host", .value = hostname},
-        {.key = "X-Wallmon-UUID", .value = info->uuid},
     };
 
     http_request request;
     request.method        = HTTP_METHOD_POST;
-    request.body          = NULL;
-    request.body_len      = 0;
+    request.body          = buffer;
+    request.body_len      = body_len;
     request.headers       = headers;
     request.headers_count = ARRAY_SIZE(headers);
 
