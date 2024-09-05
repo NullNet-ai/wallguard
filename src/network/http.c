@@ -64,6 +64,8 @@ static boolean_t construct_request(const char* path, http_request* request, uint
         memcpy(request_data + strlen((char*)request_data), request->body, request->body_len);
     }
 
+    request_data[total_bytes] = 0;
+
     *data = request_data;
     *len  = total_bytes;
 
