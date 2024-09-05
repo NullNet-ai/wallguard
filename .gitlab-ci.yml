@@ -1,0 +1,31 @@
+stages:
+  - build
+  - test
+
+image: ubuntu:latest
+
+before_script:
+  - apt-get update
+  - apt-get install -y build-essential valgrind gcc
+
+build-debug:
+  stage: build
+  script:
+    - make debug
+
+build-release:
+  stage: build
+  script:
+    - make release
+
+build-tests:
+  stage: build
+  script:
+    - make test
+
+tests-job:
+  stage: test
+  script:
+    - valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 wallmon_test
+  dependencies:
+    - build-tests
