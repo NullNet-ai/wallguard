@@ -9,7 +9,7 @@ main_build:
     tags: 
       - FreeBSD
     script:
-      - make debug release test
+      - gmake debug release test
 
 main_test:
     stage: test
