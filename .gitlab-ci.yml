@@ -1,7 +1,18 @@
 stages:
+  - prepare
   - build
   - test
   
+main_prepare:
+  only:
+    - main
+  stage: prepare
+  tags:
+    - FreeBSD
+  script:
+    - pkg install -y cunit
+    - pkg install -y valgrind
+
 main_build:
     only:
       - main
