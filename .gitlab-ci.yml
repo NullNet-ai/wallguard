@@ -10,8 +10,8 @@ main_prepare:
   tags:
     - FreeBSD
   script:
-    - pkg install -y cunit
-    - pkg install -y valgrind
+    - pkg info | grep cunit
+    - pkg infi | grep valgrind
 
 main_build:
     only:
