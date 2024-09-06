@@ -1,26 +1,41 @@
 stages:
-  - prepare
   - build
   - test
-  
-main_prepare:
-  only:
-    - main
-  stage: prepare
-  tags:
-    - FreeBSD
-  script:
-    - pkg info | grep cunit
-    - pkg info | grep valgrind
 
-main_build:
+main_build_debug:
     only:
       - main
     stage: build
     tags: 
       - FreeBSD
     script:
-      - gmake debug release test
+      - gmake debug
+
+main_build_release:
+    only:
+      - main
+    stage: build
+    tags: 
+      - FreeBSD
+    script:
+      - gmake release
+    artifacts:
+      paths:
+        - "wallmon"
+      expire_in: 1 hour
+
+main_build_tests:
+    only:
+      - main
+    stage: build
+    tags: 
+      - FreeBSD
+    script:
+      - gmake test
+    artifacts:
+      paths:
+        - "wallmon_test"
+      expire_in: 1 hour
 
 main_test:
     stage: test
@@ -28,7 +43,5 @@ main_test:
       - main
     tags:
       - FreeBSD
-    dependencies:
-      - main_build
     script:
-      valgrind --leak-check=full --error-exitcode=1 wallmon_test
+      - valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./wallmon_test
