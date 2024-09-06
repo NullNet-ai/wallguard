@@ -11,7 +11,7 @@ main_prepare:
     - FreeBSD
   script:
     - pkg info | grep cunit
-    - pkg infi | grep valgrind
+    - pkg info | grep valgrind
 
 main_build:
     only:
