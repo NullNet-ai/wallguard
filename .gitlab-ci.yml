@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   
 main_build:
     only:
@@ -8,4 +9,15 @@ main_build:
     tags: 
       - FreeBSD
     script:
-      - echo "Hello World"
+      - make debug release test
+
+main_test:
+    stage: test
+    only:
+      - main
+    tags:
+      - FreeBSD
+    dependencies:
+      - main_build
+    script:
+      valgrind --leak-check=full --error-exitcode=1 wallmon_test
