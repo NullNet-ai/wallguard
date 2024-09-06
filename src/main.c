@@ -13,7 +13,6 @@
 
 #include "server_api/request_registration.h"
 #include "server_api/upload_configuration.h"
-#include "server_api/notify_configuration_reload.h"
 #include "server_api/heartbeat.h"
 
 const char* start_message =
@@ -24,7 +23,7 @@ const char* start_message =
     "  \\ V  V / (_| | | | | | | | | (_) | | | |\n"
     "   \\_/\\_/ \\__,_|_|_|_| |_| |_|\\___/|_| |_|\n";
 
-// @TODO: the criteria need to be refined
+// @TODO: Refine the criteria
 static boolean_t is_system_dirty() {
     DIR* directory = opendir("/var/run/");
     if (!directory) {
@@ -76,7 +75,7 @@ int wallmon_main(const char* url) {
 
         WLOG_INFO("Registration successfull");
 
-        if (lock_system(info)) {
+        if (!lock_system(info)) {
             WLOG_ERROR("Failed wto write the lock file, aborting ...");
             release_platform_info(info);
             return EXIT_FAILURE;
@@ -87,18 +86,17 @@ int wallmon_main(const char* url) {
         WLOG_INFO("Lock file found, proceeding without action");
     }
 
-    // Send to the server the most recent configuration
+    boolean_t current_state  = is_system_dirty();
+    time_t    last_heartbeat = 0;
 
-    if (!upload_configuration(url, cfg, info, WM_TRUE)) {
+    // Send to the server the most recent configuration
+    if (!upload_configuration(url, cfg, info, !is_system_dirty())) {
         WLOG_ERROR("Failed to upload the intial configuration to the server, aborting ... ");
         release_platform_info(info);
         return EXIT_FAILURE;
     } else {
         WLOG_INFO("Successfully uploaded the initial configuration to the server.");
     }
-
-    boolean_t current_state  = WM_FALSE;
-    time_t    last_heartbeat = 0;
 
     for (;;) {
         // Send heartbeat every 60 seconds
@@ -113,7 +111,7 @@ int wallmon_main(const char* url) {
             }
         }
 
-            boolean_t state = is_system_dirty();
+        boolean_t state = is_system_dirty();
 
         if (file_monitor_check(&mnt) == 1) {
             if (upload_configuration(url, cfg, info, !state)) {
@@ -123,20 +121,19 @@ int wallmon_main(const char* url) {
             }
         }
 
-
         if (state ^ current_state) {
             current_state = state;
 
-            // if dirty
             if (current_state) {
+                // System has just became dirty
                 continue;
             }
+            WLOG_INFO("Configraution reload detected");
 
-            if (notify_configuration_reload(url, info)) {
-                WLOG_INFO("Successfully notified about the configuration reload");
-
+            if (upload_configuration(url, cfg, info, !state)) {
+                WLOG_INFO("Configuration uploaded successfully");
             } else {
-                WLOG_ERROR("Reload notification failed");
+                WLOG_ERROR("Failed to upload configuration");
             }
         }
 
@@ -147,19 +144,13 @@ int wallmon_main(const char* url) {
     return EXIT_SUCCESS;
 }
 
-#include <logger/logger.h>
-
 static void initialize_logger(void) {
     WLOG_SET_TYPE_FLAG(LOGGER_TYPE_CONSOLE);
     WLOG_SET_TYPE_FLAG(LOGGER_TYPE_FILE);
-
     WLOG_SET_LOG_LEVEL(LOG_SEVERITY_INFO);
 }
 
 int main(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
-
     initialize_logger();
     WLOG_INFO(start_message);
 
