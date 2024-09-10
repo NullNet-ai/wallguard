@@ -2,11 +2,36 @@
 #include <server_api/heartbeat.h>
 #include <utils/url.h>
 #include <utils/net.h>
+#include <utils/str.h>
 #include <network/http.h>
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+static void parse_action(http_response* response, server_action* action) {
+    if (!response || !response->body || response->body_len == 0) {
+        *action = SACTION_NONE;
+        return;
+    }
+
+    long retval;
+    if (!string_to_integer(response->body, &retval, 10)) {
+        WLOG_ERROR("Failed to parse response body as a number. Setting action to None. Body: %s", response->body);
+        *action = SACTION_NONE;
+        return;
+    }
+
+    switch (retval) {
+        case 0:
+            *action = SACTION_REUPLOAD;
+            break;
+        default:
+            WLOG_ERROR("Unsupported action %d, setting to None", retval);
+            *action = SACTION_NONE;
+            break;
+    }
+}
 
 static const char* endpoint = "/wallmon/heartbeat";
 
@@ -51,10 +76,9 @@ boolean_t heartbeat_request(const char* server_url, platform_info* info, server_
 
     boolean_t success = response->status_code >= 200 && response->status_code < 300;
 
-    // if (response->body && response->body_len > 0) {
-    //     atoi(response->body);
-    //     strtol(response->body, NULL, 10);
-    // }
+    if (success) {
+        parse_action(response, action);
+    }
 
     release_response(response);
     return success;

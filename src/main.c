@@ -98,22 +98,28 @@ int wallmon_main(const char* url) {
         WLOG_INFO("Successfully uploaded the initial configuration to the server.");
     }
 
+    server_action saction = SACTION_NONE;
+
     for (;;) {
         // Send heartbeat every 60 seconds
         time_t now = time(NULL);
         if ((now - last_heartbeat) >= 60) {
             last_heartbeat = now;
 
-            if (heartbeat_request(url, info)) {
+            if (heartbeat_request(url, info, &saction)) {
                 WLOG_INFO("Heartbeat sent");
             } else {
                 WLOG_ERROR("Heartbeat failed");
             }
         }
 
+        if (saction != SACTION_NONE) {
+            WLOG_INFO("Received a server action request %d", saction);
+        }
+
         boolean_t state = is_system_dirty();
 
-        if (file_monitor_check(&mnt) == 1) {
+        if (file_monitor_check(&mnt) == 1 || saction == SACTION_REUPLOAD) {
             if (upload_configuration(url, cfg, info, !state)) {
                 WLOG_INFO("Configuration uploaded successfully");
             } else {
@@ -138,6 +144,8 @@ int wallmon_main(const char* url) {
         }
 
         sleep(1);
+        // Reset action variable
+        saction = SACTION_NONE;
     }
 
     release_platform_info(info);
