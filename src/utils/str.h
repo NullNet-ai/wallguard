@@ -11,8 +11,17 @@
  * the string and the null terminator.
  * @param len The length of the random string to generate.
  */
-void generate_random_string(char *buf, size_t len);
+void generate_random_string(char* buf, size_t len);
 
+/**
+ * @brief Converts a string to a long integer.
+ *
+ * @param  str    The input string that represents a number.
+ * @param  number A pointer to a long where the converted value will be stored.
+ * @param  base   The base to use for the conversion.
+ *
+ * @return        Returns `WM_TRUE` if the conversion succeeds, otherwise returns `WM_FALSE`.
+ */
 boolean_t string_to_integer(const char* str, long* number, int base);
 
 #endif
