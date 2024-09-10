@@ -2,6 +2,7 @@
 #define _UTILS_STR_H_
 
 #include <stddef.h>
+#include <utils/common.h>
 
 /**
  * @brief Generate a random string.
@@ -11,5 +12,7 @@
  * @param len The length of the random string to generate.
  */
 void generate_random_string(char *buf, size_t len);
+
+boolean_t string_to_integer(const char* str, long* number, int base);
 
 #endif

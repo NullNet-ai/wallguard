@@ -6,7 +6,7 @@
 
 static const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-void generate_random_string(char *buf, size_t len) {
+void generate_random_string(char* buf, size_t len) {
     if (!buf) {
         return;
     }
@@ -18,4 +18,19 @@ void generate_random_string(char *buf, size_t len) {
     }
 
     buf[len - 1] = '\0';
+}
+
+boolean_t string_to_integer(const char* str, long* number, int base) {
+    char* endptr = NULL;
+    *number      = strtol(str, &endptr, base);
+
+    if (endptr == str) {
+        return WM_FALSE;
+    }
+
+    if (*endptr != 0) {
+        return WM_FALSE;
+    }
+
+    return WM_TRUE;
 }

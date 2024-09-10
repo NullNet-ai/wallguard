@@ -10,7 +10,7 @@
 
 static const char* endpoint = "/wallmon/heartbeat";
 
-boolean_t heartbeat_request(const char* server_url, platform_info* info) {
+boolean_t heartbeat_request(const char* server_url, platform_info* info, server_action* action) {
     char      hostname[256] = {0};
     int       port          = 0;
     boolean_t tls           = WM_FALSE;
@@ -50,6 +50,12 @@ boolean_t heartbeat_request(const char* server_url, platform_info* info) {
     }
 
     boolean_t success = response->status_code >= 200 && response->status_code < 300;
+
+    // if (response->body && response->body_len > 0) {
+    //     atoi(response->body);
+    //     strtol(response->body, NULL, 10);
+    // }
+
     release_response(response);
     return success;
 }
