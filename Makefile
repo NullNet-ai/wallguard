@@ -8,7 +8,7 @@ EXEC_TEST = $(PROJECT_NAME)_test
 
 CC = gcc
 CFLAGS = -Wall -Wextra -I./src
-LDFLAGS = -lssl -lcrypto
+LDFLAGS = -lssl -lcrypto -lcurl
 
 UNAME_S := $(shell uname -s)
 

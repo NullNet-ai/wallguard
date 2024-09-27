@@ -13,7 +13,8 @@
 
 #include "server_api/request_registration.h"
 #include "server_api/upload_configuration.h"
-#include "server_api/heartbeat.h"
+
+#include "server_requests.h"
 
 const char* start_message =
     "\n"
@@ -98,28 +99,22 @@ int wallmon_main(const char* url) {
         WLOG_INFO("Successfully uploaded the initial configuration to the server.");
     }
 
-    server_action saction = SACTION_NONE;
-
     for (;;) {
         // Send heartbeat every 60 seconds
         time_t now = time(NULL);
         if ((now - last_heartbeat) >= 60) {
             last_heartbeat = now;
 
-            if (heartbeat_request(url, info, &saction)) {
+            if (wallmon_heartbeat(url, info)) {
                 WLOG_INFO("Heartbeat sent");
             } else {
                 WLOG_ERROR("Heartbeat failed");
             }
         }
 
-        if (saction != SACTION_NONE) {
-            WLOG_INFO("Received a server action request %d", saction);
-        }
-
         boolean_t state = is_system_dirty();
 
-        if (file_monitor_check(&mnt) == 1 || saction == SACTION_REUPLOAD) {
+        if (file_monitor_check(&mnt) == 1) {
             if (upload_configuration(url, cfg, info, !state)) {
                 WLOG_INFO("Configuration uploaded successfully");
             } else {
@@ -144,8 +139,6 @@ int wallmon_main(const char* url) {
         }
 
         sleep(1);
-        // Reset action variable
-        saction = SACTION_NONE;
     }
 
     release_platform_info(info);
@@ -159,13 +152,12 @@ static void initialize_logger(void) {
 }
 
 int main(int argc, char** argv) {
-    initialize_logger();
-    WLOG_INFO(start_message);
-
     if (argc < 2) {
-        WLOG_ERROR("Not enought arguments, aborting");
+        printf("Not enought arguments, aborting\n");
         return EXIT_FAILURE;
     }
 
+    printf("%s\n", start_message);
+    initialize_logger();
     return wallmon_main(argv[1]);
 }
