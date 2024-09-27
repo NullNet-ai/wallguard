@@ -9,10 +9,6 @@
 #include "logger/logger.h"
 #include "platform/bootstrap.h"
 #include "utils/file_utils.h"
-#include "utils/url.h"
-
-#include "server_api/request_registration.h"
-#include "server_api/upload_configuration.h"
 
 #include "server_requests.h"
 
@@ -68,7 +64,7 @@ int wallmon_main(const char* url) {
     if (!system_locked() || !validate_lock(info)) {
         WLOG_INFO("No lock file found or lock file is invalid, considering this as the first launch.");
 
-        if (!request_registration(url, info)) {
+        if (!wallmom_registration(url, info)) {
             WLOG_ERROR("Registration failed, aborting ...");
             release_platform_info(info);
             return EXIT_FAILURE;
@@ -91,7 +87,7 @@ int wallmon_main(const char* url) {
     time_t    last_heartbeat = 0;
 
     // Send to the server the most recent configuration
-    if (!upload_configuration(url, cfg, info, !is_system_dirty())) {
+    if (!wallmon_uploadcfg(url, cfg, info, !is_system_dirty())) {
         WLOG_ERROR("Failed to upload the intial configuration to the server, aborting ... ");
         release_platform_info(info);
         return EXIT_FAILURE;
@@ -115,7 +111,7 @@ int wallmon_main(const char* url) {
         boolean_t state = is_system_dirty();
 
         if (file_monitor_check(&mnt) == 1) {
-            if (upload_configuration(url, cfg, info, !state)) {
+            if (wallmon_uploadcfg(url, cfg, info, !state)) {
                 WLOG_INFO("Configuration uploaded successfully");
             } else {
                 WLOG_ERROR("Failed to upload configuration");
@@ -131,7 +127,7 @@ int wallmon_main(const char* url) {
             }
             WLOG_INFO("Configraution reload detected");
 
-            if (upload_configuration(url, cfg, info, !state)) {
+            if (wallmon_uploadcfg(url, cfg, info, !state)) {
                 WLOG_INFO("Configuration uploaded successfully");
             } else {
                 WLOG_ERROR("Failed to upload configuration");
@@ -141,6 +137,7 @@ int wallmon_main(const char* url) {
         sleep(1);
     }
 
+    // @TODO: Unreachable code
     release_platform_info(info);
     return EXIT_SUCCESS;
 }

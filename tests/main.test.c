@@ -4,11 +4,8 @@
 #include <CUnit/Basic.h>
 
 #include "unit/string_utils.test.h"
-#include "unit/url_utils.test.h"
-#include "unit/net_utils.test.h"
 #include "unit/file_utils.test.h"
 
-#include "integration/fetch.test.h"
 #include "integration/bootstrap.test.h"
 
 int main() {
@@ -16,12 +13,9 @@ int main() {
 
     // Unit
     add_string_utils_tests();
-    add_url_utils_tests();
-    add_net_utils_tests();
     add_file_utils_tests();
 
     // Integration
-    add_fetch_tests();
     add_bootstrap_tests();
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
