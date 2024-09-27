@@ -22,11 +22,12 @@ static inline boolean_t util_curl_set_url(CURL* curl, const char* hostname, cons
     return total >= 0 && (size_t)total < sizeof(buffer);
 }
 
-static inline boolean_t util_is_status_ok(int status) { return status > 200 && status < 299; }
+static inline boolean_t util_is_status_ok(int status) { return status >= 200 && status < 299; }
 
 boolean_t wallmon_heartbeat(const char* server_url, platform_info* info) {
     CURL* curl = curl_easy_init();
     if (!curl) {
+        WLOG_ERROR("Failed to initialize CURL");
         return WM_FALSE;
     }
 
