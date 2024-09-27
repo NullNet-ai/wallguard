@@ -38,10 +38,10 @@ boolean_t wallmom_registration(const char* server_url, platform_info* info) {
         WLOG_WARN("URL: %s is too long.");
     }
 
-    char body[1024];
-    memset(body, 0, sizeof(body));
-    snprintf(body, sizeof(body), "{\"uuid\":\"%s\",\"make\":\"%s\",\"version\":\"%s\"}", info->uuid, info->model,
-             info->version);
+    char body[1024] = {0};
+    char* template  = "{\"uuid\":\"%s\",\"make\":\"%s\",\"version\":\"%s\"}";
+    snprintf(body, sizeof(body), template, info->uuid, info->model, info->version);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
 
     char*              hvalues[] = {"Content-Type: application/json"};
     struct curl_slist* headers   = util_curl_set_headers(curl, hvalues, ARRAY_SIZE(hvalues));
