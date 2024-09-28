@@ -107,18 +107,29 @@ boolean_t wallmon_uploadcfg(const char* server_url, const char* path, platform_i
         WLOG_WARN("URL: %s is too long.");
     }
 
-    struct curl_httppost* formpost = NULL;
-    struct curl_httppost* lastptr  = NULL;
+    struct curl_mime* multipart = curl_mime_init(curl);
+    if (!multipart) {
+        WLOG_ERROR("Failed to init mime");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
 
-    curl_formadd(&formpost, &lastptr, CURLFORM_COPYNAME, "file", CURLFORM_FILE, path, CURLFORM_END);
-    curl_formadd(&formpost, &lastptr, CURLFORM_COPYNAME, "uuid", CURLFORM_PTRCONTENTS, info->uuid, CURLFORM_END);
+    struct curl_mimepart* part = curl_mime_addpart(multipart);
+    curl_mime_name(part, "file");
+    curl_mime_filedata(part, path);
+
+    part = curl_mime_addpart(multipart);
+    curl_mime_name(part, "uuid");
+    curl_mime_data(part, info->uuid, CURL_ZERO_TERMINATED);
 
     char buffer[2] = {0};
     snprintf(buffer, sizeof(buffer), "%d", applied ? 1 : 0);
-    curl_formadd(&formpost, &lastptr, CURLFORM_COPYNAME, "applied", CURLFORM_PTRCONTENTS, buffer, CURLFORM_END);
 
-    curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
+    part = curl_mime_addpart(multipart);
+    curl_mime_name(part, "applied");
+    curl_mime_data(part, buffer, CURL_ZERO_TERMINATED);
 
+    curl_easy_setopt(curl, CURLOPT_MIMEPOST, multipart);
     CURLcode code = curl_easy_perform(curl);
 
     int http_status = 0;
@@ -128,7 +139,6 @@ boolean_t wallmon_uploadcfg(const char* server_url, const char* path, platform_i
         WLOG_ERROR("Request failed. %s", curl_easy_strerror(code));
     }
 
-    curl_formfree(formpost);
     curl_easy_cleanup(curl);
 
     return util_is_status_ok(http_status);
