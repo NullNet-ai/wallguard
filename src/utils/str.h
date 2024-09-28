@@ -5,15 +5,6 @@
 #include <utils/common.h>
 
 /**
- * @brief Generate a random string.
- *
- * @param buf A pointer to the buffer where the random string will be stored. The buffer must be large enough to hold
- * the string and the null terminator.
- * @param len The length of the random string to generate.
- */
-void generate_random_string(char* buf, size_t len);
-
-/**
  * @brief Converts a string to a long integer.
  *
  * @param  str    The input string that represents a number.
