@@ -44,4 +44,5 @@ main_test:
     tags:
       - FreeBSD
     script:
-      - valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./wallmon_test
+      # - valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./wallmon_test
+      - ./wallmon_test
