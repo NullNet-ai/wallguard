@@ -1,4 +1,5 @@
 #include "server_requests.h"
+#include "cli_args.h"
 #include <curl/curl.h>
 #include <logger/logger.h>
 #include <string.h>
@@ -23,19 +24,39 @@ static inline boolean_t util_curl_set_url(CURL* curl, const char* hostname, cons
     return total >= 0 && (size_t)total < sizeof(buffer);
 }
 
+static int curl_perform_request(CURL* curl) {
+    if (cli_args.interface) {
+        curl_easy_setopt(curl, CURLOPT_INTERFACE, cli_args.interface);
+    }
+
+    CURLcode code = curl_easy_perform(curl);
+
+    int http_status = -1;
+
+    if (code == CURLE_OK) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_status);
+    } else {
+        WALLMON_LOG_ERROR("Request failed. %s", curl_easy_strerror(code));
+    }
+
+    return http_status;
+}
+
 static inline boolean_t util_is_status_ok(int status) { return status >= 200 && status < 299; }
 
-boolean_t wallmom_registration(const char* server_url, platform_info* info) {
+boolean_t wallmom_registration(platform_info* info) {
     CURL* curl = curl_easy_init();
     if (!curl) {
-        WLOG_ERROR("Failed to initialize CURL");
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
         return WM_FALSE;
     }
 
     curl_easy_setopt(curl, CURLOPT_POST, 1);
 
-    if (!util_curl_set_url(curl, server_url, "/wallmon/registration")) {
-        WLOG_WARN("URL: %s is too long.");
+    if (!util_curl_set_url(curl, cli_args.server_url, "/wallmon/registration")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
     }
 
     char body[1024] = {0};
@@ -46,14 +67,7 @@ boolean_t wallmom_registration(const char* server_url, platform_info* info) {
     char*              hvalues[] = {"Content-Type: application/json"};
     struct curl_slist* headers   = util_curl_set_headers(curl, hvalues, ARRAY_SIZE(hvalues));
 
-    CURLcode code = curl_easy_perform(curl);
-
-    int http_status = 0;
-    if (code == CURLE_OK) {
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_status);
-    } else {
-        WLOG_ERROR("Request failed. %s", curl_easy_strerror(code));
-    }
+    int http_status = curl_perform_request(curl);
 
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
@@ -61,17 +75,19 @@ boolean_t wallmom_registration(const char* server_url, platform_info* info) {
     return util_is_status_ok(http_status);
 }
 
-boolean_t wallmon_heartbeat(const char* server_url, platform_info* info) {
+boolean_t wallmon_heartbeat(platform_info* info) {
     CURL* curl = curl_easy_init();
     if (!curl) {
-        WLOG_ERROR("Failed to initialize CURL");
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
         return WM_FALSE;
     }
 
     curl_easy_setopt(curl, CURLOPT_POST, 1);
 
-    if (!util_curl_set_url(curl, server_url, "/wallmon/heartbeat")) {
-        WLOG_WARN("URL: %s is too long.");
+    if (!util_curl_set_url(curl, cli_args.server_url, "/wallmon/heartbeat")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
     }
 
     char body_buffer[64] = {0};
@@ -81,14 +97,7 @@ boolean_t wallmon_heartbeat(const char* server_url, platform_info* info) {
     char*              hvalues[] = {"Content-Type: application/json"};
     struct curl_slist* headers   = util_curl_set_headers(curl, hvalues, ARRAY_SIZE(hvalues));
 
-    CURLcode code = curl_easy_perform(curl);
-
-    int http_status = 0;
-    if (code == CURLE_OK) {
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_status);
-    } else {
-        WLOG_ERROR("Request failed. %s", curl_easy_strerror(code));
-    }
+    int http_status = curl_perform_request(curl);
 
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
@@ -96,20 +105,22 @@ boolean_t wallmon_heartbeat(const char* server_url, platform_info* info) {
     return util_is_status_ok(http_status);
 }
 
-boolean_t wallmon_uploadcfg(const char* server_url, const char* path, platform_info* info, boolean_t applied) {
+boolean_t wallmon_uploadcfg(const char* path, platform_info* info, boolean_t applied) {
     CURL* curl = curl_easy_init();
     if (!curl) {
-        WLOG_ERROR("Failed to initialize CURL");
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
         return WM_FALSE;
     }
 
-    if (!util_curl_set_url(curl, server_url, "/wallmon/cfg/upload")) {
-        WLOG_WARN("URL: %s is too long.");
+    if (!util_curl_set_url(curl, cli_args.server_url, "/wallmon/cfg/upload")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
     }
 
     struct curl_mime* multipart = curl_mime_init(curl);
     if (!multipart) {
-        WLOG_ERROR("Failed to init mime");
+        WALLMON_LOG_ERROR("Failed to initialize curl mime");
         curl_easy_cleanup(curl);
         return WM_FALSE;
     }
@@ -130,14 +141,8 @@ boolean_t wallmon_uploadcfg(const char* server_url, const char* path, platform_i
     curl_mime_data(part, buffer, CURL_ZERO_TERMINATED);
 
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, multipart);
-    CURLcode code = curl_easy_perform(curl);
 
-    int http_status = 0;
-    if (code == CURLE_OK) {
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_status);
-    } else {
-        WLOG_ERROR("Request failed. %s", curl_easy_strerror(code));
-    }
+    int http_status = curl_perform_request(curl);
 
     curl_easy_cleanup(curl);
 
