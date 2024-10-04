@@ -18,10 +18,10 @@ typedef enum {
 typedef enum {
     LOGGER_TYPE_CONSOLE = 1 << 0,
     LOGGER_TYPE_FILE    = 1 << 1,
+    LOGGER_TYPE_SYSLOG  = 1 << 2,
 } logger_type_flag;
 
 /**
- * @var log_level
  * @brief Global log severity level.
  */
 extern log_severity log_level;

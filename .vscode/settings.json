@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.cpp": "cpp",
+        "syslog.h": "c"
+    }
+}

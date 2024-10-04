@@ -17,9 +17,9 @@ static void write_log_label(FILE* stream, const char* severity, const char* colo
     size_t len = strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", time);
 
     if (len > 0 && len < sizeof(buffer)) {
-        fprintf(stream, "[" CLR_MAGENTA "%s" CLR_RESET " : %s%s%s]\n", buffer, color, severity, CLR_RESET);
+        fprintf(stream, "[" CLR_MAGENTA "%s" CLR_RESET " : %s%s%s] ", buffer, color, severity, CLR_RESET);
     } else {
-        fprintf(stream, "[" CLR_MAGENTA "%ld" CLR_RESET " : %s%s%s]\n", tsmp, color, severity, CLR_RESET);
+        fprintf(stream, "[" CLR_MAGENTA "%ld" CLR_RESET " : %s%s%s] ", tsmp, color, severity, CLR_RESET);
     }
 }
 

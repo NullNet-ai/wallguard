@@ -7,7 +7,7 @@
 #include <time.h>
 
 #define MAX_LOG_FILES 5
-#define MAX_FILE_SIZE 1024 * 1024
+#define MAX_FILE_SIZE 1024 * 1024 * 10
 
 #define LOG_FILENAME "/var/log/wallmon.log"
 
@@ -42,9 +42,9 @@ static void write_log_label(FILE *stream, const char *severity) {
     size_t len = strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", time);
 
     if (len > 0 && len < sizeof(buffer)) {
-        fprintf(stream, "[%s : %s]\n", buffer, severity);
+        fprintf(stream, "[%s : %s] ", buffer, severity);
     } else {
-        fprintf(stream, "[%ld : %s]\n", timestamp, severity);
+        fprintf(stream, "[%ld : %s] ", timestamp, severity);
     }
 }
 
