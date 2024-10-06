@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
+#include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -167,9 +169,45 @@ static void validate_interface() {
     }
 }
 
+static void validate_uuid() {
+    if (!cli_args.uuid) {
+        return;
+    }
+
+    if (strlen(cli_args.uuid) != 36) {
+        WALLMON_LOG_WARN("%s is not a valid UUID, settings to default.", cli_args.uuid);
+        cli_args.uuid = NULL;
+        return;
+    }
+
+    boolean_t valid = WM_TRUE;
+
+    for (size_t i = 0; i < 36; ++i) {
+        if (i == 8 || i == 13 || i == 18 || i == 23) {
+            if (cli_args.uuid[i] != '-') {
+                valid = WM_FALSE;
+                break;
+            }
+        } else {
+            if (!isxdigit(cli_args.uuid[i])) {
+                valid = WM_FALSE;
+                break;
+            }
+        }
+    }
+
+    if (!valid) {
+        WALLMON_LOG_WARN("%s is not a valid UUID, settings to default.", cli_args.uuid);
+        cli_args.uuid = NULL;
+    }
+}
+
 int main(int argc, char** argv) {
     parse_cli_arguments(argc, argv);
     logger_init(argv[0], LOGGER_TYPE_CONSOLE | LOGGER_TYPE_FILE | LOGGER_TYPE_SYSLOG, LOG_SEVERITY_INFO);
+
     validate_interface();
+    validate_uuid();
+
     return wallmon_main();
 }

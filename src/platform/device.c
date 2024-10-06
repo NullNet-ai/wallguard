@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cli_args.h"
+
 static size_t clamp(size_t value, size_t min, size_t max) {
     if (value < min) {
         return min;
@@ -53,6 +55,14 @@ __exit:
 boolean_t device_uuid(char* uuid, size_t size) {
     if (size == 0 || !uuid) {
         return WM_FALSE;
+    }
+
+    if (cli_args.uuid) {
+        size_t len = size - 1 <= 36 ? size - 1 : 36;
+        strncpy(uuid, cli_args.uuid, len);
+
+        uuid[len] = 0;
+        return WM_TRUE;
     }
 
     if (dmidecode_available() && dmidecode_uuid(uuid, size)) {
