@@ -38,10 +38,22 @@ static platform_type get_platform_type() {
 
 static const char *get_platform_version(platform_type platform) {
     switch (platform) {
-        case PLATFORM_OPNSENSE:
-            return NULL;
+        case PLATFORM_OPNSENSE: {
+            char *str = (char *)read_file_content("/usr/local/opnsense/version/base");
 
-        case PLATFORM_PFSENSE:
+            // I forgot what this piece is for
+            if (str != NULL) {
+                size_t len = strcspn(str, "\n");
+                size_t tln = strlen(str);
+
+                if (len < tln) {
+                    str[len] = '\0';
+                }
+            }
+
+            return str;
+        }
+        case PLATFORM_PFSENSE: {
             char *str = (char *)read_file_content("/etc/version");
 
             if (str != NULL) {
@@ -54,6 +66,7 @@ static const char *get_platform_version(platform_type platform) {
             }
 
             return str;
+        }
         default:
             return NULL;
     }
