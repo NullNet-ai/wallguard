@@ -2,7 +2,7 @@
 #define _SERVER_REQUESTS_H_
 
 #include <utils/common.h>
-#include <platform/ident.h>
+#include "platform.h"
 
 /**
  * @brief Sends a request to the central server to register the current platform.

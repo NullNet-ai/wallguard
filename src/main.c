@@ -1,20 +1,19 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <stdarg.h>
 #include <sys/stat.h>
-#include <net/if.h>
 
 #include "logger/logger.h"
-#include "platform/bootstrap.h"
 #include "utils/file_utils.h"
-
+#include "utils/str.h"
+#include "utils/net.h"
 #include "server_requests.h"
 #include "cli_args.h"
+#include "config.h"
 
 // @TODO: Refine the criteria
 static boolean_t is_system_dirty() {
@@ -45,9 +44,6 @@ int wallmon_main() {
         return EXIT_FAILURE;
     }
 
-    WALLMON_LOG_INFO("%10s : %s\n%10s : %s\n%10s : %s\n", "Model", info->model, "Version", info->version, "UUID",
-                     info->uuid);
-
     const char*  cfg = "/conf/config.xml";
     file_monitor mnt;
     if (!file_monitor_init(&mnt, cfg)) {
@@ -58,27 +54,27 @@ int wallmon_main() {
 
     WALLMON_LOG_INFO("Successfully initialized configuration monitor");
 
-    if (!system_locked() || !validate_lock(info)) {
-        WALLMON_LOG_INFO("No lock file found or lock file is invalid, considering this as the first launch.");
+    // if (!system_locked() || !validate_lock(info)) {
+    //     WALLMON_LOG_INFO("No lock file found or lock file is invalid, considering this as the first launch.");
 
-        if (!wallmom_registration(info)) {
-            WALLMON_LOG_ERROR("Registration failed, aborting ...");
-            release_platform_info(info);
-            return EXIT_FAILURE;
-        }
+    //     if (!wallmom_registration(info)) {
+    //         WALLMON_LOG_ERROR("Registration failed, aborting ...");
+    //         release_platform_info(info);
+    //         return EXIT_FAILURE;
+    //     }
 
-        WALLMON_LOG_INFO("Registration successfull");
+    //     WALLMON_LOG_INFO("Registration successfull");
 
-        if (!lock_system(info)) {
-            WALLMON_LOG_ERROR("Failed wto write the lock file, aborting ...");
-            release_platform_info(info);
-            return EXIT_FAILURE;
-        }
+    //     if (!lock_system(info)) {
+    //         WALLMON_LOG_ERROR("Failed wto write the lock file, aborting ...");
+    //         release_platform_info(info);
+    //         return EXIT_FAILURE;
+    //     }
 
-        WALLMON_LOG_INFO("Successfully written the lock file");
-    } else {
-        WALLMON_LOG_INFO("Lock file found, proceeding without action");
-    }
+    //     WALLMON_LOG_INFO("Successfully written the lock file");
+    // } else {
+    //     WALLMON_LOG_INFO("Lock file found, proceeding without action");
+    // }
 
     // Send to the server the most recent configuration
     if (!wallmon_uploadcfg(cfg, info, !is_system_dirty())) {
@@ -94,7 +90,7 @@ int wallmon_main() {
 
     for (;;) {
         time_t now = time(NULL);
-        if ((now - last_heartbeat) >= cli_args.heartbeat_period) {
+        if ((now - last_heartbeat) >= cfg_get_heartbeat_interval()) {
             last_heartbeat = now;
 
             if (wallmon_heartbeat(info)) {
@@ -134,71 +130,45 @@ int wallmon_main() {
     }
 
     // @TODO: Unreachable code
-    logger_cleanup();
     release_platform_info(info);
     return EXIT_SUCCESS;
 }
 
-static void validate_interface() {
-    if (!cli_args.interface) {
-        return;
-    }
-
-    struct if_nameindex* if_index = if_nameindex();
-
-    if (if_index == NULL) {
-        WALLMON_LOG_WARN("Failed to obtain list of interfaces, setting interface to default");
-        cli_args.interface = NULL;
-        return;
-    }
-
-    boolean_t found = WM_FALSE;
-
-    for (struct if_nameindex* iface = if_index; iface->if_index != 0 || iface->if_name != NULL; ++iface) {
-        if (strcmp(iface->if_name, cli_args.interface) == 0) {
-            found = WM_TRUE;
-            break;
-        }
-    }
-
-    if_freenameindex(if_index);
-
-    if (!found) {
-        WALLMON_LOG_WARN("%s interface has not been found, setting to default.", cli_args.interface);
-        cli_args.interface = NULL;
+static void validate_system_uuid() {
+    const char* system_uuid = cfg_get_system_uuid();
+    if (!is_valid_uuid(system_uuid)) {
+        WALLMON_LOG_ERROR("Provided System ID '%s' is not a valid UUID", system_uuid);
+        cfg_deinit();
+        logger_cleanup();
+        exit(EXIT_FAILURE);
     }
 }
 
-static void validate_uuid() {
-    if (!cli_args.uuid) {
+static void validate_network_interface() {
+    const char* ifname = cfg_get_netwrok_interface();
+
+    if (!ifname) {
+        // Not specified, use system's default
         return;
     }
 
-    if (strlen(cli_args.uuid) != 36) {
-        WALLMON_LOG_WARN("%s is not a valid UUID, settings to default.", cli_args.uuid);
-        cli_args.uuid = NULL;
-        return;
+    if (!is_interface_valid(ifname)) {
+        WALLMON_LOG_ERROR("Provided network interface '%s' does not exist", ifname);
+        cfg_deinit();
+        logger_cleanup();
+        exit(EXIT_FAILURE);
     }
+}
 
-    boolean_t valid = WM_TRUE;
+static void validate_platform() {
+    const char*   platform      = cfg_get_platform();
+    platform_type platform_type = get_platform_type();
 
-    for (size_t i = 0; i < 36; ++i) {
-        if (i == 8 || i == 13 || i == 18 || i == 23) {
-            if (cli_args.uuid[i] != '-') {
-                valid = WM_FALSE;
-                break;
-            }
-        } else {
-            if (!isxdigit(cli_args.uuid[i])) {
-                valid = WM_FALSE;
-                break;
-            }
-        }
-    }
-
-    if (!valid) {
-        WALLMON_LOG_WARN("%s is not a valid UUID, settings to default.", cli_args.uuid);
-        cli_args.uuid = NULL;
+    if (platform_type == PLATFORM_UNSUPPORTED) {
+        WALLMON_LOG_ERROR("Provided plaform '%s' is not supported", platform);
+        cfg_deinit();
+        logger_cleanup();
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -206,8 +176,17 @@ int main(int argc, char** argv) {
     parse_cli_arguments(argc, argv);
     logger_init(argv[0], LOGGER_TYPE_CONSOLE | LOGGER_TYPE_FILE | LOGGER_TYPE_SYSLOG, LOG_SEVERITY_INFO);
 
-    validate_interface();
-    validate_uuid();
+    cfg_init(cli_args.config_filename);
+    cfg_validate();
 
-    return wallmon_main();
+    validate_system_uuid();
+    validate_network_interface();
+    validate_platform();
+
+    // int exit_code = wallmon_main();
+    int exit_code = 0;
+
+    cfg_deinit();
+    logger_cleanup();
+    return exit_code;
 }

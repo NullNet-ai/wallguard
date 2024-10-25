@@ -6,7 +6,6 @@
 #include "unit/string_utils.test.h"
 #include "unit/file_utils.test.h"
 
-#include "integration/bootstrap.test.h"
 
 int main() {
     CU_initialize_registry();
@@ -15,8 +14,6 @@ int main() {
     add_string_utils_tests();
     add_file_utils_tests();
 
-    // Integration
-    add_bootstrap_tests();
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();

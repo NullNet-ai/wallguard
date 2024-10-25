@@ -4,10 +4,7 @@
 #include <stdint.h>
 
 struct cli_args {
-    const char* server_url;
-    const char* interface;
-    const char* uuid;
-    int32_t     heartbeat_period;
+    const char* config_filename;
 };
 
 extern struct cli_args cli_args;

@@ -15,4 +15,13 @@
  */
 boolean_t string_to_integer(const char* str, long* number, int base);
 
+/**
+ * @brief Checks if the given string is a valid UUID.
+ *
+ * @param  value  The string to be validated as a UUID.
+ *
+ * @return        Returns `WM_TRUE` if the string is a valid UUID, otherwise returns `WM_FALSE`.
+ */
+boolean_t is_valid_uuid(const char* value);
+
 #endif

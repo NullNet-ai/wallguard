@@ -1,35 +1,19 @@
-#include <platform/ident.h>
-#include <platform/device.h>
-
 #include <utils/file_utils.h>
-#include <utils/common.h>
+
+#include "platform.h"
+#include "config.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-/**
- * @brief List of files and directories that are likely to be found on a pfSense system
- */
-static const char *pfsense_files[] = {
-    "/conf/config.xml", "/usr/local/pfSense", "/etc/platform", "/etc/version", "/usr/local/sbin/pfSsh.php",
-};
+platform_type get_platform_type() {
+    const char *platform = cfg_get_platform();
 
-/**
- * @brief List of files and directories that are likely to be found on a OPNsense system
- */
-static const char *opnsense_files[] = {
-    "/conf/config.xml",
-    "/usr/local/opnsense",
-    "/usr/local/opnsense/version",
-    "/usr/local/sbin/pluginctl",
-};
-
-static platform_type get_platform_type() {
-    if (files_exist(pfsense_files, ARRAY_SIZE(pfsense_files))) {
+    if (strcmp(platform, "pfSense") == 0) {
         return PLATFORM_PFSENSE;
     }
 
-    if (files_exist(opnsense_files, ARRAY_SIZE(opnsense_files))) {
+    if (strcmp(platform, "OPNsense") == 0) {
         return PLATFORM_OPNSENSE;
     }
 
@@ -72,25 +56,9 @@ static const char *get_platform_version(platform_type platform) {
     }
 }
 
-static const char *get_platform_model(platform_type platform) {
-    switch (platform) {
-        case PLATFORM_PFSENSE:
-            return "pfSense";
-        case PLATFORM_OPNSENSE:
-            return "OPNsense";
-        default:
-            return NULL;
-    }
-}
-
 platform_info *get_platform_info() {
     platform_type type = get_platform_type();
     if (type == PLATFORM_UNSUPPORTED) {
-        return NULL;
-    }
-
-    const char *model = get_platform_model(type);
-    if (!model) {
         return NULL;
     }
 
@@ -106,14 +74,10 @@ platform_info *get_platform_info() {
     }
 
     info->type    = type;
-    info->model   = model;
     info->version = version;
 
-    if (!device_uuid(info->uuid, sizeof(info->uuid))) {
-        free((void *)version);
-        free((void *)info);
-        return WM_FALSE;
-    }
+    info->model = cfg_get_platform();
+    info->uuid  = cfg_get_system_uuid();
 
     return info;
 }

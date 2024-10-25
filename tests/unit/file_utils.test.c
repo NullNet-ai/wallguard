@@ -25,23 +25,6 @@ static void test_file_exists(void) {
     remove(existing_file);
 }
 
-static void test_files_exist(void) {
-    const char *files[] = {"/tmp/file1.txt", "/tmp/file2.txt", "/tmp/file3.txt"};
-
-    for (size_t i = 0; i < 3; ++i) {
-        FILE *file = fopen(files[i], "w");
-        fclose(file);
-    }
-
-    CU_ASSERT_TRUE(files_exist(files, 3));
-
-    remove(files[1]);
-    CU_ASSERT_FALSE(files_exist(files, 3));
-
-    remove(files[0]);
-    remove(files[2]);
-}
-
 static void test_directory_exists(void) {
     const char *existing_dir     = "/tmp/test_dir";
     const char *non_existing_dir = "/tmp/non_existing_dir";
@@ -180,7 +163,6 @@ void add_file_utils_tests(void) {
     CU_pSuite suite = CU_add_suite("File Utils Tests", NULL, NULL);
 
     CU_add_test(suite, "test_file_exists", test_file_exists);
-    CU_add_test(suite, "test_files_exist", test_files_exist);
     CU_add_test(suite, "test_directory_exists", test_directory_exists);
     CU_add_test(suite, "test_file_size", test_file_size);
     CU_add_test(suite, "test_filename", test_filename);
