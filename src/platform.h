@@ -1,5 +1,5 @@
-#ifndef _PLATFORM_IDENT_H_
-#define _PLATFORM_IDENT_H_
+#ifndef _PLATFORM_H_
+#define _PLATFORM_H_
 
 /**
  * @brief Enum representing different supported platforms.
@@ -15,10 +15,17 @@ typedef enum {
  */
 typedef struct {
     platform_type type;
-    const char*   model;
     const char*   version;
-    char          uuid[37];  // 36 chars for formatter UUID string + 1 for null-terminator
+    const char*   model;
+    const char*   uuid;
 } platform_info;
+
+/**
+ * @brief Determines the platform type based on the configuration value.
+ * 
+ * @return `platform_type` enum value
+ */
+platform_type get_platform_type();
 
 /**
  * Identifies the current platform by examining specific system characteristics.
@@ -36,4 +43,4 @@ platform_info* get_platform_info();
  */
 void release_platform_info(platform_info* info);
 
-#endif  // PLATFORM_IDENT_H
+#endif

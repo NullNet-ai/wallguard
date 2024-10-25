@@ -9,16 +9,6 @@
 
 boolean_t file_exists(const char *path) { return access(path, F_OK) == 0; }
 
-boolean_t files_exist(const char *files[], size_t count) {
-    for (size_t i = 0; i < count; ++i) {
-        if (!file_exists(files[i])) {
-            return WM_FALSE;
-        }
-    }
-
-    return WM_TRUE;
-}
-
 boolean_t directory_exists(const char *path) {
     struct stat statbuf;
 

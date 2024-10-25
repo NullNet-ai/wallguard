@@ -1,5 +1,5 @@
 #include "server_requests.h"
-#include "cli_args.h"
+#include "config.h"
 #include <curl/curl.h>
 #include <logger/logger.h>
 #include <string.h>
@@ -25,9 +25,14 @@ static inline boolean_t util_curl_set_url(CURL* curl, const char* hostname, cons
 }
 
 static int curl_perform_request(CURL* curl) {
-    if (cli_args.interface) {
-        curl_easy_setopt(curl, CURLOPT_INTERFACE, cli_args.interface);
-    }
+    // @TODO
+    // if (cli_args.interface) {
+    //     curl_easy_setopt(curl, CURLOPT_INTERFACE, cli_args.interface);
+    // }
+
+    // @TODO
+    // No self-signed certificates
+    // Certificates verifications
 
     CURLcode code = curl_easy_perform(curl);
 
@@ -53,7 +58,7 @@ boolean_t wallmom_registration(platform_info* info) {
 
     curl_easy_setopt(curl, CURLOPT_POST, 1);
 
-    if (!util_curl_set_url(curl, cli_args.server_url, "/wallmon/registration")) {
+    if (!util_curl_set_url(curl, cfg_get_server_url(), "/wallmon/registration")) {
         WALLMON_LOG_ERROR("URL: %s is too long.");
         curl_easy_cleanup(curl);
         return WM_FALSE;
@@ -84,7 +89,7 @@ boolean_t wallmon_heartbeat(platform_info* info) {
 
     curl_easy_setopt(curl, CURLOPT_POST, 1);
 
-    if (!util_curl_set_url(curl, cli_args.server_url, "/wallmon/heartbeat")) {
+    if (!util_curl_set_url(curl, cfg_get_server_url(), "/wallmon/heartbeat")) {
         WALLMON_LOG_ERROR("URL: %s is too long.");
         curl_easy_cleanup(curl);
         return WM_FALSE;
@@ -112,7 +117,7 @@ boolean_t wallmon_uploadcfg(const char* path, platform_info* info, boolean_t app
         return WM_FALSE;
     }
 
-    if (!util_curl_set_url(curl, cli_args.server_url, "/wallmon/cfg/upload")) {
+    if (!util_curl_set_url(curl, cfg_get_server_url(), "/wallmon/cfg/upload")) {
         WALLMON_LOG_ERROR("URL: %s is too long.");
         curl_easy_cleanup(curl);
         return WM_FALSE;

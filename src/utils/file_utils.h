@@ -12,15 +12,6 @@
 boolean_t file_exists(const char *path);
 
 /**
- * @brief Checks if all of the files in the given array exist.
- *
- * @param files An array of file paths to check.
- * @param count The number of files in the array.
- * @return `WM_TRUE` if all of the files exist, otherwise `WM_FALSE`.
- */
-boolean_t files_exist(const char *files[], size_t count);
-
-/**
  * @brief Checks if a directory exists.
  *
  * @param path The path of the directory to check.
