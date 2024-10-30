@@ -31,7 +31,7 @@ static void handle_signal(int signal) {
 
 static void setup_sighandler(void) {
     if (signal(SIGINT, handle_signal)) {
-        WALLMON_LOG_WARN("Failed to seup SIGINT handler");
+        WALLMON_LOG_WARN("Failed to setup SIGINT handler");
     }
 }
 
@@ -52,15 +52,14 @@ static boolean_t backup_and_upload(const char* session_token, platform_info* inf
     return WM_TRUE;
 }
 
-static void heartbeat(time_t* last_heartbeat, platform_info* info) {
+static void heartbeat(time_t* last_heartbeat, const char* session_token) {
     time_t diff = time(NULL) - *last_heartbeat;
 
     if (diff < cfg_get_heartbeat_interval()) {
         return;
     }
 
-    // @TODO: Change API to use session_token
-    if (!wallmon_heartbeat(info)) {
+    if (!wallmon_heartbeat(session_token)) {
         WALLMON_LOG_ERROR("heartbeat failed");
     }
 
@@ -100,7 +99,7 @@ static int main_loop(platform_info* info) {
 
     time_t last_heartbeat = 0;
     while (running) {
-        heartbeat(&last_heartbeat, info);
+        heartbeat(&last_heartbeat, session_token);
 
         boolean_t is_dirty = info->dirty;
         update_platform_info(info);
@@ -180,7 +179,7 @@ int main(int argc, char** argv) {
 
     platform_info* info = get_platform_info();
     if (info) {
-        exitcode = main_loop(&info);
+        exitcode = main_loop(info);
         release_platform_info(info);
     } else {
         WALLMON_LOG_ERROR("Failed to obtain platform info, aborting ...");

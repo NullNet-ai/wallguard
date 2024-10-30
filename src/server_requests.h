@@ -41,10 +41,10 @@ boolean_t wallmon_fetch_key(const char* session_token, char** public_key);
 /**
  * @brief Sends a heartbeat signal to the central server to indicate that the system is still active.
  *
- * @param info A pointer to a `platform_info` st/ructure containing details about the current platform.
+ * @param session_token A pointer to a `session_token`.
  * @return `WM_TRUE` if the request is successful, `WM_FALSE` otherwise.
  */
-boolean_t wallmon_heartbeat(platform_info* info);
+boolean_t wallmon_heartbeat(const char* session_token);
 
 /**
  * @brief Uploads a configuration file to the server.

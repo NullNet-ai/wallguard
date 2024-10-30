@@ -67,6 +67,7 @@ static int curl_perform_request(CURL* curl) {
 
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
 
     CURLcode code = curl_easy_perform(curl);
 
@@ -251,15 +252,13 @@ boolean_t wallmon_upload_configuration(const char* session_token, const char* pa
     return util_is_status_ok(http_status);
 }
 
-boolean_t wallmon_heartbeat(platform_info* info) {
+boolean_t wallmon_heartbeat(const char* session_token) {
+    UTIL_DEFINE_AUTH_HEADER(auth_header, session_token);
     UTIL_CURL_INIT(curl, "/wallmon/heartbeat");
     curl_easy_setopt(curl, CURLOPT_POST, 1);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
 
-    char body_buffer[64] = {0};
-    snprintf(body_buffer, sizeof(body_buffer) - 1, "{\"uuid\":\"%s\"}", info->uuid);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body_buffer);
-
-    char*              hvalues[] = {"Content-Type: application/json"};
+    char*              hvalues[] = {auth_header};
     struct curl_slist* headers   = util_curl_set_headers(curl, hvalues, ARRAY_SIZE(hvalues));
 
     int http_status = curl_perform_request(curl);
