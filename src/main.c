@@ -3,9 +3,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <stdarg.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "logger/logger.h"
 #include "utils/file_utils.h"
@@ -14,123 +14,114 @@
 #include "server_requests.h"
 #include "cli_args.h"
 #include "config.h"
+#include "crypto.h"
+#include "upload_sequence.h"
 
-// @TODO: Refine the criteria
-static boolean_t is_system_dirty() {
-    DIR* directory = opendir("/var/run/");
-    if (!directory) {
+static boolean_t running = WM_TRUE;
+
+static const char backups_directory[] = "/var/backups/wallmon";
+static const char configurationfile[] = "/conf/config.xml";
+
+static void handle_signal(int signal) {
+    if (signal == SIGINT) {
+        WALLMON_LOG_INFO("Received SIGINT, terminating..");
+        running = WM_FALSE;
+    }
+}
+
+static void setup_sighandler(void) {
+    if (signal(SIGINT, handle_signal)) {
+        WALLMON_LOG_WARN("Failed to seup SIGINT handler");
+    }
+}
+
+static boolean_t backup_and_upload(const char* session_token, platform_info* info) {
+    char backup_filename[256] = {0};
+    snprintf(backup_filename, sizeof(backup_filename), "%s/%ld_%s.xml", backups_directory, time(NULL), info->uuid);
+
+    if (!copy_file(configurationfile, backup_filename)) {
+        WALLMON_LOG_ERROR("backup_and_upload: Failed to copy %s to %s", configurationfile, backup_filename);
         return WM_FALSE;
     }
 
-    int8_t retval = WM_FALSE;
-
-    struct dirent* info;
-    while ((info = readdir(directory)) != NULL) {
-        const char* ext = extension(info->d_name);
-        if (ext && strcmp(ext, "dirty") == 0) {
-            retval = WM_TRUE;
-            break;
-        }
+    if (!upload_sequence(session_token, backup_filename, info)) {
+        WALLMON_LOG_ERROR("backup_and_upload: Upload sequence failed");
+        return WM_FALSE;
     }
 
-    closedir(directory);
-    return retval;
+    return WM_TRUE;
 }
 
-int wallmon_main() {
-    platform_info* info = get_platform_info();
-    if (info == NULL) {
-        WALLMON_LOG_ERROR("Failed to obtain the platform info");
+static void heartbeat(time_t* last_heartbeat, platform_info* info) {
+    time_t diff = time(NULL) - *last_heartbeat;
+
+    if (diff < cfg_get_heartbeat_interval()) {
+        return;
+    }
+
+    // @TODO: Change API to use session_token
+    if (!wallmon_heartbeat(info)) {
+        WALLMON_LOG_ERROR("heartbeat failed");
+    }
+
+    *last_heartbeat = time(NULL);
+}
+
+static int main_loop(platform_info* info) {
+    if (!make_directory(backups_directory)) {
+        WALLMON_LOG_ERROR("main_loop: Could not create directory %s", backups_directory);
         return EXIT_FAILURE;
     }
 
-    const char*  cfg = "/conf/config.xml";
     file_monitor mnt;
-    if (!file_monitor_init(&mnt, cfg)) {
-        WALLMON_LOG_ERROR("Failed to initialize configuration monitor");
-        release_platform_info(info);
+    if (!file_monitor_init(&mnt, configurationfile)) {
+        WALLMON_LOG_ERROR("main_loop: Failed to initialize configuration monitor");
         return EXIT_FAILURE;
     }
 
-    WALLMON_LOG_INFO("Successfully initialized configuration monitor");
-
-    // if (!system_locked() || !validate_lock(info)) {
-    //     WALLMON_LOG_INFO("No lock file found or lock file is invalid, considering this as the first launch.");
-
-    //     if (!wallmom_registration(info)) {
-    //         WALLMON_LOG_ERROR("Registration failed, aborting ...");
-    //         release_platform_info(info);
-    //         return EXIT_FAILURE;
-    //     }
-
-    //     WALLMON_LOG_INFO("Registration successfull");
-
-    //     if (!lock_system(info)) {
-    //         WALLMON_LOG_ERROR("Failed wto write the lock file, aborting ...");
-    //         release_platform_info(info);
-    //         return EXIT_FAILURE;
-    //     }
-
-    //     WALLMON_LOG_INFO("Successfully written the lock file");
-    // } else {
-    //     WALLMON_LOG_INFO("Lock file found, proceeding without action");
-    // }
-
-    // Send to the server the most recent configuration
-    if (!wallmon_uploadcfg(cfg, info, !is_system_dirty())) {
-        WALLMON_LOG_ERROR("Failed to upload the intial configuration to the server, aborting ... ");
-        release_platform_info(info);
+    char* session_token = NULL;
+    if (!wallmon_authenticate(&session_token)) {
+        WALLMON_LOG_ERROR("main_loop: Authentication failed");
         return EXIT_FAILURE;
-    } else {
-        WALLMON_LOG_INFO("Successfully uploaded the initial configuration to the server.");
     }
 
-    boolean_t current_state  = is_system_dirty();
-    time_t    last_heartbeat = 0;
-
-    for (;;) {
-        time_t now = time(NULL);
-        if ((now - last_heartbeat) >= cfg_get_heartbeat_interval()) {
-            last_heartbeat = now;
-
-            if (wallmon_heartbeat(info)) {
-                WALLMON_LOG_INFO("Heartbeat sent");
-            } else {
-                WALLMON_LOG_ERROR("Heartbeat failed");
-            }
-        }
-
-        boolean_t state = is_system_dirty();
-
-        if (file_monitor_check(&mnt) == 1) {
-            if (wallmon_uploadcfg(cfg, info, !state)) {
-                WALLMON_LOG_INFO("Configuration uploaded successfully");
-            } else {
-                WALLMON_LOG_ERROR("Failed to upload configuration");
-            }
-        }
-
-        if (state ^ current_state) {
-            current_state = state;
-
-            if (current_state) {
-                // System has just became dirty
-                continue;
-            }
-            WALLMON_LOG_INFO("Configraution reload detected");
-
-            if (wallmon_uploadcfg(cfg, info, !state)) {
-                WALLMON_LOG_INFO("Configuration uploaded successfully");
-            } else {
-                WALLMON_LOG_ERROR("Failed to upload configuration");
-            }
-        }
-
-        sleep(1);
+    if (!wallmon_setup(session_token, info)) {
+        WALLMON_LOG_ERROR("main_loop: Setup failed");
+        return EXIT_FAILURE;
     }
 
-    // @TODO: Unreachable code
-    release_platform_info(info);
+    if (!backup_and_upload(session_token, info)) {
+        WALLMON_LOG_ERROR("main_loop: Initial configuration upload failed");
+        free(session_token);
+        return EXIT_FAILURE;
+    }
+
+    WALLMON_LOG_INFO("main_loop: Start");
+
+    time_t last_heartbeat = 0;
+    while (running) {
+        heartbeat(&last_heartbeat, info);
+
+        boolean_t is_dirty = info->dirty;
+        update_platform_info(info);
+
+        /// Transition from dirty to clean or file monitor detected changes
+        boolean_t should_upload = (is_dirty ^ info->dirty && !info->dirty) || file_monitor_check(&mnt);
+
+        if (should_upload) {
+            if (upload_sequence(session_token, configurationfile, info)) {
+                WALLMON_LOG_INFO("main_loop: Successfully uploaded %s to the server", configurationfile);
+            } else {
+                WALLMON_LOG_ERROR("main_loop: Failed to upload %s to server", configurationfile);
+            }
+        }
+
+        if (running) {
+            sleep(1);
+        }
+    }
+
+    free(session_token);
     return EXIT_SUCCESS;
 }
 
@@ -183,10 +174,19 @@ int main(int argc, char** argv) {
     validate_network_interface();
     validate_platform();
 
-    // int exit_code = wallmon_main();
-    int exit_code = 0;
+    setup_sighandler();
+
+    int exitcode = EXIT_FAILURE;
+
+    platform_info* info = get_platform_info();
+    if (info) {
+        exitcode = main_loop(&info);
+        release_platform_info(info);
+    } else {
+        WALLMON_LOG_ERROR("Failed to obtain platform info, aborting ...");
+    }
 
     cfg_deinit();
     logger_cleanup();
-    return exit_code;
+    return exitcode;
 }
