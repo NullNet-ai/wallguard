@@ -1,3 +1,4 @@
+#include <utils/common.h>
 #include <utils/file_utils.h>
 
 #include "platform.h"
@@ -5,19 +6,28 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 
-platform_type get_platform_type() {
-    const char *platform = cfg_get_platform();
-
-    if (strcmp(platform, "pfSense") == 0) {
-        return PLATFORM_PFSENSE;
+// @TODO: The implmentation might differ per platform
+static boolean_t is_system_dirty() {
+    DIR *directory = opendir("/var/run/");
+    if (!directory) {
+        return WM_FALSE;
     }
 
-    if (strcmp(platform, "OPNsense") == 0) {
-        return PLATFORM_OPNSENSE;
+    int8_t retval = WM_FALSE;
+
+    struct dirent *info;
+    while ((info = readdir(directory)) != NULL) {
+        const char *ext = extension(info->d_name);
+        if (ext && strcmp(ext, "dirty") == 0) {
+            retval = WM_TRUE;
+            break;
+        }
     }
 
-    return PLATFORM_UNSUPPORTED;
+    closedir(directory);
+    return retval;
 }
 
 static const char *get_platform_version(platform_type platform) {
@@ -56,6 +66,20 @@ static const char *get_platform_version(platform_type platform) {
     }
 }
 
+platform_type get_platform_type() {
+    const char *platform = cfg_get_platform();
+
+    if (strcmp(platform, "pfSense") == 0) {
+        return PLATFORM_PFSENSE;
+    }
+
+    if (strcmp(platform, "OPNsense") == 0) {
+        return PLATFORM_OPNSENSE;
+    }
+
+    return PLATFORM_UNSUPPORTED;
+}
+
 platform_info *get_platform_info() {
     platform_type type = get_platform_type();
     if (type == PLATFORM_UNSUPPORTED) {
@@ -67,17 +91,16 @@ platform_info *get_platform_info() {
         return NULL;
     }
 
-    platform_info *info = malloc(sizeof(platform_info));
-    if (!info) {
-        free((void *)version);
-        return NULL;
-    }
+    platform_info *info = W_MALLOC(sizeof(platform_info));
 
     info->type    = type;
     info->version = version;
 
-    info->model = cfg_get_platform();
-    info->uuid  = cfg_get_system_uuid();
+    info->dirty = is_system_dirty();
+
+    info->model         = cfg_get_platform();
+    info->uuid          = cfg_get_system_uuid();
+    info->instance_name = cfg_get_instance_name();
 
     return info;
 }
@@ -89,4 +112,13 @@ void release_platform_info(platform_info *info) {
 
     free((void *)info->version);
     free((void *)info);
+
+    info->model         = NULL;
+    info->uuid          = NULL;
+    info->instance_name = NULL;
+}
+
+void update_platform_info(platform_info *info) {
+    info->dirty = is_system_dirty();
+    // Update version ?
 }

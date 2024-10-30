@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 boolean_t file_exists(const char *path) { return access(path, F_OK) == 0; }
 
@@ -17,6 +18,28 @@ boolean_t directory_exists(const char *path) {
     }
 
     return S_ISDIR(statbuf.st_mode);
+}
+
+boolean_t make_directory(const char *path) {
+    char temp[256] = {0};
+    snprintf(temp, sizeof(temp), "%s", path);
+
+    char *p = NULL;
+    for (p = temp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(temp, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && errno != EEXIST) {
+                return WM_FALSE;
+            }
+            *p = '/';
+        }
+    }
+
+    if (mkdir(temp, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && errno != EEXIST) {
+        return WM_FALSE;
+    }
+
+    return WM_TRUE;
 }
 
 ssize_t file_size(const char *path) {
@@ -125,7 +148,7 @@ uint8_t *read_file_content(const char *path) {
         return NULL;
     }
 
-    uint8_t *content = malloc(buffer.st_size + 1);
+    uint8_t *content = W_MALLOC(buffer.st_size + 1);
 
     size_t rb = fread(content, sizeof(content[0]), buffer.st_size, file);
     (void)rb;

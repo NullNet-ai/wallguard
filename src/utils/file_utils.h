@@ -20,6 +20,15 @@ boolean_t file_exists(const char *path);
 boolean_t directory_exists(const char *path);
 
 /**
+ * Creates a directory path similar to "mkdir -p".
+ *
+ * @param path The directory path to create.
+ * @return `WM_TRUE` if the directory was created successfully or already exists,
+ *         `WM_FALSE` if there was an error during creation.
+ */
+boolean_t make_directory(const char *path);
+
+/**
  * @brief Get the size of a file.
  *
  *

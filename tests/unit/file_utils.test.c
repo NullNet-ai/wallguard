@@ -159,6 +159,30 @@ static void test_extension(void) {
     CU_ASSERT_PTR_NULL(ext);
 }
 
+void test_make_directory_new(void) {
+    const char *test_path = "/tmp/test_make_directory_new";
+
+    rmdir(test_path);
+
+    CU_ASSERT_EQUAL(make_directory(test_path), WM_TRUE);
+
+    struct stat st;
+    CU_ASSERT_EQUAL(stat(test_path, &st), 0);
+    CU_ASSERT_TRUE(S_ISDIR(st.st_mode));
+
+    rmdir(test_path);
+}
+
+void test_make_directory_existing(void) {
+    const char *test_path = "/tmp/test_make_directory_existing";
+
+    mkdir(test_path, S_IRWXU);
+
+    CU_ASSERT_EQUAL(make_directory(test_path), WM_TRUE);
+
+    rmdir(test_path);
+}
+
 void add_file_utils_tests(void) {
     CU_pSuite suite = CU_add_suite("File Utils Tests", NULL, NULL);
 
@@ -171,4 +195,7 @@ void add_file_utils_tests(void) {
     CU_add_test(suite, "test_file_monitor_check", test_file_monitor_check);
     CU_add_test(suite, "test_read_file_content", test_read_file_content);
     CU_add_test(suite, "test_extension", test_extension);
+    CU_add_test(suite, "test_make_directory_new", test_make_directory_new);
+    CU_add_test(suite, "test_make_directory_existing", test_make_directory_existing);
+
 }
