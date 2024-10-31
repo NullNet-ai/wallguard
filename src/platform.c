@@ -112,10 +112,6 @@ void release_platform_info(platform_info *info) {
 
     free((void *)info->version);
     free((void *)info);
-
-    info->model         = NULL;
-    info->uuid          = NULL;
-    info->instance_name = NULL;
 }
 
 void update_platform_info(platform_info *info) {
