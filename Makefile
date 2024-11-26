@@ -1,13 +1,14 @@
 SHELL := /bin/sh
 
 PROJECT_NAME = wallmon
+VERSION = 0.1.0
 
 EXEC_RELEASE = $(PROJECT_NAME)
 EXEC_DEBUG = $(PROJECT_NAME)_d
 EXEC_TEST = $(PROJECT_NAME)_test
 
 CC = gcc
-CFLAGS = -Wall -Wextra -I./src
+CFLAGS = -Wall -Wextra -I./src -DVERSION=\"$(VERSION)\"
 LDFLAGS = -lssl -lcrypto -lcurl -l:libconfig.a
 
 UNAME_S := $(shell uname -s)
