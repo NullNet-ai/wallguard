@@ -130,7 +130,7 @@ static void test_read_file_content(void) {
     CU_ASSERT_PTR_NOT_NULL(content);
     CU_ASSERT_STRING_EQUAL((char *)content, "This is the file content");
 
-    free(content);
+    W_FREE(content);
 
     CU_ASSERT_PTR_NULL(read_file_content("/tmp/non_existing_file.txt"));
 

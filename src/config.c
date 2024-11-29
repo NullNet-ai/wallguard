@@ -55,6 +55,11 @@ void cfg_validate(void) {
         valid = WM_FALSE;
     }
 
+    if (!cfg_get_monitor_url()) {
+        WALLMON_LOG_ERROR("'monitor_url' is missing in the configuration file");
+        valid = WM_FALSE;
+    }
+
     if (!valid) {
         cfg_deinit();
         exit(EXIT_FAILURE);
@@ -139,4 +144,24 @@ int cfg_get_heartbeat_interval() {
     }
 
     return 60;
+}
+
+const char* cfg_get_monitor_url() {
+    const char* monitor_url = NULL;
+
+    if (config_lookup_string(&configuration, "monitor_url", &monitor_url)) {
+        return monitor_url;
+    }
+
+    return NULL;
+}
+
+boolean_t cfg_get_filter_out_server_traffic() {
+    int value = 0;
+    if (config_lookup_bool(&configuration, "ignore_server_packets", &value)) {
+        // Not nessesary, but it is here for consistency
+        return value == CONFIG_TRUE ? WM_TRUE : WM_FALSE;
+    }
+
+    return WM_FALSE;
 }

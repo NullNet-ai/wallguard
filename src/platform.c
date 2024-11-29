@@ -110,8 +110,8 @@ void release_platform_info(platform_info *info) {
         return;
     }
 
-    free((void *)info->version);
-    free((void *)info);
+    W_FREE((void *)info->version);
+    W_FREE((void *)info);
 }
 
 void update_platform_info(platform_info *info) {

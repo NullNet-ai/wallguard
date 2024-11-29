@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "logger/logger.h"
 #include "utils/file_utils.h"
@@ -16,24 +17,11 @@
 #include "config.h"
 #include "crypto.h"
 #include "upload_sequence.h"
-
-static boolean_t running = WM_TRUE;
+#include "net_capture/sniffer.h"
+#include "utils/wsignal.h"
 
 static const char backups_directory[] = "/var/backups/wallmon";
 static const char configurationfile[] = "/conf/config.xml";
-
-static void handle_signal(int signal) {
-    if (signal == SIGINT) {
-        WALLMON_LOG_INFO("Received SIGINT, terminating..");
-        running = WM_FALSE;
-    }
-}
-
-static void setup_sighandler(void) {
-    if (signal(SIGINT, handle_signal)) {
-        WALLMON_LOG_WARN("Failed to setup SIGINT handler");
-    }
-}
 
 static boolean_t backup_and_upload(const char* session_token, platform_info* info) {
     char backup_filename[256] = {0};
@@ -66,6 +54,12 @@ static void heartbeat(time_t* last_heartbeat, const char* session_token) {
     *last_heartbeat = time(NULL);
 }
 
+static void* monitoring_routing(void* arg) {
+    sniffer_t* sniffer = (sniffer_t*)arg;
+    sniffer_mainloop(sniffer);
+    return NULL;
+}
+
 static int main_loop(platform_info* info) {
     if (!make_directory(backups_directory)) {
         WALLMON_LOG_ERROR("main_loop: Could not create directory %s", backups_directory);
@@ -91,14 +85,38 @@ static int main_loop(platform_info* info) {
 
     if (!backup_and_upload(session_token, info)) {
         WALLMON_LOG_ERROR("main_loop: Initial configuration upload failed");
-        free(session_token);
+        W_FREE(session_token);
+        return EXIT_FAILURE;
+    }
+
+    char* monitor_public_key = NULL;
+    if(!wallmon_fetch_monitor_key(session_token, &monitor_public_key)) {
+        WALLMON_LOG_ERROR("main_loop: Failed to fetch monitor key");
+        W_FREE(session_token);
+        return EXIT_FAILURE;
+    }
+
+    sniffer_t* sniffer = sniffer_initialize(monitor_public_key);
+    if (!sniffer) {
+        WALLMON_LOG_ERROR("main_loop: Failed to initialize traffic monitoring");
+        W_FREE(session_token);
+        W_FREE(monitor_public_key);
+        return EXIT_FAILURE;
+    }
+
+    pthread_t sniffer_thread;
+    if(pthread_create(&sniffer_thread, NULL, monitoring_routing, sniffer) != 0) {
+        WALLMON_LOG_ERROR("main_loop: Failed to spawn traffic monitoring thread");
+        W_FREE(session_token);
+        W_FREE(monitor_public_key);
+        sniffer_finalize(sniffer);
         return EXIT_FAILURE;
     }
 
     WALLMON_LOG_INFO("main_loop: Start");
 
     time_t last_heartbeat = 0;
-    while (running) {
+    while (wallmon_is_running()) {
         heartbeat(&last_heartbeat, session_token);
 
         boolean_t is_dirty = info->dirty;
@@ -115,12 +133,16 @@ static int main_loop(platform_info* info) {
             }
         }
 
-        if (running) {
+        if (wallmon_is_running()) {
             sleep(1);
         }
     }
 
-    free(session_token);
+    pthread_join(sniffer_thread, NULL);
+
+    W_FREE(session_token);
+    W_FREE(monitor_public_key);
+    sniffer_finalize(sniffer);
     return EXIT_SUCCESS;
 }
 
@@ -173,9 +195,10 @@ int main(int argc, char** argv) {
     validate_network_interface();
     validate_platform();
 
-    setup_sighandler();
+    wallmon_setup_signal_handler();
 
-    int exitcode = EXIT_FAILURE;
+    int exitcode = 0;
+    
 
     platform_info* info = get_platform_info();
     if (info) {
@@ -184,6 +207,7 @@ int main(int argc, char** argv) {
     } else {
         WALLMON_LOG_ERROR("Failed to obtain platform info, aborting ...");
     }
+
 
     cfg_deinit();
     logger_cleanup();

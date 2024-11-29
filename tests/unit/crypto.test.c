@@ -25,7 +25,7 @@ static void test_base64_encode_known_input(void) {
     CU_ASSERT_PTR_NOT_NULL(encoded);
     CU_ASSERT_NSTRING_EQUAL(encoded, expected_output, 8);
 
-    free(encoded);
+    W_FREE(encoded);
 }
 
 static void test_base64_encode_empty_input(void) {
@@ -36,7 +36,7 @@ static void test_base64_encode_empty_input(void) {
     CU_ASSERT_PTR_NOT_NULL(encoded);
     CU_ASSERT_STRING_EQUAL(encoded, expected_output);
 
-    free(encoded);
+    W_FREE(encoded);
 }
 
 static void test_decode_pem_key_valid_input(void) {

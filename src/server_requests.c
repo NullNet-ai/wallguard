@@ -6,39 +6,6 @@
 #include <stdlib.h>
 
 // [UTILITIES] Begin ------------------------------------------------------------------------------------------------ //
-#define UTIL_DEFINE_AUTH_HEADER(header_name, session_token)                                                         \
-    char auth_header[1024] = {0};                                                                                   \
-    int  result            = snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", session_token); \
-    if (result < 0 || (size_t)result >= sizeof(auth_header)) {                                                      \
-        WALLMON_LOG_ERROR("Failed to create auth header");                                                          \
-        return WM_FALSE;                                                                                            \
-    }
-#define _UTIL_CURL_INIT(curl)                           \
-    CURL* curl = curl_easy_init();                      \
-    if (!curl) {                                        \
-        WALLMON_LOG_ERROR("Failed to initialize CURL"); \
-        return WM_FALSE;                                \
-    }
-
-#define _UTIL_CURL_SET_URL(curl, endpoint)         \
-    if (!util_curl_set_url(curl, endpoint)) {      \
-        WALLMON_LOG_ERROR("URL: %s is too long."); \
-        curl_easy_cleanup(curl);                   \
-        return WM_FALSE;                           \
-    }
-
-#define UTIL_CURL_INIT(curl, endpoint) \
-    _UTIL_CURL_INIT(curl);             \
-    _UTIL_CURL_SET_URL(curl, endpoint);
-
-#define UTIL_CURL_INIT_MIME(curl, multipart)                 \
-    struct curl_mime* multipart = curl_mime_init(curl);      \
-    if (!multipart) {                                        \
-        WALLMON_LOG_ERROR("Failed to initialize curl mime"); \
-        curl_easy_cleanup(curl);                             \
-        return WM_FALSE;                                     \
-    }
-
 static inline struct curl_slist* util_curl_set_headers(CURL* curl, char** headers, size_t len) {
     struct curl_slist* headers_list = NULL;
 
@@ -109,9 +76,20 @@ static size_t write_mem_cb(void* contents, size_t size, size_t nmemb, void* user
 }
 
 boolean_t wallmon_authenticate(char** session_token) {
-    UTIL_CURL_INIT(curl, "/wallmon/authenticate");
-    UTIL_CURL_INIT_MIME(curl, multipart);
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
+        return WM_FALSE;
+    }
+
+    if (!util_curl_set_url(curl, "/wallmon/authenticate")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
     curl_easy_setopt(curl, CURLOPT_POST, 1);
+
+    struct curl_mime* multipart = curl_mime_init(curl);
 
     struct curl_mimepart* part = curl_mime_addpart(multipart);
     curl_mime_name(part, "api_key");
@@ -146,11 +124,29 @@ boolean_t wallmon_authenticate(char** session_token) {
 }
 
 boolean_t wallmon_setup(const char* session_token, const platform_info* info) {
-    UTIL_DEFINE_AUTH_HEADER(auth_header, session_token);
-    UTIL_CURL_INIT(curl, "/wallmon/setup");
+    char auth_header[1024] = {0};
+
+    int result = snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", session_token);
+    if (result < 0 || (size_t)result >= sizeof(auth_header)) {
+        WALLMON_LOG_ERROR("Failed to create auth header");
+        return WM_FALSE;
+    }
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
+        return WM_FALSE;
+    }
+
+    if (!util_curl_set_url(curl, "/wallmon/setup")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
+
     curl_easy_setopt(curl, CURLOPT_POST, 1);
 
-    UTIL_CURL_INIT_MIME(curl, multipart);
+    struct curl_mime* multipart = curl_mime_init(curl);
 
     struct curl_mimepart* part = curl_mime_addpart(multipart);
     curl_mime_name(part, "uuid");
@@ -183,8 +179,25 @@ boolean_t wallmon_setup(const char* session_token, const platform_info* info) {
 }
 
 boolean_t wallmon_fetch_key(const char* session_token, char** public_key) {
-    UTIL_DEFINE_AUTH_HEADER(auth_header, session_token);
-    UTIL_CURL_INIT(curl, "/wallmon/public_key");
+    char auth_header[1024] = {0};
+
+    int result = snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", session_token);
+    if (result < 0 || (size_t)result >= sizeof(auth_header)) {
+        WALLMON_LOG_ERROR("Failed to create auth header");
+        return WM_FALSE;
+    }
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
+        return WM_FALSE;
+    }
+
+    if (!util_curl_set_url(curl, "/wallmon/public_key")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
 
     char*              hvalues[] = {auth_header};
     struct curl_slist* headers   = util_curl_set_headers(curl, hvalues, ARRAY_SIZE(hvalues));
@@ -213,11 +226,29 @@ boolean_t wallmon_fetch_key(const char* session_token, char** public_key) {
 
 boolean_t wallmon_upload_configuration(const char* session_token, const char* path, const char* key, const char* iv,
                                        const platform_info* info) {
-    UTIL_DEFINE_AUTH_HEADER(auth_header, session_token);
-    UTIL_CURL_INIT(curl, "/wallmon/cfg/upload");
+    char auth_header[1024] = {0};
+
+    int result = snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", session_token);
+    if (result < 0 || (size_t)result >= sizeof(auth_header)) {
+        WALLMON_LOG_ERROR("Failed to create auth header");
+        return WM_FALSE;
+    }
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
+        return WM_FALSE;
+    }
+
+    if (!util_curl_set_url(curl, "/wallmon/cfg/upload")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
+
     curl_easy_setopt(curl, CURLOPT_POST, 1);
 
-    UTIL_CURL_INIT_MIME(curl, multipart);
+    struct curl_mime* multipart = curl_mime_init(curl);
 
     struct curl_mimepart* part = curl_mime_addpart(multipart);
     curl_mime_name(part, "key");
@@ -253,8 +284,26 @@ boolean_t wallmon_upload_configuration(const char* session_token, const char* pa
 }
 
 boolean_t wallmon_heartbeat(const char* session_token) {
-    UTIL_DEFINE_AUTH_HEADER(auth_header, session_token);
-    UTIL_CURL_INIT(curl, "/wallmon/heartbeat");
+    char auth_header[1024] = {0};
+
+    int result = snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", session_token);
+    if (result < 0 || (size_t)result >= sizeof(auth_header)) {
+        WALLMON_LOG_ERROR("Failed to create auth header");
+        return WM_FALSE;
+    }
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
+        return WM_FALSE;
+    }
+
+    if (!util_curl_set_url(curl, "/wallmon/heartbeat")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
+
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
 
@@ -267,4 +316,50 @@ boolean_t wallmon_heartbeat(const char* session_token) {
     curl_easy_cleanup(curl);
 
     return util_is_status_ok(http_status);
+}
+
+boolean_t wallmon_fetch_monitor_key(const char* session_token, char** public_key) {
+    char auth_header[1024] = {0};
+
+    int result = snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", session_token);
+    if (result < 0 || (size_t)result >= sizeof(auth_header)) {
+        WALLMON_LOG_ERROR("Failed to create auth header");
+        return WM_FALSE;
+    }
+
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        WALLMON_LOG_ERROR("Failed to initialize CURL");
+        return WM_FALSE;
+    }
+
+    if (!util_curl_set_url(curl, "/wallmon/monitor/public_key")) {
+        WALLMON_LOG_ERROR("URL: %s is too long.");
+        curl_easy_cleanup(curl);
+        return WM_FALSE;
+    }
+
+    char*              hvalues[] = {auth_header};
+    struct curl_slist* headers   = util_curl_set_headers(curl, hvalues, ARRAY_SIZE(hvalues));
+
+    struct memstruct chunk;
+    chunk.memory    = W_CALLOC(64, sizeof(char));
+    chunk.allocated = 64;
+    chunk.size      = 0;
+
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&chunk);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_mem_cb);
+
+    int http_status = curl_perform_request(curl);
+
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    if (util_is_status_ok(http_status)) {
+        *public_key = chunk.memory;
+        return WM_TRUE;
+    } else {
+        free(chunk.memory);
+        return WM_FALSE;
+    }
 }

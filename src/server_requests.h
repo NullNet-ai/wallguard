@@ -22,6 +22,7 @@ boolean_t wallmon_authenticate(char** session_token);
  *
  * @param session_token A pointer to a `session_token`.
  * @param info          A pointer to a `platform_info` structure containing details about the current platform.
+ * 
  * @return `WM_TRUE` if the request is successful, `WM_FALSE` if the request fails.
  */
 boolean_t wallmon_setup(const char* session_token, const platform_info* info);
@@ -63,4 +64,19 @@ boolean_t wallmon_upload_configuration(const char*          session_token,  //
                                        const char*          key,            //
                                        const char*          iv,             //
                                        const platform_info* info);
+
+
+/**
+ * @brief Requests the public key of the monitor server.
+ * 
+ * @param session_token A pointer to a `session_token`.
+ * @param public_key    A pointer to a char pointer (i.e., `char**`), where the
+ *                      function will assign the dynamically allocated public key.
+ *                      It is the caller's responsibility to free this memory
+ *                      after use.
+ * 
+ * @return `WM_TRUE` if the request is successful, `WM_FALSE` if the request fails.
+ */
+boolean_t wallmon_fetch_monitor_key(const char* session_token, char **public_key);
+
 #endif

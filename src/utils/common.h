@@ -43,13 +43,15 @@ void* __wallmon_calloc(size_t nmem, size_t size);
 void* __wallmon_realloc(void* ptr, size_t size);
 
 #if 1
-    #define W_MALLOC __wallmon_malloc
-    #define W_CALLOC __wallmon_calloc
+    #define W_MALLOC  __wallmon_malloc
+    #define W_CALLOC  __wallmon_calloc
     #define W_REALLOC __wallmon_realloc
+    #define W_FREE    free
 #else
-    #define W_MALLOC malloc
-    #define W_CALLOC calloc
+    #define W_MALLOC  malloc
+    #define W_CALLOC  calloc
     #define W_REALLOC realloc
+    #define W_FREE    free
 #endif
 
 #endif
