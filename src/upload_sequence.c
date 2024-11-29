@@ -48,7 +48,7 @@ boolean_t upload_sequence(const char* session_token, const char* path, const pla
     EVP_PKEY* pkey = decode_pem_key(public_key);
     if (!pkey) {
         WALLMON_LOG_ERROR("upload_sequence: Failed to decode public key");
-        free(public_key);
+        W_FREE(public_key);
         return WM_FALSE;
     }
 
@@ -58,7 +58,7 @@ boolean_t upload_sequence(const char* session_token, const char* path, const pla
     if (!encrypt_config(path, temp_filename, sym_key, sym_iv)) {
         WALLMON_LOG_ERROR("upload_sequence: Failed to encrypt file %s", path);
         EVP_PKEY_free(pkey);
-        free(public_key);
+        W_FREE(public_key);
         return WM_FALSE;
     }
 
@@ -68,7 +68,7 @@ boolean_t upload_sequence(const char* session_token, const char* path, const pla
     if (!pkey_encrypt(pkey, sym_key, sizeof(sym_key), &sym_key_encoded, &sym_key_encoded_size)) {
         WALLMON_LOG_ERROR("upload_sequence: Failed to encrypt AES key");
         EVP_PKEY_free(pkey);
-        free(public_key);
+        W_FREE(public_key);
         remove(temp_filename);
         return WM_FALSE;
     }
@@ -76,8 +76,8 @@ boolean_t upload_sequence(const char* session_token, const char* path, const pla
     if (!pkey_encrypt(pkey, sym_iv, sizeof(sym_iv), &sym_iv_encoded, &sym_iv_encoded_size)) {
         WALLMON_LOG_ERROR("upload_sequence: Failed to encrypt IV");
         EVP_PKEY_free(pkey);
-        free(public_key);
-        free(sym_key_encoded);
+        W_FREE(public_key);
+        W_FREE(sym_key_encoded);
         remove(temp_filename);
         return WM_FALSE;
     }
@@ -91,11 +91,11 @@ boolean_t upload_sequence(const char* session_token, const char* path, const pla
     }
 
     EVP_PKEY_free(pkey);
-    free(public_key);
-    free(sym_key_encoded);
-    free(sym_iv_encoded);
-    free(b64_key);
-    free(b64_iv);
+    W_FREE(public_key);
+    W_FREE(sym_key_encoded);
+    W_FREE(sym_iv_encoded);
+    W_FREE(b64_key);
+    W_FREE(b64_iv);
     remove(temp_filename);
 
     return retval;

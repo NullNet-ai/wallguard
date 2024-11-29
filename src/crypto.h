@@ -19,7 +19,7 @@
 char* base64_encode(const uint8_t* data, size_t len);
 
 /**
- * @brief Decodes a PEM-formatted RSA public key into an EVP_PKEY structure.
+ * @brief Decodes a PEM-formatted RSA public key into an `EVP_PKEY` structure.
  *
  *
  * @param pem_key: A null-terminated C string containing the PEM-encoded RSA public key.
@@ -30,9 +30,9 @@ char* base64_encode(const uint8_t* data, size_t len);
 EVP_PKEY* decode_pem_key(const char* pem_key);
 
 /**
- * @brief Encrypts data using the provided EVP_PKEY RSA public key.
+ * @brief Encrypts data using the provided `EVP_PKEY` RSA public key.
  *
- * @param pkey         An initialized EVP_PKEY structure containing an RSA public key.
+ * @param pkey         An initialized `EVP_PKEY` structure containing an RSA public key.
  *                     Must be a valid RSA public key; caller must manage its lifecycle.
  * @param data         Pointer to the input data buffer to be encrypted.
  * @param size         Size of the input data buffer in bytes.

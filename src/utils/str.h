@@ -24,4 +24,13 @@ boolean_t string_to_integer(const char* str, long* number, int base);
  */
 boolean_t is_valid_uuid(const char* value);
 
+/**
+ * @brief Creates a copy of the given null-terminated string.
+ *
+ * @param str A pointer to the null-terminated string to copy.
+ * 
+ * @return A pointer to the newly allocated string containing a copy of the input string.
+ */
+char* string_copy(const char* str);
+
 #endif

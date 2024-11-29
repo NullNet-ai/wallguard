@@ -52,16 +52,27 @@ void test_valid_uppercase_uuid() {
     CU_ASSERT_TRUE(is_valid_uuid(valid_uppercase_uuid));
 }
 
+static void test_string_copy_valid() {
+    const char* original = "Hello, world!";
+    char*       copy     = string_copy(original);
+
+    CU_ASSERT_PTR_NOT_NULL(copy);
+    CU_ASSERT_STRING_EQUAL(copy, original);
+
+    W_FREE(copy);
+}
+
 void add_string_utils_tests() {
     CU_pSuite suite = CU_add_suite("Str Utils Tests", NULL, NULL);
 
     CU_add_test(suite, "test_string_to_number_valid", test_string_to_number_valid);
     CU_add_test(suite, "test_string_to_number_invalid", test_string_to_number_invalid);
 
-    CU_add_test(suite, "Valid UUID", test_valid_uuid);
-    CU_add_test(suite, "Invalid UUID Length", test_invalid_uuid_length);
-    CU_add_test(suite, "Invalid UUID Dash Position", test_invalid_uuid_dash_position);
-    CU_add_test(suite, "Invalid UUID Non-Hex Characters", test_invalid_uuid_non_hex);
-    CU_add_test(suite, "Null UUID", test_null_uuid);
-    CU_add_test(suite, "Valid Uppercase UUID", test_valid_uppercase_uuid);
+    CU_add_test(suite, "test_valid_uuid", test_valid_uuid);
+    CU_add_test(suite, "test_invalid_uuid_length", test_invalid_uuid_length);
+    CU_add_test(suite, "test_invalid_uuid_dash_position", test_invalid_uuid_dash_position);
+    CU_add_test(suite, "test_invalid_uuid_non_hex", test_invalid_uuid_non_hex);
+    CU_add_test(suite, "test_null_uuid", test_null_uuid);
+    CU_add_test(suite, "test_valid_uppercase_uuid", test_valid_uppercase_uuid);
+    CU_add_test(suite, "test_string_copy_valid", test_string_copy_valid);
 }

@@ -42,3 +42,10 @@ boolean_t is_valid_uuid(const char* value) {
 
     return WM_TRUE;
 }
+
+char* string_copy(const char* str) {
+    size_t len  = strlen(str) + 1;
+    char*  copy = W_MALLOC(len);
+    memcpy(copy, str, len);
+    return copy;
+}

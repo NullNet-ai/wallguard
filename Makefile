@@ -9,12 +9,12 @@ EXEC_TEST = $(PROJECT_NAME)_test
 
 CC = gcc
 CFLAGS = -Wall -Wextra -I./src -DVERSION=\"$(VERSION)\"
-LDFLAGS = -lssl -lcrypto -lcurl -l:libconfig.a
+LDFLAGS = -lssl -lcrypto -lcurl -lpcap -lzmq -pthread -l:libconfig.a
 
 UNAME_S := $(shell uname -s)
 
 DEBUG_CFLAGS = -g
-RELEASE_CFLAGS = -O3
+RELEASE_CFLAGS = -O3 -DWALLMON_RELEASE
 
 SRCS = $(shell find src -type f -name '*.c')
 OBJS = $(patsubst src/%.c, src/%.o, $(filter-out src/main.c, $(SRCS)))
