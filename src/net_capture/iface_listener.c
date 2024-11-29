@@ -57,7 +57,7 @@ void* iface_listener_routine(void* arg) {
             data_len += sizeof(struct udphdr);
         }
 
-        callback(device, packet, data_len);
+        callback(device, &packet_header.ts, packet, data_len);
     }
 
     return NULL;

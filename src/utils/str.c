@@ -43,6 +43,20 @@ boolean_t is_valid_uuid(const char* value) {
     return WM_TRUE;
 }
 
+void uuid_to_bytes(const char uuid[36], uint8_t bytes[16]) {
+    const char* pos = uuid;
+    for (int i = 0; i < 16; i++) {
+        if (*pos == '-') {
+            pos++;
+        }
+        char hex_byte[3] = {pos[0], pos[1], '\0'};
+
+        bytes[i] = (uint8_t)strtoul(hex_byte, NULL, 16);
+
+        pos += 2;
+    }
+}
+
 char* string_copy(const char* str) {
     size_t len  = strlen(str) + 1;
     char*  copy = W_MALLOC(len);

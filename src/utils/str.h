@@ -25,6 +25,14 @@ boolean_t string_to_integer(const char* str, long* number, int base);
 boolean_t is_valid_uuid(const char* value);
 
 /**
+ * @brief Checks if the given string is a valid UUID.
+ *
+ * @param value A valid UUID string.
+ * @param bytes Output array where bytes will be stored.
+ */
+void uuid_to_bytes(const char uuid[36], uint8_t bytes[16]);
+
+/**
  * @brief Creates a copy of the given null-terminated string.
  *
  * @param str A pointer to the null-terminated string to copy.

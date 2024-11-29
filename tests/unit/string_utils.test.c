@@ -52,6 +52,17 @@ void test_valid_uppercase_uuid() {
     CU_ASSERT_TRUE(is_valid_uuid(valid_uppercase_uuid));
 }
 
+static void test_uuid_to_bytes_valid(void) {
+    const char* uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+    uint8_t uuid_bytes[16];
+    uint8_t expected_bytes[16] = {
+        0x55, 0x0e, 0x84, 0x00, 0xe2, 0x9b, 0x41, 0xd4,
+        0xa7, 0x16, 0x44, 0x66, 0x55, 0x44, 0x00, 0x00};
+
+    uuid_to_bytes(uuid_str, uuid_bytes);
+    CU_ASSERT_NSTRING_EQUAL(uuid_bytes, expected_bytes, 16);
+}
+
 static void test_string_copy_valid() {
     const char* original = "Hello, world!";
     char*       copy     = string_copy(original);
@@ -74,5 +85,6 @@ void add_string_utils_tests() {
     CU_add_test(suite, "test_invalid_uuid_non_hex", test_invalid_uuid_non_hex);
     CU_add_test(suite, "test_null_uuid", test_null_uuid);
     CU_add_test(suite, "test_valid_uppercase_uuid", test_valid_uppercase_uuid);
+    CU_add_test(suite, "test_uuid_to_bytes_valid", test_uuid_to_bytes_valid);
     CU_add_test(suite, "test_string_copy_valid", test_string_copy_valid);
 }

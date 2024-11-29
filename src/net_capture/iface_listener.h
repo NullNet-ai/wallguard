@@ -2,6 +2,7 @@
 #define _IFACE_LISTENER_H_
 
 #include <pcap/pcap.h>
+#include <sys/time.h>
 #include <utils/linked_list.h>
 
 /**
@@ -11,7 +12,7 @@
  * @param data   Pointer to the captured packet header data.
  * @param len    Length of the captured packet header data.
  */
-typedef void (*write_callback_t)(const char* device, const void* data, size_t len);
+typedef void (*write_callback_t)(const char* device, struct timeval* time, const void* data, size_t len);
 
 /**
  * @brief Structure representing arguments for an interface listener routine.

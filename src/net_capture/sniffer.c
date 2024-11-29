@@ -14,8 +14,8 @@ struct sniffer {
     llist_t* listeners;  // List of `iface_listener_info_t`
 };
 
-static void lwphdr_clbck(const char* device, const void* data, size_t len) {
-    dispatcher_write(disp, device, data, len);
+static void lwphdr_clbck(const char* device, struct timeval* time, const void* data, size_t len) {
+    dispatcher_write(disp, device, time, data, len);
 }
 
 sniffer_t* sniffer_initialize(const char* public_key) {
