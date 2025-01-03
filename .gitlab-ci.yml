@@ -1,47 +1,36 @@
-stages:
-  - build
-  - test
+workflow:
+  auto_cancel:
+    on_new_commit: conservative
+    on_job_failure: all
 
-main_build_debug:
-    only:
-      - main
-    stage: build
-    tags: 
-      - FreeBSD
-    script:
-      - gmake debug
+default:
+  tags:
+    - docker-52-1-21
+    - rust
 
-main_build_release:
-    only:
-      - main
-    stage: build
-    tags: 
-      - FreeBSD
-    script:
-      - gmake release
-    artifacts:
-      paths:
-        - "wallmon"
-      expire_in: 1 hour
+setup:
+ stage: .pre
+ script:
+   - sudo apt-get install -y cmake
 
-main_build_tests:
-    only:
-      - main
-    stage: build
-    tags: 
-      - FreeBSD
-    script:
-      - gmake test
-    artifacts:
-      paths:
-        - "wallmon_test"
-      expire_in: 1 hour
+update-rust:
+  stage: .pre
+  script:
+    - rustup update
 
-main_test:
-    stage: test
-    only:
-      - main
-    tags:
-      - FreeBSD
-    script:
-      - valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 ./wallmon_test
+fmt:
+  script:
+    - cargo fmt --all -- --check
+
+build:
+  script:
+    - cargo build --verbose
+
+clippy:
+  script:
+    - cargo clippy -- -D warnings
+
+test:
+  script:
+    - cargo test -- --nocapture
+  timeout: 10 minutes
