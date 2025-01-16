@@ -11,7 +11,7 @@ default:
 setup:
  stage: .pre
  script:
-   - sudo apt-get install -y cmake
+   - sudo apt-get update -y && sudo apt-get install -y libpcap-dev
 
 update-rust:
   stage: .pre

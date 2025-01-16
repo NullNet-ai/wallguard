@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package traffic_monitor;
+
+service TrafficMonitor {
+  rpc HandlePackets (Packets) returns (Empty);
+}
+
+message Packets {
+  string uuid = 1;
+  repeated Packet packets = 2;
+}
+
+message Packet {
+  string timestamp = 1;
+  string interface = 2;
+  int32 link_type = 3;
+  bytes data = 4;
+}
+
+message Empty { }
