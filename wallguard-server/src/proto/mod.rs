@@ -1,4 +1,4 @@
 #![allow(clippy::pedantic)]
 
 #[rustfmt::skip]
-pub mod name;
+pub mod wallguard;

@@ -1,17 +1,17 @@
-use crate::proto::name::name_server::Name;
-use crate::proto::name::{NameResponse, NameMessage};
+use crate::proto::wallguard::wall_guard_server::WallGuard;
+use crate::proto::wallguard::{SampleMessage, SampleResponse};
 use tonic::{Request, Response, Status};
 
-pub struct NameImpl;
+pub struct WallGuardImpl;
 
 #[tonic::async_trait]
-impl Name for NameImpl {
-    async fn name(
+impl WallGuard for WallGuardImpl {
+    async fn sample(
         &self,
-        request: Request<NameMessage>,
-    ) -> Result<Response<NameResponse>, Status> {
-        let NameMessage { value } = request.into_inner();
-        let response = NameResponse { value };
+        request: Request<SampleMessage>,
+    ) -> Result<Response<SampleResponse>, Status> {
+        let SampleMessage { value } = request.into_inner();
+        let response = SampleResponse { value };
         Ok(Response::new(response))
     }
 }

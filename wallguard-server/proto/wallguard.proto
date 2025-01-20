@@ -1,20 +1,20 @@
 syntax = "proto3";
 
-package name;
+package wallguard;
 
-service Name {
-  // Name
-  rpc Name (NameMessage) returns (NameResponse);
+service WallGuard {
+  // Sample
+  rpc Sample (SampleMessage) returns (SampleResponse);
 }
 
 // Input -----------------------------------------------------------------------------------------------------------------
 
-message NameMessage {
+message SampleMessage {
   uint32 value = 1;
 }
 
 // Output -----------------------------------------------------------------------------------------------------------------
 
-message NameResponse {
+message SampleResponse {
   uint32 value = 1;
 }

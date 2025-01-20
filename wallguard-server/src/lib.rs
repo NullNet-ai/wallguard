@@ -1,18 +1,16 @@
-use crate::proto::name::name_client::NameClient;
-pub use crate::proto::name::{
-    NameMessage, NameResponse
-};
+use crate::proto::wallguard::wall_guard_client::WallGuardClient;
+pub use crate::proto::wallguard::{SampleMessage, SampleResponse};
 use tonic::transport::Channel;
 use tonic::Request;
 
 mod proto;
 
 #[derive(Clone)]
-pub struct NameGrpcInterface {
-    client: NameClient<Channel>,
+pub struct WallGuardGrpcInterface {
+    client: WallGuardClient<Channel>,
 }
 
-impl NameGrpcInterface {
+impl WallGuardGrpcInterface {
     pub async fn new(addr: &'static str, port: u16) -> Self {
         let channel = Channel::from_shared(format!("http://{addr}:{port}"))
             .unwrap()
@@ -20,13 +18,13 @@ impl NameGrpcInterface {
             .await
             .unwrap();
         Self {
-            client: NameClient::new(channel),
+            client: WallGuardClient::new(channel),
         }
     }
 
-    pub async fn name(&mut self, message: NameMessage) -> Option<NameResponse> {
+    pub async fn sample(&mut self, message: SampleMessage) -> Option<SampleResponse> {
         self.client
-            .name(Request::new(message))
+            .sample(Request::new(message))
             .await
             .map(tonic::Response::into_inner)
             .ok()

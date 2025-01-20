@@ -1,5 +1,5 @@
-use crate::proto::name::name_server::NameServer;
-use crate::grpc_impl::NameImpl;
+use crate::grpc_impl::WallGuardImpl;
+use crate::proto::wallguard::wall_guard_server::WallGuardServer;
 use std::net::ToSocketAddrs;
 use tonic::transport::Server;
 
@@ -16,7 +16,7 @@ async fn main() {
         .unwrap();
 
     Server::builder()
-        .add_service(NameServer::new(NameImpl))
+        .add_service(WallGuardServer::new(WallGuardImpl))
         .serve(addr)
         .await
         .unwrap();
