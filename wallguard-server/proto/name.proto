@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package name;
+
+service Name {
+  // Name
+  rpc Name (NameMessage) returns (NameResponse);
+}
+
+// Input -----------------------------------------------------------------------------------------------------------------
+
+message NameMessage {
+  uint32 value = 1;
+}
+
+// Output -----------------------------------------------------------------------------------------------------------------
+
+message NameResponse {
+  uint32 value = 1;
+}
