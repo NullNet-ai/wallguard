@@ -1,5 +1,5 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-use crate::proto::wallguard::{Empty, Packets};
+pub use crate::proto::wallguard::{Empty, Packets};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
@@ -10,7 +10,7 @@ pub struct WallGuardGrpcInterface {
     client: WallGuardClient<Channel>,
 }
 
-pub static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(|| {
+static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(|| {
     Certificate::from_pem(
         std::fs::read_to_string("tls/ca.pem").expect("Failed to read CA certificate"),
     )
