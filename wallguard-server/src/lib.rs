@@ -1,6 +1,6 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-pub use crate::proto::wallguard::{SampleMessage, SampleResponse};
-use tonic::transport::Channel;
+pub use crate::proto::wallguard::{Packet, Packets};
+use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
 mod proto;
@@ -10,23 +10,42 @@ pub struct WallGuardGrpcInterface {
     client: WallGuardClient<Channel>,
 }
 
+static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(|| {
+    Certificate::from_pem(
+        std::fs::read_to_string("tls/ca.pem").expect("Failed to read CA certificate"),
+    )
+});
+
 impl WallGuardGrpcInterface {
-    pub async fn new(addr: &'static str, port: u16) -> Self {
-        let channel = Channel::from_shared(format!("http://{addr}:{port}"))
-            .unwrap()
+    #[allow(clippy::missing_panics_doc)]
+    pub async fn new(addr: &str, port: u16) -> Self {
+        let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
+
+        let Ok(channel) = Channel::from_shared(format!("https://{addr}:{port}"))
+            .expect("Failed to parse address")
+            .tls_config(tls)
+            .expect("Failed to configure up TLS")
             .connect()
             .await
-            .unwrap();
+        else {
+            println!("Failed to connect to the server. Retrying in 1 second...");
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
+        };
+
+        println!("Connected to the server");
+
         Self {
             client: WallGuardClient::new(channel),
         }
     }
 
-    pub async fn sample(&mut self, message: SampleMessage) -> Option<SampleResponse> {
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn handle_packets(&mut self, message: Packets) -> Result<(), String> {
         self.client
-            .sample(Request::new(message))
+            .handle_packets(Request::new(message))
             .await
-            .map(tonic::Response::into_inner)
-            .ok()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     }
 }
