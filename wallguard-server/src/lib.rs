@@ -40,11 +40,12 @@ impl WallGuardGrpcInterface {
         }
     }
 
-    pub async fn handle_packets(&mut self, message: Packets) -> Option<Empty> {
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn handle_packets(&mut self, message: Packets) -> Result<(), String> {
         self.client
             .handle_packets(Request::new(message))
             .await
-            .map(tonic::Response::into_inner)
-            .ok()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     }
 }
