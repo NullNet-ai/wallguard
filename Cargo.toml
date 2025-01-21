@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-pcap = "2.2.0"
-chrono = {version = "0.4.39", features = ["clock"]}
+traffic_monitor = { path = "../libguard/client_libraries/traffic_monitor" }
 tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
 prost = "0.13.4"
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }

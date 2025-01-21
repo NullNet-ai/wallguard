@@ -1388,6 +1388,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "traffic_monitor"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "pcap",
+]
+
+[[package]]
 name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1424,14 +1432,13 @@ dependencies = [
 name = "wallguard"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "clap",
  "once_cell",
- "pcap",
  "prost",
  "tokio",
  "tonic",
  "tonic-build",
+ "traffic_monitor",
  "uuid",
 ]
 

@@ -4,6 +4,7 @@ use crate::proto::traffic_monitor::{Empty, Packet, Packets};
 use std::sync::mpsc::Receiver;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Request, Response};
+use traffic_monitor::PacketInfo;
 
 struct PacketBuffer {
     buffer: Vec<Packet>,
@@ -29,12 +30,23 @@ impl PacketBuffer {
     }
 }
 
-pub(crate) async fn transmit_packets(rx: &Receiver<Packet>, addr: String, port: u16, uuid: String) {
+pub(crate) async fn transmit_packets(
+    rx: &Receiver<PacketInfo>,
+    addr: String,
+    port: u16,
+    uuid: String,
+) {
     let mut client = grpc_client_setup(addr, port).await;
     let mut packet_buffer = PacketBuffer::new();
     let mut failure_buffer = Vec::new();
     loop {
         if let Ok(packet) = rx.recv() {
+            let packet = Packet {
+                timestamp: packet.timestamp,
+                interface: packet.interface,
+                link_type: packet.link_type,
+                data: packet.data,
+            };
             packet_buffer.push_packet(packet);
             if packet_buffer.is_full() {
                 if let Err(packets) = send_packets(
