@@ -18,7 +18,7 @@ static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(
 
 impl WallGuardGrpcInterface {
     #[allow(clippy::missing_panics_doc)]
-    pub async fn new(addr: &'static str, port: u16) -> Self {
+    pub async fn new(addr: &str, port: u16) -> Self {
         let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
 
         let Ok(channel) = Channel::from_shared(format!("https://{addr}:{port}"))
