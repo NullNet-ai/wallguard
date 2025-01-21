@@ -1,10 +1,7 @@
-use crate::constants::{BUFFER_SIZE, CA_CERT};
-use crate::proto::traffic_monitor::traffic_monitor_client::TrafficMonitorClient;
-use crate::proto::traffic_monitor::{Empty, Packet, Packets};
+use crate::constants::BUFFER_SIZE;
 use std::sync::mpsc::Receiver;
-use tonic::transport::{Channel, ClientTlsConfig};
-use tonic::{Request, Response};
 use traffic_monitor::PacketInfo;
+use wallguard_server::{Packet, Packets, WallGuardGrpcInterface};
 
 struct PacketBuffer {
     buffer: Vec<Packet>,
@@ -36,7 +33,7 @@ pub(crate) async fn transmit_packets(
     port: u16,
     uuid: String,
 ) {
-    let mut client = grpc_client_setup(addr, port).await;
+    let mut client = WallGuardGrpcInterface::new(&addr, port).await;
     let mut packet_buffer = PacketBuffer::new();
     let mut failure_buffer = Vec::new();
     loop {
@@ -57,10 +54,7 @@ pub(crate) async fn transmit_packets(
                 )
                 .await
                 {
-                    println!(
-                        "Transmission failed; {} packets queued for later...",
-                        packets.len()
-                    );
+                    println!("{} packets queued for later...", packets.len());
                     failure_buffer.extend(packets);
                 }
             }
@@ -68,31 +62,12 @@ pub(crate) async fn transmit_packets(
     }
 }
 
-async fn grpc_client_setup(addr: String, port: u16) -> TrafficMonitorClient<Channel> {
-    let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
-
-    let Ok(channel) = Channel::from_shared(format!("https://{addr}:{port}"))
-        .expect("Failed to parse address")
-        .tls_config(tls)
-        .expect("Failed to configure up TLS")
-        .connect()
-        .await
-    else {
-        println!("Failed to connect to the server. Retrying in 1 second...");
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-        return Box::pin(grpc_client_setup(addr, port)).await;
-    };
-
-    println!("Connected to the server");
-    TrafficMonitorClient::new(channel)
-}
-
 async fn send_packets(
-    client: &mut TrafficMonitorClient<Channel>,
+    client: &mut WallGuardGrpcInterface,
     packet_buffer: &mut PacketBuffer,
     failure_buffer: &mut Vec<Packet>,
     uuid: String,
-) -> Result<Response<Empty>, Vec<Packet>> {
+) -> Result<(), Vec<Packet>> {
     failure_buffer.extend(packet_buffer.take_packets());
     let p = Packets {
         uuid,
@@ -100,7 +75,10 @@ async fn send_packets(
     };
 
     client
-        .handle_packets(Request::new(p.clone())) // TODO: avoid cloning when possible
+        .handle_packets(p.clone()) // TODO: avoid cloning when possible
         .await
-        .map_err(|_| p.packets)
+        .map_err(|e| {
+            println!("Failed to send packets to the server: {e}");
+            p.packets
+        })
 }

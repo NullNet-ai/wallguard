@@ -1,7 +1,6 @@
 mod cli;
 mod constants;
 mod packet_transmitter;
-mod proto;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
 use clap::Parser;
