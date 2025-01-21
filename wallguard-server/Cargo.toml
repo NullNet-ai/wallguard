@@ -13,15 +13,23 @@ keywords = ["firewall", "network", "manager", "centralized", "monitor"]
 categories = ["network-programming"]
 #include = []
 
+[features]
+no-datastore = []
+
 [profile.release]
 opt-level = 3
 lto = true
 strip = true
 
 [dependencies]
+etherparse = "0.17.0"
 tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
 prost = "0.13.4"
-tokio = { version = "1.42.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
+async-channel = "2.3.1"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.137"
+base64 = "0.22.1"
 
 [build-dependencies]
 tonic-build = "0.12.3"
