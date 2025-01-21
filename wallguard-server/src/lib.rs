@@ -1,5 +1,5 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-pub use crate::proto::wallguard::{Empty, Packet, Packets};
+pub use crate::proto::wallguard::{Packet, Packets};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
