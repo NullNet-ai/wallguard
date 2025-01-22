@@ -15,4 +15,8 @@ pub struct Args {
     /// Machine UUID
     #[arg(short, long, default_value = UUID.as_str())]
     pub uuid: String,
+    /// Target platform
+    #[arg(short = 't', long, default_value = "pfsense")]
+    pub platform: String,
+
 }

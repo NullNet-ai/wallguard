@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 traffic_monitor = { path = "../libguard/client_libraries/traffic_monitor" }
+libconfmon = { path = "../libguard/client_libraries/libconfmon" }
 wallguard-server = { path = "../wallguard-server" }
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 uuid = { version = "1.12.0", features = ["v4"] }
