@@ -1,5 +1,5 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-pub use crate::proto::wallguard::{Packet, Packets};
+pub use crate::proto::wallguard::{ConfigSnapshot, FileSnapshot, Packet, Packets};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
@@ -44,6 +44,15 @@ impl WallGuardGrpcInterface {
     pub async fn handle_packets(&mut self, message: Packets) -> Result<(), String> {
         self.client
             .handle_packets(Request::new(message))
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn handle_config(&mut self, message: ConfigSnapshot) -> Result<(), String> {
+        self.client
+            .handle_config(Request::new(message))
             .await
             .map(|_| ())
             .map_err(|e| e.to_string())

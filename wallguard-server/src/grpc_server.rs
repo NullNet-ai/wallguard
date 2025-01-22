@@ -1,5 +1,5 @@
 use crate::proto::wallguard::wall_guard_server::{WallGuard, WallGuardServer};
-use crate::proto::wallguard::{Empty, Packets};
+use crate::proto::wallguard::{ConfigSnapshot, Empty, Packets};
 use std::net::ToSocketAddrs;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
 use tonic::{Request, Response, Status};
@@ -38,6 +38,24 @@ impl WallGuard for WallGuardImpl {
         self.tx
             .try_send(request.into_inner())
             .map_err(|_| Status::internal("Failed to send packets to workers"))?;
+
+        Ok(Response::new(Empty {}))
+    }
+
+    async fn handle_config(
+        &self,
+        request: Request<ConfigSnapshot>,
+    ) -> Result<Response<Empty>, Status> {
+        let snapshot = request.into_inner();
+        println!("Received configuration snapshot from {}", &snapshot.uuid);
+
+        for file in &snapshot.files {
+            let name = &file.filename;
+            let len = file.contents.len();
+            println!("Received file {} of len {} bytes", name, len);
+        }
+
+        println!("---");
 
         Ok(Response::new(Empty {}))
     }

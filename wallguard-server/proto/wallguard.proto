@@ -4,6 +4,7 @@ package wallguard;
 
 service WallGuard {
   rpc HandlePackets (Packets) returns (Empty);
+  rpc HandleConfig (ConfigSnapshot) returns (Empty);
 }
 
 message Packets {
@@ -16,6 +17,17 @@ message Packet {
   string interface = 2;
   int32 link_type = 3;
   bytes data = 4;
+}
+
+message FileSnapshot {
+  string filename = 1;
+  bytes contents = 2;
+}
+
+message ConfigSnapshot {
+  repeated FileSnapshot files = 1;
+  string uuid = 2;
+  string platform = 3;
 }
 
 message Empty { }
