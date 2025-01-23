@@ -7,7 +7,9 @@ edition = "2021"
 traffic_monitor = { path = "../libguard/client_libraries/traffic_monitor" }
 libconfmon = { path = "../libguard/client_libraries/libconfmon" }
 wallguard-server = { path = "../wallguard-server" }
+chrono = { version = "0.4.39", features = ["clock"] }
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 uuid = { version = "1.12.0", features = ["v4"] }
 once_cell = "1.20.2"
 clap = { version = "4.5.26", features = ["derive"] }
+bincode = "1.3.3"

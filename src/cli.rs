@@ -18,5 +18,4 @@ pub struct Args {
     /// Target platform
     #[arg(short = 't', long, default_value = "pfsense")]
     pub platform: String,
-
 }

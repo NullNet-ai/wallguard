@@ -1,31 +1,11 @@
-use crate::constants::BUFFER_SIZE;
+use crate::constants::{BATCH_SIZE, QUEUE_SIZE};
+use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
+use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use std::sync::mpsc::Receiver;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use traffic_monitor::PacketInfo;
 use wallguard_server::{Packet, Packets, WallGuardGrpcInterface};
-
-struct PacketBuffer {
-    buffer: Vec<Packet>,
-}
-
-impl PacketBuffer {
-    fn new() -> Self {
-        Self {
-            buffer: Vec::with_capacity(BUFFER_SIZE),
-        }
-    }
-
-    fn push_packet(&mut self, packet: Packet) {
-        self.buffer.push(packet);
-    }
-
-    fn take_packets(&mut self) -> Vec<Packet> {
-        std::mem::take(&mut self.buffer)
-    }
-
-    fn is_full(&self) -> bool {
-        self.buffer.len() >= BUFFER_SIZE
-    }
-}
 
 pub(crate) async fn transmit_packets(
     rx: &Receiver<PacketInfo>,
@@ -33,9 +13,13 @@ pub(crate) async fn transmit_packets(
     port: u16,
     uuid: String,
 ) {
-    let mut client = WallGuardGrpcInterface::new(&addr, port).await;
-    let mut packet_buffer = PacketBuffer::new();
-    let mut failure_buffer = Vec::new();
+    let client = Arc::new(Mutex::new(None));
+    let client_2 = client.clone();
+    tokio::spawn(async move {
+        handle_connection_and_retransmission(&addr, port, client_2).await;
+    });
+    let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
+    let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
     loop {
         if let Ok(packet) = rx.recv() {
             let packet = Packet {
@@ -44,18 +28,11 @@ pub(crate) async fn transmit_packets(
                 link_type: packet.link_type,
                 data: packet.data,
             };
-            packet_buffer.push_packet(packet);
-            if packet_buffer.is_full() {
-                if let Err(packets) = send_packets(
-                    &mut client,
-                    &mut packet_buffer,
-                    &mut failure_buffer,
-                    uuid.clone(),
-                )
-                .await
-                {
-                    println!("{} packets queued for later...", packets.len());
-                    failure_buffer.extend(packets);
+            packet_batch.push(packet);
+            if packet_batch.is_full() {
+                send_packets(&client, &mut packet_batch, &mut packet_queue, uuid.clone()).await;
+                if packet_queue.is_full() {
+                    dump_packets_to_file(packet_queue.take(), uuid.clone()).await;
                 }
             }
         }
@@ -63,22 +40,35 @@ pub(crate) async fn transmit_packets(
 }
 
 async fn send_packets(
-    client: &mut WallGuardGrpcInterface,
-    packet_buffer: &mut PacketBuffer,
-    failure_buffer: &mut Vec<Packet>,
+    interface: &Arc<Mutex<Option<WallGuardGrpcInterface>>>,
+    packet_batch: &mut PacketBuffer,
+    packet_queue: &mut PacketBuffer,
     uuid: String,
-) -> Result<(), Vec<Packet>> {
-    failure_buffer.extend(packet_buffer.take_packets());
-    let p = Packets {
-        uuid,
-        packets: std::mem::take(failure_buffer),
-    };
+) {
+    packet_queue.extend(packet_batch.take());
+    if let Some(client) = interface.lock().await.as_mut() {
+        let p = Packets {
+            uuid,
+            packets: packet_queue.get_clone(),
+        };
+        if client.handle_packets(p).await.is_ok() {
+            packet_queue.clear();
+        };
+    }
+}
 
-    client
-        .handle_packets(p.clone()) // TODO: avoid cloning when possible
-        .await
-        .map_err(|e| {
-            println!("Failed to send packets to the server: {e}");
-            p.packets
-        })
+async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String) {
+    let now = chrono::Utc::now().to_rfc3339();
+    let file_name = format!("packet_dumps/{now}");
+    println!(
+        "Queue is full. Dumping {} packets to file '{file_name}'",
+        packets.len()
+    );
+    let dump = Packets { uuid, packets };
+    tokio::fs::write(
+        file_name,
+        bincode::serialize(&dump).expect("Failed to serialize packets"),
+    )
+    .await
+    .expect("Failed to write dump file");
 }

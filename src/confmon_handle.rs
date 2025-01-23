@@ -28,10 +28,7 @@ async fn send_configuration_snapshot(
     };
 
     if let Err(err) = client.handle_config(data).await {
-        println!(
-            "Failed to send configuration snapshot to the server: {}",
-            err
-        );
+        println!("Failed to send configuration snapshot to the server: {err}");
     }
 }
 
