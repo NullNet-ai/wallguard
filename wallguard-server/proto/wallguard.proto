@@ -3,6 +3,7 @@ syntax = "proto3";
 package wallguard;
 
 service WallGuard {
+  rpc Heartbeat (Empty) returns (Empty);
   rpc HandlePackets (Packets) returns (Empty);
   rpc HandleConfig (ConfigSnapshot) returns (Empty);
 }

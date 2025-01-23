@@ -34,6 +34,10 @@ struct WallGuardImpl {
 
 #[tonic::async_trait]
 impl WallGuard for WallGuardImpl {
+    async fn heartbeat(&self, _: Request<Empty>) -> Result<Response<Empty>, Status> {
+        Ok(Response::new(Empty {}))
+    }
+
     async fn handle_packets(&self, request: Request<Packets>) -> Result<Response<Empty>, Status> {
         self.tx
             .try_send(request.into_inner())
@@ -52,7 +56,7 @@ impl WallGuard for WallGuardImpl {
         for file in &snapshot.files {
             let name = &file.filename;
             let len = file.contents.len();
-            println!("Received file {} of len {} bytes", name, len);
+            println!("Received file {name} of len {len} bytes");
         }
 
         println!("---");

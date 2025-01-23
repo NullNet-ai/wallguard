@@ -1,4 +1,5 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
+use crate::proto::wallguard::Empty;
 pub use crate::proto::wallguard::{ConfigSnapshot, FileSnapshot, Packet, Packets};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
@@ -28,8 +29,8 @@ impl WallGuardGrpcInterface {
             .connect()
             .await
         else {
-            println!("Failed to connect to the server. Retrying in 1 second...");
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            println!("Failed to connect to the server. Retrying in 10 seconds...");
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
         };
 
@@ -38,6 +39,15 @@ impl WallGuardGrpcInterface {
         Self {
             client: WallGuardClient::new(channel),
         }
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn heartbeat(&mut self) -> Result<(), String> {
+        self.client
+            .heartbeat(Request::new(Empty {}))
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string())
     }
 
     #[allow(clippy::missing_errors_doc)]
