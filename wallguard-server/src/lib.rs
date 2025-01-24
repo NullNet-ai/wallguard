@@ -1,6 +1,6 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-use crate::proto::wallguard::Empty;
 pub use crate::proto::wallguard::{ConfigSnapshot, FileSnapshot, Packet, Packets};
+use proto::wallguard::{Authentication, HeartbeatRequest, LoginRequest};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
@@ -42,9 +42,22 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn heartbeat(&mut self) -> Result<(), String> {
+    pub async fn login(&mut self, app_id: String, app_secret: String) -> Result<String, String> {
+        let response = self
+            .client
+            .login(Request::new(LoginRequest { app_id, app_secret }))
+            .await
+            .map_err(|e| e.to_string())?;
+
+        Ok(response.into_inner().token)
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn heartbeat(&mut self, token: String) -> Result<(), String> {
         self.client
-            .heartbeat(Request::new(Empty {}))
+            .heartbeat(Request::new(HeartbeatRequest {
+                auth: Some(Authentication { token }),
+            }))
             .await
             .map(|_| ())
             .map_err(|e| e.to_string())

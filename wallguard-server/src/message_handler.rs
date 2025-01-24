@@ -1,9 +1,8 @@
-use crate::datastore::client::DatastoreClient;
-use crate::proto::wallguard::Packets;
+use crate::{datastore::DatastoreWrapper, proto::wallguard::Packets};
 
 pub async fn worker_task(
     rx: async_channel::Receiver<Packets>,
-    mut datastore: Option<DatastoreClient>,
+    mut datastore: Option<DatastoreWrapper>,
 ) {
     loop {
         let message = match rx.recv().await {
@@ -12,6 +11,13 @@ pub async fn worker_task(
                 println!("Receiver error: {}. Task Id {:?}", e, tokio::task::id());
                 continue;
             }
+        };
+
+        // Do I need to clone here?
+        // Did it to satisfy the borrow checker
+        let Some(authentication) = message.auth.clone() else {
+            eprintln!("Unauthenticated message. Skipping data transmission...");
+            continue;
         };
 
         println!("Received {} packets", message.packets.len());
@@ -26,7 +32,11 @@ pub async fn worker_task(
             eprintln!("Datastore functionality is disabled. Skipping data transmission...");
             continue;
         };
-        match datastore.save_message(parsed_message).await {
+
+        match datastore
+            .packets_insert(authentication.token, parsed_message)
+            .await
+        {
             Ok(response) if !response.success => {
                 let error = response.error;
                 let message = response.message;

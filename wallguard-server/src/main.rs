@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use datastore::{client::DatastoreClient, config::DatastoreConfig};
+use datastore::DatastoreWrapper;
 use proto::wallguard::Packets;
 
 mod datastore;
@@ -20,16 +20,7 @@ async fn main() {
         println!("Datastore functionality disabled");
         None
     } else {
-        let datastore_config = DatastoreConfig::from_env();
-        let mut datastore = DatastoreClient::connect(datastore_config)
-            .await
-            .expect("Could not connect to the datastore");
-
-        datastore
-            .handle_authentication()
-            .await
-            .expect("Datastore Authentication failed");
-
+        let datastore = DatastoreWrapper::new();
         Some(datastore)
     };
 
@@ -42,7 +33,7 @@ async fn main() {
         }));
     }
 
-    grpc_server::run_grpc_server(tx).await;
+    grpc_server::run_grpc_server(tx, datastore).await;
 
     for worker in workers {
         worker.await.unwrap();
