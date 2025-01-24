@@ -5,20 +5,34 @@ mod packet_transmitter;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
 use clap::Parser;
+use wallguard_server::WallGuardGrpcInterface;
+
+async fn authenticate(addr: &str, port: u16, app_id: &str, app_secret: &str) -> String {
+    WallGuardGrpcInterface::new(addr, port)
+        .await
+        .login(app_id.to_string(), app_secret.to_string())
+        .await
+        .expect("Authentication failed")
+}
 
 #[tokio::main]
 async fn main() {
     let args = cli::Args::parse();
     println!("Arguments: {args:?}");
 
-    let mut cfg_watcher = confmon_handle::init_confmon(
-        args.addr.clone(),
+    let token = authenticate(
+        args.addr.as_str(),
         args.port,
-        args.uuid.clone(),
-        args.platform.clone(),
-    ).await;
+        args.app_id.as_str(),
+        args.app_secret.as_str(),
+    )
+    .await;
 
-    // TODO: Take current snapshot and send to the server
+    println!("Successful Authentication");
+
+    let mut cfg_watcher =
+        confmon_handle::init_confmon(args.addr.clone(), args.port, args.platform.clone()).await;
+
     let cfg_monitoring_future = cfg_watcher.watch();
 
     let monitor_config = traffic_monitor::MonitorConfig {
@@ -27,6 +41,11 @@ async fn main() {
     };
     let rx = traffic_monitor::monitor_devices(&monitor_config);
 
-    transmit_packets(&rx, monitor_config.addr, args.port, args.uuid).await;
+    transmit_packets(&rx, monitor_config.addr, args.port, args.uuid, token).await;
     cfg_monitoring_future.await.unwrap();
 }
+
+
+// @TODO: 
+// - Implement token renewal mechanism
+// - Pass token to configuration watcher's callback

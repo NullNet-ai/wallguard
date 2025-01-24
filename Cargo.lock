@@ -735,6 +735,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "libdatastore"
+version = "0.1.0"
+dependencies = [
+ "prost",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "libloading"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1601,6 +1610,7 @@ dependencies = [
  "async-channel",
  "base64",
  "etherparse",
+ "libdatastore",
  "once_cell",
  "prost",
  "serde",

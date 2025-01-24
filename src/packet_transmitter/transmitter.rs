@@ -1,7 +1,7 @@
 use crate::constants::BUFFER_SIZE;
 use std::sync::mpsc::Receiver;
 use traffic_monitor::PacketInfo;
-use wallguard_server::{Packet, Packets, WallGuardGrpcInterface};
+use wallguard_server::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
 struct PacketBuffer {
     buffer: Vec<Packet>,
@@ -32,6 +32,7 @@ pub(crate) async fn transmit_packets(
     addr: String,
     port: u16,
     uuid: String,
+    token: String,
 ) {
     let mut client = WallGuardGrpcInterface::new(&addr, port).await;
     let mut packet_buffer = PacketBuffer::new();
@@ -51,6 +52,7 @@ pub(crate) async fn transmit_packets(
                     &mut packet_buffer,
                     &mut failure_buffer,
                     uuid.clone(),
+                    token.clone(),
                 )
                 .await
                 {
@@ -67,11 +69,13 @@ async fn send_packets(
     packet_buffer: &mut PacketBuffer,
     failure_buffer: &mut Vec<Packet>,
     uuid: String,
+    token: String,
 ) -> Result<(), Vec<Packet>> {
     failure_buffer.extend(packet_buffer.take_packets());
     let p = Packets {
         uuid,
         packets: std::mem::take(failure_buffer),
+        auth: Some(Authentication { token }),
     };
 
     client
