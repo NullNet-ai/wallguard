@@ -1,6 +1,6 @@
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-pub use crate::proto::wallguard::{ConfigSnapshot, FileSnapshot, Packet, Packets};
-use proto::wallguard::{Authentication, HeartbeatRequest, LoginRequest};
+pub use crate::proto::wallguard::{Authentication, ConfigSnapshot, FileSnapshot, Packet, Packets};
+use proto::wallguard::{HeartbeatRequest, LoginRequest};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
