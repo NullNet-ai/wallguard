@@ -1,23 +1,30 @@
-use crate::constants::{BATCH_SIZE, QUEUE_SIZE};
+use crate::cli::Args;
+use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
+use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
-use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use traffic_monitor::PacketInfo;
 use wallguard_server::{Packet, Packets, WallGuardGrpcInterface};
 
-pub(crate) async fn transmit_packets(
-    rx: &Receiver<PacketInfo>,
-    addr: String,
-    port: u16,
-    uuid: String,
-) {
+pub(crate) async fn transmit_packets(args: Args) {
+    let monitor_config = traffic_monitor::MonitorConfig {
+        addr: args.addr.clone(),
+        snaplen: args.snaplen,
+    };
+    let mut rx = traffic_monitor::monitor_devices(&monitor_config);
+
+    let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
+    println!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
+
     let client = Arc::new(Mutex::new(None));
     let client_2 = client.clone();
+    let dump_dir = DumpDir::new(dump_bytes).await;
+    let dump_dir_2 = dump_dir.clone();
     tokio::spawn(async move {
-        handle_connection_and_retransmission(&addr, port, client_2).await;
+        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2).await;
     });
+
     let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
     let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
     loop {
@@ -30,9 +37,25 @@ pub(crate) async fn transmit_packets(
             };
             packet_batch.push(packet);
             if packet_batch.is_full() {
-                send_packets(&client, &mut packet_batch, &mut packet_queue, uuid.clone()).await;
+                send_packets(
+                    &client,
+                    &mut packet_batch,
+                    &mut packet_queue,
+                    args.uuid.clone(),
+                )
+                .await;
                 if packet_queue.is_full() {
-                    dump_packets_to_file(packet_queue.take(), uuid.clone()).await;
+                    if dump_dir.is_full().await {
+                        println!(
+                            "Dump files reached the maximum allowed limit. Entering idle mode..."
+                        );
+                        drop(rx);
+                        // TODO: wait for the server to come up...
+                        rx = traffic_monitor::monitor_devices(&monitor_config);
+                    } else {
+                        dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir)
+                            .await;
+                    }
                 }
             }
         }
@@ -57,16 +80,16 @@ async fn send_packets(
     }
 }
 
-async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String) {
+async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String, dump_dir: &DumpDir) {
     let now = chrono::Utc::now().to_rfc3339();
-    let file_name = format!("packet_dumps/{now}");
+    let file_path = dump_dir.get_file_path(&now);
     println!(
-        "Queue is full. Dumping {} packets to file '{file_name}'",
+        "Queue is full. Dumping {} packets to file '{file_path}'",
         packets.len()
     );
     let dump = Packets { uuid, packets };
     tokio::fs::write(
-        file_name,
+        file_path,
         bincode::serialize(&dump).expect("Failed to serialize packets"),
     )
     .await

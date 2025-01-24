@@ -1,3 +1,4 @@
+use crate::packet_transmitter::dump_dir::DumpDir;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::Mutex;
@@ -7,6 +8,7 @@ pub(crate) async fn handle_connection_and_retransmission(
     addr: &str,
     port: u16,
     interface: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
+    dump_dir: DumpDir,
 ) {
     loop {
         if interface.lock().await.is_some() {
@@ -28,16 +30,7 @@ pub(crate) async fn handle_connection_and_retransmission(
             let client = WallGuardGrpcInterface::new(addr, port).await;
             *interface.lock().await = Some(client);
             // send packets accumulated in dump files
-            fs::create_dir("packet_dumps").await.unwrap_or_default();
-            let mut dir = fs::read_dir("packet_dumps")
-                .await
-                .expect("Failed to read packet dumps directory");
-            let mut files = Vec::new();
-            while let Ok(Some(file)) = dir.next_entry().await {
-                files.push(file);
-            }
-            files.sort_by_key(fs::DirEntry::file_name);
-            for file in files {
+            for file in dump_dir.get_files_sorted().await {
                 let dump = fs::read(file.path()).await.unwrap_or_default();
                 let packets: wallguard_server::Packets =
                     bincode::deserialize(&dump).unwrap_or_default();

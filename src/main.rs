@@ -21,12 +21,6 @@ async fn main() {
     // // TODO: Take current snapshot and send to the server
     // let cfg_monitoring_future = cfg_watcher.watch();
 
-    let monitor_config = traffic_monitor::MonitorConfig {
-        addr: args.addr,
-        snaplen: args.snaplen,
-    };
-    let rx = traffic_monitor::monitor_devices(&monitor_config);
-
-    transmit_packets(&rx, monitor_config.addr, args.port, args.uuid).await;
+    transmit_packets(args).await;
     // cfg_monitoring_future.await.unwrap();
 }
