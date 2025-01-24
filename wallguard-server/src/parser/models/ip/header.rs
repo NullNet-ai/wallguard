@@ -48,10 +48,7 @@ impl IpHeader {
                     destination_ip,
                 })
             }
-            _ => {
-                println!("IP header not found in packet");
-                None
-            }
+            _ => None,
         }
     }
 }

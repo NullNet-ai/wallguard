@@ -32,10 +32,7 @@ impl TransportHeader {
                 let icmp_header = IcmpHeader::from_etherparse_v6(&h);
                 Some(TransportHeader::Icmp(icmp_header))
             }
-            None => {
-                println!("Transport header not found in packet");
-                None
-            }
+            None => None,
         }
     }
 }

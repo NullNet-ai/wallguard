@@ -23,7 +23,6 @@ pub async fn worker_task(
         };
 
         let Some(datastore) = datastore.as_mut() else {
-            eprintln!("Datastore functionality is disabled. Skipping data transmission...");
             continue;
         };
         match datastore.save_message(parsed_message).await {
