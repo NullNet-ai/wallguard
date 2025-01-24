@@ -45,16 +45,20 @@ pub(crate) async fn transmit_packets(args: Args) {
                 )
                 .await;
                 if packet_queue.is_full() {
+                    dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir).await;
                     if dump_dir.is_full().await {
-                        println!(
-                            "Dump files reached the maximum allowed limit. Entering idle mode..."
-                        );
+                        println!("Dump size maximum limit reached. Entering idle mode...");
+                        // stop traffic monitoring
                         drop(rx);
-                        // TODO: wait for the server to come up...
+                        // wait for the server to come up again
+                        loop {
+                            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                            if client.lock().await.is_some() {
+                                break;
+                            }
+                        }
+                        // restart traffic monitoring
                         rx = traffic_monitor::monitor_devices(&monitor_config);
-                    } else {
-                        dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir)
-                            .await;
                     }
                 }
             }
