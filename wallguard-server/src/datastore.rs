@@ -1,9 +1,10 @@
 use crate::parser::parsed_message::ParsedMessage;
 use libdatastore::{
     BatchCreateBody, BatchCreateRequest, CreateParams, DatastoreClient, DatastoreConfig,
-    Error as DSError, ErrorKind as DSErrorKind, LoginBody, LoginData, LoginRequest, Query,
-    Response as DSResponse,
+    Error as DSError, ErrorKind as DSErrorKind, LoginBody, LoginData, LoginRequest, Params, Query,
+    Response as DSResponse, UpdateRequest,
 };
+use serde_json::json;
 use std::str::FromStr;
 use tonic::{metadata::MetadataValue, Request};
 
@@ -75,6 +76,40 @@ impl DatastoreWrapper {
         Self::set_token_for_request(&mut request, token)?;
 
         let response = self.inner.batch_create(request).await?;
+
+        Ok(response)
+    }
+
+    pub async fn device_setup(
+        &self,
+        token: String,
+        device_id: String,
+        device_version: String,
+        device_uuid: String,
+        device_hostname: String,
+        device_address: String,
+    ) -> Result<DSResponse, DSError> {
+        let mut request = Request::new(UpdateRequest {
+            params: Some(Params {
+                table: String::from("devices"),
+                id: device_id,
+            }),
+            query: Some(Query {
+                pluck: String::from("id,code"),
+            }),
+            body: json!({
+                "device_version": device_version,
+                "hostname": device_hostname,
+                "system_id": device_uuid,
+                "ip_address": device_address,
+                "is_connection_established": true
+            })
+            .to_string(),
+        });
+
+        Self::set_token_for_request(&mut request, token)?;
+
+        let response = self.inner.update(request).await?;
 
         Ok(response)
     }

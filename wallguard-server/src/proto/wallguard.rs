@@ -13,6 +13,17 @@ pub struct Authentication {
     pub token: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SetupRequest {
+    #[prost(message, optional, tag = "1")]
+    pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "2")]
+    pub device_version: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub device_uuid: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub hostname: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HeartbeatRequest {
     #[prost(message, optional, tag = "1")]
     pub auth: ::core::option::Option<Authentication>,
@@ -166,6 +177,26 @@ pub mod wall_guard_client {
             req.extensions_mut().insert(GrpcMethod::new("wallguard.WallGuard", "Login"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn setup(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SetupRequest>,
+        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/wallguard.WallGuard/Setup",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new("wallguard.WallGuard", "Setup"));
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn heartbeat(
             &mut self,
             request: impl tonic::IntoRequest<super::HeartbeatRequest>,
@@ -248,6 +279,10 @@ pub mod wall_guard_server {
             &self,
             request: tonic::Request<super::LoginRequest>,
         ) -> std::result::Result<tonic::Response<super::Authentication>, tonic::Status>;
+        async fn setup(
+            &self,
+            request: tonic::Request<super::SetupRequest>,
+        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status>;
         async fn heartbeat(
             &self,
             request: tonic::Request<super::HeartbeatRequest>,
@@ -365,6 +400,49 @@ pub mod wall_guard_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = LoginSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/wallguard.WallGuard/Setup" => {
+                    #[allow(non_camel_case_types)]
+                    struct SetupSvc<T: WallGuard>(pub Arc<T>);
+                    impl<T: WallGuard> tonic::server::UnaryService<super::SetupRequest>
+                    for SetupSvc<T> {
+                        type Response = super::Empty;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SetupRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WallGuard>::setup(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = SetupSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

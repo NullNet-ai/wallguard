@@ -1,8 +1,9 @@
 use crate::datastore::DatastoreWrapper;
 use crate::proto::wallguard::wall_guard_server::{WallGuard, WallGuardServer};
 use crate::proto::wallguard::{
-    Authentication, ConfigSnapshot, Empty, HeartbeatRequest, LoginRequest, Packets,
+    Authentication, ConfigSnapshot, Empty, HeartbeatRequest, LoginRequest, Packets, SetupRequest,
 };
+use libdatastore::Token;
 use std::net::ToSocketAddrs;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
 use tonic::{Request, Response, Status};
@@ -46,6 +47,44 @@ impl WallGuard for WallGuardImpl {
         _request: Request<HeartbeatRequest>,
     ) -> Result<Response<Empty>, Status> {
         // TODO: Update last heartbeat
+        Ok(Response::new(Empty {}))
+    }
+
+    async fn setup(&self, request: Request<SetupRequest>) -> Result<Response<Empty>, Status> {
+        let datastore = self
+            .datastore
+            .as_ref()
+            .ok_or_else(|| Status::internal("Datastore is unavailable"))?;
+
+        let remote_address = request
+            .remote_addr()
+            .map(|addr| addr.ip().to_string())
+            .unwrap_or_else(|| "Unknown".to_string());
+
+        let setup_request = request.into_inner();
+
+        let jwt_token = setup_request
+            .auth
+            .ok_or_else(|| Status::internal("Unauthorized request"))?
+            .token;
+
+        let token_info =
+            Token::from_jwt(&jwt_token).map_err(|e| Status::internal(e.to_string()))?;
+
+        let response = datastore
+            .device_setup(
+                jwt_token,
+                token_info.account.device.id,
+                setup_request.device_version,
+                setup_request.device_uuid,
+                setup_request.hostname,
+                remote_address,
+            )
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        println!("{:?}", response);
+
         Ok(Response::new(Empty {}))
     }
 
