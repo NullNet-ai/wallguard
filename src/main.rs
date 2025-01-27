@@ -1,26 +1,14 @@
+mod authentication;
 mod cli;
 mod confmon_handle;
 mod constants;
 mod packet_transmitter;
+mod utils;
 
-use crate::packet_transmitter::transmitter::transmit_packets;
+// use crate::packet_transmitter::transmitter::transmit_packets;
+use authentication::AutoAuth;
 use clap::Parser;
 use wallguard_server::{Authentication, SetupRequest, WallGuardGrpcInterface};
-
-async fn authenticate(addr: &str, port: u16, app_id: &str, app_secret: &str) -> String {
-    if cfg!(feature = "no-datastore") {
-        println!("Datastore functionality is disabled. Using an empty token...");
-        return String::new();
-    }
-
-    let token = WallGuardGrpcInterface::new(addr, port)
-        .await
-        .login(app_id.to_string(), app_secret.to_string())
-        .await
-        .expect("Authentication failed");
-    println!("Successful Authentication: {token:?}");
-    token
-}
 
 async fn setup(addr: &str, port: u16, token: &str, uuid: &str) {
     if cfg!(feature = "no-datastore") {
@@ -46,27 +34,31 @@ async fn main() {
     let args = cli::Args::parse();
     println!("Arguments: {args:?}");
 
-    let token = authenticate(
-        args.addr.as_str(),
+    let auth = AutoAuth::new(
+        args.app_id.clone(),
+        args.app_secret.clone(),
+        args.addr.clone(),
         args.port,
-        args.app_id.as_str(),
-        args.app_secret.as_str(),
-    )
-    .await;
+    );
+
+    let token = auth
+        .obtain_token_safe()
+        .await
+        .expect("Server authentication failed");
 
     setup(args.addr.as_str(), args.port, &token, &args.uuid).await;
 
-    let mut cfg_watcher =
-        confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
+    // let mut cfg_watcher =
+    //     confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
 
-    tokio::spawn(async move {
-        cfg_watcher
-            .watch()
-            .await
-            .expect("Failed to watch configuration changes");
-    });
+    // tokio::spawn(async move {
+    //     cfg_watcher
+    //         .watch()
+    //         .await
+    //         .expect("Failed to watch configuration changes");
+    // });
 
-    transmit_packets(args, token).await;
+    // transmit_packets(args, token).await;
 }
 
 // @TODO:
