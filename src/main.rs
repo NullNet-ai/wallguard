@@ -59,10 +59,14 @@ async fn main() {
     let mut cfg_watcher =
         confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
 
-    let cfg_monitoring_future = cfg_watcher.watch();
+    tokio::spawn(async move {
+        cfg_watcher
+            .watch()
+            .await
+            .expect("Failed to watch configuration changes");
+    });
 
     transmit_packets(args, token).await;
-    cfg_monitoring_future.await.unwrap();
 }
 
 // @TODO:
