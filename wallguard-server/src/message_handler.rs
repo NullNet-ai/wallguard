@@ -13,8 +13,6 @@ pub async fn worker_task(
             }
         };
 
-        // Do I need to clone here?
-        // Did it to satisfy the borrow checker
         let Some(authentication) = message.auth.clone() else {
             eprintln!("Unauthenticated message. Skipping data transmission...");
             continue;
@@ -34,7 +32,7 @@ pub async fn worker_task(
         };
 
         match datastore
-            .packets_insert(authentication.token, parsed_message)
+            .packets_insert(&authentication.token, parsed_message)
             .await
         {
             Ok(response) if !response.success => {

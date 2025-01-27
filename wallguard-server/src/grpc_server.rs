@@ -58,8 +58,7 @@ impl WallGuard for WallGuardImpl {
 
         let remote_address = request
             .remote_addr()
-            .map(|addr| addr.ip().to_string())
-            .unwrap_or_else(|| "Unknown".to_string());
+            .map_or_else(|| "Unknown".to_string(), |addr| addr.ip().to_string());
 
         let setup_request = request.into_inner();
 
@@ -92,19 +91,16 @@ impl WallGuard for WallGuardImpl {
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<Authentication>, Status> {
-        if self.datastore.is_none() {
+        let Some(datastore) = self.datastore.as_ref() else {
             return Err(Status::internal("Datastore is unavailable"));
-        }
+        };
 
         let login_request = request.into_inner();
 
-        let token = self
-            .datastore
-            .as_ref()
-            .unwrap()
+        let token = datastore
             .login(login_request.app_id, login_request.app_secret)
             .await
-            .map_err(|e| Status::internal(format!("Datastore login failed: {:?}", e)))?;
+            .map_err(|e| Status::internal(format!("Datastore login failed: {e:?}")))?;
 
         if token.is_empty() {
             return Err(Status::internal(

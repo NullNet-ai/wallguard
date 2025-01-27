@@ -20,11 +20,8 @@ impl DatastoreWrapper {
         Self { inner }
     }
 
-    pub fn set_token_for_request<T>(
-        request: &mut Request<T>,
-        token: String,
-    ) -> Result<(), DSError> {
-        let value = MetadataValue::from_str(token.as_str()).map_err(|e| DSError {
+    pub fn set_token_for_request<T>(request: &mut Request<T>, token: &str) -> Result<(), DSError> {
+        let value = MetadataValue::from_str(token).map_err(|e| DSError {
             kind: DSErrorKind::ErrorRequestFailed,
             message: e.to_string(),
         })?;
@@ -55,7 +52,7 @@ impl DatastoreWrapper {
 
     pub async fn packets_insert(
         &self,
-        token: String,
+        token: &str,
         parsed_message: ParsedMessage,
     ) -> Result<DSResponse, DSError> {
         let records = serde_json::to_string(&parsed_message).map_err(|e| DSError {
@@ -107,7 +104,7 @@ impl DatastoreWrapper {
             .to_string(),
         });
 
-        Self::set_token_for_request(&mut request, token)?;
+        Self::set_token_for_request(&mut request, &token)?;
 
         let response = self.inner.update(request).await?;
 
