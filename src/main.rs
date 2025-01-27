@@ -5,7 +5,7 @@ mod constants;
 mod packet_transmitter;
 mod utils;
 
-// use crate::packet_transmitter::transmitter::transmit_packets;
+use crate::packet_transmitter::transmitter::transmit_packets;
 use authentication::AutoAuth;
 use clap::Parser;
 use wallguard_server::{Authentication, SetupRequest, WallGuardGrpcInterface};
@@ -14,7 +14,8 @@ async fn setup(addr: &str, port: u16, token: &str, uuid: &str) {
     if cfg!(feature = "no-datastore") {
         return;
     }
-    WallGuardGrpcInterface::new(addr, port)
+
+    let response = WallGuardGrpcInterface::new(addr, port)
         .await
         .setup_client(SetupRequest {
             auth: Some(Authentication {
@@ -26,7 +27,12 @@ async fn setup(addr: &str, port: u16, token: &str, uuid: &str) {
         })
         .await
         .expect("Setup Request Failed");
-    println!("Successful Setup");
+
+    if response.success {
+        println!("Successful Setup");
+    } else {
+        panic!("Setup failed: {}", response.message);
+    }
 }
 
 #[tokio::main]
@@ -48,19 +54,19 @@ async fn main() {
 
     setup(args.addr.as_str(), args.port, &token, &args.uuid).await;
 
-    // let mut cfg_watcher =
-    //     confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
+    let mut cfg_watcher =
+        confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
 
-    // tokio::spawn(async move {
-    //     cfg_watcher
-    //         .watch()
-    //         .await
-    //         .expect("Failed to watch configuration changes");
-    // });
+    tokio::spawn(async move {
+        cfg_watcher
+            .watch()
+            .await
+            .expect("Failed to watch configuration changes");
+    });
 
-    // transmit_packets(args, token).await;
+    transmit_packets(args, token).await;
 }
 
 // @TODO:
-// - Implement token renewal mechanism
 // - Pass token to configuration watcher's callback
+// - Implement heartbear

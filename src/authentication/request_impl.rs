@@ -11,7 +11,7 @@ pub async fn request_impl(
         .await
         .login(app_id, app_secret)
         .await?;
-    
+
     let token = TokenWrapper::from_jwt(jwt)?;
     Ok(token)
 }
