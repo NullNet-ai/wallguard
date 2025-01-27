@@ -3,7 +3,7 @@ use crate::proto::wallguard::wall_guard_server::{WallGuard, WallGuardServer};
 use crate::proto::wallguard::{
     Authentication, ConfigSnapshot, Empty, HeartbeatRequest, LoginRequest, Packets, SetupRequest,
 };
-use libdatastore::Token;
+use libtoken::Token;
 use std::net::ToSocketAddrs;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
 use tonic::{Request, Response, Status};
