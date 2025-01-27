@@ -18,5 +18,10 @@ pub struct Args {
     /// Target platform
     #[arg(short = 't', long, default_value = "pfsense")]
     pub platform: String,
-
+    /// App ID
+    #[arg(long = "app_id", default_value = "")]
+    pub app_id: String,
+    /// App secret
+    #[arg(long = "app_secret", default_value = "")]
+    pub app_secret: String,
 }
