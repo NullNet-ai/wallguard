@@ -6,8 +6,8 @@ use wallguard_server::{Authentication, ConfigSnapshot, FileSnapshot, WallGuardGr
 
 static POLL_INTERVAL: u64 = 500;
 
-async fn send_configuration_snapshot(addr: String, port: u16, snapshot: Snapshot) {
-    let mut client = WallGuardGrpcInterface::new(&addr, port).await;
+async fn send_configuration_snapshot(addr: &str, port: u16, snapshot: Snapshot) {
+    let mut client = WallGuardGrpcInterface::new(addr, port).await;
 
     let data = ConfigSnapshot {
         files: snapshot
@@ -30,16 +30,16 @@ async fn send_configuration_snapshot(addr: String, port: u16, snapshot: Snapshot
 pub async fn init_confmon(
     addr: String,
     port: u16,
-    platform: String,
+    platform: &str,
 ) -> Watcher<
     impl Fn(Snapshot) -> Pin<Box<dyn Future<Output = ()> + Send>> + Clone,
     Pin<Box<dyn Future<Output = ()> + Send>>,
 > {
-    libconfmon::make_watcher(platform.clone(), POLL_INTERVAL, move |snapshot| {
+    libconfmon::make_watcher(platform, POLL_INTERVAL, move |snapshot| {
         let addr = addr.clone();
 
         Box::pin(async move {
-            send_configuration_snapshot(addr, port, snapshot).await;
+            send_configuration_snapshot(&addr, port, snapshot).await;
         }) as Pin<Box<dyn Future<Output = ()> + Send>>
     })
     .await

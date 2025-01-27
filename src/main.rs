@@ -50,7 +50,7 @@ async fn main() {
     println!("Successful Setup");
 
     let mut cfg_watcher =
-        confmon_handle::init_confmon(args.addr.clone(), args.port, args.target.clone()).await;
+        confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
 
     let cfg_monitoring_future = cfg_watcher.watch();
 
