@@ -50,17 +50,11 @@ async fn main() {
     println!("Successful Setup");
 
     let mut cfg_watcher =
-        confmon_handle::init_confmon(args.addr.clone(), args.port, args.platform.clone()).await;
+        confmon_handle::init_confmon(args.addr.clone(), args.port, args.target.clone()).await;
 
     let cfg_monitoring_future = cfg_watcher.watch();
 
-    let monitor_config = traffic_monitor::MonitorConfig {
-        addr: args.addr,
-        snaplen: args.snaplen,
-    };
-    let rx = traffic_monitor::monitor_devices(&monitor_config);
-
-    transmit_packets(&rx, monitor_config.addr, args.port, args.uuid, token).await;
+    transmit_packets(args, token).await;
     cfg_monitoring_future.await.unwrap();
 }
 

@@ -1,42 +1,34 @@
-use crate::constants::BUFFER_SIZE;
-use std::sync::mpsc::Receiver;
-use traffic_monitor::PacketInfo;
+use crate::cli::Args;
+use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
+use crate::packet_transmitter::dump_dir::DumpDir;
+use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
+use crate::packet_transmitter::packet_buffer::PacketBuffer;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use wallguard_server::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
-struct PacketBuffer {
-    buffer: Vec<Packet>,
-}
+pub(crate) async fn transmit_packets(args: Args, token: String) {
+    let monitor_config = traffic_monitor::MonitorConfig {
+        addr: args.addr.clone(),
+        snaplen: args.snaplen,
+    };
+    let mut rx = traffic_monitor::monitor_devices(&monitor_config);
 
-impl PacketBuffer {
-    fn new() -> Self {
-        Self {
-            buffer: Vec::with_capacity(BUFFER_SIZE),
-        }
-    }
+    let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
+    println!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
 
-    fn push_packet(&mut self, packet: Packet) {
-        self.buffer.push(packet);
-    }
+    let client = Arc::new(Mutex::new(None));
+    let client_2 = client.clone();
+    let dump_dir = DumpDir::new(dump_bytes).await;
+    let dump_dir_2 = dump_dir.clone();
+    let token_2 = token.clone();
+    tokio::spawn(async move {
+        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
+            .await;
+    });
 
-    fn take_packets(&mut self) -> Vec<Packet> {
-        std::mem::take(&mut self.buffer)
-    }
-
-    fn is_full(&self) -> bool {
-        self.buffer.len() >= BUFFER_SIZE
-    }
-}
-
-pub(crate) async fn transmit_packets(
-    rx: &Receiver<PacketInfo>,
-    addr: String,
-    port: u16,
-    uuid: String,
-    token: String,
-) {
-    let mut client = WallGuardGrpcInterface::new(&addr, port).await;
-    let mut packet_buffer = PacketBuffer::new();
-    let mut failure_buffer = Vec::new();
+    let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
+    let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
     loop {
         if let Ok(packet) = rx.recv() {
             let packet = Packet {
@@ -45,19 +37,38 @@ pub(crate) async fn transmit_packets(
                 link_type: packet.link_type,
                 data: packet.data,
             };
-            packet_buffer.push_packet(packet);
-            if packet_buffer.is_full() {
-                if let Err(packets) = send_packets(
-                    &mut client,
-                    &mut packet_buffer,
-                    &mut failure_buffer,
-                    uuid.clone(),
+            packet_batch.push(packet);
+            if packet_batch.is_full() {
+                send_packets(
+                    &client,
+                    &mut packet_batch,
+                    &mut packet_queue,
+                    args.uuid.clone(),
                     token.clone(),
                 )
-                .await
-                {
-                    println!("{} packets queued for later...", packets.len());
-                    failure_buffer.extend(packets);
+                .await;
+                if packet_queue.is_full() {
+                    dump_packets_to_file(
+                        packet_queue.take(),
+                        args.uuid.clone(),
+                        &dump_dir,
+                        token.clone(),
+                    )
+                    .await;
+                    if dump_dir.is_full().await {
+                        println!("Dump size maximum limit reached. Entering idle mode...");
+                        // stop traffic monitoring
+                        drop(rx);
+                        // wait for the server to come up again
+                        loop {
+                            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                            if client.lock().await.is_some() {
+                                break;
+                            }
+                        }
+                        // restart traffic monitoring
+                        rx = traffic_monitor::monitor_devices(&monitor_config);
+                    }
                 }
             }
         }
@@ -65,24 +76,46 @@ pub(crate) async fn transmit_packets(
 }
 
 async fn send_packets(
-    client: &mut WallGuardGrpcInterface,
-    packet_buffer: &mut PacketBuffer,
-    failure_buffer: &mut Vec<Packet>,
+    interface: &Arc<Mutex<Option<WallGuardGrpcInterface>>>,
+    packet_batch: &mut PacketBuffer,
+    packet_queue: &mut PacketBuffer,
     uuid: String,
     token: String,
-) -> Result<(), Vec<Packet>> {
-    failure_buffer.extend(packet_buffer.take_packets());
-    let p = Packets {
+) {
+    packet_queue.extend(packet_batch.take());
+    if let Some(client) = interface.lock().await.as_mut() {
+        let p = Packets {
+            uuid,
+            packets: packet_queue.get_clone(),
+            auth: Some(Authentication { token }),
+        };
+        if client.handle_packets(p).await.is_ok() {
+            packet_queue.clear();
+        };
+    }
+}
+
+async fn dump_packets_to_file(
+    packets: Vec<Packet>,
+    uuid: String,
+    dump_dir: &DumpDir,
+    token: String,
+) {
+    let now = chrono::Utc::now().to_rfc3339();
+    let file_path = dump_dir.get_file_path(&now);
+    println!(
+        "Queue is full. Dumping {} packets to file '{file_path}'",
+        packets.len()
+    );
+    let dump = Packets {
         uuid,
-        packets: std::mem::take(failure_buffer),
+        packets,
         auth: Some(Authentication { token }),
     };
-
-    client
-        .handle_packets(p.clone()) // TODO: avoid cloning when possible
-        .await
-        .map_err(|e| {
-            println!("Failed to send packets to the server: {e}");
-            p.packets
-        })
+    tokio::fs::write(
+        file_path,
+        bincode::serialize(&dump).expect("Failed to serialize packets"),
+    )
+    .await
+    .expect("Failed to write dump file");
 }
