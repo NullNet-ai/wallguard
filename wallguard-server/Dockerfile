@@ -1,8 +1,8 @@
 FROM rust
 
-WORKDIR /WallmonMonitor
+WORKDIR /wallguard-server
 
-COPY . /WallmonMonitor
+COPY . /wallguard-server
 
 EXPOSE 50051
 
@@ -12,4 +12,4 @@ RUN apt-get install -y cmake
 
 RUN cargo build --release
 
-CMD ["./target/release/wallmon-monitor"]
+CMD ["./target/release/wallguard-server"]

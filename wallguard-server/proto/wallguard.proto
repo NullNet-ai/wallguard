@@ -3,14 +3,37 @@ syntax = "proto3";
 package wallguard;
 
 service WallGuard {
-  rpc Heartbeat (Empty) returns (Empty);
+  rpc Login (LoginRequest) returns (Authentication);
+  rpc Setup (SetupRequest) returns (Empty);
+  rpc Heartbeat (HeartbeatRequest) returns (Empty);
   rpc HandlePackets (Packets) returns (Empty);
   rpc HandleConfig (ConfigSnapshot) returns (Empty);
 }
 
+message LoginRequest {
+  string app_id = 1;
+  string app_secret = 2;
+}
+
+message Authentication {
+  string token = 1;
+}
+
+message SetupRequest {
+  Authentication auth = 1;
+  string device_version = 2;
+  string device_uuid = 3;
+  string hostname = 4;
+}
+
+message HeartbeatRequest {
+  Authentication auth = 1;
+}
+
 message Packets {
-  string uuid = 1;
-  repeated Packet packets = 2;
+  Authentication auth = 1;
+  string uuid = 2;
+  repeated Packet packets = 3;
 }
 
 message Packet {
@@ -26,9 +49,8 @@ message FileSnapshot {
 }
 
 message ConfigSnapshot {
-  repeated FileSnapshot files = 1;
-  string uuid = 2;
-  string platform = 3;
+  Authentication auth = 1;
+  repeated FileSnapshot files = 2;
 }
 
 message Empty { }
