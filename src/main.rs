@@ -43,7 +43,7 @@ async fn main() {
     )
     .await;
 
-    println!("Successful Authentication: {:?}", token);
+    println!("Successful Authentication: {token:?}");
 
     setup(args.addr.as_str(), args.port, &token, &args.uuid).await;
 

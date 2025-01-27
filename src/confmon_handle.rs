@@ -6,11 +6,7 @@ use wallguard_server::{Authentication, ConfigSnapshot, FileSnapshot, WallGuardGr
 
 static POLL_INTERVAL: u64 = 500;
 
-async fn send_configuration_snapshot(
-    addr: String,
-    port: u16,
-    snapshot: Snapshot,
-) {
+async fn send_configuration_snapshot(addr: String, port: u16, snapshot: Snapshot) {
     let mut client = WallGuardGrpcInterface::new(&addr, port).await;
 
     let data = ConfigSnapshot {
@@ -27,10 +23,7 @@ async fn send_configuration_snapshot(
     };
 
     if let Err(err) = client.handle_config(data).await {
-        println!(
-            "Failed to send configuration snapshot to the server: {}",
-            err
-        );
+        println!("Failed to send configuration snapshot to the server: {err}");
     }
 }
 
