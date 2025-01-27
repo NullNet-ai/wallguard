@@ -1,7 +1,8 @@
 use crate::datastore::DatastoreWrapper;
 use crate::proto::wallguard::wall_guard_server::{WallGuard, WallGuardServer};
 use crate::proto::wallguard::{
-    Authentication, ConfigSnapshot, Empty, HeartbeatRequest, LoginRequest, Packets, SetupRequest,
+    Authentication, CommonResponse, ConfigSnapshot, Empty, HeartbeatRequest, LoginRequest, Packets,
+    SetupRequest,
 };
 use libtoken::Token;
 use std::net::ToSocketAddrs;
@@ -50,7 +51,10 @@ impl WallGuard for WallGuardImpl {
         Ok(Response::new(Empty {}))
     }
 
-    async fn setup(&self, request: Request<SetupRequest>) -> Result<Response<Empty>, Status> {
+    async fn setup(
+        &self,
+        request: Request<SetupRequest>,
+    ) -> Result<Response<CommonResponse>, Status> {
         let datastore = self
             .datastore
             .as_ref()
@@ -82,9 +86,10 @@ impl WallGuard for WallGuardImpl {
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        println!("{:?}", response);
-
-        Ok(Response::new(Empty {}))
+        Ok(Response::new(CommonResponse {
+            success: response.success,
+            message: response.message,
+        }))
     }
 
     async fn login(

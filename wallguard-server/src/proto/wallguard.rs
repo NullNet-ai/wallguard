@@ -13,6 +13,13 @@ pub struct Authentication {
     pub token: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CommonResponse {
+    #[prost(bool, tag = "1")]
+    pub success: bool,
+    #[prost(string, tag = "2")]
+    pub message: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SetupRequest {
     #[prost(message, optional, tag = "1")]
     pub auth: ::core::option::Option<Authentication>,
@@ -180,7 +187,7 @@ pub mod wall_guard_client {
         pub async fn setup(
             &mut self,
             request: impl tonic::IntoRequest<super::SetupRequest>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -282,7 +289,7 @@ pub mod wall_guard_server {
         async fn setup(
             &self,
             request: tonic::Request<super::SetupRequest>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
         async fn heartbeat(
             &self,
             request: tonic::Request<super::HeartbeatRequest>,
@@ -420,7 +427,7 @@ pub mod wall_guard_server {
                     struct SetupSvc<T: WallGuard>(pub Arc<T>);
                     impl<T: WallGuard> tonic::server::UnaryService<super::SetupRequest>
                     for SetupSvc<T> {
-                        type Response = super::Empty;
+                        type Response = super::CommonResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

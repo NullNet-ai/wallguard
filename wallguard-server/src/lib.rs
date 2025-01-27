@@ -2,7 +2,7 @@ use crate::proto::wallguard::wall_guard_client::WallGuardClient;
 pub use crate::proto::wallguard::{
     Authentication, ConfigSnapshot, FileSnapshot, Packet, Packets, SetupRequest,
 };
-use proto::wallguard::{HeartbeatRequest, LoginRequest};
+use proto::wallguard::{CommonResponse, HeartbeatRequest, LoginRequest};
 use tonic::transport::{Certificate, Channel, ClientTlsConfig};
 use tonic::Request;
 
@@ -84,11 +84,11 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn setup_client(&mut self, request: SetupRequest) -> Result<(), String> {
+    pub async fn setup_client(&mut self, request: SetupRequest) -> Result<CommonResponse, String> {
         self.client
             .setup(Request::new(request))
             .await
-            .map(|_| ())
+            .map(|response| response.into_inner())
             .map_err(|e| e.to_string())
     }
 }
