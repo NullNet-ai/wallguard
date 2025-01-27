@@ -8,14 +8,24 @@ use clap::Parser;
 use wallguard_server::{Authentication, SetupRequest, WallGuardGrpcInterface};
 
 async fn authenticate(addr: &str, port: u16, app_id: &str, app_secret: &str) -> String {
-    WallGuardGrpcInterface::new(addr, port)
+    if cfg!(feature = "no-datastore") {
+        println!("Datastore functionality is disabled. Using an empty token...");
+        return String::new();
+    }
+
+    let token = WallGuardGrpcInterface::new(addr, port)
         .await
         .login(app_id.to_string(), app_secret.to_string())
         .await
-        .expect("Authentication failed")
+        .expect("Authentication failed");
+    println!("Successful Authentication: {token:?}");
+    token
 }
 
 async fn setup(addr: &str, port: u16, token: &str, uuid: &str) {
+    if cfg!(feature = "no-datastore") {
+        return;
+    }
     WallGuardGrpcInterface::new(addr, port)
         .await
         .setup_client(SetupRequest {
@@ -28,6 +38,7 @@ async fn setup(addr: &str, port: u16, token: &str, uuid: &str) {
         })
         .await
         .expect("Setup Request Failed");
+    println!("Successful Setup");
 }
 
 #[tokio::main]
@@ -43,11 +54,7 @@ async fn main() {
     )
     .await;
 
-    println!("Successful Authentication: {token:?}");
-
     setup(args.addr.as_str(), args.port, &token, &args.uuid).await;
-
-    println!("Successful Setup");
 
     let mut cfg_watcher =
         confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;

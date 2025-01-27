@@ -3,6 +3,14 @@ name = "wallguard"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+no-datastore = []
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+
 [dependencies]
 traffic_monitor = { path = "../libguard/client_libraries/traffic_monitor" }
 libconfmon = { path = "../libguard/client_libraries/libconfmon" }
