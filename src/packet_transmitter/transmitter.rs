@@ -5,9 +5,9 @@ use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmissio
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use wallguard_server::{Packet, Packets, WallGuardGrpcInterface};
+use wallguard_server::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
-pub(crate) async fn transmit_packets(args: Args) {
+pub(crate) async fn transmit_packets(args: Args, token: String) {
     let monitor_config = traffic_monitor::MonitorConfig {
         addr: args.addr.clone(),
         snaplen: args.snaplen,
@@ -21,8 +21,10 @@ pub(crate) async fn transmit_packets(args: Args) {
     let client_2 = client.clone();
     let dump_dir = DumpDir::new(dump_bytes).await;
     let dump_dir_2 = dump_dir.clone();
+    let token_2 = token.clone();
     tokio::spawn(async move {
-        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2).await;
+        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
+            .await;
     });
 
     let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
@@ -42,10 +44,17 @@ pub(crate) async fn transmit_packets(args: Args) {
                     &mut packet_batch,
                     &mut packet_queue,
                     args.uuid.clone(),
+                    token.clone(),
                 )
                 .await;
                 if packet_queue.is_full() {
-                    dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir).await;
+                    dump_packets_to_file(
+                        packet_queue.take(),
+                        args.uuid.clone(),
+                        &dump_dir,
+                        token.clone(),
+                    )
+                    .await;
                     if dump_dir.is_full().await {
                         println!("Dump size maximum limit reached. Entering idle mode...");
                         // stop traffic monitoring
@@ -71,12 +80,14 @@ async fn send_packets(
     packet_batch: &mut PacketBuffer,
     packet_queue: &mut PacketBuffer,
     uuid: String,
+    token: String,
 ) {
     packet_queue.extend(packet_batch.take());
     if let Some(client) = interface.lock().await.as_mut() {
         let p = Packets {
             uuid,
             packets: packet_queue.get_clone(),
+            auth: Some(Authentication { token }),
         };
         if client.handle_packets(p).await.is_ok() {
             packet_queue.clear();
@@ -84,14 +95,23 @@ async fn send_packets(
     }
 }
 
-async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String, dump_dir: &DumpDir) {
+async fn dump_packets_to_file(
+    packets: Vec<Packet>,
+    uuid: String,
+    dump_dir: &DumpDir,
+    token: String,
+) {
     let now = chrono::Utc::now().to_rfc3339();
     let file_path = dump_dir.get_file_path(&now);
     println!(
         "Queue is full. Dumping {} packets to file '{file_path}'",
         packets.len()
     );
-    let dump = Packets { uuid, packets };
+    let dump = Packets {
+        uuid,
+        packets,
+        auth: Some(Authentication { token }),
+    };
     tokio::fs::write(
         file_path,
         bincode::serialize(&dump).expect("Failed to serialize packets"),

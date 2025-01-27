@@ -9,6 +9,7 @@ pub(crate) async fn handle_connection_and_retransmission(
     port: u16,
     interface: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
     dump_dir: DumpDir,
+    token: String,
 ) {
     loop {
         if interface.lock().await.is_some() {
@@ -18,7 +19,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                 .await
                 .as_mut()
                 .unwrap()
-                .heartbeat()
+                .heartbeat(token.clone())
                 .await
                 .is_err()
             {
