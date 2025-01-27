@@ -13,7 +13,7 @@ pub struct Args {
     #[arg(long = "app_secret", default_value = "")]
     pub app_secret: String,
     /// Percentage of available disk space to use for packet dump files in case of server unavailability
-    #[arg(short, long, default_value_t = 50, value_parser = clap::value_parser!(u8).range(1..100))]
+    #[arg(short, long, default_value_t = 50, value_parser = clap::value_parser!(u8).range(1..=100))]
     pub disk_percentage: u8,
     /// Port of the gRPC server
     #[arg(short, long, default_value_t = 50051)]
