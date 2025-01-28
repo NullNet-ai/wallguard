@@ -55,13 +55,13 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn heartbeat(&mut self, token: String) -> Result<(), String> {
+    pub async fn heartbeat(&mut self, token: String) -> Result<CommonResponse, String> {
         self.client
             .heartbeat(Request::new(HeartbeatRequest {
                 auth: Some(Authentication { token }),
             }))
             .await
-            .map(|_| ())
+            .map(|r| r.into_inner())
             .map_err(|e| e.to_string())
     }
 

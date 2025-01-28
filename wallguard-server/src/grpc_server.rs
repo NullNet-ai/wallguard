@@ -45,10 +45,30 @@ struct WallGuardImpl {
 impl WallGuard for WallGuardImpl {
     async fn heartbeat(
         &self,
-        _request: Request<HeartbeatRequest>,
-    ) -> Result<Response<Empty>, Status> {
-        // TODO: Update last heartbeat
-        Ok(Response::new(Empty {}))
+        request: Request<HeartbeatRequest>,
+    ) -> Result<Response<CommonResponse>, Status> {
+        let heartbeat_request = request.into_inner();
+
+        let jwt_token = heartbeat_request
+            .auth
+            .ok_or_else(|| Status::internal("Unauthorized request"))?
+            .token;
+
+        let token_info =
+            Token::from_jwt(&jwt_token).map_err(|e| Status::internal(e.to_string()))?;
+
+        let response = self
+            .datastore
+            .as_ref()
+            .ok_or_else(|| Status::internal("Datastore is unavailable"))?
+            .heartbeat(&jwt_token, token_info.account.device.id)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        Ok(Response::new(CommonResponse {
+            success: response.success,
+            message: response.message,
+        }))
     }
 
     async fn setup(

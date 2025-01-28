@@ -5,7 +5,7 @@ package wallguard;
 service WallGuard {
   rpc Login (LoginRequest) returns (Authentication);
   rpc Setup (SetupRequest) returns (CommonResponse);
-  rpc Heartbeat (HeartbeatRequest) returns (Empty);
+  rpc Heartbeat (HeartbeatRequest) returns (CommonResponse);
   rpc HandlePackets (Packets) returns (Empty);
   rpc HandleConfig (ConfigSnapshot) returns (Empty);
 }

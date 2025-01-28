@@ -207,7 +207,7 @@ pub mod wall_guard_client {
         pub async fn heartbeat(
             &mut self,
             request: impl tonic::IntoRequest<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -293,7 +293,7 @@ pub mod wall_guard_server {
         async fn heartbeat(
             &self,
             request: tonic::Request<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
         async fn handle_packets(
             &self,
             request: tonic::Request<super::Packets>,
@@ -472,7 +472,7 @@ pub mod wall_guard_server {
                         T: WallGuard,
                     > tonic::server::UnaryService<super::HeartbeatRequest>
                     for HeartbeatSvc<T> {
-                        type Response = super::Empty;
+                        type Response = super::CommonResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

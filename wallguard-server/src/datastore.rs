@@ -1,8 +1,9 @@
 use crate::parser::parsed_message::ParsedMessage;
+use chrono::Utc;
 use libdatastore::{
-    BatchCreateBody, BatchCreateRequest, CreateParams, DatastoreClient, DatastoreConfig,
-    Error as DSError, ErrorKind as DSErrorKind, LoginBody, LoginData, LoginRequest, Params, Query,
-    Response as DSResponse, UpdateRequest,
+    BatchCreateBody, BatchCreateRequest, CreateParams, CreateRequest, DatastoreClient,
+    DatastoreConfig, Error as DSError, ErrorKind as DSErrorKind, LoginBody, LoginData,
+    LoginRequest, Params, Query, Response as DSResponse, UpdateRequest,
 };
 use serde_json::json;
 use std::str::FromStr;
@@ -48,6 +49,28 @@ impl DatastoreWrapper {
         let response = self.inner.login(request).await?;
 
         Ok(response.token)
+    }
+
+    pub async fn heartbeat(&self, token: &str, device_id: String) -> Result<DSResponse, DSError> {
+        let mut request = Request::new(CreateRequest {
+            params: Some(CreateParams {
+                table: String::from("packets"),
+            }),
+            query: Some(Query {
+                pluck: String::new(),
+            }),
+            body: json!({
+                "device_id": device_id,
+                "timestamp": Utc::now().to_rfc3339()
+            })
+            .to_string(),
+        });
+
+        Self::set_token_for_request(&mut request, token)?;
+
+        let response = self.inner.create(request).await?;
+
+        Ok(response)
     }
 
     pub async fn packets_insert(
