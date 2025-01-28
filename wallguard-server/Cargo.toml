@@ -30,8 +30,8 @@ async-channel = "2.3.1"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.137"
 once_cell = "1.20.2"
-libdatastore = {path = "../libguard/server_libraries/libdatastore" }
-libtoken = {path = "../libguard/server_libraries/libtoken" }
+nullnet-libdatastore = "0.1.0"
+nullnet-libtoken = "0.1.0"
 chrono = "0.4.39"
 
 [build-dependencies]

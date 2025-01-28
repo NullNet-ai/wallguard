@@ -4,7 +4,7 @@ use crate::proto::wallguard::{
     Authentication, CommonResponse, ConfigSnapshot, Empty, HeartbeatRequest, LoginRequest, Packets,
     SetupRequest,
 };
-use libtoken::Token;
+use nullnet_libtoken::Token;
 use std::net::ToSocketAddrs;
 use tonic::transport::{Identity, Server, ServerTlsConfig};
 use tonic::{Request, Response, Status};
