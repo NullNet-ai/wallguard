@@ -1,7 +1,7 @@
 use crate::constants::UUID;
 use clap::Parser;
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Args {
     /// IP address of the gRPC server
     #[arg(short, long, default_value = "localhost")]
@@ -27,4 +27,13 @@ pub struct Args {
     /// Machine UUID
     #[arg(short, long, default_value = UUID.as_str())]
     pub uuid: String,
+    // Platform version
+    #[arg(long, default_value = "unknown")]
+    pub version: String,
+    // Platform version
+    #[arg(long, default_value = "unknown")]
+    pub hostname: String,
+    /// Heartbeat Interval
+    #[arg(long, default_value_t = 10)]
+    pub heartbeat_interval: u64,
 }

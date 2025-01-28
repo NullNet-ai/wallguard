@@ -2,6 +2,7 @@ mod authentication;
 mod cli;
 mod confmon_handle;
 mod constants;
+mod heartbeat;
 mod packet_transmitter;
 mod utils;
 
@@ -10,20 +11,20 @@ use authentication::AutoAuth;
 use clap::Parser;
 use wallguard_server::{Authentication, SetupRequest, WallGuardGrpcInterface};
 
-async fn setup(addr: &str, port: u16, token: &str, uuid: &str) {
+async fn setup(auth: &AutoAuth, args: &cli::Args) {
     if cfg!(feature = "no-datastore") {
         return;
     }
 
-    let response = WallGuardGrpcInterface::new(addr, port)
+    let token = auth.obtain_token_safe().await.expect("Unauthenticated");
+
+    let response = WallGuardGrpcInterface::new(&args.addr, args.port)
         .await
         .setup_client(SetupRequest {
-            auth: Some(Authentication {
-                token: token.to_string(),
-            }),
-            device_version: "2.7-RELEASE".to_string(),
-            device_uuid: uuid.to_string(),
-            hostname: "domain.nullnet.ai".to_string(),
+            auth: Some(Authentication { token }),
+            device_version: args.version.clone(),
+            device_uuid: args.uuid.clone(),
+            hostname: args.hostname.clone(),
         })
         .await
         .expect("Setup Request Failed");
@@ -52,7 +53,7 @@ async fn main() {
         .await
         .expect("Server authentication failed");
 
-    setup(args.addr.as_str(), args.port, &token, &args.uuid).await;
+    setup(&auth, &args).await;
 
     let mut cfg_watcher =
         confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
@@ -64,9 +65,12 @@ async fn main() {
             .expect("Failed to watch configuration changes");
     });
 
+    let auth_copy = auth.clone();
+    let args_copy = args.clone();
+    tokio::spawn(async move { heartbeat::routine(auth_copy, args_copy).await });
+
     transmit_packets(args, token).await;
 }
 
 // @TODO:
 // - Pass token to configuration watcher's callback
-// - Implement heartbear

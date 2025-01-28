@@ -6,6 +6,7 @@ use std::sync::Arc;
 use token_wrapper::TokenWrapper;
 use tokio::sync::Mutex;
 
+#[derive(Debug, Clone)]
 pub struct AutoAuth {
     app_id: String,
     app_secret: String,

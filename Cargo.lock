@@ -1641,6 +1641,7 @@ name = "wallguard-server"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "chrono",
  "etherparse",
  "libdatastore",
  "libtoken",

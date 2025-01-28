@@ -3,6 +3,7 @@ use libtoken::Token;
 
 const EXPIRATION_MARGIN: u64 = 60 * 5;
 
+#[derive(Debug)]
 pub struct TokenWrapper {
     pub jwt: String,
     pub info: Token,
