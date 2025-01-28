@@ -54,7 +54,7 @@ impl DatastoreWrapper {
     pub async fn heartbeat(&self, token: &str, device_id: String) -> Result<DSResponse, DSError> {
         let mut request = Request::new(CreateRequest {
             params: Some(CreateParams {
-                table: String::from("packets"),
+                table: String::from("device_heartbeats"),
             }),
             query: Some(Query {
                 pluck: String::new(),
