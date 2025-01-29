@@ -1,5 +1,5 @@
 use crate::utils;
-use libtoken::Token;
+use nullnet_libtoken::Token;
 
 const EXPIRATION_MARGIN: u64 = 60 * 5;
 

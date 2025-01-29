@@ -8,11 +8,11 @@ use tokio::sync::Mutex;
 use wallguard_server::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
 pub(crate) async fn transmit_packets(args: Args, token: String) {
-    let monitor_config = traffic_monitor::MonitorConfig {
+    let monitor_config = nullnet_traffic_monitor::MonitorConfig {
         addr: args.addr.clone(),
         snaplen: args.snaplen,
     };
-    let mut rx = traffic_monitor::monitor_devices(&monitor_config);
+    let mut rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
 
     let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
     println!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
@@ -67,7 +67,7 @@ pub(crate) async fn transmit_packets(args: Args, token: String) {
                             }
                         }
                         // restart traffic monitoring
-                        rx = traffic_monitor::monitor_devices(&monitor_config);
+                        rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
                     }
                 }
             }

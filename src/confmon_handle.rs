@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
-use libconfmon::{Snapshot, Watcher};
+use nullnet_libconfmon::{Snapshot, Watcher};
 use wallguard_server::{Authentication, ConfigSnapshot, FileSnapshot, WallGuardGrpcInterface};
 
 static POLL_INTERVAL: u64 = 500;
@@ -35,7 +35,7 @@ pub async fn init_confmon(
     impl Fn(Snapshot) -> Pin<Box<dyn Future<Output = ()> + Send>> + Clone,
     Pin<Box<dyn Future<Output = ()> + Send>>,
 > {
-    libconfmon::make_watcher(platform, POLL_INTERVAL, move |snapshot| {
+    nullnet_libconfmon::make_watcher(platform, POLL_INTERVAL, move |snapshot| {
         let addr = addr.clone();
 
         Box::pin(async move {
