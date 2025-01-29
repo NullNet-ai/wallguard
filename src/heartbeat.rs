@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use wallguard_server::WallGuardGrpcInterface;
+use libwallguard::WallGuardGrpcInterface;
 
 use crate::authentication::AutoAuth;
 use crate::cli::Args;

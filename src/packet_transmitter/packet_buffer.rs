@@ -1,4 +1,4 @@
-use wallguard_server::Packet;
+use libwallguard::Packet;
 
 pub(crate) struct PacketBuffer {
     buffer: Vec<Packet>,

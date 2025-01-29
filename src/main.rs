@@ -9,7 +9,7 @@ mod utils;
 use crate::packet_transmitter::transmitter::transmit_packets;
 use authentication::AutoAuth;
 use clap::Parser;
-use wallguard_server::{Authentication, SetupRequest, WallGuardGrpcInterface};
+use libwallguard::{Authentication, SetupRequest, WallGuardGrpcInterface};
 
 async fn setup(auth: &AutoAuth, args: &cli::Args) {
     if cfg!(feature = "no-datastore") {

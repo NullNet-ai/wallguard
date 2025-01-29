@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 
 use nullnet_libconfmon::{Snapshot, Watcher};
-use wallguard_server::{Authentication, ConfigSnapshot, FileSnapshot, WallGuardGrpcInterface};
+use libwallguard::{Authentication, ConfigSnapshot, FileSnapshot, WallGuardGrpcInterface};
 
 static POLL_INTERVAL: u64 = 500;
 

@@ -5,7 +5,7 @@ use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmissio
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use wallguard_server::{Authentication, Packet, Packets, WallGuardGrpcInterface};
+use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
 pub(crate) async fn transmit_packets(args: Args, token: String) {
     let monitor_config = nullnet_traffic_monitor::MonitorConfig {

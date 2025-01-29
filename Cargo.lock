@@ -866,6 +866,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-wallguard-server"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "075d2f1b623e88676bb8154563ebe4c19f863206db72e2bdd7b366e0500d214e"
+dependencies = [
+ "async-channel",
+ "chrono",
+ "etherparse",
+ "nullnet-libdatastore",
+ "nullnet-libtoken",
+ "once_cell",
+ "prost",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1649,29 +1669,11 @@ dependencies = [
  "nullnet-libconfmon",
  "nullnet-libtoken",
  "nullnet-traffic-monitor",
+ "nullnet-wallguard-server",
  "once_cell",
  "sysinfo",
  "tokio",
  "uuid",
- "wallguard-server",
-]
-
-[[package]]
-name = "wallguard-server"
-version = "0.1.0"
-dependencies = [
- "async-channel",
- "chrono",
- "etherparse",
- "nullnet-libdatastore",
- "nullnet-libtoken",
- "once_cell",
- "prost",
- "serde",
- "serde_json",
- "tokio",
- "tonic",
- "tonic-build",
 ]
 
 [[package]]

@@ -2,7 +2,7 @@ use crate::packet_transmitter::dump_dir::DumpDir;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::Mutex;
-use wallguard_server::WallGuardGrpcInterface;
+use libwallguard::WallGuardGrpcInterface;
 
 pub(crate) async fn handle_connection_and_retransmission(
     addr: &str,
@@ -33,7 +33,7 @@ pub(crate) async fn handle_connection_and_retransmission(
             // send packets accumulated in dump files
             for file in dump_dir.get_files_sorted().await {
                 let dump = fs::read(file.path()).await.unwrap_or_default();
-                let packets: wallguard_server::Packets =
+                let packets: libwallguard::Packets =
                     bincode::deserialize(&dump).unwrap_or_default();
                 if interface
                     .lock()
