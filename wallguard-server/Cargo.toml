@@ -20,7 +20,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "wallguard-server"
 path = "src/main.rs"
-publish = false
 
 [features]
 no-datastore = []
