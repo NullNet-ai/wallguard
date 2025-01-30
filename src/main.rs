@@ -56,7 +56,8 @@ async fn main() {
     setup(&auth, &args).await;
 
     let mut cfg_watcher =
-        confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target).await;
+        confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target, auth.clone())
+            .await;
 
     tokio::spawn(async move {
         cfg_watcher

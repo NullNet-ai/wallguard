@@ -1,8 +1,8 @@
 use crate::packet_transmitter::dump_dir::DumpDir;
+use libwallguard::WallGuardGrpcInterface;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::Mutex;
-use libwallguard::WallGuardGrpcInterface;
 
 pub(crate) async fn handle_connection_and_retransmission(
     addr: &str,
