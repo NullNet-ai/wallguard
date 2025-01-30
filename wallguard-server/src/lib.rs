@@ -75,11 +75,14 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_config(&mut self, message: ConfigSnapshot) -> Result<(), String> {
+    pub async fn handle_config(
+        &mut self,
+        message: ConfigSnapshot,
+    ) -> Result<CommonResponse, String> {
         self.client
             .handle_config(Request::new(message))
             .await
-            .map(|_| ())
+            .map(|r| r.into_inner())
             .map_err(|e| e.to_string())
     }
 

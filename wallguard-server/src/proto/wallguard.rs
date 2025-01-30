@@ -249,7 +249,7 @@ pub mod wall_guard_client {
         pub async fn handle_config(
             &mut self,
             request: impl tonic::IntoRequest<super::ConfigSnapshot>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -301,7 +301,7 @@ pub mod wall_guard_server {
         async fn handle_config(
             &self,
             request: tonic::Request<super::ConfigSnapshot>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct WallGuardServer<T> {
@@ -558,7 +558,7 @@ pub mod wall_guard_server {
                     struct HandleConfigSvc<T: WallGuard>(pub Arc<T>);
                     impl<T: WallGuard> tonic::server::UnaryService<super::ConfigSnapshot>
                     for HandleConfigSvc<T> {
-                        type Response = super::Empty;
+                        type Response = super::CommonResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

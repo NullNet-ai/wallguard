@@ -1,5 +1,6 @@
-use crate::parser::parsed_message::ParsedMessage;
+use crate::{parser::parsed_message::ParsedMessage, utils::digest};
 use chrono::Utc;
+use libfireparse::Configuration as ClientConfiguration;
 use nullnet_libdatastore::{
     BatchCreateBody, BatchCreateRequest, CreateParams, CreateRequest, DatastoreClient,
     DatastoreConfig, Error as DSError, ErrorKind as DSErrorKind, LoginBody, LoginData,
@@ -130,6 +131,46 @@ impl DatastoreWrapper {
         Self::set_token_for_request(&mut request, &token)?;
 
         let response = self.inner.update(request).await?;
+
+        Ok(response)
+    }
+
+    pub async fn config_upload(
+        &self,
+        token: &str,
+        device_id: String,
+        config: ClientConfiguration,
+    ) -> Result<DSResponse, DSError> {
+        // 1. Create new record of configuration
+        // 2. Insert related aliases
+        // 3. Insert related rules
+        let mut request = Request::new(CreateRequest {
+            params: Some(CreateParams {
+                table: String::from("device_configurations"),
+            }),
+            query: Some(Query {
+                pluck: String::from("id"),
+            }),
+            body: json!({
+                "device_id": device_id,
+                "raw_data": config.raw_data,
+                "digest": digest(&config.raw_data),
+            })
+            .to_string(),
+        });
+
+        Self::set_token_for_request(&mut request, token)?;
+
+        let response = self.inner.create(request).await?;
+
+        // if !response.success {
+        //     return Err(DSError {
+        //         kind: DSErrorKind::ErrorRequestFailed,
+        //         message: response.message
+        //     });
+        // }
+
+        // let serde_json::from_str(&response.data);
 
         Ok(response)
     }

@@ -8,6 +8,7 @@ mod grpc_server;
 mod message_handler;
 mod parser;
 mod proto;
+mod utils;
 
 #[tokio::main]
 async fn main() {

@@ -7,7 +7,7 @@ service WallGuard {
   rpc Setup (SetupRequest) returns (CommonResponse);
   rpc Heartbeat (HeartbeatRequest) returns (CommonResponse);
   rpc HandlePackets (Packets) returns (Empty);
-  rpc HandleConfig (ConfigSnapshot) returns (Empty);
+  rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
 }
 
 message LoginRequest {

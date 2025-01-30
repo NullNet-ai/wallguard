@@ -34,10 +34,3 @@ test:
   script:
     - cargo test -- --nocapture
   timeout: 10 minutes
-
-# push-image:
-#   stage: deploy
-#   script:
-#     - export IMAGE_NAME=registry.dnamicro.com/wallguard-server:$CI_COMMIT_REF_NAME-$CI_PIPELINE_ID
-#     - docker build -t $IMAGE_NAME .
-#     - docker push $IMAGE_NAME

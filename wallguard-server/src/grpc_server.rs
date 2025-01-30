@@ -147,17 +147,46 @@ impl WallGuard for WallGuardImpl {
     async fn handle_config(
         &self,
         request: Request<ConfigSnapshot>,
-    ) -> Result<Response<Empty>, Status> {
+    ) -> Result<Response<CommonResponse>, Status> {
+        let datastore = self
+            .datastore
+            .as_ref()
+            .ok_or_else(|| Status::internal("Datastore is unavailable"))?;
+
         let snapshot = request.into_inner();
 
-        for file in &snapshot.files {
-            let name = &file.filename;
-            let len = file.contents.len();
-            println!("Received file {name} of len {len} bytes");
-        }
+        let jwt_token = snapshot
+            .auth
+            .ok_or_else(|| Status::internal("Unauthorized request"))?
+            .token;
 
-        println!("---");
+        let token_info =
+            Token::from_jwt(&jwt_token).map_err(|e| Status::internal(e.to_string()))?;
 
-        Ok(Response::new(Empty {}))
+        let config_file = snapshot
+            .files
+            .iter()
+            .find(|file| file.filename == "config.xml");
+
+        // if config_file.
+
+        let document = std::str::from_utf8(config_file.unwrap().contents.as_slice())
+            .map_err(|e| Status::internal(format!("Failed to stringify file content: {}", e)))?;
+
+        let configuration =
+            libfireparse::Parser::parse("pfsense", document).map_err(|e| match e {
+                libfireparse::FireparseError::UnsupportedPlatform(msg) => Status::internal(msg),
+                libfireparse::FireparseError::ParserError(msg) => Status::internal(msg),
+            })?;
+
+        let response = datastore
+            .config_upload(&jwt_token, token_info.account.device.id, configuration)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?;
+
+        Ok(Response::new(CommonResponse {
+            success: response.success,
+            message: response.message,
+        }))
     }
 }
