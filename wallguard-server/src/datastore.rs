@@ -123,7 +123,8 @@ impl DatastoreWrapper {
                 "hostname": device_hostname,
                 "system_id": device_uuid,
                 "ip_address": device_address,
-                "is_connection_established": true
+                "is_connection_established": true,
+                "status": "Active"
             })
             .to_string(),
         });
