@@ -22,8 +22,15 @@ async fn send_configuration_snapshot(addr: &str, port: u16, snapshot: Snapshot, 
         auth: Some(Authentication { token }),
     };
 
-    if let Err(err) = client.handle_config(data).await {
-        println!("Failed to send configuration snapshot to the server: {err}");
+    match client.handle_config(data).await {
+        Ok(response) => {
+            if response.success {
+                println!("Configuration uploaded successfully");
+            } else {
+                println!("Config upload failed: {}", response.message);
+            }
+        }
+        Err(err) => println!("Failed to send configuration snapshot to the server: {err}"),
     }
 }
 

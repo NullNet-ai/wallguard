@@ -787,6 +787,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
+
+[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -845,6 +851,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-libfireparse"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58a870cec1fe58a539afc03c9a5c312dbfc1c840c98c1ca7b3ce2d5a679919b9"
+dependencies = [
+ "base64",
+ "roxmltree",
+ "serde",
+]
+
+[[package]]
 name = "nullnet-libtoken"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -867,14 +884,16 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.1.0"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "075d2f1b623e88676bb8154563ebe4c19f863206db72e2bdd7b366e0500d214e"
+checksum = "828637412520a02979ab17f9e37e53363d8fa104cd43e8f2a3283dd8a080c8f0"
 dependencies = [
  "async-channel",
  "chrono",
  "etherparse",
+ "md5",
  "nullnet-libdatastore",
+ "nullnet-libfireparse",
  "nullnet-libtoken",
  "once_cell",
  "prost",
@@ -1186,6 +1205,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "roxmltree"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1206,9 +1231,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.21"
+version = "0.23.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f287924602bf649d949c63dc8ac8b235fa5387d394020705b80c4eb597ce5b8"
+checksum = "9fb9263ab4eb695e42321db096e3b8fbd715a59b154d5c88d82db2175b681ba7"
 dependencies = [
  "log",
  "once_cell",
