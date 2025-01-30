@@ -25,7 +25,7 @@ impl WallGuardGrpcInterface {
     #[allow(clippy::missing_panics_doc)]
     pub async fn new(addr: &str, port: u16) -> Self {
         // let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
-        let s = format!("https://{addr}:{port}");
+        let s = format!("http://{addr}:{port}");
 
         let Ok(channel) = Channel::from_shared(s)
             .expect("Failed to parse address")
