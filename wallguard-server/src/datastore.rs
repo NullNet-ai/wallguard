@@ -144,6 +144,7 @@ impl DatastoreWrapper {
         // 1. Create new record of configuration
         // 2. Insert related aliases
         // 3. Insert related rules
+
         let mut request = Request::new(CreateRequest {
             params: Some(CreateParams {
                 table: String::from("device_configurations"),
@@ -163,14 +164,7 @@ impl DatastoreWrapper {
 
         let response = self.inner.create(request).await?;
 
-        // if !response.success {
-        //     return Err(DSError {
-        //         kind: DSErrorKind::ErrorRequestFailed,
-        //         message: response.message
-        //     });
-        // }
-
-        // let serde_json::from_str(&response.data);
+        // @TODO: Insert Aliases and Rules
 
         Ok(response)
     }

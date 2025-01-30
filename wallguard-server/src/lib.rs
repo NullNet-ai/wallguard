@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
 pub use crate::proto::wallguard::{
     Authentication, ConfigSnapshot, FileSnapshot, Packet, Packets, SetupRequest,
 };
 use proto::wallguard::{CommonResponse, HeartbeatRequest, LoginRequest};
-use tonic::transport::{Certificate, Channel, ClientTlsConfig};
+use tonic::transport::Channel;
 use tonic::Request;
 
 mod proto;
@@ -13,21 +15,23 @@ pub struct WallGuardGrpcInterface {
     client: WallGuardClient<Channel>,
 }
 
-static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(|| {
-    Certificate::from_pem(
-        std::fs::read_to_string("tls/ca.pem").expect("Failed to read CA certificate"),
-    )
-});
+// static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(|| {
+//     Certificate::from_pem(
+//         std::fs::read_to_string("tls/ca.pem").expect("Failed to read CA certificate"),
+//     )
+// });
 
 impl WallGuardGrpcInterface {
     #[allow(clippy::missing_panics_doc)]
     pub async fn new(addr: &str, port: u16) -> Self {
-        let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
+        // let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
+        let s = format!("https://{addr}:{port}");
 
-        let Ok(channel) = Channel::from_shared(format!("https://{addr}:{port}"))
+        let Ok(channel) = Channel::from_shared(s)
             .expect("Failed to parse address")
-            .tls_config(tls)
-            .expect("Failed to configure up TLS")
+            .timeout(Duration::from_secs(10))
+            // .tls_config(tls)
+            // .expect("Failed to configure up TLS")
             .connect()
             .await
         else {

@@ -6,7 +6,7 @@ use crate::proto::wallguard::{
 };
 use nullnet_libtoken::Token;
 use std::net::ToSocketAddrs;
-use tonic::transport::{Identity, Server, ServerTlsConfig};
+use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
 const ADDR: &str = "0.0.0.0";
@@ -22,14 +22,14 @@ pub async fn run_grpc_server(
         .next()
         .expect("Failed to get address");
 
-    let cert =
-        std::fs::read_to_string("./tls/wallmon.pem").expect("Failed to read certificate file");
-    let key = std::fs::read_to_string("./tls/wallmon-key.pem").expect("Failed to read key file");
-    let identity = Identity::from_pem(cert, key);
+    // let cert =
+    //     std::fs::read_to_string("./tls/wallmon.pem").expect("Failed to read certificate file");
+    // let key = std::fs::read_to_string("./tls/wallmon-key.pem").expect("Failed to read key file");
+    // let identity = Identity::from_pem(cert, key);
 
     Server::builder()
-        .tls_config(ServerTlsConfig::new().identity(identity))
-        .expect("Failed to set up TLS")
+        // .tls_config(ServerTlsConfig::new().identity(identity))
+        // .expect("Failed to set up TLS")
         .add_service(WallGuardServer::new(WallGuardImpl { tx, datastore }))
         .serve(addr)
         .await
