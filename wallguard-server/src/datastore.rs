@@ -155,7 +155,7 @@ impl DatastoreWrapper {
             }),
             body: json!({
                 "device_id": device_id,
-                "raw_data": config.raw_data,
+                "raw_content": config.raw_data,
                 "digest": digest(&config.raw_data),
             })
             .to_string(),
@@ -165,7 +165,99 @@ impl DatastoreWrapper {
 
         let response = self.inner.create(request).await?;
 
-        // @TODO: Insert Aliases and Rules
+        if !response.success {
+            return Err(DSError {
+                kind: DSErrorKind::ErrorRequestFailed,
+                message: format!(
+                    "Failed to create configuration record: {}",
+                    response.message
+                ),
+            });
+        }
+
+        let rjson: serde_json::Value =
+            serde_json::from_str(&response.data).map_err(|e| DSError {
+                kind: DSErrorKind::ErrorRequestFailed,
+                message: format!("Could not parse DS response: {}", e.to_string()),
+            })?;
+
+        let config_id = rjson
+            .as_array()
+            .and_then(|arr| arr.get(0))
+            .and_then(|obj| obj.as_object())
+            .and_then(|map| map.get("id"))
+            .and_then(|v| v.as_str())
+            .map(|id| id.to_string())
+            .ok_or(DSError {
+                kind: DSErrorKind::ErrorRequestFailed,
+                message: String::from("Failed to parse DS response. Either the format is unexpected or the configuration id is missing"),
+            })?;
+
+        let rules_with_id: Vec<serde_json::Value> = config
+            .rules
+            .into_iter()
+            .map(|rule| {
+                let mut json = serde_json::to_value(rule).expect("Rule serialization failed");
+                json["device_configuration_id"] = json!(config_id.clone());
+                json
+            })
+            .collect();
+
+        let mut request = Request::new(BatchCreateRequest {
+            params: Some(CreateParams {
+                table: String::from("device_rules"),
+            }),
+            query: Some(Query {
+                pluck: String::new(),
+            }),
+            body: Some(BatchCreateBody {
+                records: serde_json::to_string(&serde_json::Value::Array(rules_with_id)).unwrap(),
+            }),
+        });
+
+        Self::set_token_for_request(&mut request, token)?;
+
+        let response = self.inner.batch_create(request).await?;
+
+        if !response.success {
+            return Err(DSError {
+                kind: DSErrorKind::ErrorRequestFailed,
+                message: format!("Failed to create rules records: {}", response.message),
+            });
+        }
+
+        let aliases_with_id: Vec<serde_json::Value> = config
+            .aliases
+            .into_iter()
+            .map(|rule| {
+                let mut json = serde_json::to_value(rule).expect("Rule serialization failed");
+                json["device_configuration_id"] = json!(config_id.clone());
+                json
+            })
+            .collect();
+
+        let mut request = Request::new(BatchCreateRequest {
+            params: Some(CreateParams {
+                table: String::from("device_aliases"),
+            }),
+            query: Some(Query {
+                pluck: String::new(),
+            }),
+            body: Some(BatchCreateBody {
+                records: serde_json::to_string(&serde_json::Value::Array(aliases_with_id)).unwrap(),
+            }),
+        });
+
+        Self::set_token_for_request(&mut request, token)?;
+
+        let response = self.inner.batch_create(request).await?;
+
+        if !response.success {
+            return Err(DSError {
+                kind: DSErrorKind::ErrorRequestFailed,
+                message: format!("Failed to create aliases records: {}", response.message),
+            });
+        }
 
         Ok(response)
     }
