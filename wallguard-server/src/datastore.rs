@@ -62,7 +62,8 @@ impl DatastoreWrapper {
             }),
             body: json!({
                 "device_id": device_id,
-                "timestamp": Utc::now().to_rfc3339()
+                "timestamp": Utc::now().to_rfc3339(),
+                "entity_prefix": String::from("HB")
             })
             .to_string(),
         });
@@ -142,7 +143,7 @@ impl DatastoreWrapper {
         device_id: String,
         config: ClientConfiguration,
     ) -> Result<DSResponse, DSError> {
-        // 1. Create new record of configuration
+        // 1. Create new config record
         // 2. Insert related aliases
         // 3. Insert related rules
 
@@ -157,6 +158,8 @@ impl DatastoreWrapper {
                 "device_id": device_id,
                 "raw_content": config.raw_data,
                 "digest": digest(&config.raw_data),
+                // @TODO: Temporary fix, needs to be removed
+                "entity_prefix": String::from("CFG")
             })
             .to_string(),
         });
