@@ -92,7 +92,10 @@ impl DatastoreWrapper {
             query: Some(Query {
                 pluck: String::new(),
             }),
-            body: Some(BatchCreateBody { records }),
+            body: Some(BatchCreateBody {
+                records,
+                entity_prefix: String::from("PK"),
+            }),
         });
 
         Self::set_token_for_request(&mut request, token)?;
@@ -215,6 +218,7 @@ impl DatastoreWrapper {
             }),
             body: Some(BatchCreateBody {
                 records: serde_json::to_string(&serde_json::Value::Array(rules_with_id)).unwrap(),
+                entity_prefix: String::from("RL"),
             }),
         });
 
@@ -248,6 +252,7 @@ impl DatastoreWrapper {
             }),
             body: Some(BatchCreateBody {
                 records: serde_json::to_string(&serde_json::Value::Array(aliases_with_id)).unwrap(),
+                entity_prefix: String::from("AL"),
             }),
         });
 
