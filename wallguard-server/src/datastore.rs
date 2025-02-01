@@ -159,8 +159,8 @@ impl DatastoreWrapper {
             }),
             body: json!({
                 "device_id": device_id,
-                "raw_content": config.raw_data,
-                "digest": digest(&config.raw_data),
+                "raw_content": config.raw_content,
+                "digest": digest(&config.raw_content),
                 // @TODO: Temporary fix, needs to be removed
                 "entity_prefix": String::from("CFG")
             })
