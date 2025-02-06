@@ -1,6 +1,6 @@
 [package]
 name = "nullnet-wallguard-server"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Giuliano Bellini <gyulyvgc89@gmail.com>", "Anton Liashkevich <anton.liashkevich.eng@gmail.com>"]
 description = "A centralized management system for network firewalls"
