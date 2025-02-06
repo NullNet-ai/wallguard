@@ -10,13 +10,12 @@ impl WallGuardImpl {
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<Authentication>, Status> {
-        let Some(datastore) = self.datastore.as_ref() else {
-            return Err(Status::internal("Datastore is unavailable"));
-        };
-
         let login_request = request.into_inner();
 
-        let token = datastore
+        let token = self
+            .datastore
+            .as_ref()
+            .ok_or_else(|| Status::internal("Datastore is unavailable"))?
             .login(login_request.app_id, login_request.app_secret)
             .await
             .map_err(|e| Status::internal(format!("Datastore login failed: {e:?}")))?;

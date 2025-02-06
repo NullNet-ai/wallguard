@@ -113,6 +113,7 @@ impl DatastoreWrapper {
     }
 
     /// Inserts related records (rules/aliases) into the datastore.
+    #[allow(clippy::too_many_arguments)]
     async fn internal_cu_insert_related_records<T: serde::Serialize>(
         &self,
         token: &str,

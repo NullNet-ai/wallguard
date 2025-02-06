@@ -6,7 +6,7 @@ service WallGuard {
   rpc Login (LoginRequest) returns (Authentication);
   rpc Setup (SetupRequest) returns (CommonResponse);
   rpc Heartbeat (HeartbeatRequest) returns (CommonResponse);
-  rpc HandlePackets (Packets) returns (Empty);
+  rpc HandlePackets (Packets) returns (CommonResponse);
   rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
 }
 
@@ -65,5 +65,3 @@ message ConfigSnapshot {
   repeated FileSnapshot files = 2;
   ConfigStatus status = 3;
 }
-
-message Empty { }

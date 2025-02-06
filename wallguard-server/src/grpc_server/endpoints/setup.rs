@@ -10,11 +10,6 @@ impl WallGuardImpl {
         &self,
         request: Request<SetupRequest>,
     ) -> Result<Response<CommonResponse>, Status> {
-        let datastore = self
-            .datastore
-            .as_ref()
-            .ok_or_else(|| Status::internal("Datastore is unavailable"))?;
-
         let remote_address = request
             .remote_addr()
             .map_or_else(|| "Unknown".to_string(), |addr| addr.ip().to_string());
@@ -23,7 +18,10 @@ impl WallGuardImpl {
 
         let (jwt_token, token_info) = Self::authenticate(setup_request.auth)?;
 
-        let response = datastore
+        let response = self
+            .datastore
+            .as_ref()
+            .ok_or_else(|| Status::internal("Datastore is unavailable"))?
             .device_setup(
                 jwt_token,
                 token_info.account.device.id,

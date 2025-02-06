@@ -1,7 +1,4 @@
-use crate::{
-    datastore::DatastoreWrapper,
-    proto::wallguard::{wall_guard_server::WallGuardServer, Packets},
-};
+use crate::{datastore::DatastoreWrapper, proto::wallguard::wall_guard_server::WallGuardServer};
 use server::WallGuardImpl;
 use std::net::ToSocketAddrs;
 use tonic::transport::Server;
@@ -13,10 +10,7 @@ mod server;
 const ADDR: &str = "0.0.0.0";
 const PORT: u16 = 50051;
 
-pub async fn run_grpc_server(
-    tx: async_channel::Sender<Packets>,
-    datastore: Option<DatastoreWrapper>,
-) {
+pub async fn run_grpc_server(datastore: Option<DatastoreWrapper>) {
     let addr = format!("{ADDR}:{PORT}")
         .to_socket_addrs()
         .expect("Failed to resolve address")
@@ -31,7 +25,7 @@ pub async fn run_grpc_server(
     Server::builder()
         // .tls_config(ServerTlsConfig::new().identity(identity))
         // .expect("Failed to set up TLS")
-        .add_service(WallGuardServer::new(WallGuardImpl { tx, datastore }))
+        .add_service(WallGuardServer::new(WallGuardImpl { datastore }))
         .serve(addr)
         .await
         .expect("Failed to start gRPC server");

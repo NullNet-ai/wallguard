@@ -73,8 +73,6 @@ pub struct ConfigSnapshot {
     #[prost(enumeration = "ConfigStatus", tag = "3")]
     pub status: i32,
 }
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct Empty {}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ConfigStatus {
@@ -259,7 +257,7 @@ pub mod wall_guard_client {
         pub async fn handle_packets(
             &mut self,
             request: impl tonic::IntoRequest<super::Packets>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -328,7 +326,7 @@ pub mod wall_guard_server {
         async fn handle_packets(
             &self,
             request: tonic::Request<super::Packets>,
-        ) -> std::result::Result<tonic::Response<super::Empty>, tonic::Status>;
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
         async fn handle_config(
             &self,
             request: tonic::Request<super::ConfigSnapshot>,
@@ -546,7 +544,7 @@ pub mod wall_guard_server {
                     struct HandlePacketsSvc<T: WallGuard>(pub Arc<T>);
                     impl<T: WallGuard> tonic::server::UnaryService<super::Packets>
                     for HandlePacketsSvc<T> {
-                        type Response = super::Empty;
+                        type Response = super::CommonResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

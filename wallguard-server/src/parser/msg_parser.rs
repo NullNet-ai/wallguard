@@ -3,15 +3,14 @@ use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource};
+use nullnet_libtoken::Token;
 
 use super::{
     models::{ether::header::EthernetHeader, ip::header::IpHeader},
     parsed_message::{ParsedMessage, ParsedRecord},
 };
 
-pub fn parse_message(message: Packets) -> ParsedMessage {
-    let uuid = message.uuid;
-
+pub fn parse_message(message: Packets, token: &Token) -> ParsedMessage {
     let mut records = Vec::new();
 
     for packet in message.packets {
@@ -28,7 +27,7 @@ pub fn parse_message(message: Packets) -> ParsedMessage {
                         + ip_header.ip_header_length as u16
                         + ip_header.payload_length;
                     records.push(ParsedRecord {
-                        uuid: uuid.clone(),
+                        device_id: token.account.device.id.clone(),
                         interface_name,
                         total_length,
                         timestamp,

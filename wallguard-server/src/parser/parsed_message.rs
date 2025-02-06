@@ -12,7 +12,7 @@ pub struct ParsedMessage {
 
 #[derive(Debug, Serialize)]
 pub struct ParsedRecord {
-    pub uuid: String,
+    pub device_id: String,
     pub interface_name: String,
     pub timestamp: String,
     pub total_length: u16,
@@ -38,7 +38,7 @@ mod tests {
 
     fn parsed_record_ethernet_ipv4_tcp() -> ParsedRecord {
         ParsedRecord {
-            uuid: "machine-id-1234".to_string(),
+            device_id: "machine-id-1234".to_string(),
             interface_name: "eth0".to_string(),
             timestamp: "2021-08-01T00:00:00Z".to_string(),
             total_length: 1528,
@@ -70,7 +70,7 @@ mod tests {
 
     fn parsed_record_ipv4_udp() -> ParsedRecord {
         ParsedRecord {
-            uuid: "machine-id-5678".to_string(),
+            device_id: "machine-id-5678".to_string(),
             interface_name: "eth0".to_string(),
             timestamp: "2022-09-01T00:00:00Z".to_string(),
             total_length: 77,
