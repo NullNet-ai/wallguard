@@ -4,9 +4,9 @@ use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
 use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
+use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
 pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
     let monitor_config = nullnet_traffic_monitor::MonitorConfig {
@@ -125,7 +125,6 @@ async fn dump_packets_to_file(
     .expect("Failed to write dump file");
 }
 
-
-// @TODO: There is a problem with packets that get dumped, as they are serialized with the current token,  
-// which is subject to change over time. Theoretically, it is possible to dump packets with a valid token  
+// @TODO: There is a problem with packets that get dumped, as they are serialized with the current token,
+// which is subject to change over time. Theoretically, it is possible to dump packets with a valid token
 // and re-upload them at a later time when the token has already expired.

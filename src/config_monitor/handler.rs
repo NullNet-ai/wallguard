@@ -18,7 +18,7 @@ impl WatcherHandler for Handler {
     async fn on_snapshot(
         &self,
         snapshot: Snapshot,
-        _state: nullnet_libconfmon::State,
+        state: nullnet_libconfmon::State,
     ) -> Result<(), nullnet_libconfmon::Error> {
         let token = self
             .auth
@@ -29,7 +29,7 @@ impl WatcherHandler for Handler {
                 message: err_msg,
             })?;
 
-        request_impl(&self.addr, self.port, snapshot, token)
+        request_impl(&self.addr, self.port, snapshot, token, state)
             .await
             .map_err(|err_msg| Error {
                 kind: ErrorKind::ErrorHandlingSnapshot,
@@ -41,6 +41,3 @@ impl WatcherHandler for Handler {
         eprintln!("Error occured during configuration monitoring. {}", error);
     }
 }
-
-// @TODO:
-// Handle snapshot's state
