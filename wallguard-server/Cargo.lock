@@ -685,9 +685,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libfireparse"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef5a2ec304d3055ae26a60b1e6bc216700663bc82b541f77ca3eb0aab38ff2c1"
+checksum = "2432ef3623ac88f245a75ba85bec2f0f8bd3d908ff2cabed5e692af5794679b0"
 dependencies = [
  "base64",
  "roxmltree",
