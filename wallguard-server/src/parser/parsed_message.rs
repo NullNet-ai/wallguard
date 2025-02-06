@@ -32,15 +32,16 @@ mod tests {
     use crate::parser::models::transport::tcp::header::TcpHeader;
     use crate::parser::models::transport::udp::header::UdpHeader;
 
-    const ETHERNET_IPV4_TCP_JSON: &'static str = r#"{"uuid":"machine-id-1234","interface_name":"eth0","timestamp":"2021-08-01T00:00:00Z","source_mac":"00:00:00:00:00:00","destination_mac":"ff:ff:ff:ff:ff:ff","ether_type":"ipv4","ip_header_length":0,"payload_length":0,"protocol":"tcp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"tcp_header_length":20,"tcp_sequence_number":177,"tcp_acknowledgment_number":911,"tcp_data_offset":64,"tcp_flags":56,"tcp_window_size":256,"tcp_urgent_pointer":2}"#;
+    const ETHERNET_IPV4_TCP_JSON: &'static str = r#"{"uuid":"machine-id-1234","interface_name":"eth0","timestamp":"2021-08-01T00:00:00Z","total_length":1528,"source_mac":"00:00:00:00:00:00","destination_mac":"ff:ff:ff:ff:ff:ff","ether_type":"ipv4","ip_header_length":0,"payload_length":0,"protocol":"tcp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"tcp_header_length":20,"tcp_sequence_number":177,"tcp_acknowledgment_number":911,"tcp_data_offset":64,"tcp_flags":56,"tcp_window_size":256,"tcp_urgent_pointer":2}"#;
 
-    const IPV4_UDP_JSON: &'static str = r#"{"uuid":"machine-id-5678","interface_name":"eth0","timestamp":"2022-09-01T00:00:00Z","ip_header_length":40,"payload_length":1472,"protocol":"udp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":80,"destination_port":50052}"#;
+    const IPV4_UDP_JSON: &'static str = r#"{"uuid":"machine-id-5678","interface_name":"eth0","timestamp":"2022-09-01T00:00:00Z","total_length":77,"ip_header_length":40,"payload_length":1472,"protocol":"udp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":80,"destination_port":50052}"#;
 
     fn parsed_record_ethernet_ipv4_tcp() -> ParsedRecord {
         ParsedRecord {
             uuid: "machine-id-1234".to_string(),
             interface_name: "eth0".to_string(),
             timestamp: "2021-08-01T00:00:00Z".to_string(),
+            total_length: 1528,
             ethernet_header: Some(EthernetHeader {
                 source_mac: "00:00:00:00:00:00".to_string(),
                 destination_mac: "ff:ff:ff:ff:ff:ff".to_string(),
@@ -72,6 +73,7 @@ mod tests {
             uuid: "machine-id-5678".to_string(),
             interface_name: "eth0".to_string(),
             timestamp: "2022-09-01T00:00:00Z".to_string(),
+            total_length: 77,
             ethernet_header: None,
             ip_header: IpHeader {
                 ip_header_length: 40,
