@@ -1,3 +1,4 @@
+mod common;
 mod handle_config;
 mod handle_packets;
 mod heartbeat;

@@ -10,6 +10,7 @@ impl WallGuardImpl {
         &self,
         request: Request<Packets>,
     ) -> Result<Response<Empty>, Status> {
+        // @TODO: Check token ??
         self.tx
             .try_send(request.into_inner())
             .map_err(|_| Status::internal("Failed to send packets to workers"))?;

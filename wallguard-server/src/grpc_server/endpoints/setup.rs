@@ -1,4 +1,3 @@
-use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 use crate::{
@@ -22,13 +21,7 @@ impl WallGuardImpl {
 
         let setup_request = request.into_inner();
 
-        let jwt_token = setup_request
-            .auth
-            .ok_or_else(|| Status::internal("Unauthorized request"))?
-            .token;
-
-        let token_info =
-            Token::from_jwt(&jwt_token).map_err(|e| Status::internal(e.to_string()))?;
+        let (jwt_token, token_info) = Self::authenticate(setup_request.auth)?;
 
         let response = datastore
             .device_setup(

@@ -1,4 +1,3 @@
-use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 use crate::{
@@ -18,13 +17,7 @@ impl WallGuardImpl {
 
         let snapshot = request.into_inner();
 
-        let jwt_token = snapshot
-            .auth
-            .ok_or_else(|| Status::internal("Unauthorized request"))?
-            .token;
-
-        let token_info =
-            Token::from_jwt(&jwt_token).map_err(|e| Status::internal(e.to_string()))?;
+        let (jwt_token, token_info) = Self::authenticate(snapshot.auth)?;
 
         let config_file = snapshot
             .files
@@ -40,7 +33,7 @@ impl WallGuardImpl {
                 libfireparse::FireparseError::ParserError(msg) => Status::internal(msg),
             })?;
 
-        let response = datastore
+        let created_id = datastore
             .config_upload(
                 &jwt_token,
                 token_info.account.device.id,
@@ -53,8 +46,8 @@ impl WallGuardImpl {
             .map_err(|e| Status::internal(e.to_string()))?;
 
         Ok(Response::new(CommonResponse {
-            success: response.success,
-            message: response.message,
+            success: true,
+            message: format!("Configuration created [ID '{}']", created_id),
         }))
     }
 }

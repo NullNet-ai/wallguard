@@ -1,4 +1,3 @@
-use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 use crate::{
@@ -13,13 +12,7 @@ impl WallGuardImpl {
     ) -> Result<Response<CommonResponse>, Status> {
         let heartbeat_request = request.into_inner();
 
-        let jwt_token = heartbeat_request
-            .auth
-            .ok_or_else(|| Status::internal("Unauthorized request"))?
-            .token;
-
-        let token_info =
-            Token::from_jwt(&jwt_token).map_err(|e| Status::internal(e.to_string()))?;
+        let (jwt_token, token_info) = Self::authenticate(heartbeat_request.auth)?;
 
         let response = self
             .datastore
