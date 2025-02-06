@@ -53,9 +53,17 @@ message FileSnapshot {
   bytes contents = 2;
 }
 
+enum ConfigStatus {
+  CS_DRAFT = 0;
+  CS_APPLIED = 1;
+  CS_UNDEFINED = 2;
+}
+
+
 message ConfigSnapshot {
   Authentication auth = 1;
   repeated FileSnapshot files = 2;
+  ConfigStatus status = 3;
 }
 
 message Empty { }

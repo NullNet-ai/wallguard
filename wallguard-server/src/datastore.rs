@@ -145,6 +145,7 @@ impl DatastoreWrapper {
         token: &str,
         device_id: String,
         config: ClientConfiguration,
+        status: String,
     ) -> Result<DSResponse, DSError> {
         // 1. Create new config record
         // 2. Insert related aliases
@@ -184,12 +185,12 @@ impl DatastoreWrapper {
         let rjson: serde_json::Value =
             serde_json::from_str(&response.data).map_err(|e| DSError {
                 kind: DSErrorKind::ErrorRequestFailed,
-                message: format!("Could not parse DS response: {}", e.to_string()),
+                message: format!("Could not parse DS response: {}", e),
             })?;
 
         let config_id = rjson
             .as_array()
-            .and_then(|arr| arr.get(0))
+            .and_then(|arr| arr.first())
             .and_then(|obj| obj.as_object())
             .and_then(|map| map.get("id"))
             .and_then(|v| v.as_str())
@@ -205,6 +206,7 @@ impl DatastoreWrapper {
             .map(|rule| {
                 let mut json = serde_json::to_value(rule).expect("Rule serialization failed");
                 json["device_configuration_id"] = json!(config_id.clone());
+                json["device_rules_status"] = json!(status.clone());
                 json
             })
             .collect();
@@ -239,6 +241,7 @@ impl DatastoreWrapper {
             .map(|rule| {
                 let mut json = serde_json::to_value(rule).expect("Rule serialization failed");
                 json["device_configuration_id"] = json!(config_id.clone());
+                json["device_alias_status"] = json!(status.clone());
                 json
             })
             .collect();

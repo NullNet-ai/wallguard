@@ -70,9 +70,40 @@ pub struct ConfigSnapshot {
     pub auth: ::core::option::Option<Authentication>,
     #[prost(message, repeated, tag = "2")]
     pub files: ::prost::alloc::vec::Vec<FileSnapshot>,
+    #[prost(enumeration = "ConfigStatus", tag = "3")]
+    pub status: i32,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Empty {}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ConfigStatus {
+    CsDraft = 0,
+    CsApplied = 1,
+    CsUndefined = 2,
+}
+impl ConfigStatus {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::CsDraft => "CS_DRAFT",
+            Self::CsApplied => "CS_APPLIED",
+            Self::CsUndefined => "CS_UNDEFINED",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "CS_DRAFT" => Some(Self::CsDraft),
+            "CS_APPLIED" => Some(Self::CsApplied),
+            "CS_UNDEFINED" => Some(Self::CsUndefined),
+            _ => None,
+        }
+    }
+}
 /// Generated client implementations.
 pub mod wall_guard_client {
     #![allow(
