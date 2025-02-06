@@ -24,9 +24,13 @@ pub fn parse_message(message: Packets) -> ParsedMessage {
             if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
+                    let total_length = ethernet_header.as_ref().map_or(0, |_| 12)
+                        + ip_header.ip_header_length as u16
+                        + ip_header.payload_length;
                     records.push(ParsedRecord {
                         uuid: uuid.clone(),
                         interface_name,
+                        total_length,
                         timestamp,
                         ethernet_header,
                         ip_header,

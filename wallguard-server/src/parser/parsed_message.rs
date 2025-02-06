@@ -15,6 +15,7 @@ pub struct ParsedRecord {
     pub uuid: String,
     pub interface_name: String,
     pub timestamp: String,
+    pub total_length: u16,
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub ethernet_header: Option<EthernetHeader>,
     #[serde(flatten)]
