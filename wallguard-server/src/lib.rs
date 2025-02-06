@@ -1,12 +1,9 @@
 use std::time::Duration;
-
-use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-pub use crate::proto::wallguard::{
-    Authentication, ConfigSnapshot, FileSnapshot, Packet, Packets, SetupRequest,
-};
-use proto::wallguard::{CommonResponse, HeartbeatRequest, LoginRequest};
 use tonic::transport::Channel;
 use tonic::Request;
+
+use crate::proto::wallguard::wall_guard_client::WallGuardClient;
+pub use crate::proto::wallguard::*;
 
 mod proto;
 
