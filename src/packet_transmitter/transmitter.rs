@@ -1,3 +1,4 @@
+use crate::authentication::AuthHandler;
 use crate::cli::Args;
 use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
 use crate::packet_transmitter::dump_dir::DumpDir;
@@ -7,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 
-pub(crate) async fn transmit_packets(args: Args, token: String) {
+pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
     let monitor_config = nullnet_traffic_monitor::MonitorConfig {
         addr: args.addr.clone(),
         snaplen: args.snaplen,
@@ -21,9 +22,9 @@ pub(crate) async fn transmit_packets(args: Args, token: String) {
     let client_2 = client.clone();
     let dump_dir = DumpDir::new(dump_bytes).await;
     let dump_dir_2 = dump_dir.clone();
-    let token_2 = token.clone();
+    let auth_2 = auth.clone();
     tokio::spawn(async move {
-        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
+        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, auth_2)
             .await;
     });
 
@@ -39,6 +40,10 @@ pub(crate) async fn transmit_packets(args: Args, token: String) {
             };
             packet_batch.push(packet);
             if packet_batch.is_full() {
+                let Ok(token) = auth.obtain_token_safe().await else {
+                    continue;
+                };
+
                 send_packets(
                     &client,
                     &mut packet_batch,
@@ -119,3 +124,8 @@ async fn dump_packets_to_file(
     .await
     .expect("Failed to write dump file");
 }
+
+
+// @TODO: There is a problem with packets that get dumped, as they are serialized with the current token,  
+// which is subject to change over time. Theoretically, it is possible to dump packets with a valid token  
+// and re-upload them at a later time when the token has already expired.

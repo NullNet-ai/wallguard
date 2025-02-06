@@ -1,21 +1,18 @@
 mod authentication;
 mod cli;
-mod confmon_handle;
+mod config_monitor;
 mod constants;
 mod heartbeat;
 mod packet_transmitter;
 mod utils;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
-use authentication::AutoAuth;
+use authentication::AuthHandler;
 use clap::Parser;
+use config_monitor::ConfigurationMonitor;
 use libwallguard::{Authentication, SetupRequest, WallGuardGrpcInterface};
 
-async fn setup(auth: &AutoAuth, args: &cli::Args) {
-    if cfg!(feature = "no-datastore") {
-        return;
-    }
-
+async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
 
     let response = WallGuardGrpcInterface::new(&args.addr, args.port)
@@ -26,13 +23,12 @@ async fn setup(auth: &AutoAuth, args: &cli::Args) {
             device_uuid: args.uuid.clone(),
             hostname: args.hostname.clone(),
         })
-        .await
-        .expect("Setup Request Failed");
+        .await?;
 
     if response.success {
-        println!("Successful Setup");
+        Ok(())
     } else {
-        panic!("Setup failed: {}", response.message);
+        Err(response.message)
     }
 }
 
@@ -41,37 +37,30 @@ async fn main() {
     let args = cli::Args::parse();
     println!("Arguments: {args:?}");
 
-    let auth = AutoAuth::new(
+    let auth = AuthHandler::new(
         args.app_id.clone(),
         args.app_secret.clone(),
         args.addr.clone(),
         args.port,
     );
 
-    let token = auth
-        .obtain_token_safe()
+    let mut cfg_monitor = ConfigurationMonitor::new(&args, auth.clone(), None)
         .await
-        .expect("Server authentication failed");
+        .expect("Failed to initialize configuration monitor");
 
-    setup(&auth, &args).await;
+    cfg_monitor.upload_current().await.expect(
+        "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
+    );
 
-    let mut cfg_watcher =
-        confmon_handle::init_confmon(args.addr.clone(), args.port, &args.target, auth.clone())
-            .await;
+    setup_request(&auth, &args)
+        .await
+        .expect("Setup request failed");
 
-    tokio::spawn(async move {
-        cfg_watcher
-            .watch()
-            .await
-            .expect("Failed to watch configuration changes");
-    });
+    tokio::spawn(async move { cfg_monitor.watch().await });
 
     let auth_copy = auth.clone();
     let args_copy = args.clone();
     tokio::spawn(async move { heartbeat::routine(auth_copy, args_copy).await });
 
-    transmit_packets(args, token).await;
+    transmit_packets(args, auth.clone()).await;
 }
-
-// @TODO:
-// - Pass token to configuration watcher's callback

@@ -832,9 +832,9 @@ checksum = "defc4c55412d89136f966bbb339008b474350e5e6e78d2714439c386b3137a03"
 
 [[package]]
 name = "nullnet-libconfmon"
-version = "0.1.1"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d548c9b363a45c013854e0565caaa7011bf5c09fcde4e25025a549b45395b26"
+checksum = "ba1cfdd5d23ac7802fde101e855076e0531fc1ea56f527226fb83f66498a41dd"
 dependencies = [
  "tokio",
 ]

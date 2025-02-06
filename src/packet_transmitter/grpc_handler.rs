@@ -1,3 +1,4 @@
+use crate::authentication::AuthHandler;
 use crate::packet_transmitter::dump_dir::DumpDir;
 use libwallguard::WallGuardGrpcInterface;
 use std::sync::Arc;
@@ -9,17 +10,23 @@ pub(crate) async fn handle_connection_and_retransmission(
     port: u16,
     interface: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
     dump_dir: DumpDir,
-    token: String,
+    auth: AuthHandler,
 ) {
     loop {
         if interface.lock().await.is_some() {
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+            
+            let Ok(token) = auth.obtain_token_safe().await else {
+                eprintln!("Authentication failed");
+                continue;
+            };
+
             if interface
                 .lock()
                 .await
                 .as_mut()
                 .unwrap()
-                .heartbeat(token.clone())
+                .heartbeat(token)
                 .await
                 .is_err()
             {

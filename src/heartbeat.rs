@@ -2,10 +2,10 @@ use std::time::Duration;
 
 use libwallguard::WallGuardGrpcInterface;
 
-use crate::authentication::AutoAuth;
+use crate::authentication::AuthHandler;
 use crate::cli::Args;
 
-pub async fn routine(auth: AutoAuth, args: Args) {
+pub async fn routine(auth: AuthHandler, args: Args) {
     if cfg!(feature = "no-datastore") {
         println!("Datastore functionality is disabled. Stopping heartbeat routine ...");
         return;

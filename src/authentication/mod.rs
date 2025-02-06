@@ -7,7 +7,7 @@ use token_wrapper::TokenWrapper;
 use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
-pub struct AutoAuth {
+pub struct AuthHandler {
     app_id: String,
     app_secret: String,
     server_addr: String,
@@ -15,7 +15,7 @@ pub struct AutoAuth {
     token: Arc<Mutex<Option<TokenWrapper>>>,
 }
 
-impl AutoAuth {
+impl AuthHandler {
     pub fn new(app_id: String, app_secret: String, server_addr: String, server_port: u16) -> Self {
         Self {
             app_id,
