@@ -674,9 +674,9 @@ checksum = "defc4c55412d89136f966bbb339008b474350e5e6e78d2714439c386b3137a03"
 
 [[package]]
 name = "nullnet-libdatastore"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a90269fd8ecb44c8976b0d9522e98231e65e7810f44fcbb6d67df758f4315db"
+checksum = "bf46f789996a058c4d7b6017d1c86fac69557010d66758e1e5ca8ca87930fc20"
 dependencies = [
  "prost",
  "tonic",
