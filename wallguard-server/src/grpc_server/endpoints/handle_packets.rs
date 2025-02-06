@@ -27,6 +27,10 @@ impl WallGuardImpl {
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
 
+        if !response.success {
+            return Err(Status::internal(response.message));
+        }
+
         Ok(Response::new(CommonResponse {
             success: response.success,
             message: response.message,
