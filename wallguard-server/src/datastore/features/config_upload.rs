@@ -20,7 +20,7 @@ impl DatastoreWrapper {
             .internal_cu_create_configuration(token, device_id, &config)
             .await?;
 
-        if config.rules.len() > 0 {
+        if !config.rules.is_empty() {
             self.internal_cu_insert_related_records(
                 token,
                 "device_rules",
@@ -33,7 +33,7 @@ impl DatastoreWrapper {
             .await?;
         }
 
-        if config.aliases.len() > 0 {
+        if !config.aliases.is_empty() {
             self.internal_cu_insert_related_records(
                 token,
                 "device_aliases",

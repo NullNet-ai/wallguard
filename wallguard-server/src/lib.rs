@@ -37,8 +37,6 @@ impl WallGuardGrpcInterface {
             return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
         };
 
-        println!("Connected to the server");
-
         Self {
             client: WallGuardClient::new(channel),
         }
@@ -67,11 +65,11 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_packets(&mut self, message: Packets) -> Result<(), String> {
+    pub async fn handle_packets(&mut self, message: Packets) -> Result<CommonResponse, String> {
         self.client
             .handle_packets(Request::new(message))
             .await
-            .map(|_| ())
+            .map(|r| r.into_inner())
             .map_err(|e| e.to_string())
     }
 
