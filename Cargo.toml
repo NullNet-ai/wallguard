@@ -15,7 +15,7 @@ strip = true
 nullnet-traffic-monitor = "0.1.0"
 nullnet-libconfmon = "0.2.1"
 nullnet-libtoken = "0.1.0"
-nullnet-wallguard-server = "0.1.5"
+nullnet-wallguard-server = "0.1.7"
 chrono = { version = "0.4.39", features = ["clock"] }
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 uuid = { version = "1.12.0", features = ["v4"] }
