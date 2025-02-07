@@ -1,5 +1,5 @@
 use super::request_impl::request_impl;
-use crate::authentication::AuthHandler;
+use crate::{authentication::AuthHandler, logger::Logger};
 use nullnet_libconfmon::{Error, ErrorKind, Snapshot, WatcherHandler};
 
 pub struct Handler {
@@ -20,6 +20,8 @@ impl WatcherHandler for Handler {
         snapshot: Snapshot,
         state: nullnet_libconfmon::State,
     ) -> Result<(), nullnet_libconfmon::Error> {
+        Logger::log(log::Level::Info, "Uploading configuration snapshot ...");
+
         let token = self
             .auth
             .obtain_token_safe()
@@ -38,6 +40,9 @@ impl WatcherHandler for Handler {
     }
 
     async fn on_error(&self, error: Error) {
-        eprintln!("Error occured during configuration monitoring. {}", error);
+        Logger::log(
+            log::Level::Error,
+            format!("Error occured during configuration monitoring. {}", error),
+        );
     }
 }

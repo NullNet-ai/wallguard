@@ -27,11 +27,6 @@ impl AuthHandler {
     }
 
     pub async fn obtain_token_safe(&self) -> Result<String, String> {
-        if cfg!(feature = "no-datastore") {
-            println!("Datastore functionality is disabled. Using an empty token...");
-            return Ok(String::new());
-        }
-
         let mut token = self.token.lock().await;
 
         if token.as_ref().map_or(true, TokenWrapper::is_expired) {

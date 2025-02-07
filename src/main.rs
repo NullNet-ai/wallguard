@@ -3,6 +3,7 @@ mod cli;
 mod config_monitor;
 mod constants;
 mod heartbeat;
+mod logger;
 mod packet_transmitter;
 mod utils;
 
@@ -11,6 +12,8 @@ use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use libwallguard::{Authentication, SetupRequest, WallGuardGrpcInterface};
+use log::Level;
+use logger::Logger;
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
@@ -35,7 +38,9 @@ async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), Strin
 #[tokio::main]
 async fn main() {
     let args = cli::Args::parse();
-    println!("Arguments: {args:?}");
+
+    Logger::init().expect("Failed to initialize logger");
+    Logger::log(Level::Info, format!("Arguments: {args:?}"));
 
     let auth = AuthHandler::new(
         args.app_id.clone(),

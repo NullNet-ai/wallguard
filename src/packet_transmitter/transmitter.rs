@@ -1,10 +1,12 @@
 use crate::authentication::AuthHandler;
 use crate::cli::Args;
 use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
+use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
+use log::Level;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -16,7 +18,11 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
     let mut rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
 
     let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
-    println!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
+
+    Logger::log(
+        Level::Info,
+        "Will use at most {dump_bytes} bytes of disk space for packet dump files",
+    );
 
     let client = Arc::new(Mutex::new(None));
     let client_2 = client.clone();
@@ -61,7 +67,10 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                     )
                     .await;
                     if dump_dir.is_full().await {
-                        println!("Dump size maximum limit reached. Entering idle mode...");
+                        Logger::log(
+                            Level::Warn,
+                            "Dump size maximum limit reached. Entering idle mode...",
+                        );
                         // stop traffic monitoring
                         drop(rx);
                         // wait for the server to come up again
@@ -94,8 +103,13 @@ async fn send_packets(
             packets: packet_queue.get_clone(),
             auth: Some(Authentication { token }),
         };
-        if client.handle_packets(p).await.is_ok() {
-            packet_queue.clear();
+
+        match client.handle_packets(p).await {
+            Ok(_) => packet_queue.clear(),
+            Err(e) => Logger::log(
+                log::Level::Error,
+                format!("Failed to send traffic data: {}", e),
+            ),
         };
     }
 }
@@ -108,9 +122,12 @@ async fn dump_packets_to_file(
 ) {
     let now = chrono::Utc::now().to_rfc3339();
     let file_path = dump_dir.get_file_path(&now);
-    println!(
-        "Queue is full. Dumping {} packets to file '{file_path}'",
-        packets.len()
+    Logger::log(
+        Level::Warn,
+        format!(
+            "Queue is full. Dumping {} packets to file '{file_path}'",
+            packets.len()
+        ),
     );
     let dump = Packets {
         uuid,
