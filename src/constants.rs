@@ -5,15 +5,14 @@ use crate::logger::Logger;
 #[cfg(debug_assertions)]
 pub const BATCH_SIZE: usize = 100;
 #[cfg(not(debug_assertions))]
-pub const BATCH_SIZE: usize = 1024; // @Temporary fix to `ResourceExhausted` error
-// pub const BATCH_SIZE: usize = 10_000;
+pub const BATCH_SIZE: usize = 1024; // @Temporary fix to `ResourceExhausted` error, was 10_000
 
 #[cfg(debug_assertions)]
 pub const QUEUE_SIZE: usize = 1_000;
 #[cfg(not(debug_assertions))]
 pub const QUEUE_SIZE: usize = 1_000_000;
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-// Isn't it too long ? 
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// Isn't it too long ?
 // Full queue can take dozens of GB of RAM
 
 pub static UUID: once_cell::sync::Lazy<String> =
