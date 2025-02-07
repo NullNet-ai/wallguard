@@ -872,9 +872,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libfireparse"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2432ef3623ac88f245a75ba85bec2f0f8bd3d908ff2cabed5e692af5794679b0"
+checksum = "bd513c34441eb7ffcb8d99ee14dbe85be0790c69a78865fb698ea4fae65e71af"
 dependencies = [
  "base64",
  "roxmltree",
@@ -894,9 +894,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-traffic-monitor"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "addb278150fc4a78af96b325eb24ab3a366bdf856e9b670a2ffbe6dc2b826684"
+checksum = "ee163e273a26f21887352f29d2f12917239c5cd4ef1a28f865a64174968e065b"
 dependencies = [
  "chrono",
  "pcap",

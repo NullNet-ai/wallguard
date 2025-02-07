@@ -12,7 +12,7 @@ lto = true
 strip = true
 
 [dependencies]
-nullnet-traffic-monitor = "0.1.0"
+nullnet-traffic-monitor = "0.1.2"
 nullnet-libconfmon = "0.2.1"
 nullnet-libtoken = "0.1.0"
 nullnet-wallguard-server = "0.1.7"
