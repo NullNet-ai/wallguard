@@ -20,27 +20,31 @@ impl DatastoreWrapper {
             .internal_cu_create_configuration(token, device_id, &config)
             .await?;
 
-        self.internal_cu_insert_related_records(
-            token,
-            "device_rules",
-            "RL",
-            &config.rules,
-            &config_id,
-            "device_rule_status",
-            &status,
-        )
-        .await?;
+        if config.rules.len() > 0 {
+            self.internal_cu_insert_related_records(
+                token,
+                "device_rules",
+                "RL",
+                &config.rules,
+                &config_id,
+                "device_rule_status",
+                &status,
+            )
+            .await?;
+        }
 
-        self.internal_cu_insert_related_records(
-            token,
-            "device_aliases",
-            "AL",
-            &config.aliases,
-            &config_id,
-            "device_alias_status",
-            &status,
-        )
-        .await?;
+        if config.aliases.len() > 0 {
+            self.internal_cu_insert_related_records(
+                token,
+                "device_aliases",
+                "AL",
+                &config.aliases,
+                &config_id,
+                "device_alias_status",
+                &status,
+            )
+            .await?;
+        }
 
         Ok(config_id)
     }
