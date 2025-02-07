@@ -1,3 +1,4 @@
+use super::request_log::ServerLogger;
 use crate::{
     datastore::DatastoreWrapper,
     proto::wallguard::{
@@ -5,6 +6,7 @@ use crate::{
         HeartbeatRequest, LoginRequest, Packets, SetupRequest,
     },
 };
+
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
@@ -17,39 +19,54 @@ impl WallGuard for WallGuardImpl {
         &self,
         request: Request<HeartbeatRequest>,
     ) -> Result<Response<CommonResponse>, Status> {
-        WallGuardImpl::log_request(&request, "heartbeat");
-        self.heartbeat_impl(request).await
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.heartbeat_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/heartbeat", received_at);
+        result
     }
 
     async fn setup(
         &self,
         request: Request<SetupRequest>,
     ) -> Result<Response<CommonResponse>, Status> {
-        WallGuardImpl::log_request(&request, "setup");
-        self.setup_impl(request).await
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.setup_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/setup", received_at);
+        result
     }
 
     async fn login(
         &self,
         request: Request<LoginRequest>,
     ) -> Result<Response<Authentication>, Status> {
-        WallGuardImpl::log_request(&request, "login");
-        self.login_impl(request).await
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.login_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/login", received_at);
+        result
     }
 
     async fn handle_packets(
         &self,
         request: Request<Packets>,
     ) -> Result<Response<CommonResponse>, Status> {
-        WallGuardImpl::log_request(&request, "handle_packets");
-        self.handle_packets_impl(request).await
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.handle_packets_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/handle_packets", received_at);
+        result
     }
 
     async fn handle_config(
         &self,
         request: Request<ConfigSnapshot>,
     ) -> Result<Response<CommonResponse>, Status> {
-        WallGuardImpl::log_request(&request, "handle_config");
-        self.handle_config_impl(request).await
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.handle_config_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/handle_config", received_at);
+        result
     }
 }

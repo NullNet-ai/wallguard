@@ -3,8 +3,8 @@ use server::WallGuardImpl;
 use std::net::ToSocketAddrs;
 use tonic::transport::Server;
 
-mod common;
 mod endpoints;
+mod request_log;
 mod server;
 
 const ADDR: &str = "0.0.0.0";
