@@ -15,6 +15,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::new(),
+                durability: String::from("hard"),
             }),
             body: json!({
                 "device_id": device_id,
