@@ -1,4 +1,5 @@
 use crate::authentication::AuthHandler;
+use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
 use libwallguard::WallGuardGrpcInterface;
 use std::sync::Arc;
@@ -17,7 +18,7 @@ pub(crate) async fn handle_connection_and_retransmission(
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
             let Ok(token) = auth.obtain_token_safe().await else {
-                eprintln!("Authentication failed");
+                Logger::log(log::Level::Error, "Authentication failed");
                 continue;
             };
 
@@ -30,7 +31,10 @@ pub(crate) async fn handle_connection_and_retransmission(
                 .await
                 .is_err()
             {
-                println!("Failed to send heartbeat. Reconnecting...");
+                Logger::log(
+                    log::Level::Error,
+                    "Failed to send heartbeat. Reconnecting...",
+                );
                 *interface.lock().await = None;
             }
         } else {
@@ -52,11 +56,17 @@ pub(crate) async fn handle_connection_and_retransmission(
                     .is_err()
                 {
                     // server is down again, keep packet dumps and try again later
-                    println!("Failed to send packet dump. Reconnecting...");
+                    Logger::log(
+                        log::Level::Error,
+                        "Failed to send packet dump. Reconnecting...",
+                    );
                     *interface.lock().await = None;
                     break;
                 }
-                println!("Dump file '{:?}' sent successfully", file.file_name());
+                Logger::log(
+                    log::Level::Info,
+                    format!("Dump file '{:?}' sent successfully", file.file_name()),
+                );
                 fs::remove_file(file.path())
                     .await
                     .expect("Failed to remove dump file");

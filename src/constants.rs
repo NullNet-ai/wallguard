@@ -1,14 +1,20 @@
 use std::path::Path;
 
+use crate::logger::Logger;
+
 #[cfg(debug_assertions)]
 pub const BATCH_SIZE: usize = 100;
 #[cfg(not(debug_assertions))]
-pub const BATCH_SIZE: usize = 10_000;
+pub const BATCH_SIZE: usize = 1024; // @Temporary fix to `ResourceExhausted` error
+// pub const BATCH_SIZE: usize = 10_000;
 
 #[cfg(debug_assertions)]
 pub const QUEUE_SIZE: usize = 1_000;
 #[cfg(not(debug_assertions))]
 pub const QUEUE_SIZE: usize = 1_000_000;
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+// Isn't it too long ? 
+// Full queue can take dozens of GB of RAM
 
 pub static UUID: once_cell::sync::Lazy<String> =
     once_cell::sync::Lazy::new(|| uuid::Uuid::new_v4().to_string());
@@ -20,10 +26,16 @@ pub static DISK_SIZE: once_cell::sync::Lazy<u64> = once_cell::sync::Lazy::new(||
     for disk in &disks {
         if disk.mount_point() == Path::new("/") {
             let available_space = disk.available_space();
-            println!("Available disk space: {available_space}");
+            Logger::log(
+                log::Level::Info,
+                format!("Available disk space: {available_space}"),
+            );
             return available_space;
         }
     }
-    println!("Failed to get disk space, defaulting to 1 GB");
+    Logger::log(
+        log::Level::Warn,
+        "Failed to get disk space, defaulting to 1 GB",
+    );
     1_000_000_000
 });
