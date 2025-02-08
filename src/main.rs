@@ -14,7 +14,6 @@ use config_monitor::ConfigurationMonitor;
 use libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
 use log::Level;
 use logger::Logger;
-use nullnet_libtoken::Device;
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
@@ -45,7 +44,7 @@ async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<DeviceStat
         .await?;
 
     let status = DeviceStatus::try_from(response.status)
-        .map_err(|e| format!("Wrong DeviceStatus value: {}", response.status))?;
+        .map_err(|e| format!("Wrong DeviceStatus value: {}", e.0))?;
 
     Ok(status)
 }
