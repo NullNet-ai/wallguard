@@ -904,9 +904,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d77e3a419353227477a99c548a7f03ac08e9b8df9567116be3acb87eba811b5"
+checksum = "62732881217fc72e64cc68d89fb19f4ba2cf30ba334e4554ca189a4447e6b20a"
 dependencies = [
  "async-channel",
  "chrono",

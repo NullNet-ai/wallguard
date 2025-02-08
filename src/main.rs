@@ -11,9 +11,10 @@ use crate::packet_transmitter::transmitter::transmit_packets;
 use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
-use libwallguard::{Authentication, SetupRequest, WallGuardGrpcInterface};
+use libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
 use log::Level;
 use logger::Logger;
+use nullnet_libtoken::Device;
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
@@ -35,7 +36,7 @@ async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), Strin
     }
 }
 
-async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<String, String> {
+async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<DeviceStatus, String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
 
     let response = WallGuardGrpcInterface::new(&args.addr, args.port)
@@ -43,7 +44,10 @@ async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<String, St
         .device_status(token)
         .await?;
 
-    Ok(response)
+    let status = DeviceStatus::try_from(response.status)
+        .map_err(|e| format!("Wrong DeviceStatus value: {}", response.status))?;
+
+    Ok(status)
 }
 
 #[tokio::main]
@@ -64,11 +68,11 @@ async fn main() {
         .await
         .expect("Failed to fetch device status");
 
-    if status == "draft" {
+    if status == DeviceStatus::DsDraft {
         setup_request(&auth, &args)
             .await
             .expect("Setup request failed");
-    } else if status == "archive" || status == "deleted" {
+    } else if status == DeviceStatus::DsArchived || status == DeviceStatus::DsDeleted {
         Logger::log(
             Level::Error,
             "Device is either archived or deleted, aborting ...",

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use libwallguard::{HeartbeatResponse, WallGuardGrpcInterface};
+use libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
 use log::Level;
 
 use crate::authentication::AuthHandler;
@@ -35,12 +35,18 @@ pub async fn routine(auth: AuthHandler, args: Args) {
 }
 
 fn handle_hb_response(response: HeartbeatResponse) {
-    if response.status == "archive" || response.status == "deleted" {
-        Logger::log(
-            Level::Warn,
-            "Device has been archived or deleted, aborting execution ...",
-        );
-
-        std::process::exit(0)
+    match DeviceStatus::try_from(response.status) {
+        Ok(DeviceStatus::DsArchived | DeviceStatus::DsDeleted) => {
+            Logger::log(
+                Level::Warn,
+                "Device has been archived or deleted, aborting execution ...",
+            );
+            std::process::exit(0);
+        }
+        Ok(_) => {}
+        Err(_) => Logger::log(
+            Level::Error,
+            format!("Unknown device status value {}", response.status),
+        ),
     }
 }
