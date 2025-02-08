@@ -145,7 +145,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::new(),
-                durability: String::from("hard")
+                durability: String::from("hard"),
             }),
             body: Some(BatchCreateBody {
                 records: serde_json::to_string(&serde_json::Value::Array(records_with_id)).unwrap(),

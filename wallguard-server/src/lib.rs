@@ -93,4 +93,17 @@ impl WallGuardGrpcInterface {
             .map(|response| response.into_inner())
             .map_err(|e| e.to_string())
     }
+
+    pub async fn device_status(&mut self, token: String) -> Result<String, String> {
+        let response = self
+            .client
+            .status(Request::new(StatusRequest {
+                auth: Some(Authentication { token }),
+            }))
+            .await
+            .map(|response| response.into_inner())
+            .map_err(|e| e.to_string())?;
+
+        Ok(response.status)
+    }
 }

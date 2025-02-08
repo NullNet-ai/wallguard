@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use tonic::{Code, Request, Response, Status};
 
-use crate::proto::wallguard::{Authentication, CommonResponse};
+use crate::proto::wallguard::{Authentication, CommonResponse, StatusResponse};
 
 const GREEN: &str = "\x1b[32m";
 const RED: &str = "\x1b[31m";
@@ -135,6 +135,32 @@ impl LoggableResponse for CommonResponse {
 }
 
 impl LoggableResponse for Authentication {
+    fn log_success(
+        &self,
+        received_str: &str,
+        completed_str: &str,
+        source_str: &str,
+        destination_str: &str,
+        duration_ms: i64,
+    ) {
+        println!(
+            "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). Status: {}SUCCESS{}",
+            received_str,
+            completed_str,
+            YELLOW,
+            source_str,
+            RESET,
+            CYAN,
+            destination_str,
+            RESET,
+            duration_ms,
+            GREEN,
+            RESET
+        );
+    }
+}
+
+impl LoggableResponse for StatusResponse {
     fn log_success(
         &self,
         received_str: &str,

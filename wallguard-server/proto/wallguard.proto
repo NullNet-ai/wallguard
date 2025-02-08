@@ -4,6 +4,7 @@ package wallguard;
 
 service WallGuard {
   rpc Login (LoginRequest) returns (Authentication);
+  rpc Status (StatusRequest) returns (StatusResponse);
   rpc Setup (SetupRequest) returns (CommonResponse);
   rpc Heartbeat (HeartbeatRequest) returns (CommonResponse);
   rpc HandlePackets (Packets) returns (CommonResponse);
@@ -15,8 +16,16 @@ message LoginRequest {
   string app_secret = 2;
 }
 
+message StatusRequest {
+  Authentication auth = 1;
+}
+
 message Authentication {
   string token = 1;
+}
+
+message StatusResponse {
+  string status = 1;
 }
 
 message CommonResponse {

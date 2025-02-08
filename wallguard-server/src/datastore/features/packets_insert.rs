@@ -22,7 +22,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::new(),
-                durability: String::from("soft")
+                durability: String::from("soft"),
             }),
             body: Some(BatchCreateBody {
                 records,
