@@ -3,7 +3,8 @@ use crate::{
     datastore::DatastoreWrapper,
     proto::wallguard::{
         wall_guard_server::WallGuard, Authentication, CommonResponse, ConfigSnapshot,
-        HeartbeatRequest, LoginRequest, Packets, SetupRequest, StatusRequest, StatusResponse,
+        HeartbeatRequest, HeartbeatResponse, LoginRequest, Packets, SetupRequest, StatusRequest,
+        StatusResponse,
     },
 };
 
@@ -18,7 +19,7 @@ impl WallGuard for WallGuardImpl {
     async fn heartbeat(
         &self,
         request: Request<HeartbeatRequest>,
-    ) -> Result<Response<CommonResponse>, Status> {
+    ) -> Result<Response<HeartbeatResponse>, Status> {
         let addr = ServerLogger::extract_address(&request);
         let received_at = chrono::Utc::now();
         let result = self.heartbeat_impl(request).await;

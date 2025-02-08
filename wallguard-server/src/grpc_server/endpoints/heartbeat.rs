@@ -2,19 +2,19 @@ use tonic::{Request, Response, Status};
 
 use crate::{
     grpc_server::server::WallGuardImpl,
-    proto::wallguard::{CommonResponse, HeartbeatRequest},
+    proto::wallguard::{HeartbeatRequest, HeartbeatResponse},
 };
 
 impl WallGuardImpl {
     pub(crate) async fn heartbeat_impl(
         &self,
         request: Request<HeartbeatRequest>,
-    ) -> Result<Response<CommonResponse>, Status> {
+    ) -> Result<Response<HeartbeatResponse>, Status> {
         let heartbeat_request = request.into_inner();
 
         let (jwt_token, token_info) = Self::authenticate(heartbeat_request.auth)?;
 
-        let response = self
+        let (status, is_remote_access_enabled, is_monitoring_enabled) = self
             .datastore
             .as_ref()
             .ok_or_else(|| Status::internal("Datastore is unavailable"))?
@@ -22,16 +22,10 @@ impl WallGuardImpl {
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        if !response.success {
-            return Err(Status::internal(format!(
-                "Status: {}, Message: {}, Error: {}",
-                response.status_code, response.message, response.error
-            )));
-        }
-
-        Ok(Response::new(CommonResponse {
-            success: response.success,
-            message: response.message,
+        Ok(Response::new(HeartbeatResponse {
+            status,
+            is_remote_access_enabled,
+            is_monitoring_enabled,
         }))
     }
 }

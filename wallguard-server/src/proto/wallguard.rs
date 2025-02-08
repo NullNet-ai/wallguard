@@ -23,6 +23,15 @@ pub struct StatusResponse {
     pub status: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HeartbeatResponse {
+    #[prost(string, tag = "1")]
+    pub status: ::prost::alloc::string::String,
+    #[prost(bool, tag = "2")]
+    pub is_remote_access_enabled: bool,
+    #[prost(bool, tag = "3")]
+    pub is_monitoring_enabled: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommonResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
@@ -267,7 +276,10 @@ pub mod wall_guard_client {
         pub async fn heartbeat(
             &mut self,
             request: impl tonic::IntoRequest<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
+        ) -> std::result::Result<
+            tonic::Response<super::HeartbeatResponse>,
+            tonic::Status,
+        > {
             self.inner
                 .ready()
                 .await
@@ -357,7 +369,10 @@ pub mod wall_guard_server {
         async fn heartbeat(
             &self,
             request: tonic::Request<super::HeartbeatRequest>,
-        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
+        ) -> std::result::Result<
+            tonic::Response<super::HeartbeatResponse>,
+            tonic::Status,
+        >;
         async fn handle_packets(
             &self,
             request: tonic::Request<super::Packets>,
@@ -579,7 +594,7 @@ pub mod wall_guard_server {
                         T: WallGuard,
                     > tonic::server::UnaryService<super::HeartbeatRequest>
                     for HeartbeatSvc<T> {
-                        type Response = super::CommonResponse;
+                        type Response = super::HeartbeatResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,

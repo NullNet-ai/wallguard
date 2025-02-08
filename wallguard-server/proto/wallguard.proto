@@ -6,7 +6,7 @@ service WallGuard {
   rpc Login (LoginRequest) returns (Authentication);
   rpc Status (StatusRequest) returns (StatusResponse);
   rpc Setup (SetupRequest) returns (CommonResponse);
-  rpc Heartbeat (HeartbeatRequest) returns (CommonResponse);
+  rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
   rpc HandlePackets (Packets) returns (CommonResponse);
   rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
 }
@@ -26,6 +26,12 @@ message Authentication {
 
 message StatusResponse {
   string status = 1;
+}
+
+message HeartbeatResponse {
+  string status = 1;
+  bool is_remote_access_enabled = 2;
+  bool is_monitoring_enabled = 3;
 }
 
 message CommonResponse {
