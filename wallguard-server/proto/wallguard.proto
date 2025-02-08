@@ -24,12 +24,20 @@ message Authentication {
   string token = 1;
 }
 
+enum DeviceStatus {
+  DS_DRAFT = 0;
+  DS_ACTIVE = 1;
+  DS_ARCHIVED = 2;
+  DS_DELETED = 3;
+  DS_UNKNOWN = 4;
+}
+
 message StatusResponse {
-  string status = 1;
+  DeviceStatus status = 1;
 }
 
 message HeartbeatResponse {
-  string status = 1;
+  DeviceStatus status = 1;
   bool is_remote_access_enabled = 2;
   bool is_monitoring_enabled = 3;
 }

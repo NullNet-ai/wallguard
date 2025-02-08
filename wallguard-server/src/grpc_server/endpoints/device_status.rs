@@ -3,6 +3,7 @@ use tonic::{Request, Response, Status};
 use crate::{
     grpc_server::server::WallGuardImpl,
     proto::wallguard::{StatusRequest, StatusResponse},
+    utils::map_status_value_to_enum,
 };
 
 impl WallGuardImpl {
@@ -21,6 +22,8 @@ impl WallGuardImpl {
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
 
-        Ok(Response::new(StatusResponse { status }))
+        Ok(Response::new(StatusResponse {
+            status: map_status_value_to_enum(&status).into(),
+        }))
     }
 }

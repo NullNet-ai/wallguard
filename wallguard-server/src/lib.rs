@@ -94,7 +94,7 @@ impl WallGuardGrpcInterface {
             .map_err(|e| e.to_string())
     }
 
-    pub async fn device_status(&mut self, token: String) -> Result<String, String> {
+    pub async fn device_status(&mut self, token: String) -> Result<StatusResponse, String> {
         let response = self
             .client
             .status(Request::new(StatusRequest {
@@ -104,6 +104,6 @@ impl WallGuardGrpcInterface {
             .map(|response| response.into_inner())
             .map_err(|e| e.to_string())?;
 
-        Ok(response.status)
+        Ok(response)
     }
 }

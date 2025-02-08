@@ -17,15 +17,15 @@ pub struct Authentication {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct StatusResponse {
-    #[prost(string, tag = "1")]
-    pub status: ::prost::alloc::string::String,
+    #[prost(enumeration = "DeviceStatus", tag = "1")]
+    pub status: i32,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct HeartbeatResponse {
-    #[prost(string, tag = "1")]
-    pub status: ::prost::alloc::string::String,
+    #[prost(enumeration = "DeviceStatus", tag = "1")]
+    pub status: i32,
     #[prost(bool, tag = "2")]
     pub is_remote_access_enabled: bool,
     #[prost(bool, tag = "3")]
@@ -91,6 +91,41 @@ pub struct ConfigSnapshot {
     pub files: ::prost::alloc::vec::Vec<FileSnapshot>,
     #[prost(enumeration = "ConfigStatus", tag = "3")]
     pub status: i32,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum DeviceStatus {
+    DsDraft = 0,
+    DsActive = 1,
+    DsArchived = 2,
+    DsDeleted = 3,
+    DsUnknown = 4,
+}
+impl DeviceStatus {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::DsDraft => "DS_DRAFT",
+            Self::DsActive => "DS_ACTIVE",
+            Self::DsArchived => "DS_ARCHIVED",
+            Self::DsDeleted => "DS_DELETED",
+            Self::DsUnknown => "DS_UNKNOWN",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "DS_DRAFT" => Some(Self::DsDraft),
+            "DS_ACTIVE" => Some(Self::DsActive),
+            "DS_ARCHIVED" => Some(Self::DsArchived),
+            "DS_DELETED" => Some(Self::DsDeleted),
+            "DS_UNKNOWN" => Some(Self::DsUnknown),
+            _ => None,
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

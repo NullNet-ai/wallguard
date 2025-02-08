@@ -3,6 +3,7 @@ use tonic::{Request, Response, Status};
 use crate::{
     grpc_server::server::WallGuardImpl,
     proto::wallguard::{HeartbeatRequest, HeartbeatResponse},
+    utils::map_status_value_to_enum,
 };
 
 impl WallGuardImpl {
@@ -23,7 +24,7 @@ impl WallGuardImpl {
             .map_err(|e| Status::internal(e.to_string()))?;
 
         Ok(Response::new(HeartbeatResponse {
-            status,
+            status: map_status_value_to_enum(&status).into(),
             is_remote_access_enabled,
             is_monitoring_enabled,
         }))
