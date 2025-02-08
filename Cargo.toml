@@ -1,6 +1,6 @@
 [package]
 name = "wallguard"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [features]
@@ -12,10 +12,10 @@ lto = true
 strip = true
 
 [dependencies]
-nullnet-traffic-monitor = "0.1.2"
-nullnet-libconfmon = "0.2.1"
-nullnet-libtoken = "0.1.0"
-nullnet-wallguard-server = "0.1.7"
+nullnet-traffic-monitor = "=0.1.2"
+nullnet-libconfmon = "=0.2.1"
+nullnet-libtoken = "=0.1.0"
+nullnet-wallguard-server = "=0.1.8"
 chrono = { version = "0.4.39", features = ["clock"] }
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 uuid = { version = "1.12.0", features = ["v4"] }

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use libwallguard::WallGuardGrpcInterface;
+use libwallguard::{HeartbeatResponse, WallGuardGrpcInterface};
 use log::Level;
 
 use crate::authentication::AuthHandler;
@@ -16,12 +16,7 @@ pub async fn routine(auth: AuthHandler, args: Args) {
 
                 match client.heartbeat(token).await {
                     Ok(response) => {
-                        if !response.success {
-                            Logger::log(
-                                Level::Error,
-                                format!("Heartbeat: Request failed failed - {}", response.message),
-                            )
-                        }
+                        handle_hb_response(response);
                     }
                     Err(msg) => Logger::log(
                         Level::Error,
@@ -36,5 +31,16 @@ pub async fn routine(auth: AuthHandler, args: Args) {
         };
 
         tokio::time::sleep(interval).await;
+    }
+}
+
+fn handle_hb_response(response: HeartbeatResponse) {
+    if response.status == "archive" || response.status == "deleted" {
+        Logger::log(
+            Level::Warn,
+            "Device has been archived or deleted, aborting execution ...",
+        );
+
+        std::process::exit(0)
     }
 }

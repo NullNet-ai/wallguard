@@ -35,6 +35,17 @@ async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), Strin
     }
 }
 
+async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<String, String> {
+    let token = auth.obtain_token_safe().await.expect("Unauthenticated");
+
+    let response = WallGuardGrpcInterface::new(&args.addr, args.port)
+        .await
+        .device_status(token)
+        .await?;
+
+    Ok(response)
+}
+
 #[tokio::main]
 async fn main() {
     let args = cli::Args::parse();
@@ -49,6 +60,22 @@ async fn main() {
         args.port,
     );
 
+    let status = fetch_status(&auth, &args)
+        .await
+        .expect("Failed to fetch device status");
+
+    if status == "draft" {
+        setup_request(&auth, &args)
+            .await
+            .expect("Setup request failed");
+    } else if status == "archive" || status == "deleted" {
+        Logger::log(
+            Level::Error,
+            "Device is either archived or deleted, aborting ...",
+        );
+        return;
+    }
+
     let mut cfg_monitor = ConfigurationMonitor::new(&args, auth.clone(), None)
         .await
         .expect("Failed to initialize configuration monitor");
@@ -56,10 +83,6 @@ async fn main() {
     cfg_monitor.upload_current().await.expect(
         "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
     );
-
-    setup_request(&auth, &args)
-        .await
-        .expect("Setup request failed");
 
     tokio::spawn(async move { cfg_monitor.watch().await });
 
