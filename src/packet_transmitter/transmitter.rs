@@ -59,13 +59,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                 )
                 .await;
                 if packet_queue.is_full() {
-                    dump_packets_to_file(
-                        packet_queue.take(),
-                        args.uuid.clone(),
-                        &dump_dir,
-                        token.clone(),
-                    )
-                    .await;
+                    dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir).await;
                     if dump_dir.is_full().await {
                         Logger::log(
                             Level::Warn,
@@ -114,12 +108,7 @@ async fn send_packets(
     }
 }
 
-async fn dump_packets_to_file(
-    packets: Vec<Packet>,
-    uuid: String,
-    dump_dir: &DumpDir,
-    token: String,
-) {
+async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String, dump_dir: &DumpDir) {
     let now = chrono::Utc::now().to_rfc3339();
     let file_path = dump_dir.get_file_path(&now);
     Logger::log(
@@ -132,7 +121,7 @@ async fn dump_packets_to_file(
     let dump = Packets {
         uuid,
         packets,
-        auth: Some(Authentication { token }),
+        auth: None,
     };
     tokio::fs::write(
         file_path,
@@ -141,7 +130,3 @@ async fn dump_packets_to_file(
     .await
     .expect("Failed to write dump file");
 }
-
-// @TODO: There is a problem with packets that get dumped, as they are serialized with the current token,
-// which is subject to change over time. Theoretically, it is possible to dump packets with a valid token
-// and re-upload them at a later time when the token has already expired.

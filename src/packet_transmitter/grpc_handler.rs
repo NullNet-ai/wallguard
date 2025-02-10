@@ -1,7 +1,7 @@
 use crate::authentication::AuthHandler;
 use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
-use libwallguard::WallGuardGrpcInterface;
+use libwallguard::{Authentication, WallGuardGrpcInterface};
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::Mutex;
@@ -14,14 +14,12 @@ pub(crate) async fn handle_connection_and_retransmission(
     auth: AuthHandler,
 ) {
     loop {
+        let Ok(token) = auth.obtain_token_safe().await else {
+            Logger::log(log::Level::Error, "Authentication failed");
+            continue;
+        };
+
         if interface.lock().await.is_some() {
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-
-            let Ok(token) = auth.obtain_token_safe().await else {
-                Logger::log(log::Level::Error, "Authentication failed");
-                continue;
-            };
-
             if interface
                 .lock()
                 .await
@@ -36,6 +34,8 @@ pub(crate) async fn handle_connection_and_retransmission(
                     "Failed to send heartbeat. Reconnecting...",
                 );
                 *interface.lock().await = None;
+            } else {
+                tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             }
         } else {
             // wait for the server to come up...
@@ -44,8 +44,12 @@ pub(crate) async fn handle_connection_and_retransmission(
             // send packets accumulated in dump files
             for file in dump_dir.get_files_sorted().await {
                 let dump = fs::read(file.path()).await.unwrap_or_default();
-                let packets: libwallguard::Packets =
+                let mut packets: libwallguard::Packets =
                     bincode::deserialize(&dump).unwrap_or_default();
+                // update auth token of packets retrieved from disk
+                packets.auth = Some(Authentication {
+                    token: token.clone(),
+                });
                 if interface
                     .lock()
                     .await
