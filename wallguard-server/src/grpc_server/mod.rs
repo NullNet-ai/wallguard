@@ -25,7 +25,10 @@ pub async fn run_grpc_server(datastore: Option<DatastoreWrapper>) {
     Server::builder()
         // .tls_config(ServerTlsConfig::new().identity(identity))
         // .expect("Failed to set up TLS")
-        .add_service(WallGuardServer::new(WallGuardImpl { datastore }))
+        .add_service(
+            WallGuardServer::new(WallGuardImpl { datastore })
+                .max_decoding_message_size(50 * 1024 * 1024),
+        )
         .serve(addr)
         .await
         .expect("Failed to start gRPC server");

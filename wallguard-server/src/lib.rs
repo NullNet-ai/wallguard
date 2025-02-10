@@ -38,7 +38,7 @@ impl WallGuardGrpcInterface {
         };
 
         Self {
-            client: WallGuardClient::new(channel),
+            client: WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024),
         }
     }
 
