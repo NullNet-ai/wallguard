@@ -11,9 +11,6 @@ pub const BATCH_SIZE: usize = 10_000;
 pub const QUEUE_SIZE: usize = 1_000;
 #[cfg(not(debug_assertions))]
 pub const QUEUE_SIZE: usize = 1_000_000;
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-// Isn't it too long ?
-// Full queue can take dozens of GB of RAM
 
 pub static UUID: once_cell::sync::Lazy<String> =
     once_cell::sync::Lazy::new(|| uuid::Uuid::new_v4().to_string());
