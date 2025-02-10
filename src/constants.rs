@@ -5,7 +5,7 @@ use crate::logger::Logger;
 #[cfg(debug_assertions)]
 pub const BATCH_SIZE: usize = 100;
 #[cfg(not(debug_assertions))]
-pub const BATCH_SIZE: usize = 1024; // @Temporary fix to `ResourceExhausted` error, was 10_000
+pub const BATCH_SIZE: usize = 10_000;
 
 #[cfg(debug_assertions)]
 pub const QUEUE_SIZE: usize = 1_000;

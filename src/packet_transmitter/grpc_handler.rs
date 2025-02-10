@@ -1,7 +1,9 @@
 use crate::authentication::AuthHandler;
+use crate::constants::BATCH_SIZE;
 use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
-use libwallguard::{Authentication, WallGuardGrpcInterface};
+use libwallguard::{Authentication, Packets, WallGuardGrpcInterface};
+use std::cmp::min;
 use std::sync::Arc;
 use tokio::fs;
 use tokio::sync::Mutex;
@@ -42,31 +44,41 @@ pub(crate) async fn handle_connection_and_retransmission(
             let client = WallGuardGrpcInterface::new(addr, port).await;
             *interface.lock().await = Some(client);
             // send packets accumulated in dump files
-            for file in dump_dir.get_files_sorted().await {
-                let dump = fs::read(file.path()).await.unwrap_or_default();
-                let mut packets: libwallguard::Packets =
-                    bincode::deserialize(&dump).unwrap_or_default();
+            'file_loop: for file in dump_dir.get_files_sorted().await {
+                let bytes = fs::read(file.path()).await.unwrap_or_default();
+                let mut dump: Packets = bincode::deserialize(&bytes).unwrap_or_default();
                 // update auth token of packets retrieved from disk
-                packets.auth = Some(Authentication {
+                dump.auth = Some(Authentication {
                     token: token.clone(),
                 });
-                if interface
-                    .lock()
-                    .await
-                    .as_mut()
-                    .unwrap()
-                    .handle_packets(packets)
-                    .await
-                    .is_err()
-                {
-                    // server is down again, keep packet dumps and try again later
-                    Logger::log(
-                        log::Level::Error,
-                        "Failed to send packet dump. Reconnecting...",
-                    );
-                    *interface.lock().await = None;
-                    break;
+
+                while !dump.packets.is_empty() {
+                    let packets = Packets {
+                        packets: dump
+                            .packets
+                            .drain(..min(dump.packets.len(), BATCH_SIZE))
+                            .collect(),
+                        ..dump.clone()
+                    };
+                    if interface
+                        .lock()
+                        .await
+                        .as_mut()
+                        .unwrap()
+                        .handle_packets(packets)
+                        .await
+                        .is_err()
+                    {
+                        // server is down again, keep packet dumps and try again later
+                        Logger::log(
+                            log::Level::Error,
+                            "Failed to send packet dump. Reconnecting...",
+                        );
+                        *interface.lock().await = None;
+                        break 'file_loop;
+                    }
                 }
+
                 Logger::log(
                     log::Level::Info,
                     format!("Dump file '{:?}' sent successfully", file.file_name()),
