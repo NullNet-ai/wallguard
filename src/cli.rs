@@ -30,9 +30,6 @@ pub struct Args {
     // Platform version
     #[arg(long, default_value = "unknown")]
     pub version: String,
-    // Platform version
-    #[arg(long, default_value = "unknown")]
-    pub hostname: String,
     /// Heartbeat Interval
     #[arg(long, default_value_t = 10)]
     pub heartbeat_interval: u64,

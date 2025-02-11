@@ -24,7 +24,6 @@ async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), Strin
             auth: Some(Authentication { token }),
             device_version: args.version.clone(),
             device_uuid: args.uuid.clone(),
-            hostname: args.hostname.clone(),
         })
         .await?;
 
