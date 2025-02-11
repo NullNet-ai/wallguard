@@ -51,7 +51,6 @@ message SetupRequest {
   Authentication auth = 1;
   string device_version = 2;
   string device_uuid = 3;
-  string hostname = 4;
 }
 
 message HeartbeatRequest {

@@ -28,7 +28,7 @@ impl DatastoreWrapper {
                 &config.rules,
                 &config_id,
                 "device_rule_status",
-                &status,
+                Some(&status),
             )
             .await?;
         }
@@ -41,7 +41,20 @@ impl DatastoreWrapper {
                 &config.aliases,
                 &config_id,
                 "device_alias_status",
-                &status,
+                Some(&status),
+            )
+            .await?;
+        }
+
+        if !config.interfaces.is_empty() {
+            self.internal_cu_insert_related_records(
+                token,
+                "device_interfaces",
+                "IF",
+                &config.interfaces,
+                &config_id,
+                "",
+                None,
             )
             .await?;
         }
@@ -127,14 +140,18 @@ impl DatastoreWrapper {
         records: &[T],
         config_id: &str,
         status_field: &str,
-        status_value: &str,
+        status_value: Option<&str>,
     ) -> Result<(), DSError> {
         let records_with_id: Vec<serde_json::Value> = records
             .iter()
             .map(|record| {
                 let mut json = serde_json::to_value(record).expect("Serialization failed");
                 json["device_configuration_id"] = json!(config_id);
-                json[status_field] = json!(status_value);
+
+                if status_value.is_some() {
+                    json[status_field] = json!(status_value.unwrap());
+                }
+
                 json
             })
             .collect();

@@ -13,7 +13,6 @@ impl DatastoreWrapper {
         device_id: String,
         device_version: String,
         device_uuid: String,
-        device_hostname: String,
         device_address: String,
     ) -> Result<DSResponse, DSError> {
         let mut request = Request::new(UpdateRequest {
@@ -27,7 +26,6 @@ impl DatastoreWrapper {
             }),
             body: json!({
                 "device_version": device_version,
-                "hostname": device_hostname,
                 "system_id": device_uuid,
                 "ip_address": device_address,
                 "is_connection_established": true,

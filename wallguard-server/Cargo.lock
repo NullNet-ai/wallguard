@@ -204,9 +204,9 @@ checksum = "f61dac84819c6588b558454b194026eb1f09c293b9036ae9b159e74e73ab6cf9"
 
 [[package]]
 name = "cc"
-version = "1.2.12"
+version = "1.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "755717a7de9ec452bf7f3f1a3099085deabd7f2962b861dae91ecd7a365903d2"
+checksum = "c7777341816418c02e033934a09f20dc0ccaf65a5201ef8a450ae0105a573fda"
 dependencies = [
  "shlex",
 ]
@@ -685,9 +685,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libfireparse"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd513c34441eb7ffcb8d99ee14dbe85be0790c69a78865fb698ea4fae65e71af"
+checksum = "94951afdca9595048f4f17c108e31e13e66dd635f057e623ef02118134dce77a"
 dependencies = [
  "base64",
  "roxmltree",
@@ -707,7 +707,7 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "async-channel",
  "chrono",
