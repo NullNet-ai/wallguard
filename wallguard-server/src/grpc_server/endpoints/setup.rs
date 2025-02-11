@@ -27,7 +27,6 @@ impl WallGuardImpl {
                 token_info.account.device.id,
                 setup_request.device_version,
                 setup_request.device_uuid,
-                setup_request.hostname,
                 remote_address,
             )
             .await

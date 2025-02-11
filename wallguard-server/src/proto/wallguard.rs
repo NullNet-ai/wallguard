@@ -46,8 +46,6 @@ pub struct SetupRequest {
     pub device_version: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub device_uuid: ::prost::alloc::string::String,
-    #[prost(string, tag = "4")]
-    pub hostname: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HeartbeatRequest {
