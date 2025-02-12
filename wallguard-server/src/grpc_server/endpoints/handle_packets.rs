@@ -21,8 +21,6 @@ impl WallGuardImpl {
 
         let response = self
             .datastore
-            .as_ref()
-            .ok_or_else(|| Status::internal("Datastore is unavailable"))?
             .packets_insert(&jwt_token, parsed_message)
             .await
             .map_err(|e| Status::internal(e.to_string()))?;

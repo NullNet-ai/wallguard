@@ -10,10 +10,7 @@ impl WallGuardImpl {
         &self,
         request: Request<ConfigSnapshot>,
     ) -> Result<Response<CommonResponse>, Status> {
-        let datastore = self
-            .datastore
-            .as_ref()
-            .ok_or_else(|| Status::internal("Datastore is unavailable"))?;
+        let datastore = &self.datastore;
 
         let snapshot = request.into_inner();
 

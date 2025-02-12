@@ -17,8 +17,6 @@ impl WallGuardImpl {
 
         let (status, is_remote_access_enabled, is_monitoring_enabled) = self
             .datastore
-            .as_ref()
-            .ok_or_else(|| Status::internal("Datastore is unavailable"))?
             .heartbeat(&jwt_token, token_info.account.device.id)
             .await
             .map_err(|e| Status::internal(e.to_string()))?;

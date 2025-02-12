@@ -10,7 +10,7 @@ mod server;
 const ADDR: &str = "0.0.0.0";
 const PORT: u16 = 50051;
 
-pub async fn run_grpc_server(datastore: Option<DatastoreWrapper>) {
+pub async fn run_grpc_server(datastore: DatastoreWrapper) {
     let addr = format!("{ADDR}:{PORT}")
         .to_socket_addrs()
         .expect("Failed to resolve address")

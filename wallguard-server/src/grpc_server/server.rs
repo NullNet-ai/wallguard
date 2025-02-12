@@ -11,7 +11,7 @@ use crate::{
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
-    pub(crate) datastore: Option<DatastoreWrapper>,
+    pub(crate) datastore: DatastoreWrapper,
 }
 
 #[tonic::async_trait]

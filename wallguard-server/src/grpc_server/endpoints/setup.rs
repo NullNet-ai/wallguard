@@ -20,8 +20,6 @@ impl WallGuardImpl {
 
         let response = self
             .datastore
-            .as_ref()
-            .ok_or_else(|| Status::internal("Datastore is unavailable"))?
             .device_setup(
                 jwt_token,
                 token_info.account.device.id,

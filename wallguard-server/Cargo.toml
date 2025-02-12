@@ -21,9 +21,6 @@ path = "src/lib.rs"
 name = "wallguard-server"
 path = "src/main.rs"
 
-[features]
-no-datastore = []
-
 [profile.release]
 opt-level = 3
 lto = true
