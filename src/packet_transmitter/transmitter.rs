@@ -22,7 +22,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
 
     Logger::log(
         Level::Info,
-        "Will use at most {dump_bytes} bytes of disk space for packet dump files",
+        format!("Will use at most {dump_bytes} bytes of disk space for packet dump files"),
     );
 
     let client = Arc::new(Mutex::new(None));

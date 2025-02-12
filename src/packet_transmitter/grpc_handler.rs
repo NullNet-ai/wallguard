@@ -18,6 +18,7 @@ pub(crate) async fn handle_connection_and_retransmission(
     loop {
         let Ok(token) = auth.obtain_token_safe().await else {
             Logger::log(log::Level::Error, "Authentication failed");
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             continue;
         };
 
