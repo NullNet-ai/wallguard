@@ -15,8 +15,7 @@ impl ServerLogger {
     pub(crate) fn extract_address<T>(request: &Request<T>) -> String {
         request
             .remote_addr()
-            .map(|addr| addr.ip().to_string())
-            .unwrap_or_else(|| "Unknown".to_string())
+            .map_or_else(|| "Unknown".to_string(), |addr| addr.ip().to_string())
     }
 
     /// Unified log response function for different response types.

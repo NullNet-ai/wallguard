@@ -60,7 +60,7 @@ impl WallGuardGrpcInterface {
                 auth: Some(Authentication { token }),
             }))
             .await
-            .map(|r| r.into_inner())
+            .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())
     }
 
@@ -69,7 +69,7 @@ impl WallGuardGrpcInterface {
         self.client
             .handle_packets(Request::new(message))
             .await
-            .map(|r| r.into_inner())
+            .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())
     }
 
@@ -81,7 +81,7 @@ impl WallGuardGrpcInterface {
         self.client
             .handle_config(Request::new(message))
             .await
-            .map(|r| r.into_inner())
+            .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())
     }
 
@@ -90,10 +90,11 @@ impl WallGuardGrpcInterface {
         self.client
             .setup(Request::new(request))
             .await
-            .map(|response| response.into_inner())
+            .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())
     }
 
+    #[allow(clippy::missing_errors_doc)]
     pub async fn device_status(&mut self, token: String) -> Result<StatusResponse, String> {
         let response = self
             .client
@@ -101,7 +102,7 @@ impl WallGuardGrpcInterface {
                 auth: Some(Authentication { token }),
             }))
             .await
-            .map(|response| response.into_inner())
+            .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())?;
 
         Ok(response)

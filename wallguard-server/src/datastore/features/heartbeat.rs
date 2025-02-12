@@ -33,7 +33,7 @@ impl DatastoreWrapper {
             .inner
             .create(request)
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
+            .map_err(|e| format!("Request failed: {e}"))?;
 
         if !response.success {
             return Err(format!("Failed to save heartbeat: {}", response.message));
@@ -67,17 +67,17 @@ impl DatastoreWrapper {
             .inner
             .get_by_id(request)
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
+            .map_err(|e| format!("Request failed: {e}"))?;
 
         let (status, is_remote_access_enabled, is_monitoring_enabled) =
-            Self::internal_hb_parse_response_data(response.data)?;
+            Self::internal_hb_parse_response_data(&response.data)?;
 
         Ok((status, is_remote_access_enabled, is_monitoring_enabled))
     }
 
-    fn internal_hb_parse_response_data(data: String) -> Result<(String, bool, bool), String> {
-        let json = serde_json::from_str::<serde_json::Value>(&data)
-            .map_err(|e| format!("Could not parse DS response: {}", e))?;
+    fn internal_hb_parse_response_data(data: &str) -> Result<(String, bool, bool), String> {
+        let json = serde_json::from_str::<serde_json::Value>(data)
+            .map_err(|e| format!("Could not parse DS response: {e}"))?;
 
         let object = json
             .as_array()
@@ -87,14 +87,14 @@ impl DatastoreWrapper {
 
         let is_monitoring_enabled = object
             .get("is_monitoring_enabled")
-            .and_then(|v| v.as_bool())
+            .and_then(serde_json::Value::as_bool)
             .ok_or(String::from(
                 "Failed to parse DS response: could not parse 'is_monitoring_enabled'",
             ))?;
 
         let is_remote_access_enabled = object
             .get("is_remote_access_enabled")
-            .and_then(|v| v.as_bool())
+            .and_then(serde_json::Value::as_bool)
             .ok_or(String::from(
                 "Failed to parse DS response: could not parse 'is_remote_access_enabled'",
             ))?;
@@ -102,7 +102,7 @@ impl DatastoreWrapper {
         let status = object
             .get("status")
             .and_then(|v| v.as_str())
-            .map(|status| status.to_string())
+            .map(std::string::ToString::to_string)
             .ok_or(String::from(
                 "Failed to parse DS response: could not parse 'status'",
             ))?;

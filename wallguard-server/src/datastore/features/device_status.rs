@@ -21,21 +21,21 @@ impl DatastoreWrapper {
         Self::set_token_for_request(&mut request, &token)?;
         let response = self.inner.get_by_id(request).await?;
 
-        let status = Self::internal_ds_parse_response_data(response.data)?;
+        let status = Self::internal_ds_parse_response_data(&response.data)?;
 
         Ok(status.to_lowercase())
     }
 
-    fn internal_ds_parse_response_data(data: String) -> Result<String, DSError> {
-        serde_json::from_str::<serde_json::Value>(&data).map_err(|e| DSError {
+    fn internal_ds_parse_response_data(data: &str) -> Result<String, DSError> {
+        serde_json::from_str::<serde_json::Value>(data).map_err(|e| DSError {
             kind: DSErrorKind::ErrorRequestFailed,
-            message: format!("Could not parse DS response: {}", e),
+            message: format!("Could not parse DS response: {e}"),
         })?.as_array()
         .and_then(|arr| arr.first())
         .and_then(|obj| obj.as_object())
         .and_then(|map| map.get("status"))
         .and_then(|v| v.as_str())
-        .map(|status| status.to_string())
+        .map(std::string::ToString::to_string)
         .ok_or(DSError {
             kind: DSErrorKind::ErrorRequestFailed,
             message: String::from(

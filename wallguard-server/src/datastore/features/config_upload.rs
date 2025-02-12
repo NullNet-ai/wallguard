@@ -91,13 +91,13 @@ impl DatastoreWrapper {
         Self::set_token_for_request(&mut request, token)?;
 
         let response = self.inner.create(request).await?;
-        self.internal_cu_extract_id_from_response(response, "configuration") // Extracts the ID from the response
+        self.internal_cu_extract_id_from_response(&response, "configuration") // Extracts the ID from the response
     }
 
     /// Extracts the ID from a datastore response.
     fn internal_cu_extract_id_from_response(
         &self,
-        response: DSResponse,
+        response: &DSResponse,
         record_type: &str,
     ) -> Result<String, DSError> {
         if !response.success {
@@ -113,7 +113,7 @@ impl DatastoreWrapper {
         let rjson: serde_json::Value =
             serde_json::from_str(&response.data).map_err(|e| DSError {
                 kind: DSErrorKind::ErrorRequestFailed,
-                message: format!("Could not parse DS response: {}", e),
+                message: format!("Could not parse DS response: {e}"),
             })?;
 
         rjson.as_array()
@@ -121,12 +121,11 @@ impl DatastoreWrapper {
             .and_then(|obj| obj.as_object())
             .and_then(|map| map.get("id"))
             .and_then(|v| v.as_str())
-            .map(|id| id.to_string())
+            .map(std::string::ToString::to_string)
             .ok_or(DSError {
                 kind: DSErrorKind::ErrorRequestFailed,
                 message: format!(
-                    "Failed to parse DS response. Either the format is unexpected or the {} ID is missing",
-                    record_type
+                    "Failed to parse DS response. Either the format is unexpected or the {record_type} ID is missing",
                 ),
             })
     }

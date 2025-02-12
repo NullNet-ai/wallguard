@@ -22,12 +22,12 @@ impl WallGuardImpl {
             .find(|file| file.filename == "config.xml");
 
         let document = std::str::from_utf8(config_file.unwrap().contents.as_slice())
-            .map_err(|e| Status::internal(format!("Failed to stringify file content: {}", e)))?;
+            .map_err(|e| Status::internal(format!("Failed to stringify file content: {e}")))?;
 
         let configuration =
             libfireparse::Parser::parse("pfsense", document).map_err(|e| match e {
-                libfireparse::FireparseError::UnsupportedPlatform(msg) => Status::internal(msg),
-                libfireparse::FireparseError::ParserError(msg) => Status::internal(msg),
+                libfireparse::FireparseError::UnsupportedPlatform(msg)
+                | libfireparse::FireparseError::ParserError(msg) => Status::internal(msg),
             })?;
 
         let created_id = datastore
@@ -44,7 +44,7 @@ impl WallGuardImpl {
 
         Ok(Response::new(CommonResponse {
             success: true,
-            message: format!("Configuration created [ID '{}']", created_id),
+            message: format!("Configuration created [ID '{created_id}']"),
         }))
     }
 }
