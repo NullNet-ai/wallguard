@@ -38,7 +38,7 @@ impl AuthHandler {
             )
             .await?;
 
-            *token = Some(new_token)
+            *token = Some(new_token);
         }
 
         Ok(token.as_ref().unwrap().jwt.clone())

@@ -21,7 +21,7 @@ pub async fn request_impl(
             })
             .collect(),
         auth: Some(Authentication { token }),
-        status: state_to_status(state).into(),
+        status: state_to_status(&state).into(),
     };
 
     match client.handle_config(data).await {
@@ -36,7 +36,7 @@ pub async fn request_impl(
     }
 }
 
-fn state_to_status(state: State) -> ConfigStatus {
+fn state_to_status(state: &State) -> ConfigStatus {
     match state {
         State::Draft => ConfigStatus::CsDraft,
         State::Applied => ConfigStatus::CsApplied,
