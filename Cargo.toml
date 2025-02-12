@@ -4,7 +4,6 @@ version = "0.1.2"
 edition = "2021"
 
 [features]
-no-datastore = []
 no-cfg-monitor = []
 
 [profile.release]
