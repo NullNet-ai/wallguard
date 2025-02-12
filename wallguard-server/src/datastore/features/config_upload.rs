@@ -81,6 +81,7 @@ impl DatastoreWrapper {
                 "device_id": device_id,
                 "raw_content": config.raw_content,
                 "digest": digest(&config.raw_content),
+                "hostname": config.hostname,
                 // @TODO: Temporary fix, needs to be removed
                 "entity_prefix": "CFG"
             })
