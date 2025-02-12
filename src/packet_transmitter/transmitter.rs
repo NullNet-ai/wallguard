@@ -59,7 +59,9 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                 )
                 .await;
                 if packet_queue.is_full() {
-                    dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir).await;
+                    dump_dir
+                        .dump_packets_to_file(packet_queue.take(), args.uuid.clone())
+                        .await;
                     if dump_dir.is_full().await {
                         Logger::log(
                             Level::Warn,
@@ -106,27 +108,4 @@ async fn send_packets(
             ),
         };
     }
-}
-
-async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String, dump_dir: &DumpDir) {
-    let now = chrono::Utc::now().to_rfc3339();
-    let file_path = dump_dir.get_file_path(&now);
-    Logger::log(
-        Level::Warn,
-        format!(
-            "Queue is full. Dumping {} packets to file '{file_path}'",
-            packets.len()
-        ),
-    );
-    let dump = Packets {
-        uuid,
-        packets,
-        auth: None,
-    };
-    tokio::fs::write(
-        file_path,
-        bincode::serialize(&dump).expect("Failed to serialize packets"),
-    )
-    .await
-    .expect("Failed to write dump file");
 }

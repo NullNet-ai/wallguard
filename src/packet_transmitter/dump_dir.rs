@@ -1,5 +1,9 @@
 use crate::constants::DUMP_DIR;
+use crate::logger::Logger;
+use libwallguard::{Packet, Packets};
+use log::Level;
 use std::os::unix::fs::MetadataExt;
+use std::path::PathBuf;
 use tokio::fs;
 
 #[derive(Clone)]
@@ -42,7 +46,40 @@ impl DumpDir {
         size >= self.max_size
     }
 
-    pub(crate) fn get_file_path(&self, file_name: &str) -> String {
+    fn get_file_path(&self, file_name: &str) -> String {
         format!("{}/{file_name}", self.path)
+    }
+
+    pub(crate) async fn dump_packets_to_file(&self, packets: Vec<Packet>, uuid: String) {
+        let now = chrono::Utc::now().to_rfc3339();
+        let file_path = self.get_file_path(&now);
+        Logger::log(
+            Level::Warn,
+            format!(
+                "Queue is full. Dumping {} packets to file '{file_path}'",
+                packets.len()
+            ),
+        );
+        let dump = Packets {
+            uuid,
+            packets,
+            auth: None,
+        };
+        tokio::fs::write(
+            file_path,
+            bincode::serialize(&dump).expect("Failed to serialize packets"),
+        )
+        .await
+        .expect("Failed to write dump file");
+    }
+
+    pub(crate) async fn update_dump_file(&self, file_path: PathBuf, mut dump: Packets) {
+        dump.auth = None;
+        tokio::fs::write(
+            file_path,
+            bincode::serialize(&dump).expect("Failed to serialize packets"),
+        )
+        .await
+        .expect("Failed to write dump file");
     }
 }

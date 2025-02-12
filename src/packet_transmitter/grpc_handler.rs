@@ -53,11 +53,9 @@ pub(crate) async fn handle_connection_and_retransmission(
                 });
 
                 while !dump.packets.is_empty() {
+                    let range = ..min(dump.packets.len(), BATCH_SIZE);
                     let packets = Packets {
-                        packets: dump
-                            .packets
-                            .drain(..min(dump.packets.len(), BATCH_SIZE))
-                            .collect(),
+                        packets: dump.packets.get(range).unwrap_or_default().to_vec(),
                         ..dump.clone()
                     };
                     if interface
@@ -69,14 +67,18 @@ pub(crate) async fn handle_connection_and_retransmission(
                         .await
                         .is_err()
                     {
-                        // server is down again, keep packet dumps and try again later
+                        // server is down again, try again later
+                        *interface.lock().await = None;
                         Logger::log(
                             log::Level::Error,
                             "Failed to send packet dump. Reconnecting...",
                         );
-                        *interface.lock().await = None;
+                        // update dump file with unsent packets
+                        dump_dir.update_dump_file(file.path(), dump).await;
                         break 'file_loop;
                     }
+                    // remove sent packets from dump
+                    dump.packets.drain(range);
                 }
 
                 Logger::log(
