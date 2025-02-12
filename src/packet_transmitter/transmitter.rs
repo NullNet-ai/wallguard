@@ -7,6 +7,7 @@ use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmissio
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 use log::Level;
+use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -94,18 +95,20 @@ async fn send_packets(
 ) {
     packet_queue.extend(packet_batch.take());
     if let Some(client) = interface.lock().await.as_mut() {
-        let p = Packets {
-            uuid,
-            packets: packet_queue.get_clone(),
-            auth: Some(Authentication { token }),
-        };
-
-        match client.handle_packets(p).await {
-            Ok(_) => packet_queue.clear(),
-            Err(e) => Logger::log(
-                log::Level::Error,
-                format!("Failed to send traffic data: {}", e),
-            ),
-        };
+        while !packet_queue.is_empty() {
+            let range = ..min(packet_queue.len(), BATCH_SIZE);
+            let packets = Packets {
+                uuid: uuid.clone(),
+                packets: packet_queue.get(range),
+                auth: Some(Authentication {
+                    token: token.clone(),
+                }),
+            };
+            if client.handle_packets(packets).await.is_err() {
+                Logger::log(log::Level::Error, "Failed to send packets");
+                break;
+            }
+            packet_queue.drain(range);
+        }
     }
 }
