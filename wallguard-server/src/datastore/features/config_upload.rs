@@ -1,11 +1,15 @@
+use std::{collections::HashMap, i32};
+
+use futures::future::join_all;
 use serde_json::json;
 use tonic::Request;
 
 use crate::{datastore::DatastoreWrapper, utils::digest};
 use libfireparse::Configuration as ClientConfiguration;
 use nullnet_libdatastore::{
-    BatchCreateBody, BatchCreateRequest, CreateParams, CreateRequest, Error as DSError,
-    ErrorKind as DSErrorKind, Query, Response as DSResponse,
+    AdvanceFilter, BatchCreateBody, BatchCreateRequest, CreateParams, CreateRequest,
+    Error as DSError, ErrorKind as DSErrorKind, GetByFilterBody, GetByFilterRequest, Params, Query,
+    Response as DSResponse, UpdateRequest,
 };
 
 impl DatastoreWrapper {
@@ -16,11 +20,70 @@ impl DatastoreWrapper {
         config: ClientConfiguration,
         status: String,
     ) -> Result<String, DSError> {
+        let prev_info = self
+            .internal_cu_fetch_latest_config_info(&device_id, token)
+            .await;
+
+        if prev_info.is_err() {
+            // No previous versions found
+            return self
+                .internal_cu_parse_and_insert_new_config(token, device_id, config, status)
+                .await;
+        } else {
+            let (prev_digest, config_id, last_version) = prev_info.unwrap();
+            let new_digest = digest(&config.raw_content);
+
+            if prev_digest == new_digest && false {
+                let (r1, r2, r3) = tokio::join!(
+                    self.internal_cu_update_configuration_version(
+                        &config_id,
+                        last_version + 1,
+                        &token
+                    ),
+                    self.internal_cu_update_related_records(
+                        &config_id,
+                        token,
+                        "device_aliases",
+                        "device_alias_status",
+                        &status,
+                    ),
+                    self.internal_cu_update_related_records(
+                        &config_id,
+                        token,
+                        "device_rules",
+                        "device_rule_status",
+                        &status,
+                    )
+                );
+
+                if r1.is_err() || r2.is_err() || r3.is_err() {
+                    return Err(DSError {
+                        kind: DSErrorKind::ErrorRequestFailed,
+                        message: String::from("Configuration update failed"),
+                    });
+                }
+                return Ok(String::from("Updated existing configuration record"));
+            } else {
+                // Digests do not match, insert new configuration
+                return self
+                    .internal_cu_parse_and_insert_new_config(token, device_id, config, status)
+                    .await;
+            }
+        }
+    }
+
+    async fn internal_cu_parse_and_insert_new_config(
+        &self,
+        token: &str,
+        device_id: String,
+        config: ClientConfiguration,
+        status: String,
+    ) -> Result<String, DSError> {
         let config_id = self
             .internal_cu_create_configuration(token, device_id, &config)
             .await?;
 
-        if !config.rules.is_empty() {
+        let (r1, r2, r3) = tokio::join!(
             self.internal_cu_insert_related_records(
                 token,
                 "device_rules",
@@ -29,11 +92,7 @@ impl DatastoreWrapper {
                 &config_id,
                 "device_rule_status",
                 Some(&status),
-            )
-            .await?;
-        }
-
-        if !config.aliases.is_empty() {
+            ),
             self.internal_cu_insert_related_records(
                 token,
                 "device_aliases",
@@ -42,11 +101,7 @@ impl DatastoreWrapper {
                 &config_id,
                 "device_alias_status",
                 Some(&status),
-            )
-            .await?;
-        }
-
-        if !config.interfaces.is_empty() {
+            ),
             self.internal_cu_insert_related_records(
                 token,
                 "device_interfaces",
@@ -56,8 +111,11 @@ impl DatastoreWrapper {
                 "",
                 None,
             )
-            .await?;
-        }
+        );
+
+        r1?;
+        r2?;
+        r3?;
 
         Ok(config_id)
     }
@@ -82,7 +140,7 @@ impl DatastoreWrapper {
                 "raw_content": config.raw_content,
                 "digest": digest(&config.raw_content),
                 "hostname": config.hostname,
-                // @TODO: Temporary fix, needs to be removed
+                "config_version": 1,
                 "entity_prefix": "CFG"
             })
             .to_string(),
@@ -142,6 +200,10 @@ impl DatastoreWrapper {
         status_field: &str,
         status_value: Option<&str>,
     ) -> Result<(), DSError> {
+        if records.is_empty() {
+            return Ok(());
+        }
+
         let records_with_id: Vec<serde_json::Value> = records
             .iter()
             .map(|record| {
@@ -166,7 +228,6 @@ impl DatastoreWrapper {
             }),
             body: Some(BatchCreateBody {
                 records: serde_json::to_string(&serde_json::Value::Array(records_with_id)).unwrap(),
-                // @TODO: Temporary fix, needs to be removed
                 entity_prefix: entity_prefix.to_string(),
             }),
         });
@@ -180,6 +241,208 @@ impl DatastoreWrapper {
                 kind: DSErrorKind::ErrorRequestFailed,
                 message: format!("Failed to create {} records: {}", table, response.message),
             });
+        }
+
+        Ok(())
+    }
+
+    async fn internal_cu_fetch_latest_config_info(
+        &self,
+        device_id: &str,
+        token: &str,
+    ) -> Result<(String, String, i64), ()> {
+        let mut request = Request::new(GetByFilterRequest {
+            body: Some(GetByFilterBody {
+                pluck: vec![
+                    String::from("id"),
+                    String::from("digest"),
+                    String::from("config_version"),
+                ],
+                advance_filters: vec![AdvanceFilter {
+                    field: String::from("device_id"),
+                    values: format!("[\"{}\"]", device_id),
+                    r#type: String::from("criteria"),
+                    operator: String::from("equal"),
+                    entity: String::from("device_configurations"),
+                }],
+                order_by: String::from("timestamp"),
+                order_direction: String::from("desc"),
+                limit: 1,
+                offset: 0,
+                joins: vec![],
+                multiple_sort: vec![],
+                pluck_object: HashMap::new(),
+                date_format: String::new(),
+            }),
+            params: Some(Params {
+                table: String::from("device_configurations"),
+                id: String::new(),
+            }),
+        });
+
+        Self::set_token_for_request(&mut request, token).map_err(|_| ())?;
+
+        let response = self.inner.get_by_filter(request).await.map_err(|_| ())?;
+
+        if !response.success {
+            return Err(());
+        }
+
+        let json: serde_json::Value = serde_json::from_str(&response.data).map_err(|_| ())?;
+
+        let object = json
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|e| e.as_object())
+            .ok_or(())?;
+
+        let digest = object
+            .get("digest")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string())
+            .ok_or(())?;
+
+        let id = object
+            .get("id")
+            .and_then(|v| v.as_str())
+            .map(|v| v.to_string())
+            .ok_or(())?;
+
+        let version = object
+            .get("config_version")
+            .and_then(|v| v.as_i64())
+            .ok_or(())?;
+
+        Ok((digest, id, version))
+    }
+
+    async fn internal_cu_update_configuration_version(
+        &self,
+        config_id: &str,
+        new_version: i64,
+        token: &str,
+    ) -> Result<(), String> {
+        let mut request = Request::new(UpdateRequest {
+            params: Some(Params {
+                id: config_id.to_string(),
+                table: String::from("device_configurations"),
+            }),
+            query: Some(Query {
+                pluck: String::from(""),
+                durability: String::from("hard"),
+            }),
+            body: json!({
+                "config_version": new_version,
+            })
+            .to_string(),
+        });
+
+        Self::set_token_for_request(&mut request, token).map_err(|e| e.message)?;
+
+        let response = self.inner.update(request).await.map_err(|e| e.message)?;
+
+        if !response.success {
+            return Err(format!("{} !!!ggg!! {}", response.message, response.error));
+        } else {
+            return Ok(());
+        }
+    }
+
+    async fn internal_cu_update_related_records(
+        &self,
+        config_id: &str,
+        token: &str,
+        table: &str,
+        status_field: &str,
+        status: &str,
+    ) -> Result<(), String> {
+        //!!!!!WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //! THIS METHOD FETCHES THE RELATED RECORDS AND UPDATES THEM ONE BY ONE                               !!!!!
+        //! CURRENT DATASTORE API DOES NOT PROVIDE BATCH UPDATES, THIS IS WHY IT IS IMPLEMENTED THE WAY IT IS !!!!!
+        //! IT MUST BE RE-WRITTEN LATER                                                                       !!!!!
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        let mut request = Request::new(GetByFilterRequest {
+            body: Some(GetByFilterBody {
+                pluck: vec![String::from("id")],
+                advance_filters: vec![AdvanceFilter {
+                    field: String::from("device_configuration_id"),
+                    values: format!("[\"{}\"]", config_id),
+                    r#type: String::from("criteria"),
+                    operator: String::from("equal"),
+                    entity: String::from(table),
+                }],
+                order_by: String::from("timestamp"),
+                order_direction: String::from("desc"),
+                limit: i32::MAX,
+                offset: 0,
+                joins: vec![],
+                multiple_sort: vec![],
+                pluck_object: HashMap::new(),
+                date_format: String::new(),
+            }),
+            params: Some(Params {
+                table: String::from(table),
+                id: String::new(),
+            }),
+        });
+
+        Self::set_token_for_request(&mut request, token).map_err(|e| e.message)?;
+
+        let records_response = self
+            .inner
+            .get_by_filter(request)
+            .await
+            .map_err(|e| e.message)?;
+
+        if !records_response.success {
+            return Err(format!(
+                "{} <-----> {}",
+                records_response.message, records_response.error
+            ));
+        }
+
+        let records_json: serde_json::Value =
+            serde_json::from_str(&records_response.data).map_err(|e| e.to_string())?;
+
+        let ids: Vec<String> = records_json
+            .as_array()
+            .ok_or("Failed to parse records JSON")?
+            .iter()
+            .filter_map(|item| item.get("id")?.as_str().map(|s| s.to_string()))
+            .collect();
+
+        let futures: Vec<_> = ids
+            .into_iter()
+            .map(|id| {
+                let mut body = json!({});
+                body[status_field] = json!(status);
+
+                let mut request1 = Request::new(UpdateRequest {
+                    params: Some(Params {
+                        id,
+                        table: table.to_string(),
+                    }),
+                    query: Some(Query {
+                        pluck: String::new(),
+                        durability: String::from("hard"),
+                    }),
+                    body: body.to_string(),
+                });
+
+                let set_token_result = Self::set_token_for_request(&mut request1, token);
+                async move {
+                    if let Err(e) = set_token_result {
+                        return Err(e.message);
+                    }
+                    let _ = self.inner.update(request1).await;
+                    Ok(())
+                }
+            })
+            .collect();
+
+        for r in join_all(futures).await {
+            r?;
         }
 
         Ok(())
