@@ -1,3 +1,4 @@
+use libfireparse::{FileData, FireparseError, Parser, Platform};
 use tonic::{Request, Response, Status};
 
 use crate::{
@@ -10,27 +11,28 @@ impl WallGuardImpl {
         &self,
         request: Request<ConfigSnapshot>,
     ) -> Result<Response<CommonResponse>, Status> {
-        let datastore = &self.datastore;
-
         let snapshot = request.into_inner();
 
         let (jwt_token, token_info) = Self::authenticate(snapshot.auth)?;
 
-        let config_file = snapshot
+        let snapshot_mapped = snapshot
             .files
-            .iter()
-            .find(|file| file.filename == "config.xml");
-
-        let document = std::str::from_utf8(config_file.unwrap().contents.as_slice())
-            .map_err(|e| Status::internal(format!("Failed to stringify file content: {e}")))?;
+            .into_iter()
+            .map(|sf| FileData {
+                filename: sf.filename,
+                content: sf.contents,
+            })
+            .collect();
 
         let configuration =
-            libfireparse::Parser::parse("pfsense", document).map_err(|e| match e {
-                libfireparse::FireparseError::UnsupportedPlatform(msg)
-                | libfireparse::FireparseError::ParserError(msg) => Status::internal(msg),
+            Parser::parse(Platform::PfSense, snapshot_mapped).map_err(|e| match e {
+                FireparseError::UnsupportedPlatform(msg) | FireparseError::ParserError(msg) => {
+                    Status::internal(msg)
+                }
             })?;
 
-        let created_id = datastore
+        let created_id = &self
+            .datastore
             .config_upload(
                 &jwt_token,
                 token_info.account.device.id,
