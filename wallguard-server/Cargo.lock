@@ -822,9 +822,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libfireparse"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62fc1b768efa1474dbaf380d81cce1f735f8b4311f48f3da1f8004fcbadd7a7a"
+checksum = "91d9ca57591425bd97da3626c0019836f3d72cb215266b09d0a530be157b3684"
 dependencies = [
  "base64",
  "nullnet-libconfmon",

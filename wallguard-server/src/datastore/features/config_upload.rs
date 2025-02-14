@@ -12,6 +12,12 @@ use nullnet_libdatastore::{
     Response as DSResponse, UpdateRequest,
 };
 
+/*
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!! ABANDON HOPE EVERYONE WHO ENTERS HERE !!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*/
+
 impl DatastoreWrapper {
     pub async fn config_upload(
         &self,
