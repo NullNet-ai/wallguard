@@ -22,7 +22,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::from("id,code"),
-                durability: String::from("hard"),
+                durability: String::from("soft"),
             }),
             body: json!({
                 "device_version": device_version,

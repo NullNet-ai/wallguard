@@ -14,7 +14,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::from("status"),
-                durability: String::from("hard"),
+                durability: String::from("soft"),
             }),
         });
 

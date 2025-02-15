@@ -17,7 +17,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::new(),
-                durability: String::from("hard"),
+                durability: String::from("soft"),
             }),
             body: json!({
                 "device_id": device_id.clone(),
@@ -57,7 +57,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::from("status,is_monitoring_enabled,is_remote_access_enabled"),
-                durability: String::from("hard"),
+                durability: String::from("soft"),
             }),
         });
 
