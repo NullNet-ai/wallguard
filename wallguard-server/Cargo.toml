@@ -41,6 +41,8 @@ chrono = "0.4.39"
 nullnet-libfireparse = "0.2.3"
 md5 = "0.7.0"
 futures = "0.3.31"
+axum = "0.8.1"
+if-addrs = "0.13.3"
 
 [build-dependencies]
 tonic-build = "0.12.3"
