@@ -5,6 +5,7 @@ use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
+use crate::timer::Timer;
 use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 use log::Level;
 use std::cmp::min;
@@ -37,6 +38,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
 
     let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
     let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
+    let mut timer = Timer::new(args.transmit_interval);
     loop {
         if let Ok(packet) = rx.recv() {
             let packet = Packet {
@@ -46,7 +48,9 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                 data: packet.data,
             };
             packet_batch.push(packet);
-            if packet_batch.is_full() {
+            if packet_batch.is_full() || timer.is_expired() {
+                timer.reset();
+
                 let Ok(token) = auth.obtain_token_safe().await else {
                     continue;
                 };

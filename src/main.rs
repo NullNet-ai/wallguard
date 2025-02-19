@@ -5,6 +5,7 @@ mod constants;
 mod heartbeat;
 mod logger;
 mod packet_transmitter;
+mod timer;
 mod utils;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
