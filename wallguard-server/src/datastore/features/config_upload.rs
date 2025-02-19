@@ -139,7 +139,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::from("id"),
-                durability: String::from("soft"),
+                durability: String::from("hard"),
             }),
             body: json!({
                 "device_id": device_id,
@@ -230,7 +230,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::new(),
-                durability: String::from("soft"),
+                durability: String::from("hard"),
             }),
             body: Some(BatchCreateBody {
                 records: serde_json::to_string(&serde_json::Value::Array(records_with_id)).unwrap(),
@@ -335,7 +335,7 @@ impl DatastoreWrapper {
             }),
             query: Some(Query {
                 pluck: String::from(""),
-                durability: String::from("soft"),
+                durability: String::from("hard"),
             }),
             body: json!({
                 "config_version": new_version,
@@ -431,7 +431,7 @@ impl DatastoreWrapper {
                     }),
                     query: Some(Query {
                         pluck: String::new(),
-                        durability: String::from("soft"),
+                        durability: String::from("hard"),
                     }),
                     body: body.to_string(),
                 });
