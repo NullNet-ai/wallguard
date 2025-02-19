@@ -5,8 +5,10 @@ use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
+use crate::timer::Timer;
 use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 use log::Level;
+use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -21,7 +23,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
 
     Logger::log(
         Level::Info,
-        "Will use at most {dump_bytes} bytes of disk space for packet dump files",
+        format!("Will use at most {dump_bytes} bytes of disk space for packet dump files"),
     );
 
     let client = Arc::new(Mutex::new(None));
@@ -36,6 +38,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
 
     let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
     let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
+    let mut timer = Timer::new(args.transmit_interval);
     loop {
         if let Ok(packet) = rx.recv() {
             let packet = Packet {
@@ -45,7 +48,9 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                 data: packet.data,
             };
             packet_batch.push(packet);
-            if packet_batch.is_full() {
+            if packet_batch.is_full() || timer.is_expired() {
+                timer.reset();
+
                 let Ok(token) = auth.obtain_token_safe().await else {
                     continue;
                 };
@@ -59,7 +64,9 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                 )
                 .await;
                 if packet_queue.is_full() {
-                    dump_packets_to_file(packet_queue.take(), args.uuid.clone(), &dump_dir).await;
+                    dump_dir
+                        .dump_packets_to_file(packet_queue.take(), args.uuid.clone())
+                        .await;
                     if dump_dir.is_full().await {
                         Logger::log(
                             Level::Warn,
@@ -92,41 +99,20 @@ async fn send_packets(
 ) {
     packet_queue.extend(packet_batch.take());
     if let Some(client) = interface.lock().await.as_mut() {
-        let p = Packets {
-            uuid,
-            packets: packet_queue.get_clone(),
-            auth: Some(Authentication { token }),
-        };
-
-        match client.handle_packets(p).await {
-            Ok(_) => packet_queue.clear(),
-            Err(e) => Logger::log(
-                log::Level::Error,
-                format!("Failed to send traffic data: {}", e),
-            ),
-        };
+        while !packet_queue.is_empty() {
+            let range = ..min(packet_queue.len(), BATCH_SIZE);
+            let packets = Packets {
+                uuid: uuid.clone(),
+                packets: packet_queue.get(range),
+                auth: Some(Authentication {
+                    token: token.clone(),
+                }),
+            };
+            if client.handle_packets(packets).await.is_err() {
+                Logger::log(log::Level::Error, "Failed to send packets");
+                break;
+            }
+            packet_queue.drain(range);
+        }
     }
-}
-
-async fn dump_packets_to_file(packets: Vec<Packet>, uuid: String, dump_dir: &DumpDir) {
-    let now = chrono::Utc::now().to_rfc3339();
-    let file_path = dump_dir.get_file_path(&now);
-    Logger::log(
-        Level::Warn,
-        format!(
-            "Queue is full. Dumping {} packets to file '{file_path}'",
-            packets.len()
-        ),
-    );
-    let dump = Packets {
-        uuid,
-        packets,
-        auth: None,
-    };
-    tokio::fs::write(
-        file_path,
-        bincode::serialize(&dump).expect("Failed to serialize packets"),
-    )
-    .await
-    .expect("Failed to write dump file");
 }

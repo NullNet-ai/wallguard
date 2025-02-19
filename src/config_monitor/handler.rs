@@ -10,7 +10,7 @@ pub struct Handler {
 
 impl Handler {
     pub fn new(addr: String, port: u16, auth: AuthHandler) -> Self {
-        Self { addr, port, auth }
+        Self { auth, addr, port }
     }
 
     fn map_error<T>(msg: T) -> Error
@@ -54,7 +54,7 @@ impl WatcherHandler for Handler {
     async fn on_error(&self, error: Error) {
         Logger::log(
             log::Level::Error,
-            format!("Error occured during configuration monitoring. {}", error),
+            format!("Error occured during configuration monitoring. {error}"),
         );
     }
 }

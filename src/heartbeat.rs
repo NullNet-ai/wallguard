@@ -20,13 +20,13 @@ pub async fn routine(auth: AuthHandler, args: Args) {
                     }
                     Err(msg) => Logger::log(
                         Level::Error,
-                        format!("Heartbeat: Request failed failed - {}", msg),
+                        format!("Heartbeat: Request failed failed - {msg}"),
                     ),
                 }
             }
             Err(msg) => Logger::log(
                 Level::Error,
-                format!("Heartbeat: Authentication failed - {}", msg),
+                format!("Heartbeat: Authentication failed - {msg}"),
             ),
         };
 

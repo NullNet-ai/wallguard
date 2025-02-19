@@ -36,6 +36,6 @@ impl ConfigurationMonitor {
     }
 
     pub async fn watch(&mut self) {
-        self.watcher.watch().await
+        self.watcher.watch().await;
     }
 }

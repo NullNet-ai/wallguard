@@ -5,6 +5,7 @@ mod constants;
 mod heartbeat;
 mod logger;
 mod packet_transmitter;
+mod timer;
 mod utils;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
@@ -78,15 +79,17 @@ async fn main() {
         return;
     }
 
-    let mut cfg_monitor = ConfigurationMonitor::new(&args, auth.clone(), None)
-        .await
-        .expect("Failed to initialize configuration monitor");
+    if cfg!(not(feature = "no-cfg-monitor")) {
+        let mut cfg_monitor = ConfigurationMonitor::new(&args, auth.clone(), None)
+            .await
+            .expect("Failed to initialize configuration monitor");
 
-    cfg_monitor.upload_current().await.expect(
-        "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
-    );
+        cfg_monitor.upload_current().await.expect(
+            "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
+        );
 
-    tokio::spawn(async move { cfg_monitor.watch().await });
+        tokio::spawn(async move { cfg_monitor.watch().await });
+    }
 
     let auth_copy = auth.clone();
     let args_copy = args.clone();
