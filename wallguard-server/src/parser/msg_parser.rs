@@ -35,18 +35,8 @@ pub fn parse_message(message: Packets, token: &Token) -> ParsedMessage {
                         ip_header,
                         transport_header,
                     });
-                } else {
-                    log::error!("TransportHeader::from_etherparse")
                 }
-            } else {
-                log::error!(
-                    "IpHeader::from_etherparse failed. if {} {}",
-                    &interface_name,
-                    &link_type
-                )
             }
-        } else {
-            log::error!("Failed to get_packet_headers")
         }
     }
 
