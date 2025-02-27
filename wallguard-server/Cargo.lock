@@ -934,7 +934,7 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.1.10"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "axum 0.8.1",
