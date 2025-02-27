@@ -45,6 +45,7 @@ axum = "0.8.1"
 if-addrs = "0.13.3"
 nullnet-liberror = "0.1.0"
 nullnet-liblogging = "0.1.2"
+log = "0.4.26"
 
 [build-dependencies]
 tonic-build = "0.12.3"

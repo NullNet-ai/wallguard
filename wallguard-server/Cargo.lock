@@ -974,6 +974,7 @@ dependencies = [
  "etherparse",
  "futures",
  "if-addrs",
+ "log",
  "md5",
  "nullnet-libdatastore",
  "nullnet-liberror",

@@ -14,6 +14,8 @@ impl WallGuardImpl {
         let packets = request.into_inner();
         let (jwt_token, token_info) = Self::authenticate(packets.auth.clone())?;
 
+        log::info!("Received packets {} packets. {}", packets.packets.len(), &packets.uuid);
+
         let parsed_message = parse_message(packets, &token_info);
         if parsed_message.records.is_empty() {
             return Err("No valid packets in the message").handle_err(location!());
