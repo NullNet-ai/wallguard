@@ -11,6 +11,8 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
+    nullnet_liblogging::Logger::init(None, "wallgaurd-server", vec![]);
+
     let datastore = DatastoreWrapper::new();
 
     tokio::join!(

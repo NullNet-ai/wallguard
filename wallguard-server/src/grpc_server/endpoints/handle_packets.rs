@@ -19,13 +19,13 @@ impl WallGuardImpl {
             return Err("No valid packets in the message").handle_err(location!());
         };
 
-        let response = self
+        let _ = self
             .datastore
             .packets_insert(&jwt_token, parsed_message)
             .await?;
 
         Ok(Response::new(CommonResponse {
-            message: format!("Successfully inserted {} packets", response.count),
+            message: format!("Packets successfully inserted "),
         }))
     }
 }
