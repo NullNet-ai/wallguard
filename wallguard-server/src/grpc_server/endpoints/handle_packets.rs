@@ -25,7 +25,7 @@ impl WallGuardImpl {
             .await?;
 
         Ok(Response::new(CommonResponse {
-            message: String::from(format!("Successfully inserted {} packets", response.count)),
+            message: format!("Successfully inserted {} packets", response.count),
         }))
     }
 }

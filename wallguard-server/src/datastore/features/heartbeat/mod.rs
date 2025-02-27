@@ -1,8 +1,8 @@
 mod latest_device_info;
 
-use latest_device_info::LatestDeviceInfo;
 use crate::datastore::DatastoreWrapper;
 use chrono::Utc;
+use latest_device_info::LatestDeviceInfo;
 use nullnet_libdatastore::{
     CreateParams, CreateRequest, GetByIdRequest, Params, Query, ResponseData,
 };

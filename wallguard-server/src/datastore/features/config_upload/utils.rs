@@ -10,6 +10,6 @@ pub fn parse_configuraion_id(response: &ResponseData) -> Result<String, Error> {
         .and_then(|map| map.get("id"))
         .and_then(|v| v.as_str())
         .map(std::string::ToString::to_string)
-        .ok_or(format!("Failed to parse"))
+        .ok_or(String::from("Failed to parse"))
         .handle_err(location!())
 }

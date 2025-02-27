@@ -42,7 +42,7 @@ impl DatastoreWrapper {
                     self.internal_cu_update_configuration_version(
                         &prev_info.id,
                         prev_info.version + 1,
-                        &token
+                        token
                     ),
                     self.internal_cu_update_related_records(
                         &prev_info.id,
@@ -64,12 +64,11 @@ impl DatastoreWrapper {
                 r2?;
                 r3?;
 
-                return Ok(prev_info.id);
+                Ok(prev_info.id)
             } else {
                 // Digests do not match, insert new configuration
-                return self
-                    .internal_cu_parse_and_insert_new_config(token, device_id, config, status)
-                    .await;
+                self.internal_cu_parse_and_insert_new_config(token, device_id, config, status)
+                    .await
             }
         }
     }

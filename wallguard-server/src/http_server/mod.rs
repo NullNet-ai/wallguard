@@ -12,7 +12,7 @@ pub async fn run_http_server() {
     let listener = TcpListener::bind(format!("{}:{}", ADDR, PORT))
         .await
         .unwrap();
-    
+
     println!("HTTP API listening on http://{}:{}", ADDR, PORT);
 
     axum::serve(listener, app).await.unwrap();
