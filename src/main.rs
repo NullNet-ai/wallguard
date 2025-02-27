@@ -19,7 +19,7 @@ use logger::Logger;
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
 
-    let response = WallGuardGrpcInterface::new(&args.addr, args.port)
+    let _ = WallGuardGrpcInterface::new(&args.addr, args.port)
         .await
         .setup_client(SetupRequest {
             auth: Some(Authentication { token }),
@@ -28,11 +28,7 @@ async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), Strin
         })
         .await?;
 
-    if response.success {
-        Ok(())
-    } else {
-        Err(response.message)
-    }
+    Ok(())
 }
 
 async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<DeviceStatus, String> {

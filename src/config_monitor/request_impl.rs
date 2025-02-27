@@ -24,16 +24,7 @@ pub async fn request_impl(
         status: state_to_status(&state).into(),
     };
 
-    match client.handle_config(data).await {
-        Ok(response) => {
-            if response.success {
-                Ok(())
-            } else {
-                Err(response.message)
-            }
-        }
-        Err(err) => Err(err),
-    }
+    client.handle_config(data).await.map(|_| ())
 }
 
 fn state_to_status(state: &State) -> ConfigStatus {
