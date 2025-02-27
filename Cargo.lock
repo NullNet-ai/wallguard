@@ -1093,9 +1093,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-traffic-monitor"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee163e273a26f21887352f29d2f12917239c5cd4ef1a28f865a64174968e065b"
+checksum = "2a87a61c89f2024a6ef95be9ddde94d204da4abba40f5635f2c5789a03383cd5"
 dependencies = [
  "chrono",
  "pcap",
