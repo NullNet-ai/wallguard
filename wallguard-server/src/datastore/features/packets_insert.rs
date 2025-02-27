@@ -1,22 +1,18 @@
 use crate::{datastore::DatastoreWrapper, parser::parsed_message::ParsedMessage};
 use nullnet_libdatastore::{
-    BatchCreateBody, BatchCreateRequest, CreateParams, Error as DSError, ErrorKind as DSErrorKind,
-    Query, Response as DSResponse,
+    BatchCreateBody, BatchCreateRequest, CreateParams, Query, ResponseData,
 };
-use tonic::Request;
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
 
 impl DatastoreWrapper {
     pub async fn packets_insert(
         &self,
         token: &str,
         parsed_message: ParsedMessage,
-    ) -> Result<DSResponse, DSError> {
-        let records = serde_json::to_string(&parsed_message).map_err(|e| DSError {
-            kind: DSErrorKind::ErrorRequestFailed,
-            message: e.to_string(),
-        })?;
+    ) -> Result<ResponseData, Error> {
+        let records = serde_json::to_string(&parsed_message).handle_err(location!())?;
 
-        let mut request = Request::new(BatchCreateRequest {
+        let request = BatchCreateRequest {
             params: Some(CreateParams {
                 table: String::from("packets"),
             }),
@@ -28,11 +24,9 @@ impl DatastoreWrapper {
                 records,
                 entity_prefix: String::from("PK"),
             }),
-        });
+        };
 
-        Self::set_token_for_request(&mut request, token)?;
-
-        let response = self.inner.batch_create(request).await?;
+        let response = self.inner.batch_create(request, token).await?;
 
         Ok(response)
     }

@@ -1,4 +1,4 @@
-mod common;
+mod utils;
 mod config_upload;
 mod device_setup;
 mod device_status;

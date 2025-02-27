@@ -1,21 +1,18 @@
-use serde_json::json;
-use tonic::Request;
-
 use crate::datastore::DatastoreWrapper;
-use nullnet_libdatastore::{
-    Error as DSError, Params, Query, Response as DSResponse, UpdateRequest,
-};
+use nullnet_libdatastore::{Params, Query, ResponseData, UpdateRequest};
+use nullnet_liberror::Error;
+use serde_json::json;
 
 impl DatastoreWrapper {
     pub async fn device_setup(
         &self,
-        token: String,
+        token: &str,
         device_id: String,
         device_version: String,
         device_uuid: String,
         device_address: String,
-    ) -> Result<DSResponse, DSError> {
-        let mut request = Request::new(UpdateRequest {
+    ) -> Result<ResponseData, Error> {
+        let request = UpdateRequest {
             params: Some(Params {
                 table: String::from("devices"),
                 id: device_id,
@@ -32,11 +29,9 @@ impl DatastoreWrapper {
                 "status": "Active"
             })
             .to_string(),
-        });
+        };
 
-        Self::set_token_for_request(&mut request, &token)?;
-
-        let response = self.inner.update(request).await?;
+        let response = self.inner.update(request, token).await?;
 
         Ok(response)
     }

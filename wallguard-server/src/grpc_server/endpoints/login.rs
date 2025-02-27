@@ -1,4 +1,5 @@
-use tonic::{Request, Response, Status};
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use tonic::{Request, Response};
 
 use crate::{
     grpc_server::server::WallGuardImpl,
@@ -9,19 +10,16 @@ impl WallGuardImpl {
     pub(crate) async fn login_impl(
         &self,
         request: Request<LoginRequest>,
-    ) -> Result<Response<Authentication>, Status> {
+    ) -> Result<Response<Authentication>, Error> {
         let login_request = request.into_inner();
 
         let token = self
             .datastore
             .login(login_request.app_id, login_request.app_secret)
-            .await
-            .map_err(|e| Status::internal(format!("Datastore login failed: {e:?}")))?;
+            .await?;
 
         if token.is_empty() {
-            return Err(Status::internal(
-                "Datastore login failed: Wrong credentials",
-            ));
+            return Err("Datastore login failed: Wrong credentials").handle_err(location!());
         }
 
         Ok(Response::new(Authentication { token }))

@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
-use tonic::{Code, Request, Response, Status};
+use nullnet_liberror::Error;
+use tonic::{Request, Response};
 
 use crate::proto::wallguard::{Authentication, CommonResponse, HeartbeatResponse, StatusResponse};
 
@@ -20,7 +21,7 @@ impl ServerLogger {
 
     /// Unified log response function for different response types.
     pub(crate) fn log_response<T>(
-        response: &Result<Response<T>, Status>,
+        response: &Result<Response<T>, Error>,
         source: &str,
         destination: &str,
         received_at: DateTime<Utc>,
@@ -43,15 +44,14 @@ impl ServerLogger {
                     duration_ms,
                 );
             }
-            Err(status) => {
+            Err(error) => {
                 Self::log_error_status(
                     &received_str,
                     &completed_str,
                     source,
                     destination,
                     duration_ms,
-                    status.code(),
-                    status.message(),
+                    error,
                 );
             }
         }
@@ -69,25 +69,23 @@ impl ServerLogger {
         source_str: &str,
         destination_str: &str,
         duration_ms: i64,
-        code: Code,
-        message: &str,
+        error: &Error,
     ) {
         println!(
-        "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). Status: {}ERROR{} Code: {}, Message: {}",
-        received_str,
-        completed_str,
-        YELLOW,
-        source_str,
-        RESET,
-        CYAN,
-        destination_str,
-        RESET,
-        duration_ms,
-        RED,
-        RESET,
-        code,
-        message
-    );
+            "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). Status: {}ERROR{}: {:?}",
+            received_str,
+            completed_str,
+            YELLOW,
+            source_str,
+            RESET,
+            CYAN,
+            destination_str,
+            RESET,
+            duration_ms,
+            RED,
+            RESET,
+            error
+        );
     }
 }
 
@@ -111,11 +109,8 @@ impl LoggableResponse for CommonResponse {
         destination_str: &str,
         duration_ms: i64,
     ) {
-        let status_color = if self.success { GREEN } else { RED };
-        let status_text = if self.success { "SUCCESS" } else { "ERROR" };
-
         println!(
-            "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). Status: {}{}{} Message: {}",
+            "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). {}SUCCESS{} Message: {}",
             received_str,
             completed_str,
             YELLOW,
@@ -125,8 +120,7 @@ impl LoggableResponse for CommonResponse {
             destination_str,
             RESET,
             duration_ms,
-            status_color,
-            status_text,
+            GREEN,
             RESET,
             self.message
         );

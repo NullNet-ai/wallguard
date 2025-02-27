@@ -1,30 +1,29 @@
-use tonic::{Request, Response, Status};
+use nullnet_liberror::Error;
+use tonic::{Request, Response};
 
 use crate::{
     grpc_server::server::WallGuardImpl,
     proto::wallguard::{HeartbeatRequest, HeartbeatResponse},
-    utils::map_status_value_to_enum,
 };
 
 impl WallGuardImpl {
     pub(crate) async fn heartbeat_impl(
         &self,
         request: Request<HeartbeatRequest>,
-    ) -> Result<Response<HeartbeatResponse>, Status> {
+    ) -> Result<Response<HeartbeatResponse>, Error> {
         let heartbeat_request = request.into_inner();
 
         let (jwt_token, token_info) = Self::authenticate(heartbeat_request.auth)?;
 
-        let (status, is_remote_access_enabled, is_monitoring_enabled) = self
+        let device_info = self
             .datastore
             .heartbeat(&jwt_token, token_info.account.device.id)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
+            .await?;
 
         Ok(Response::new(HeartbeatResponse {
-            status: map_status_value_to_enum(&status).into(),
-            is_remote_access_enabled,
-            is_monitoring_enabled,
+            status: device_info.status.into(),
+            is_remote_access_enabled: device_info.is_remote_access_enabled,
+            is_monitoring_enabled: device_info.is_monitoring_enabled,
         }))
     }
 }

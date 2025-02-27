@@ -24,7 +24,7 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.heartbeat_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/heartbeat", received_at);
-        result
+        result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
     async fn setup(
@@ -35,7 +35,7 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.setup_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/setup", received_at);
-        result
+        result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
     async fn login(
@@ -46,7 +46,7 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.login_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/login", received_at);
-        result
+        result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
     async fn handle_packets(
@@ -57,7 +57,7 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.handle_packets_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/handle_packets", received_at);
-        result
+        result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
     async fn handle_config(
@@ -68,7 +68,7 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.handle_config_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/handle_config", received_at);
-        result
+        result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
     async fn status(
@@ -79,6 +79,6 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.device_status_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/status", received_at);
-        result
+        result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 }

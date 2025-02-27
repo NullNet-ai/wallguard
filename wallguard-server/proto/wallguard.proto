@@ -43,8 +43,7 @@ message HeartbeatResponse {
 }
 
 message CommonResponse {
-  bool success = 1;
-  string message = 2;
+  string message = 1;
 }
 
 message SetupRequest {

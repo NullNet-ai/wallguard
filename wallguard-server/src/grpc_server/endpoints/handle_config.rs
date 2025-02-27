@@ -1,16 +1,16 @@
-use libfireparse::{FileData, FireparseError, Parser, Platform};
-use tonic::{Request, Response, Status};
-
 use crate::{
     grpc_server::server::WallGuardImpl,
     proto::wallguard::{CommonResponse, ConfigSnapshot, ConfigStatus},
 };
+use libfireparse::{FileData, FireparseError, Parser, Platform};
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use tonic::{Request, Response};
 
 impl WallGuardImpl {
     pub(crate) async fn handle_config_impl(
         &self,
         request: Request<ConfigSnapshot>,
-    ) -> Result<Response<CommonResponse>, Status> {
+    ) -> Result<Response<CommonResponse>, Error> {
         let snapshot = request.into_inner();
 
         let (jwt_token, token_info) = Self::authenticate(snapshot.auth)?;
@@ -24,37 +24,25 @@ impl WallGuardImpl {
             })
             .collect();
 
-        let configuration =
-            Parser::parse(Platform::PfSense, snapshot_mapped).map_err(|e| match e {
-                FireparseError::UnsupportedPlatform(msg) | FireparseError::ParserError(msg) => {
-                    Status::internal(msg)
-                }
-            })?;
+        let configuration = Parser::parse(Platform::PfSense, snapshot_mapped)
+            .map_err(|e| match e {
+                FireparseError::UnsupportedPlatform(message)
+                | FireparseError::ParserError(message) => message,
+            })
+            .handle_err(location!())?;
 
-        let created_id = &self
+        let config_id = &self
             .datastore
             .config_upload(
                 &jwt_token,
                 token_info.account.device.id,
                 configuration,
-                convert_status(
-                    ConfigStatus::try_from(snapshot.status).unwrap_or(ConfigStatus::CsUndefined),
-                ),
+                ConfigStatus::try_from(snapshot.status).unwrap_or(ConfigStatus::CsUndefined),
             )
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
+            .await?;
 
         Ok(Response::new(CommonResponse {
-            success: true,
-            message: format!("Configuration created [ID '{created_id}']"),
+            message: format!("Successfully created\\updated a configuration, id '{config_id}'"),
         }))
-    }
-}
-
-fn convert_status(status: ConfigStatus) -> String {
-    match status {
-        ConfigStatus::CsDraft => String::from("Draft"),
-        ConfigStatus::CsApplied => String::from("Applied"),
-        ConfigStatus::CsUndefined => String::from("Undefined"),
     }
 }
