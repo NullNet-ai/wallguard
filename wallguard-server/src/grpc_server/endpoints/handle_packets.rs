@@ -3,7 +3,7 @@ use crate::{
     parser::msg_parser::parse_message,
     proto::wallguard::{CommonResponse, Packets},
 };
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::Error;
 use tonic::{Request, Response};
 
 impl WallGuardImpl {
