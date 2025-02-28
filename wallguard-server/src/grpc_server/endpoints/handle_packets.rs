@@ -31,11 +31,7 @@ impl WallGuardImpl {
             .await?;
 
         Ok(Response::new(CommonResponse {
-<<<<<<< HEAD
             message: String::from("Packets successfully inserted"),
-=======
-            message: "Packets successfully inserted ".to_string(),
->>>>>>> main
         }))
     }
 }
