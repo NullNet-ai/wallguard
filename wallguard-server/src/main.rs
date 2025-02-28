@@ -13,7 +13,9 @@ mod utils;
 async fn main() {
     nullnet_liblogging::Logger::init(None, "wallgaurd-server", vec![]);
 
-    let datastore = DatastoreWrapper::new();
+    let datastore = DatastoreWrapper::new()
+        .await
+        .expect("Failed to connect to the datastore");
 
     tokio::join!(
         grpc_server::run_grpc_server(datastore),

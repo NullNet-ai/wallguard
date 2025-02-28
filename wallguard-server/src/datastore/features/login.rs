@@ -13,7 +13,7 @@ impl DatastoreWrapper {
             }),
         };
 
-        let response = self.inner.login(request).await?;
+        let response = self.inner.clone().login(request).await?;
 
         Ok(response.token)
     }

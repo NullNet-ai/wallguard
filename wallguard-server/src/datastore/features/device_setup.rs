@@ -31,7 +31,7 @@ impl DatastoreWrapper {
             .to_string(),
         };
 
-        let response = self.inner.update(request, token).await?;
+        let response = self.inner.clone().update(request, token).await?;
 
         Ok(response)
     }

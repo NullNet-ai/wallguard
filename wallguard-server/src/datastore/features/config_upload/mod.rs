@@ -7,7 +7,8 @@ use latest_config_info::LatestConfigInfo;
 use libfireparse::Configuration as ClientConfiguration;
 use nullnet_libdatastore::{
     AdvanceFilter, BatchCreateBody, BatchCreateRequest, BatchUpdateBody, BatchUpdateRequest,
-    CreateParams, CreateRequest, GetByFilterBody, GetByFilterRequest, Params, Query, UpdateRequest,
+    CreateBody, CreateParams, CreateRequest, DatastoreClient, GetByFilterBody, GetByFilterRequest,
+    Params, Query, UpdateRequest,
 };
 use nullnet_liberror::Error;
 use serde_json::json;
@@ -24,34 +25,41 @@ impl DatastoreWrapper {
     ) -> Result<String, Error> {
         let status = convert_status(status);
 
-        let prev_info_result = self
-            .internal_cu_fetch_latest_config_info(&device_id, token)
-            .await;
+        let prev_info_result =
+            Self::internal_cu_fetch_latest_config_info(self.inner.clone(), &device_id, token).await;
 
         if prev_info_result.is_err() {
             // No previous versions found
-            return self
-                .internal_cu_parse_and_insert_new_config(token, device_id, config, status)
-                .await;
+            return Self::internal_cu_parse_and_insert_new_config(
+                self.inner.clone(),
+                token,
+                device_id,
+                config,
+                status,
+            )
+            .await;
         } else {
             let prev_info = prev_info_result.unwrap();
             let new_digest = digest(&config.raw_content);
 
             if prev_info.digest == new_digest {
                 let (r1, r2, r3) = tokio::join!(
-                    self.internal_cu_update_configuration_version(
+                    Self::internal_cu_update_configuration_version(
+                        self.inner.clone(),
                         &prev_info.id,
                         prev_info.version + 1,
                         token
                     ),
-                    self.internal_cu_update_related_records(
+                    Self::internal_cu_update_related_records(
+                        self.inner.clone(),
                         &prev_info.id,
                         token,
                         "device_aliases",
                         "device_alias_status",
                         &status,
                     ),
-                    self.internal_cu_update_related_records(
+                    Self::internal_cu_update_related_records(
+                        self.inner.clone(),
                         &prev_info.id,
                         token,
                         "device_rules",
@@ -67,14 +75,20 @@ impl DatastoreWrapper {
                 Ok(prev_info.id)
             } else {
                 // Digests do not match, insert new configuration
-                self.internal_cu_parse_and_insert_new_config(token, device_id, config, status)
-                    .await
+                Self::internal_cu_parse_and_insert_new_config(
+                    self.inner.clone(),
+                    token,
+                    device_id,
+                    config,
+                    status,
+                )
+                .await
             }
         }
     }
 
     async fn internal_cu_fetch_latest_config_info(
-        &self,
+        mut client: DatastoreClient,
         device_id: &str,
         token: &str,
     ) -> Result<LatestConfigInfo, Error> {
@@ -107,23 +121,24 @@ impl DatastoreWrapper {
             }),
         };
 
-        let response = self.inner.get_by_filter(request, token).await?;
+        let response = client.get_by_filter(request, token).await?;
         LatestConfigInfo::from_response_data(response)
     }
 
     async fn internal_cu_parse_and_insert_new_config(
-        &self,
+        client: DatastoreClient,
         token: &str,
         device_id: String,
         config: ClientConfiguration,
         status: String,
     ) -> Result<String, Error> {
-        let config_id = self
-            .internal_cu_create_configuration(token, device_id, &config)
-            .await?;
+        let config_id =
+            Self::internal_cu_create_configuration(client.clone(), token, device_id, &config)
+                .await?;
 
         let (r1, r2, r3) = tokio::join!(
-            self.internal_cu_insert_related_records(
+            Self::internal_cu_insert_related_records(
+                client.clone(),
                 token,
                 "device_rules",
                 "RL",
@@ -132,7 +147,8 @@ impl DatastoreWrapper {
                 "device_rule_status",
                 Some(&status),
             ),
-            self.internal_cu_insert_related_records(
+            Self::internal_cu_insert_related_records(
+                client.clone(),
                 token,
                 "device_aliases",
                 "AL",
@@ -141,7 +157,8 @@ impl DatastoreWrapper {
                 "device_alias_status",
                 Some(&status),
             ),
-            self.internal_cu_insert_related_records(
+            Self::internal_cu_insert_related_records(
+                client.clone(),
                 token,
                 "device_interfaces",
                 "IF",
@@ -161,7 +178,7 @@ impl DatastoreWrapper {
 
     /// Creates a new configuration record and returns the generated config ID.
     async fn internal_cu_create_configuration(
-        &self,
+        mut client: DatastoreClient,
         token: &str,
         device_id: String,
         config: &ClientConfiguration,
@@ -174,25 +191,27 @@ impl DatastoreWrapper {
                 pluck: String::from("id"),
                 durability: String::from("hard"),
             }),
-            body: json!({
-                "device_id": device_id,
-                "raw_content": config.raw_content,
-                "digest": digest(&config.raw_content),
-                "hostname": config.hostname,
-                "config_version": 1,
-                "entity_prefix": "CFG"
-            })
-            .to_string(),
+            body: Some(CreateBody {
+                record: json!({
+                    "device_id": device_id,
+                    "raw_content": config.raw_content,
+                    "digest": digest(&config.raw_content),
+                    "hostname": config.hostname,
+                    "config_version": 1,
+                })
+                .to_string(),
+                entity_prefix: String::from("CFG"),
+            }),
         };
 
-        let response = self.inner.create(request, token).await?;
+        let response = client.create(request, token).await?;
         parse_configuraion_id(&response)
     }
 
     /// Inserts related records (rules/aliases) into the datastore.
     #[allow(clippy::too_many_arguments)]
     async fn internal_cu_insert_related_records<T: serde::Serialize>(
-        &self,
+        mut client: DatastoreClient,
         token: &str,
         table: &str,
         entity_prefix: &str,
@@ -233,13 +252,13 @@ impl DatastoreWrapper {
             }),
         };
 
-        let _ = self.inner.batch_create(request, token).await?;
+        let _ = client.batch_create(request, token).await?;
 
         Ok(())
     }
 
     async fn internal_cu_update_configuration_version(
-        &self,
+        mut client: DatastoreClient,
         config_id: &str,
         new_version: i64,
         token: &str,
@@ -259,13 +278,13 @@ impl DatastoreWrapper {
             .to_string(),
         };
 
-        let _ = self.inner.update(request, token).await?;
+        let _ = client.update(request, token).await?;
 
         Ok(())
     }
 
     async fn internal_cu_update_related_records(
-        &self,
+        mut client: DatastoreClient,
         config_id: &str,
         token: &str,
         table: &str,
@@ -292,7 +311,7 @@ impl DatastoreWrapper {
             }),
         };
 
-        let _ = self.inner.batch_update(request, token).await?;
+        let _ = client.batch_update(request, token).await?;
 
         Ok(())
     }

@@ -20,7 +20,7 @@ impl DatastoreWrapper {
             }),
         };
 
-        let response = self.inner.get_by_id(request, token).await?;
+        let response = self.inner.clone().get_by_id(request, token).await?;
 
         let status = Self::internal_ds_parse_response_data(&response.data)?;
 

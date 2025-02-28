@@ -910,9 +910,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libdatastore"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85ee4602b935bd911e3a1bec3e8b55b59ac21eac91d896dee0d22292636532ef"
+checksum = "90c98f12c48f498eb1de4c944b14c367d1be55caa279c67ac4cc88cccee3d693"
 dependencies = [
  "nullnet-liberror",
  "prost",
@@ -966,7 +966,7 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-channel",
  "axum 0.8.1",

@@ -26,7 +26,7 @@ impl DatastoreWrapper {
             }),
         };
 
-        let response = self.inner.batch_create(request, token).await?;
+        let response = self.inner.clone().batch_create(request, token).await?;
 
         Ok(response)
     }

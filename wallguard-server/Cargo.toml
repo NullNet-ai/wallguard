@@ -1,6 +1,6 @@
 [package]
 name = "nullnet-wallguard-server"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Giuliano Bellini <gyulyvgc89@gmail.com>", "Anton Liashkevich <anton.liashkevich.eng@gmail.com>"]
 description = "A centralized management system for network firewalls"
@@ -27,7 +27,7 @@ lto = true
 strip = true
 
 [dependencies]
-nullnet-libdatastore = "0.2.0"
+nullnet-libdatastore = "0.3.0"
 nullnet-libtoken = "0.1.0"
 nullnet-libfireparse = "0.2.3"
 etherparse = "0.17.0"

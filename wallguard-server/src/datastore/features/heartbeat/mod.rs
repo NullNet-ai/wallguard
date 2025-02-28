@@ -4,7 +4,8 @@ use crate::datastore::DatastoreWrapper;
 use chrono::Utc;
 use latest_device_info::LatestDeviceInfo;
 use nullnet_libdatastore::{
-    CreateParams, CreateRequest, GetByIdRequest, Params, Query, ResponseData,
+    CreateBody, CreateParams, CreateRequest, DatastoreClient, GetByIdRequest, Params, Query,
+    ResponseData,
 };
 use nullnet_liberror::Error;
 use serde_json::json;
@@ -16,8 +17,8 @@ impl DatastoreWrapper {
         device_id: String,
     ) -> Result<LatestDeviceInfo, Error> {
         let (create_result, fetch_result) = tokio::join!(
-            self.internal_hb_create_hb_record(device_id.clone(), token),
-            self.internal_hb_fetch_device_info(device_id, token)
+            Self::internal_hb_create_hb_record(self.inner.clone(), device_id.clone(), token),
+            Self::internal_hb_fetch_device_info(self.inner.clone(), device_id, token)
         );
 
         let _ = create_result?;
@@ -26,7 +27,7 @@ impl DatastoreWrapper {
     }
 
     async fn internal_hb_create_hb_record(
-        &self,
+        mut client: DatastoreClient,
         device_id: String,
         token: &str,
     ) -> Result<ResponseData, Error> {
@@ -38,21 +39,23 @@ impl DatastoreWrapper {
                 pluck: String::new(),
                 durability: String::from("soft"),
             }),
-            body: json!({
-                "device_id": device_id.clone(),
-                "timestamp": Utc::now().to_rfc3339(),
-                "entity_prefix": String::from("HB")
-            })
-            .to_string(),
+            body: Some(CreateBody {
+                record: json!({
+                    "device_id": device_id.clone(),
+                    "timestamp": Utc::now().to_rfc3339(),
+                })
+                .to_string(),
+                entity_prefix: String::from("HB"),
+            }),
         };
 
-        let retval = self.inner.create(request, token).await?;
+        let retval = client.create(request, token).await?;
 
         Ok(retval)
     }
 
     async fn internal_hb_fetch_device_info(
-        &self,
+        mut client: DatastoreClient,
         device_id: String,
         token: &str,
     ) -> Result<LatestDeviceInfo, Error> {
@@ -67,7 +70,7 @@ impl DatastoreWrapper {
             }),
         };
 
-        let response = self.inner.get_by_id(request, token).await?;
+        let response = client.get_by_id(request, token).await?;
         LatestDeviceInfo::from_response_data(response)
     }
 }
