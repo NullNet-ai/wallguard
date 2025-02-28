@@ -19,7 +19,10 @@ impl WallGuardImpl {
         log::info!("Parsed {} packets.", parsed_message.records.len());
 
         if parsed_message.records.is_empty() {
-            return Err("No valid packets in the message").handle_err(location!());
+            return Ok(Response::new(CommonResponse {
+                message: "No valid packets in the message (skipping insertion to datastore)"
+                    .to_string(),
+            }));
         };
 
         let _ = self
@@ -28,7 +31,11 @@ impl WallGuardImpl {
             .await?;
 
         Ok(Response::new(CommonResponse {
+<<<<<<< HEAD
             message: String::from("Packets successfully inserted"),
+=======
+            message: "Packets successfully inserted ".to_string(),
+>>>>>>> main
         }))
     }
 }
