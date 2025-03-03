@@ -14,7 +14,7 @@ impl WallGuardImpl {
         let _ = self.datastore.logs_insert(&jwt_token, logs.logs).await?;
 
         Ok(Response::new(CommonResponse {
-            message: String::from("Packets successfully inserted"),
+            message: String::from("Logs successfully inserted"),
         }))
     }
 }
