@@ -1,11 +1,9 @@
 use std::time::Duration;
 
 use libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
-use log::Level;
 
 use crate::authentication::AuthHandler;
 use crate::cli::Args;
-use crate::logger::Logger;
 
 pub async fn routine(auth: AuthHandler, args: Args) {
     let interval = Duration::from_secs(args.heartbeat_interval);
@@ -18,16 +16,10 @@ pub async fn routine(auth: AuthHandler, args: Args) {
                     Ok(response) => {
                         handle_hb_response(response);
                     }
-                    Err(msg) => Logger::log(
-                        Level::Error,
-                        format!("Heartbeat: Request failed failed - {msg}"),
-                    ),
+                    Err(msg) => log::error!("Heartbeat: Request failed failed - {msg}"),
                 }
             }
-            Err(msg) => Logger::log(
-                Level::Error,
-                format!("Heartbeat: Authentication failed - {msg}"),
-            ),
+            Err(msg) => log::error!("Heartbeat: Authentication failed - {msg}"),
         };
 
         tokio::time::sleep(interval).await;
@@ -37,16 +29,10 @@ pub async fn routine(auth: AuthHandler, args: Args) {
 fn handle_hb_response(response: HeartbeatResponse) {
     match DeviceStatus::try_from(response.status) {
         Ok(DeviceStatus::DsArchived | DeviceStatus::DsDeleted) => {
-            Logger::log(
-                Level::Warn,
-                "Device has been archived or deleted, aborting execution ...",
-            );
+            log::warn!("Device has been archived or deleted, aborting execution ...",);
             std::process::exit(0);
         }
         Ok(_) => {}
-        Err(_) => Logger::log(
-            Level::Error,
-            format!("Unknown device status value {}", response.status),
-        ),
+        Err(_) => log::error!("Unknown device status value {}", response.status),
     }
 }

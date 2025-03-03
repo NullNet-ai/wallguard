@@ -1049,9 +1049,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libdatastore"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85ee4602b935bd911e3a1bec3e8b55b59ac21eac91d896dee0d22292636532ef"
+checksum = "90c98f12c48f498eb1de4c944b14c367d1be55caa279c67ac4cc88cccee3d693"
 dependencies = [
  "nullnet-liberror",
  "prost",
@@ -1061,9 +1061,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-liberror"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08058827d471a931ba5616a68f51ad624c663e08efe2b43f33878a7591e75db0"
+checksum = "d7770b13c8488366e2a7fd4680dde340b79d23f10576aa3c4031fc4aa2ae03b4"
 dependencies = [
  "log",
 ]
@@ -1081,10 +1081,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "nullnet-libtoken"
-version = "0.1.0"
+name = "nullnet-liblogging"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65add0d79bb7203bf6b4b28e96897c4771deaf854ea3da898f86ff87b26fd38e"
+checksum = "9435cae7d6737af0023d30b77874e70c4c3c8b651a1267f686ad630e1efb3393"
+dependencies = [
+ "chrono",
+ "log",
+ "once_cell",
+ "syslog",
+]
+
+[[package]]
+name = "nullnet-liblogging"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08c7b4833815143e0851be05248090204e5b976180ab295fa6548a250c469292"
+dependencies = [
+ "chrono",
+ "log",
+ "nullnet-liberror",
+ "nullnet-libtoken",
+ "nullnet-wallguard-server",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "syslog",
+ "tokio",
+]
+
+[[package]]
+name = "nullnet-libtoken"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b23168f23fcd788df59efb7d3c1f7321c437038f29446b56ba3a3afc1ede0063"
 dependencies = [
  "base64",
  "serde",
@@ -1103,9 +1133,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.2.0"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b854ff071973fbd1c2b9aedcb6e4b531266df252d4b83580478f321f41f6e255"
+checksum = "736a385f5e9b456653b7eac7cf811391e64336285b2f45b4ed6779d77e4a687a"
 dependencies = [
  "async-channel",
  "axum 0.8.1",
@@ -1113,10 +1143,12 @@ dependencies = [
  "etherparse",
  "futures",
  "if-addrs",
+ "log",
  "md5",
  "nullnet-libdatastore",
  "nullnet-liberror",
  "nullnet-libfireparse",
+ "nullnet-liblogging 0.1.2",
  "nullnet-libtoken",
  "once_cell",
  "prost",
@@ -2091,12 +2123,12 @@ dependencies = [
  "clap",
  "log",
  "nullnet-libconfmon",
+ "nullnet-liblogging 0.2.0",
  "nullnet-libtoken",
  "nullnet-traffic-monitor",
  "nullnet-wallguard-server",
  "once_cell",
  "sysinfo",
- "syslog",
  "tokio",
  "uuid",
 ]

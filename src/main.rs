@@ -3,7 +3,6 @@ mod cli;
 mod config_monitor;
 mod constants;
 mod heartbeat;
-mod logger;
 mod packet_transmitter;
 mod timer;
 mod utils;
@@ -13,8 +12,6 @@ use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
-use log::Level;
-use logger::Logger;
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
@@ -49,8 +46,17 @@ async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<DeviceStat
 async fn main() {
     let args = cli::Args::parse();
 
-    Logger::init().expect("Failed to initialize logger");
-    Logger::log(Level::Info, format!("Arguments: {args:?}"));
+    let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
+        args.app_id.clone(),
+        args.app_secret.clone(),
+        args.addr.clone(),
+        args.port,
+    );
+    let logger_config =
+        nullnet_liblogging::LoggerConfig::new(true, true, Some(datastore_logger_config), vec![]);
+    nullnet_liblogging::Logger::init(logger_config);
+
+    log::info!("Arguments: {args:?}");
 
     let auth = AuthHandler::new(
         args.app_id.clone(),
@@ -68,10 +74,7 @@ async fn main() {
             .await
             .expect("Setup request failed");
     } else if status == DeviceStatus::DsArchived || status == DeviceStatus::DsDeleted {
-        Logger::log(
-            Level::Error,
-            "Device is either archived or deleted, aborting ...",
-        );
+        log::error!("Device is either archived or deleted, aborting ...",);
         return;
     }
 

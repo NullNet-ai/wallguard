@@ -1,5 +1,5 @@
 use super::request_impl::request_impl;
-use crate::{authentication::AuthHandler, logger::Logger};
+use crate::authentication::AuthHandler;
 use nullnet_libconfmon::{Error, ErrorKind, FileData, InterfaceSnapshot, Snapshot, WatcherHandler};
 
 pub struct Handler {
@@ -30,7 +30,7 @@ impl WatcherHandler for Handler {
         mut snapshot: Snapshot,
         state: nullnet_libconfmon::State,
     ) -> Result<(), nullnet_libconfmon::Error> {
-        Logger::log(log::Level::Info, "Uploading configuration snapshot ...");
+        log::info!("Uploading configuration snapshot ...");
 
         let ifaces_data = InterfaceSnapshot::take_all();
         let blob = InterfaceSnapshot::serialize_snapshot(&ifaces_data).map_err(Self::map_error)?;
@@ -52,9 +52,6 @@ impl WatcherHandler for Handler {
     }
 
     async fn on_error(&self, error: Error) {
-        Logger::log(
-            log::Level::Error,
-            format!("Error occured during configuration monitoring. {error}"),
-        );
+        log::error!("Error occured during configuration monitoring. {error}");
     }
 }

@@ -1,13 +1,11 @@
 use crate::authentication::AuthHandler;
 use crate::cli::Args;
 use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
-use crate::logger::Logger;
 use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use crate::timer::Timer;
 use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
-use log::Level;
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -21,10 +19,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
 
     let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
 
-    Logger::log(
-        Level::Info,
-        format!("Will use at most {dump_bytes} bytes of disk space for packet dump files"),
-    );
+    log::info!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
 
     let client = Arc::new(Mutex::new(None));
     let client_2 = client.clone();
@@ -68,10 +63,7 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
                         .dump_packets_to_file(packet_queue.take(), args.uuid.clone())
                         .await;
                     if dump_dir.is_full().await {
-                        Logger::log(
-                            Level::Warn,
-                            "Dump size maximum limit reached. Entering idle mode...",
-                        );
+                        log::warn!("Dump size maximum limit reached. Entering idle mode...",);
                         // stop traffic monitoring
                         drop(rx);
                         // wait for the server to come up again
@@ -109,7 +101,7 @@ async fn send_packets(
                 }),
             };
             if client.handle_packets(packets).await.is_err() {
-                Logger::log(log::Level::Error, "Failed to send packets");
+                log::error!("Failed to send packets");
                 break;
             }
             packet_queue.drain(range);
