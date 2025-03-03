@@ -88,7 +88,6 @@ pub struct ConfigSnapshot {
     #[prost(enumeration = "ConfigStatus", tag = "3")]
     pub status: i32,
 }
-#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Logs {
     #[prost(message, optional, tag = "1")]
