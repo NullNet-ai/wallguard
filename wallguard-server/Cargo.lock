@@ -922,9 +922,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-liberror"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08058827d471a931ba5616a68f51ad624c663e08efe2b43f33878a7591e75db0"
+checksum = "d7770b13c8488366e2a7fd4680dde340b79d23f10576aa3c4031fc4aa2ae03b4"
 dependencies = [
  "log",
 ]
@@ -954,6 +954,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-liblogging"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08c7b4833815143e0851be05248090204e5b976180ab295fa6548a250c469292"
+dependencies = [
+ "chrono",
+ "log",
+ "nullnet-liberror",
+ "nullnet-libtoken",
+ "nullnet-wallguard-server 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "syslog",
+ "tokio",
+]
+
+[[package]]
 name = "nullnet-libtoken"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -979,7 +997,35 @@ dependencies = [
  "nullnet-libdatastore",
  "nullnet-liberror",
  "nullnet-libfireparse",
- "nullnet-liblogging",
+ "nullnet-liblogging 0.2.0",
+ "nullnet-libtoken",
+ "once_cell",
+ "prost",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
+name = "nullnet-wallguard-server"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "736a385f5e9b456653b7eac7cf811391e64336285b2f45b4ed6779d77e4a687a"
+dependencies = [
+ "async-channel",
+ "axum 0.8.1",
+ "chrono",
+ "etherparse",
+ "futures",
+ "if-addrs",
+ "log",
+ "md5",
+ "nullnet-libdatastore",
+ "nullnet-liberror",
+ "nullnet-libfireparse",
+ "nullnet-liblogging 0.1.2",
  "nullnet-libtoken",
  "once_cell",
  "prost",

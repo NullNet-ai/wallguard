@@ -32,7 +32,7 @@ impl WallGuardGrpcInterface {
             .connect()
             .await
         else {
-            println!("Failed to connect to the server. Retrying in 10 seconds...");
+            log::warn!("Failed to connect to the server. Retrying in 10 seconds...");
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
         };

@@ -30,6 +30,8 @@ strip = true
 nullnet-libdatastore = "0.3.0"
 nullnet-libtoken = "0.1.1"
 nullnet-libfireparse = "0.2.3"
+nullnet-liberror = "0.1.1"
+nullnet-liblogging = "0.2.0"
 etherparse = "0.17.0"
 tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
 prost = "0.13.5"
@@ -43,8 +45,6 @@ md5 = "0.7.0"
 futures = "0.3.31"
 axum = "0.8.1"
 if-addrs = "0.13.3"
-nullnet-liberror = "0.1.0"
-nullnet-liblogging = "0.1.2"
 log = "0.4.26"
 
 [build-dependencies]

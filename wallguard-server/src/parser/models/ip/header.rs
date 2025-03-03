@@ -1,5 +1,6 @@
 use crate::parser::models::ip::protocol::IpProtocol;
 use etherparse::NetHeaders;
+use nullnet_liberror::{location, ErrorHandler, Location};
 use serde::Serialize;
 use std::net::Ipv4Addr;
 
@@ -18,7 +19,7 @@ impl IpHeader {
         match net {
             Some(NetHeaders::Ipv4(h, _)) => {
                 let ip_header_length = h.header_len();
-                let payload_length = h.payload_len().map_err(|e| eprintln!("{e:?}")).ok()?;
+                let payload_length = h.payload_len().handle_err(location!()).ok()?;
                 let protocol = IpProtocol::from_u8(h.protocol.0);
 
                 let source_ip = Ipv4Addr::from(h.source).to_string();

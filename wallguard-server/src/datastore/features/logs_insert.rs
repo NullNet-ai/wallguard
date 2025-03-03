@@ -41,8 +41,6 @@ async fn logs_insert_single(
         }),
     };
 
-    // println!("Attempt to send 1 log entry to the datastore");
-
     datastore.inner.create(request, token).await
 }
 
@@ -66,11 +64,6 @@ async fn logs_insert_batch(
             entity_prefix: String::from("LO"),
         }),
     };
-
-    // println!(
-    //     "Attempt to send {} log entries to the datastore",
-    //     logs.len()
-    // );
 
     datastore.inner.batch_create(request, token).await
 }

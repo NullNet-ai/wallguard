@@ -71,7 +71,7 @@ impl ServerLogger {
         duration_ms: i64,
         error: &Error,
     ) {
-        println!(
+        log::error!(
             "[{received_str} - {completed_str}] Request from {YELLOW}{source_str}{RESET} to {CYAN}{destination_str}{RESET} ({duration_ms} ms elapsed). Status: {RED}ERROR{RESET}: {error:?}",
         );
     }
@@ -97,7 +97,7 @@ impl LoggableResponse for CommonResponse {
         destination_str: &str,
         duration_ms: i64,
     ) {
-        println!(
+        log::info!(
             "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). {}SUCCESS{} Message: {}",
             received_str,
             completed_str,
@@ -179,7 +179,7 @@ fn log_success_common(
     destination_str: &str,
     duration_ms: i64,
 ) {
-    println!(
+    log::info!(
         "[{received_str} - {completed_str}] Request from {YELLOW}{source_str}{RESET} to {CYAN}{destination_str}{RESET} ({duration_ms} ms elapsed). Status: {GREEN}SUCCESS{RESET}",
     );
 }
