@@ -17,13 +17,13 @@ pub struct TcpHeader {
 impl TcpHeader {
     pub fn from_etherparse(tcp: &etherparse::TcpHeader) -> Self {
         let tcp_flags = u8::from(tcp.cwr)
-            | u8::from(tcp.ece) << 1
-            | u8::from(tcp.urg) << 2
-            | u8::from(tcp.ack) << 3
-            | u8::from(tcp.psh) << 4
-            | u8::from(tcp.rst) << 5
-            | u8::from(tcp.syn) << 6
-            | u8::from(tcp.fin) << 7;
+            | (u8::from(tcp.ece) << 1)
+            | (u8::from(tcp.urg) << 2)
+            | (u8::from(tcp.ack) << 3)
+            | (u8::from(tcp.psh) << 4)
+            | (u8::from(tcp.rst) << 5)
+            | (u8::from(tcp.syn) << 6)
+            | (u8::from(tcp.fin) << 7);
 
         Self {
             source_port: tcp.source_port,

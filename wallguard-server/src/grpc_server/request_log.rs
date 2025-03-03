@@ -72,19 +72,7 @@ impl ServerLogger {
         error: &Error,
     ) {
         println!(
-            "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). Status: {}ERROR{}: {:?}",
-            received_str,
-            completed_str,
-            YELLOW,
-            source_str,
-            RESET,
-            CYAN,
-            destination_str,
-            RESET,
-            duration_ms,
-            RED,
-            RESET,
-            error
+            "[{received_str} - {completed_str}] Request from {YELLOW}{source_str}{RESET} to {CYAN}{destination_str}{RESET} ({duration_ms} ms elapsed). Status: {RED}ERROR{RESET}: {error:?}",
         );
     }
 }
@@ -192,17 +180,6 @@ fn log_success_common(
     duration_ms: i64,
 ) {
     println!(
-        "[{} - {}] Request from {}{}{} to {}{}{} ({} ms elapsed). Status: {}SUCCESS{}",
-        received_str,
-        completed_str,
-        YELLOW,
-        source_str,
-        RESET,
-        CYAN,
-        destination_str,
-        RESET,
-        duration_ms,
-        GREEN,
-        RESET
+        "[{received_str} - {completed_str}] Request from {YELLOW}{source_str}{RESET} to {CYAN}{destination_str}{RESET} ({duration_ms} ms elapsed). Status: {GREEN}SUCCESS{RESET}",
     );
 }

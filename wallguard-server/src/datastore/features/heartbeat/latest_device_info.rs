@@ -9,13 +9,13 @@ pub struct LatestDeviceInfo {
 }
 
 impl LatestDeviceInfo {
-    pub fn from_response_data(response: ResponseData) -> Result<Self, Error> {
+    pub fn from_response_data(response: &ResponseData) -> Result<Self, Error> {
         let json =
             serde_json::from_str::<serde_json::Value>(&response.data).handle_err(location!())?;
-        Self::from_json(json)
+        Self::from_json(&json)
     }
 
-    fn from_json(value: serde_json::Value) -> Result<Self, Error> {
+    fn from_json(value: &serde_json::Value) -> Result<Self, Error> {
         let object = value
             .as_array()
             .and_then(|arr| arr.first())
@@ -43,7 +43,7 @@ impl LatestDeviceInfo {
             .handle_err(location!())?;
 
         Ok(Self {
-            status: map_status_value_to_enum(status),
+            status: map_status_value_to_enum(&status),
             is_monitoring_enabled,
             is_remote_access_enabled,
         })

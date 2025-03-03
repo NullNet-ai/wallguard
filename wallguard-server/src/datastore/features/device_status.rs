@@ -24,7 +24,7 @@ impl DatastoreWrapper {
 
         let status = Self::internal_ds_parse_response_data(&response.data)?;
 
-        Ok(map_status_value_to_enum(status))
+        Ok(map_status_value_to_enum(&status))
     }
 
     fn internal_ds_parse_response_data(data: &str) -> Result<String, Error> {
