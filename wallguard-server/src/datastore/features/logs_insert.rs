@@ -14,8 +14,8 @@ impl DatastoreWrapper {
                 data: String::new(),
                 encoding: String::new(),
             }),
-            [log] => logs_insert_single(&mut self.clone(), log.clone(), token).await,
-            _ => logs_insert_batch(&mut self.clone(), logs.clone(), token).await,
+            [log] => logs_insert_single(&mut self.clone(), log.to_owned(), token).await,
+            _ => logs_insert_batch(&mut self.clone(), logs, token).await,
         }
     }
 }
