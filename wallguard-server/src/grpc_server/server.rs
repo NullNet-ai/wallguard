@@ -8,6 +8,7 @@ use crate::{
     },
 };
 
+use crate::proto::wallguard::Logs;
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
@@ -68,6 +69,17 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.handle_config_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/handle_config", received_at);
+        result.map_err(|e| Status::internal(format!("{e:?}")))
+    }
+
+    async fn handle_logs(
+        &self,
+        request: Request<Logs>,
+    ) -> Result<Response<CommonResponse>, Status> {
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.handle_logs_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/handle_logs", received_at);
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 

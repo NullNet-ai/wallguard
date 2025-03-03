@@ -1,6 +1,6 @@
 use crate::proto::wallguard::{ConfigStatus, DeviceStatus};
 
-pub fn map_status_value_to_enum(status: String) -> DeviceStatus {
+pub fn map_status_value_to_enum(status: &str) -> DeviceStatus {
     let lowercase: String = status.to_lowercase();
 
     if lowercase.starts_with("draft") {

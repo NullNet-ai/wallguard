@@ -86,6 +86,15 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
+    pub async fn handle_logs(&mut self, message: Logs) -> Result<CommonResponse, String> {
+        self.client
+            .handle_logs(Request::new(message))
+            .await
+            .map(tonic::Response::into_inner)
+            .map_err(|e| e.to_string())
+    }
+
+    #[allow(clippy::missing_errors_doc)]
     pub async fn setup_client(&mut self, request: SetupRequest) -> Result<CommonResponse, String> {
         self.client
             .setup(Request::new(request))

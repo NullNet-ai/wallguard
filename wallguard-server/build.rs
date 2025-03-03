@@ -13,6 +13,10 @@ fn main() {
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
+            "wallguard.Log",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
             "wallguard.Authentication",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )

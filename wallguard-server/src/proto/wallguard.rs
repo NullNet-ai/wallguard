@@ -88,6 +88,23 @@ pub struct ConfigSnapshot {
     #[prost(enumeration = "ConfigStatus", tag = "3")]
     pub status: i32,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Logs {
+    #[prost(message, optional, tag = "1")]
+    pub auth: ::core::option::Option<Authentication>,
+    #[prost(message, repeated, tag = "3")]
+    pub logs: ::prost::alloc::vec::Vec<Log>,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Log {
+    #[prost(string, tag = "1")]
+    pub timestamp: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub level: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub message: ::prost::alloc::string::String,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum DeviceStatus {
@@ -370,6 +387,27 @@ pub mod wall_guard_client {
                 .insert(GrpcMethod::new("wallguard.WallGuard", "HandleConfig"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn handle_logs(
+            &mut self,
+            request: impl tonic::IntoRequest<super::Logs>,
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/wallguard.WallGuard/HandleLogs",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("wallguard.WallGuard", "HandleLogs"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -411,6 +449,10 @@ pub mod wall_guard_server {
         async fn handle_config(
             &self,
             request: tonic::Request<super::ConfigSnapshot>,
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
+        async fn handle_logs(
+            &self,
+            request: tonic::Request<super::Logs>,
         ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
     }
     #[derive(Debug)]
@@ -734,6 +776,49 @@ pub mod wall_guard_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = HandleConfigSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/wallguard.WallGuard/HandleLogs" => {
+                    #[allow(non_camel_case_types)]
+                    struct HandleLogsSvc<T: WallGuard>(pub Arc<T>);
+                    impl<T: WallGuard> tonic::server::UnaryService<super::Logs>
+                    for HandleLogsSvc<T> {
+                        type Response = super::CommonResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::Logs>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WallGuard>::handle_logs(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = HandleLogsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
