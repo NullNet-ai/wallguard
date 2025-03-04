@@ -12,10 +12,10 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    let datastore_logger_config =
-        nullnet_liblogging::DatastoreConfig::new("account_id", "account_secret", ADDR, PORT);
-    let logger_config =
-        nullnet_liblogging::LoggerConfig::new(true, true, Some(datastore_logger_config), vec![]);
+    // disable logging to datastore until we have an account for authenticating server to log
+    // let datastore_logger_config =
+    //     nullnet_liblogging::DatastoreConfig::new("account_id", "account_secret", ADDR, PORT);
+    let logger_config = nullnet_liblogging::LoggerConfig::new(true, true, None, vec![]);
     nullnet_liblogging::Logger::init(logger_config);
 
     let datastore = DatastoreWrapper::new()
