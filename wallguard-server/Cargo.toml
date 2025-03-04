@@ -29,7 +29,7 @@ strip = true
 [dependencies]
 nullnet-libdatastore = "0.3.0"
 nullnet-libtoken = "0.1.0"
-nullnet-libfireparse = "0.2.3"
+nullnet-libfireparse = "0.3.0"
 etherparse = "0.17.0"
 tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
 prost = "0.13.4"

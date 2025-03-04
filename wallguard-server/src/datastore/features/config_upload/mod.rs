@@ -1,3 +1,5 @@
+mod insert_iface_result;
+mod insert_interfaces;
 mod latest_config_info;
 mod utils;
 
@@ -157,15 +159,11 @@ impl DatastoreWrapper {
                 "device_alias_status",
                 Some(&status),
             ),
-            Self::internal_cu_insert_related_records(
+            Self::internal_cu_insert_interfaces(
                 client.clone(),
                 token,
-                "device_interfaces",
-                "IF",
                 &config.interfaces,
-                &config_id,
-                "",
-                None,
+                &config_id
             )
         );
 
