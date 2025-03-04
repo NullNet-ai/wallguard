@@ -1,6 +1,5 @@
 #![allow(clippy::module_name_repetitions)]
 
-use crate::grpc_server::{ADDR, PORT};
 use datastore::DatastoreWrapper;
 
 mod datastore;
