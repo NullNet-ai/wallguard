@@ -11,7 +11,7 @@ use crate::packet_transmitter::transmitter::transmit_packets;
 use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
-use libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");

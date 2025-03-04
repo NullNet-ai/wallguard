@@ -1,4 +1,4 @@
-use libwallguard::Packet;
+use nullnet_libwallguard::Packet;
 use std::ops::RangeTo;
 
 pub(crate) struct PacketBuffer {

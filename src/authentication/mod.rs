@@ -29,7 +29,7 @@ impl AuthHandler {
     pub async fn obtain_token_safe(&self) -> Result<String, String> {
         let mut token = self.token.lock().await;
 
-        if token.as_ref().map_or(true, TokenWrapper::is_expired) {
+        if token.as_ref().is_none_or(TokenWrapper::is_expired) {
             let new_token = request_impl(
                 &self.server_addr,
                 self.server_port,

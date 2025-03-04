@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
+use nullnet_libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
 
 use crate::authentication::AuthHandler;
 use crate::cli::Args;

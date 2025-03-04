@@ -1,5 +1,5 @@
 use super::token_wrapper::TokenWrapper;
-use libwallguard::WallGuardGrpcInterface;
+use nullnet_libwallguard::WallGuardGrpcInterface;
 
 pub async fn request_impl(
     addr: &str,

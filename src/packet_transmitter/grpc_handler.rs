@@ -1,7 +1,7 @@
 use crate::authentication::AuthHandler;
 use crate::constants::BATCH_SIZE;
 use crate::packet_transmitter::dump_dir::DumpDir;
-use libwallguard::{Authentication, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Authentication, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::fs;

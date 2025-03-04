@@ -1,7 +1,7 @@
-use libwallguard::{
+use nullnet_libconfmon::{Snapshot, State};
+use nullnet_libwallguard::{
     Authentication, ConfigSnapshot, ConfigStatus, FileSnapshot, WallGuardGrpcInterface,
 };
-use nullnet_libconfmon::{Snapshot, State};
 
 pub async fn request_impl(
     addr: &str,

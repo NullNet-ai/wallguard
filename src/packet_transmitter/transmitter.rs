@@ -5,7 +5,7 @@ use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use crate::timer::Timer;
-use libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::Mutex;

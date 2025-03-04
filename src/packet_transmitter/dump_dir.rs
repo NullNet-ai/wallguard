@@ -1,5 +1,5 @@
 use crate::constants::DUMP_DIR;
-use libwallguard::{Packet, Packets};
+use nullnet_libwallguard::{Packet, Packets};
 use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use tokio::fs;

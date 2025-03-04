@@ -1122,6 +1122,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-libwallguard"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6019907be21aeccfa048822d0dcc787286c8554c0eafcc7ef04840631702b633"
+dependencies = [
+ "log",
+ "prost",
+ "serde",
+ "tokio",
+ "tonic",
+]
+
+[[package]]
 name = "nullnet-traffic-monitor"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2125,8 +2138,8 @@ dependencies = [
  "nullnet-libconfmon",
  "nullnet-liblogging 0.2.0",
  "nullnet-libtoken",
+ "nullnet-libwallguard",
  "nullnet-traffic-monitor",
- "nullnet-wallguard-server",
  "once_cell",
  "sysinfo",
  "tokio",
