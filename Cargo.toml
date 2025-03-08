@@ -25,3 +25,7 @@ clap = { version = "4.5.26", features = ["derive"] }
 bincode = "1.3.3"
 sysinfo = { version = "0.33.1", default-features = false, features = ["disk"] }
 log = "0.4.25"
+warp = "0.3.7"
+portable-pty = "0.9.0"
+nullnet-liberror = "0.1.1"
+futures-util = "0.3.31"
