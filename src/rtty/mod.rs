@@ -27,7 +27,7 @@ impl TTYServer {
 
     pub async fn start(&mut self) -> Result<(), Error> {
         if self.handle.is_none() {
-            let platform = self.platform.clone();
+            let platform = self.platform;
             let server = HttpServer::new(move || {
                 App::new()
                     .app_data(web::Data::new(platform))
@@ -56,7 +56,7 @@ async fn websocket_handler(
     stream: web::Payload,
     platform: web::Data<Platform>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let session = Session::new(platform.get_ref().clone())
+    let session = Session::new(*platform.get_ref())
         .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_str().to_string()))?;
     let response = ws::start(session, &request, stream)?;
     Ok(response)

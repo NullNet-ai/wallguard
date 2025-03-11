@@ -25,7 +25,7 @@ impl Pty {
 
         let _ = pty
             .slave
-            .spawn_command(CommandBuilder::new(pty_program(&platform)))
+            .spawn_command(CommandBuilder::new(pty_program(platform)))
             .handle_err(location!())?;
 
         let reader = pty.master.try_clone_reader().handle_err(location!())?;

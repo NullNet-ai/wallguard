@@ -46,20 +46,16 @@ impl Actor for Session {
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
     fn handle(&mut self, message: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        match message {
-            Ok(ws::Message::Text(text)) => {
-                if let Ok(mut lock) = self.pty.writer.lock() {
-                    let _ = lock.write(text.as_bytes());
-                    p
-                } else {
-                    let reason = CloseReason {
-                        code: CloseCode::Error,
-                        description: Some("Failed to write message to pty".to_string()),
-                    };
-                    ctx.close(Some(reason));
-                }
+        if let Ok(ws::Message::Text(text)) = message {
+            if let Ok(mut lock) = self.pty.writer.lock() {
+                let _ = lock.write(text.as_bytes());
+            } else {
+                let reason = CloseReason {
+                    code: CloseCode::Error,
+                    description: Some("Failed to write message to pty".to_string()),
+                };
+                ctx.close(Some(reason));
             }
-            _ => (),
         }
     }
 }
