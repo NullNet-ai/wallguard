@@ -7,8 +7,8 @@ mod endpoints;
 mod request_log;
 mod server;
 
-const ADDR: &str = "0.0.0.0";
-const PORT: u16 = 50051;
+pub(crate) const ADDR: &str = "0.0.0.0";
+pub(crate) const PORT: u16 = 50051;
 
 pub async fn run_grpc_server(datastore: DatastoreWrapper) {
     let addr = format!("{ADDR}:{PORT}")

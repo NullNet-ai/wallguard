@@ -32,7 +32,7 @@ impl WallGuardGrpcInterface {
             .connect()
             .await
         else {
-            println!("Failed to connect to the server. Retrying in 10 seconds...");
+            log::warn!("Failed to connect to the server. Retrying in 10 seconds...");
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
         };
@@ -80,6 +80,15 @@ impl WallGuardGrpcInterface {
     ) -> Result<CommonResponse, String> {
         self.client
             .handle_config(Request::new(message))
+            .await
+            .map(tonic::Response::into_inner)
+            .map_err(|e| e.to_string())
+    }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn handle_logs(&mut self, message: Logs) -> Result<CommonResponse, String> {
+        self.client
+            .handle_logs(Request::new(message))
             .await
             .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())

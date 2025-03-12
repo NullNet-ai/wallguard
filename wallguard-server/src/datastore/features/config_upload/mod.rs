@@ -103,7 +103,7 @@ impl DatastoreWrapper {
                 ],
                 advance_filters: vec![AdvanceFilter {
                     field: String::from("device_id"),
-                    values: format!("[\"{}\"]", device_id),
+                    values: format!("[\"{device_id}\"]"),
                     r#type: String::from("criteria"),
                     operator: String::from("equal"),
                     entity: String::from("device_configurations"),
@@ -124,7 +124,7 @@ impl DatastoreWrapper {
         };
 
         let response = client.get_by_filter(request, token).await?;
-        LatestConfigInfo::from_response_data(response)
+        LatestConfigInfo::from_response_data(&response)
     }
 
     async fn internal_cu_parse_and_insert_new_config(
@@ -267,7 +267,7 @@ impl DatastoreWrapper {
                 table: String::from("device_configurations"),
             }),
             query: Some(Query {
-                pluck: String::from(""),
+                pluck: String::new(),
                 durability: String::from("hard"),
             }),
             body: json!({
@@ -300,7 +300,7 @@ impl DatastoreWrapper {
             body: Some(BatchUpdateBody {
                 advance_filters: vec![AdvanceFilter {
                     field: String::from("device_configuration_id"),
-                    values: format!("[\"{}\"]", config_id),
+                    values: format!("[\"{config_id}\"]"),
                     r#type: String::from("criteria"),
                     operator: String::from("equal"),
                     entity: String::from(table),

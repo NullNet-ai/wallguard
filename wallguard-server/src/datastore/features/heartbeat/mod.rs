@@ -71,6 +71,6 @@ impl DatastoreWrapper {
         };
 
         let response = client.get_by_id(request, token).await?;
-        LatestDeviceInfo::from_response_data(response)
+        LatestDeviceInfo::from_response_data(&response)
     }
 }

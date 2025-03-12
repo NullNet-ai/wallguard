@@ -3,6 +3,7 @@ use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource};
+use nullnet_liberror::{location, ErrorHandler, Location};
 use nullnet_libtoken::Token;
 
 use super::{
@@ -51,7 +52,7 @@ fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders>
         0 | 108 => from_null(packet),
         _ => LaxPacketHeaders::from_ethernet(packet).map_err(LaxHeaderSliceError::Len),
     }
-    .map_err(|e| eprintln!("Error parsing packet headers: {e:?}"))
+    .handle_err(location!())
     .ok()
 }
 

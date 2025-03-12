@@ -931,9 +931,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libfireparse"
-version = "0.3.0"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4dfbb8eccc5590ace33f6c9dee0da95fd68913785679b524bc80e8f7878ec27d"
+checksum = "91d9ca57591425bd97da3626c0019836f3d72cb215266b09d0a530be157b3684"
 dependencies = [
  "base64",
  "nullnet-libconfmon",
@@ -954,6 +954,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-liblogging"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08c7b4833815143e0851be05248090204e5b976180ab295fa6548a250c469292"
+dependencies = [
+ "chrono",
+ "log",
+ "nullnet-liberror",
+ "nullnet-libtoken",
+ "nullnet-wallguard-server",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "syslog",
+ "tokio",
+]
+
+[[package]]
 name = "nullnet-libtoken"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -966,7 +984,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-wallguard-server"
-version = "0.2.1"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "736a385f5e9b456653b7eac7cf811391e64336285b2f45b4ed6779d77e4a687a"
 dependencies = [
  "async-channel",
  "axum 0.8.1",
@@ -979,7 +999,7 @@ dependencies = [
  "nullnet-libdatastore",
  "nullnet-liberror",
  "nullnet-libfireparse",
- "nullnet-liblogging",
+ "nullnet-liblogging 0.1.2",
  "nullnet-libtoken",
  "once_cell",
  "prost",
@@ -1891,6 +1911,32 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
+
+[[package]]
+name = "wallguard-server"
+version = "0.2.3"
+dependencies = [
+ "async-channel",
+ "axum 0.8.1",
+ "chrono",
+ "etherparse",
+ "futures",
+ "if-addrs",
+ "log",
+ "md5",
+ "nullnet-libdatastore",
+ "nullnet-liberror",
+ "nullnet-libfireparse",
+ "nullnet-liblogging 0.2.0",
+ "nullnet-libtoken",
+ "once_cell",
+ "prost",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tonic-build",
+]
 
 [[package]]
 name = "want"

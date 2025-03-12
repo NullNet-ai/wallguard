@@ -9,6 +9,7 @@ service WallGuard {
   rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
   rpc HandlePackets (Packets) returns (CommonResponse);
   rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
+  rpc HandleLogs (Logs) returns (CommonResponse);
 }
 
 message LoginRequest {
@@ -85,4 +86,15 @@ message ConfigSnapshot {
   Authentication auth = 1;
   repeated FileSnapshot files = 2;
   ConfigStatus status = 3;
+}
+
+message Logs {
+  Authentication auth = 1;
+  repeated Log logs = 3;
+}
+
+message Log {
+  string timestamp = 1;
+  string level = 2;
+  string message = 3;
 }
