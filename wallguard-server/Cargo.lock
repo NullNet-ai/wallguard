@@ -942,6 +942,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-libfireparse"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dfbb8eccc5590ace33f6c9dee0da95fd68913785679b524bc80e8f7878ec27d"
+dependencies = [
+ "base64",
+ "nullnet-libconfmon",
+ "roxmltree",
+ "serde",
+]
+
+[[package]]
 name = "nullnet-liblogging"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -998,7 +1010,7 @@ dependencies = [
  "md5",
  "nullnet-libdatastore",
  "nullnet-liberror",
- "nullnet-libfireparse",
+ "nullnet-libfireparse 0.2.3",
  "nullnet-liblogging 0.1.2",
  "nullnet-libtoken",
  "once_cell",
@@ -1926,7 +1938,7 @@ dependencies = [
  "md5",
  "nullnet-libdatastore",
  "nullnet-liberror",
- "nullnet-libfireparse",
+ "nullnet-libfireparse 0.3.0",
  "nullnet-liblogging 0.2.0",
  "nullnet-libtoken",
  "once_cell",
