@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use datastore::DatastoreWrapper;
+use tokio::signal;
 use tunnel::run_tunnel_server;
 
 mod datastore;
@@ -11,7 +12,7 @@ mod proto;
 mod tunnel;
 mod utils;
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() {
     // disable logging to datastore until we have an account for authenticating server to log
     // let datastore_logger_config =
@@ -25,9 +26,9 @@ async fn main() {
         .await
         .expect("Failed to connect to the datastore");
 
-
-    tokio::join!(
-        grpc_server::run_grpc_server(datastore, tunnel.clone()),
-        http_server::run_http_server(tunnel)
-    );
+    tokio::select! {
+        _ = grpc_server::run_grpc_server(datastore, tunnel.clone()) => {},
+        _ = http_server::run_http_server(tunnel) => {},
+        _ = signal::ctrl_c() => {}
+    };
 }

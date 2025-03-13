@@ -40,6 +40,8 @@ futures = "0.3.31"
 axum = "0.8.1"
 if-addrs = "0.13.3"
 log = "0.4.26"
+actix-web = "4.10.2"
+uuid = { version = "1.15.1", features = [ "v4" ] } 
 
 [build-dependencies]
 tonic-build = "0.12.3"
