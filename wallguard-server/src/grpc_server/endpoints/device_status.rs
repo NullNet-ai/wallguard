@@ -15,6 +15,7 @@ impl WallGuardImpl {
         let (jwt_token, token_info) = Self::authenticate(status_request.auth)?;
 
         let status = self
+            .context
             .datastore
             .device_status(token_info.account.device.id, &jwt_token)
             .await?;

@@ -1,9 +1,6 @@
+use crate::{app_context::AppContext, tunnel::ProfileEx};
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-
-use crate::tunnel::ProfileEx;
-
-use super::state::State;
 
 #[derive(Deserialize)]
 pub struct RequestPayload {
@@ -17,16 +14,14 @@ pub struct ResponsePayload {
 }
 
 pub async fn remote_access_request(
-    state: web::Data<State>,
+    context: web::Data<AppContext>,
     body: web::Json<RequestPayload>,
 ) -> impl Responder {
     // @TODO:
     // - Check if profile already exists
     // - Authorization
-    // - Save session to the database 
+    // - Save session to the database
     // - Implement session timeout
-    
-    let tunnel = state.tunnel.clone();
 
     let Ok(profile) = ProfileEx::new(&body.device_id, &body.ra_type).await else {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
@@ -34,7 +29,7 @@ pub async fn remote_access_request(
 
     let port = profile.visitor_port();
 
-    if let Err(_) = tunnel.lock().await.add_profile(profile).await {
+    if let Err(_) = context.tunnel.lock().await.add_profile(profile).await {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     }
 

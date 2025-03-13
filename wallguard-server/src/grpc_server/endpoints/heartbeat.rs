@@ -16,6 +16,7 @@ impl WallGuardImpl {
         let (jwt_token, token_info) = Self::authenticate(heartbeat_request.auth)?;
 
         let device_info = self
+            .context
             .datastore
             .heartbeat(&jwt_token, token_info.account.device.id)
             .await?;

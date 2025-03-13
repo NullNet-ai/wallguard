@@ -32,6 +32,7 @@ impl WallGuardImpl {
             .handle_err(location!())?;
 
         let config_id = &self
+            .context
             .datastore
             .config_upload(
                 &jwt_token,

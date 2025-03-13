@@ -8,7 +8,9 @@ pub fn generate_uuid_str() -> String {
 }
 
 pub async fn generate_addr() -> Result<SocketAddr, Error> {
-    let listener = TcpListener::bind("0.0.0.0:0").await.handle_err(location!())?;
+    let listener = TcpListener::bind("0.0.0.0:0")
+        .await
+        .handle_err(location!())?;
     let addr = listener.local_addr().handle_err(location!())?;
     Ok(addr)
 }

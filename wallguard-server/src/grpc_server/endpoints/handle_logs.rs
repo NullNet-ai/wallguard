@@ -11,7 +11,11 @@ impl WallGuardImpl {
         let logs = request.into_inner();
         let (jwt_token, _) = Self::authenticate(logs.auth.clone())?;
 
-        let _ = self.datastore.logs_insert(&jwt_token, logs.logs).await?;
+        let _ = self
+            .context
+            .datastore
+            .logs_insert(&jwt_token, logs.logs)
+            .await?;
 
         Ok(Response::new(CommonResponse {
             message: String::from("Logs successfully inserted"),

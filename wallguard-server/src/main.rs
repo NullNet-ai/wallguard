@@ -1,9 +1,9 @@
 #![allow(clippy::module_name_repetitions)]
 
-use datastore::DatastoreWrapper;
+use app_context::AppContext;
 use tokio::signal;
-use tunnel::run_tunnel_server;
 
+mod app_context;
 mod datastore;
 mod grpc_server;
 mod http_server;
@@ -20,15 +20,16 @@ async fn main() {
     let logger_config = nullnet_liblogging::LoggerConfig::new(true, true, None, vec![]);
     nullnet_liblogging::Logger::init(logger_config);
 
-    let tunnel = run_tunnel_server();
-
-    let datastore = DatastoreWrapper::new()
+    let app_context = AppContext::new()
         .await
-        .expect("Failed to connect to the datastore");
+        .expect("Failed to initialize AppContext");
+
+    // Spawns a worker and returns
+    app_context.launch_tunnel().await;
 
     tokio::select! {
-        _ = grpc_server::run_grpc_server(datastore, tunnel.clone()) => {},
-        _ = http_server::run_http_server(tunnel) => {},
+        _ = grpc_server::run_grpc_server(app_context.clone()) => {},
+        _ = http_server::run_http_server(app_context) => {},
         _ = signal::ctrl_c() => {}
     };
 }

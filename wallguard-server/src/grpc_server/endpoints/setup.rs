@@ -20,6 +20,7 @@ impl WallGuardImpl {
         let (jwt_token, token_info) = Self::authenticate(setup_request.auth)?;
 
         let _ = self
+            .context
             .datastore
             .device_setup(
                 &jwt_token,

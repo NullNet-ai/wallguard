@@ -1,26 +1,24 @@
+mod config;
 mod profile_ex;
 mod ra_type;
 mod utils;
 
+use config::Config;
 use nullnet_liberror::Error;
 use nullnet_libtunnel::Server;
 pub use profile_ex::ProfileEx;
 use std::collections::HashMap;
-use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::Mutex;
 
-// @TODO:
-// - Implement a timeout
 pub struct TunnelServer {
     inner: Arc<Server>,
     profiles: HashMap<String, ProfileEx>,
 }
 
 impl TunnelServer {
-    pub fn new(addr: SocketAddr, heartbeat: Option<Duration>) -> Self {
-        let inner = Server::new(addr, heartbeat);
+    pub fn new() -> Self {
+        let config = Config::from_env();
+        let inner = Server::new(config.addr, config.heartbeat_interval);
         let profiles = HashMap::new();
         Self {
             inner: Arc::new(inner),
@@ -46,16 +44,4 @@ impl TunnelServer {
             }
         });
     }
-}
-
-pub(crate) const ADDR: &str = "0.0.0.0";
-pub(crate) const PORT: u16 = 2704;
-
-pub fn run_tunnel_server() -> Arc<Mutex<TunnelServer>> {
-    let addr = format!("{}:{}", ADDR, PORT).parse().unwrap();
-    let server = TunnelServer::new(addr, None);
-
-    server.run();
-
-    Arc::new(Mutex::new(server))
 }

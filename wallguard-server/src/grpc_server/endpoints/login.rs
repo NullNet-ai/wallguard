@@ -14,6 +14,7 @@ impl WallGuardImpl {
         let login_request = request.into_inner();
 
         let token = self
+            .context
             .datastore
             .login(login_request.app_id, login_request.app_secret)
             .await?;

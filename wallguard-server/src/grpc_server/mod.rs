@@ -1,10 +1,6 @@
-use crate::{
-    datastore::DatastoreWrapper, proto::wallguard::wall_guard_server::WallGuardServer,
-    tunnel::TunnelServer,
-};
+use crate::{app_context::AppContext, proto::wallguard::wall_guard_server::WallGuardServer};
 use server::WallGuardImpl;
-use std::{net::ToSocketAddrs, sync::Arc};
-use tokio::sync::Mutex;
+use std::net::ToSocketAddrs;
 use tonic::transport::Server;
 
 mod endpoints;
@@ -14,7 +10,7 @@ mod server;
 pub(crate) const ADDR: &str = "0.0.0.0";
 pub(crate) const PORT: u16 = 50051;
 
-pub async fn run_grpc_server(datastore: DatastoreWrapper, tunnel: Arc<Mutex<TunnelServer>>) {
+pub async fn run_grpc_server(context: AppContext) {
     let addr = format!("{ADDR}:{PORT}")
         .to_socket_addrs()
         .expect("Failed to resolve address")
@@ -30,7 +26,7 @@ pub async fn run_grpc_server(datastore: DatastoreWrapper, tunnel: Arc<Mutex<Tunn
         // .tls_config(ServerTlsConfig::new().identity(identity))
         // .expect("Failed to set up TLS")
         .add_service(
-            WallGuardServer::new(WallGuardImpl { datastore, tunnel })
+            WallGuardServer::new(WallGuardImpl { context })
                 .max_decoding_message_size(50 * 1024 * 1024),
         )
         .serve(addr)

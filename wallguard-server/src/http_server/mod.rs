@@ -1,18 +1,15 @@
 mod remote_access_request;
-mod state;
 
-use crate::tunnel::TunnelServer;
+use crate::app_context::AppContext;
 use actix_web::{web, App, HttpServer};
 use remote_access_request::remote_access_request;
-use state::State;
-use std::{net::TcpListener, sync::Arc};
-use tokio::sync::Mutex;
+use std::net::TcpListener;
 
 const ADDR: &str = "0.0.0.0";
 const PORT: u16 = 4444;
 
-pub async fn run_http_server(tunnel: Arc<Mutex<TunnelServer>>) {
-    let app_state = web::Data::new(State { tunnel });
+pub async fn run_http_server(context: AppContext) {
+    let app_state = web::Data::new(context);
     let listener =
         TcpListener::bind(format!("{ADDR}:{PORT}")).expect("Failed to bind to HTTP server addr");
 
