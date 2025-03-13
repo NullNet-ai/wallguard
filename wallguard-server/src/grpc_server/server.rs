@@ -1,18 +1,17 @@
 use super::request_log::ServerLogger;
-use crate::{
-    datastore::DatastoreWrapper,
-    proto::wallguard::{
-        wall_guard_server::WallGuard, Authentication, CommonResponse, ConfigSnapshot,
-        HeartbeatRequest, HeartbeatResponse, LoginRequest, Packets, SetupRequest, StatusRequest,
-        StatusResponse,
-    },
+use crate::datastore::DatastoreWrapper;
+use crate::proto::wallguard::{
+    wall_guard_server::WallGuard, Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest,
+    HeartbeatResponse, LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
 };
-
-use crate::proto::wallguard::Logs;
+use crate::tunnel::TunnelServer;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
     pub(crate) datastore: DatastoreWrapper,
+    pub(crate) tunnel: Arc<Mutex<TunnelServer>>,
 }
 
 #[tonic::async_trait]
