@@ -121,7 +121,7 @@ impl WallGuardGrpcInterface {
     pub async fn request_control_channel(
         &mut self,
         token: String,
-    ) -> Result<ControlChannelRequest, String> {
+    ) -> Result<ControlChannelResponse, String> {
         let response = self
             .client
             .request_control_channel(Request::new(ControlChannelRequest {
