@@ -45,6 +45,8 @@ impl DatastoreWrapper {
             let new_digest = digest(&config.raw_content);
 
             if prev_info.digest == new_digest {
+                // We do not update the gui_protocol field because the digest didn't change,
+                // and therefore, the protocol stayed the same.
                 let (r1, r2, r3) = tokio::join!(
                     Self::internal_cu_update_configuration_version(
                         self.inner.clone(),
@@ -134,11 +136,15 @@ impl DatastoreWrapper {
         config: ClientConfiguration,
         status: String,
     ) -> Result<String, Error> {
-        let config_id =
-            Self::internal_cu_create_configuration(client.clone(), token, device_id, &config)
-                .await?;
+        let config_id = Self::internal_cu_create_configuration(
+            client.clone(),
+            token,
+            device_id.clone(),
+            &config,
+        )
+        .await?;
 
-        let (r1, r2, r3) = tokio::join!(
+        let (r1, r2, r3, r4) = tokio::join!(
             Self::internal_cu_insert_related_records(
                 client.clone(),
                 token,
@@ -164,12 +170,19 @@ impl DatastoreWrapper {
                 token,
                 &config.interfaces,
                 &config_id
+            ),
+            Self::internal_update_device_gui_protocol(
+                client,
+                device_id,
+                token,
+                config.gui_protocol
             )
         );
 
         r1?;
         r2?;
         r3?;
+        r4?;
 
         Ok(config_id)
     }
@@ -310,6 +323,32 @@ impl DatastoreWrapper {
         };
 
         let _ = client.batch_update(request, token).await?;
+
+        Ok(())
+    }
+
+    async fn internal_update_device_gui_protocol(
+        mut client: DatastoreClient,
+        device_id: String,
+        token: &str,
+        proto: String,
+    ) -> Result<(), Error> {
+        let request = UpdateRequest {
+            params: Some(Params {
+                id: device_id,
+                table: String::from("devices"),
+            }),
+            query: Some(Query {
+                pluck: String::new(),
+                durability: String::from("soft"),
+            }),
+            body: json!({
+                "device_gui_protocol": proto
+            })
+            .to_string(),
+        };
+
+        let _ = client.update(request, token).await?;
 
         Ok(())
     }
