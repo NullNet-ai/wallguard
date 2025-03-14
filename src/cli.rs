@@ -21,6 +21,9 @@ pub struct Args {
     /// Port of the gRPC server
     #[arg(short, long, default_value_t = 50051)]
     pub port: u16,
+    /// Port of the tunnel server
+    #[arg(long, default_value_t = 9000)]
+    pub tunnel_port: u16,
     /// PCAP snaplen value (bytes)
     #[arg(short, long, default_value_t = 96)]
     pub snaplen: i32,
