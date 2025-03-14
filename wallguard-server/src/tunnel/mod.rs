@@ -37,9 +37,13 @@ impl TunnelServer {
         self.inner.remove_profile(device_id).await
     }
 
+    pub fn get_profile_by_id(&self, id: &str) -> Option<&ProfileEx> {
+        self.profiles.get(id)
+    }
+
     pub fn run(&self) {
         let inner = self.inner.clone();
-        let _ = tokio::spawn(async move {
+        tokio::spawn(async move {
             if let Err(err) = inner.run().await {
                 panic!("Tunnel server crashed with error: {}", err.to_str());
             }

@@ -17,7 +17,7 @@ impl ProfileEx {
     pub async fn new(device_id: &str, ra_type: &str) -> Result<Self, Error> {
         let id = generate_uuid_str();
         let visitor_addr = generate_addr().await?;
-        let ra_type = RAType::from_str(&ra_type)?;
+        let ra_type = RAType::from_str(ra_type)?;
 
         Ok(Self {
             device_id: device_id.to_owned(),
@@ -43,8 +43,8 @@ impl ProfileEx {
     }
 }
 
-impl Into<ClientProfile> for ProfileEx {
-    fn into(self) -> ClientProfile {
-        self.profile
+impl From<ProfileEx> for ClientProfile {
+    fn from(value: ProfileEx) -> Self {
+        value.profile
     }
 }

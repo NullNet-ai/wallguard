@@ -36,11 +36,35 @@ pub async fn remote_access_request(
         return HttpResponse::Unauthorized().body("Malformed token");
     };
 
+    let Ok(feature_enabled) = context
+        .datastore
+        .device_check_if_remote_access_enabled(jwt_token, body.device_id.clone())
+        .await
+    else {
+        return HttpResponse::InternalServerError()
+            .body("Failed to validate if remote access is enabled");
+    };
+
+    if !feature_enabled {
+        return HttpResponse::BadRequest().body("Remote access is disabled for this device");
+    }
+
+    if let Some(profile) = context
+        .tunnel
+        .lock()
+        .await
+        .get_profile_by_id(&body.device_id)
+    {
+        return HttpResponse::Ok().json(ResponsePayload {
+            port: profile.visitor_port(),
+        });
+    }
+
     let Ok(profile) = ProfileEx::new(&body.device_id, &body.ra_type).await else {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     };
 
-    let Ok(_) = context
+    if context
         .datastore
         .device_new_remote_session(
             jwt_token,
@@ -48,16 +72,23 @@ pub async fn remote_access_request(
             profile.remote_access_type(),
         )
         .await
-    else {
+        .is_err()
+    {
         return HttpResponse::InternalServerError().body("Failed to save session info");
     };
 
     let port = profile.visitor_port();
 
-    if let Err(_) = context.tunnel.lock().await.add_profile(profile).await {
+    if context
+        .tunnel
+        .lock()
+        .await
+        .add_profile(profile)
+        .await
+        .is_err()
+    {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     }
 
-    let response = ResponsePayload { port };
-    HttpResponse::Ok().json(response)
+    HttpResponse::Ok().json(ResponsePayload { port })
 }

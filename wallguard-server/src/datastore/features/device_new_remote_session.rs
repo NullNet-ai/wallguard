@@ -1,5 +1,7 @@
-use nullnet_libdatastore::{CreateBody, CreateParams, CreateRequest, Query};
-use nullnet_liberror::Error;
+use nullnet_libdatastore::{
+    CreateBody, CreateParams, CreateRequest, GetByIdRequest, Params, Query,
+};
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use serde_json::json;
 
 use crate::{datastore::DatastoreWrapper, tunnel::RAType};
@@ -32,5 +34,39 @@ impl DatastoreWrapper {
         let _ = self.inner.clone().create(request, token).await?;
 
         Ok(())
+    }
+
+    pub async fn device_check_if_remote_access_enabled(
+        &self,
+        token: &str,
+        device_id: String,
+    ) -> Result<bool, Error> {
+        let request = GetByIdRequest {
+            params: Some(Params {
+                id: device_id,
+                table: String::from("devices"),
+            }),
+            query: Some(Query {
+                pluck: String::from("is_remote_access_enabled"),
+                durability: String::from("hard"),
+            }),
+        };
+
+        let response = self.inner.clone().get_by_id(request, token).await?;
+        let enabled = Self::internal_ra_parse_response_data(&response.data)?;
+
+        Ok(enabled)
+    }
+
+    fn internal_ra_parse_response_data(data: &str) -> Result<bool, Error> {
+        serde_json::from_str::<serde_json::Value>(data)
+            .handle_err(location!())?
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|obj| obj.as_object())
+            .and_then(|map| map.get("is_remote_access_enabled"))
+            .and_then(|v| v.as_bool())
+            .ok_or("Failed to parse response")
+            .handle_err(location!())
     }
 }
