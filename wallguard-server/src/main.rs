@@ -17,7 +17,7 @@ async fn main() {
     // disable logging to datastore until we have an account for authenticating server to log
     // let datastore_logger_config =
     //     nullnet_liblogging::DatastoreConfig::new("account_id", "account_secret", ADDR, PORT);
-    let logger_config = nullnet_liblogging::LoggerConfig::new(true, true, None, vec![]);
+    let logger_config = nullnet_liblogging::LoggerConfig::new(true, false, None, vec![]);
     nullnet_liblogging::Logger::init(logger_config);
 
     let app_context = AppContext::new()
