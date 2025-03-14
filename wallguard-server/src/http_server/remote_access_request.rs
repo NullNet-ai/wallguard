@@ -30,12 +30,8 @@ pub async fn remote_access_request(
         return HttpResponse::Unauthorized().body("Missing Authorization header");
     };
 
-    // Not sure if this is needed. Yes, we can validate that the token is somewhat valid,
-    // but the final decision belongs to the datastore. Maybe we can save some CPU cycles here?
-    let Ok(_) = nullnet_libtoken::Token::from_jwt(jwt_token) else {
-        return HttpResponse::Unauthorized().body("Malformed token");
-    };
-
+    // Checking the device settings also authorizes current request.
+    // While fetching data, datastore validates if the token is valid.
     let Ok(feature_enabled) = context
         .datastore
         .device_check_if_remote_access_enabled(jwt_token, body.device_id.clone())
