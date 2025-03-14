@@ -4,6 +4,7 @@ use crate::proto::wallguard::{
     wall_guard_server::WallGuard, Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest,
     HeartbeatResponse, LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
 };
+use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
@@ -86,6 +87,17 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.device_status_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/status", received_at);
+        result.map_err(|e| Status::internal(format!("{e:?}")))
+    }
+
+    async fn request_control_channel(
+        &self,
+        request: Request<ControlChannelRequest>,
+    ) -> Result<Response<ControlChannelResponse>, Status> {
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.request_control_channel_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/heartbeat", received_at);
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 }

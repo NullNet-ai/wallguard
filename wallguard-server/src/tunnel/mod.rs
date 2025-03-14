@@ -32,7 +32,7 @@ impl TunnelServer {
         self.inner.register_profile(profile.into()).await
     }
 
-    pub async fn remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
+    pub async fn _remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
         self.profiles.remove(device_id);
         self.inner.remove_profile(device_id).await
     }
