@@ -4,6 +4,7 @@ mod config_monitor;
 mod constants;
 mod heartbeat;
 mod packet_transmitter;
+mod remote_access;
 mod rtty;
 mod timer;
 mod utils;
@@ -13,6 +14,7 @@ use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use nullnet_libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
+use tokio::signal;
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
@@ -85,15 +87,15 @@ async fn main() {
             .expect("Failed to initialize configuration monitor");
 
         cfg_monitor.upload_current().await.expect(
-            "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
+            "Failed to capture current configuration and \\ or to upload the snapshot to the server.",
         );
 
         tokio::spawn(async move { cfg_monitor.watch().await });
     }
 
-    let auth_copy = auth.clone();
-    let args_copy = args.clone();
-    tokio::spawn(async move { heartbeat::routine(auth_copy, args_copy).await });
-
-    transmit_packets(args, auth.clone()).await;
+    tokio::select! {
+        _ = transmit_packets(args.clone(), auth.clone()) => {},
+        _ = heartbeat::routine(auth.clone(), args.clone()) => {},
+        _ = signal::ctrl_c() => {}
+    }
 }
