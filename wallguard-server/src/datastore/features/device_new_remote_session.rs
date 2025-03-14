@@ -13,11 +13,11 @@ impl DatastoreWrapper {
     ) -> Result<(), Error> {
         let request = CreateRequest {
             params: Some(CreateParams {
-                table: String::from("devices"),
+                table: String::from("device_remote_access_sessions"),
             }),
             query: Some(Query {
                 pluck: String::new(),
-                durability: String::from("soft"),
+                durability: String::from("hard"),
             }),
             body: Some(CreateBody {
                 record: json!({

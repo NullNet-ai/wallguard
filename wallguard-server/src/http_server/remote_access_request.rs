@@ -30,8 +30,10 @@ pub async fn remote_access_request(
         return HttpResponse::Unauthorized().body("Missing Authorization header");
     };
 
-    let Ok(token) = nullnet_libtoken::Token::from_jwt(jwt_token) else {
-        return HttpResponse::Unauthorized().body("Bad token");
+    // Not sure if this is needed. Yes, we can validate that the token is somewhat valid,
+    // but the final decision belongs to the datastore. Maybe we can save some CPU cycles here?
+    let Ok(_) = nullnet_libtoken::Token::from_jwt(jwt_token) else {
+        return HttpResponse::Unauthorized().body("Malformed token");
     };
 
     let Ok(profile) = ProfileEx::new(&body.device_id, &body.ra_type).await else {
@@ -42,7 +44,7 @@ pub async fn remote_access_request(
         .datastore
         .device_new_remote_session(
             jwt_token,
-            token.account.device.id,
+            body.device_id.clone(),
             profile.remote_access_type(),
         )
         .await
