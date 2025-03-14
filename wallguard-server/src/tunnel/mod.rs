@@ -7,6 +7,7 @@ use config::Config;
 use nullnet_liberror::Error;
 use nullnet_libtunnel::Server;
 pub use profile_ex::ProfileEx;
+pub use ra_type::RAType;
 use std::collections::HashMap;
 use std::sync::Arc;
 

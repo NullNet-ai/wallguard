@@ -1,4 +1,5 @@
 mod config_upload;
+mod device_new_remote_session;
 mod device_setup;
 mod device_status;
 mod heartbeat;
