@@ -24,9 +24,6 @@ async fn main() {
         .await
         .expect("Failed to initialize AppContext");
 
-    // Spawns a worker and returns
-    app_context.launch_tunnel().await;
-
     tokio::select! {
         _ = grpc_server::run_grpc_server(app_context.clone()) => {},
         _ = http_server::run_http_server(app_context) => {},

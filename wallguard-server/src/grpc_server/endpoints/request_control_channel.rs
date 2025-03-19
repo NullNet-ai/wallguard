@@ -19,7 +19,7 @@ impl WallGuardImpl {
 
         let tunnel_lock = self.context.tunnel.lock().await;
 
-        let Some(profile) = tunnel_lock.get_profile_by_id(&device_id) else {
+        let Some(profile) = tunnel_lock.get_profile_by_device_id(&device_id).await else {
             return Err(format!(
                 "No active tunnels opened for device {}",
                 &device_id

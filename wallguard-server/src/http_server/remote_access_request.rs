@@ -1,5 +1,6 @@
-use crate::{app_context::AppContext, tunnel::ProfileEx};
+use crate::{app_context::AppContext, tunnel::ClientProfile};
 use actix_web::{http::header::AUTHORIZATION, web, HttpRequest, HttpResponse, Responder};
+use nullnet_libtunnel::Profile;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -19,7 +20,6 @@ pub async fn remote_access_request(
     body: web::Json<RequestPayload>,
 ) -> impl Responder {
     // @TODO:
-    // - Check if profile already exists
     // - Implement session timeout
 
     let Some(jwt_token) = req
@@ -49,14 +49,15 @@ pub async fn remote_access_request(
         .tunnel
         .lock()
         .await
-        .get_profile_by_id(&body.device_id)
+        .get_profile_by_device_id(&body.device_id)
+        .await
     {
         return HttpResponse::Ok().json(ResponsePayload {
-            port: profile.visitor_port(),
+            port: profile.get_visitor_addr().port(),
         });
     }
 
-    let Ok(profile) = ProfileEx::new(&body.device_id, &body.ra_type).await else {
+    let Ok(profile) = ClientProfile::new(&body.device_id, &body.ra_type).await else {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     };
 
@@ -73,13 +74,13 @@ pub async fn remote_access_request(
         return HttpResponse::InternalServerError().body("Failed to save session info");
     };
 
-    let port = profile.visitor_port();
+    let port = profile.get_visitor_addr().port();
 
     if context
         .tunnel
         .lock()
         .await
-        .add_profile(profile)
+        .insert_profile(profile)
         .await
         .is_err()
     {

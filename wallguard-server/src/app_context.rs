@@ -12,11 +12,9 @@ pub struct AppContext {
 impl AppContext {
     pub async fn new() -> Result<Self, Error> {
         let datastore = DatastoreWrapper::new().await?;
-        let tunnel = Arc::new(Mutex::new(TunnelServer::new()));
-        Ok(Self { datastore, tunnel })
-    }
 
-    pub async fn launch_tunnel(&self) {
-        self.tunnel.lock().await.run()
+        let tunnel = Arc::new(Mutex::new(TunnelServer::new()));
+
+        Ok(Self { datastore, tunnel })
     }
 }

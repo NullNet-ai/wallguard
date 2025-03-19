@@ -1,52 +1,46 @@
+mod client_profile;
 mod config;
-mod profile_ex;
 mod ra_type;
 mod utils;
 
-use config::Config;
-use nullnet_liberror::Error;
-use nullnet_libtunnel::Server;
-pub use profile_ex::ProfileEx;
+pub use client_profile::ClientProfile;
+pub use config::Config;
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_libtunnel::{Profile, Server};
 pub use ra_type::RAType;
 use std::collections::HashMap;
-use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct TunnelServer {
-    inner: Arc<Server>,
-    profiles: HashMap<String, ProfileEx>,
+    inner: Server<ClientProfile>,
+    devices_map: HashMap<String, ClientProfile>,
 }
 
 impl TunnelServer {
     pub fn new() -> Self {
         let config = Config::from_env();
-        let inner = Server::new(config.addr, config.heartbeat_interval);
-        let profiles = HashMap::new();
+        let server = Server::new(config.into());
+
         Self {
-            inner: Arc::new(inner),
-            profiles,
+            inner: server,
+            devices_map: HashMap::new(),
         }
     }
 
-    pub async fn add_profile(&mut self, profile: ProfileEx) -> Result<(), Error> {
-        self.profiles.insert(profile.device_id(), profile.clone());
-        self.inner.register_profile(profile.into()).await
+    pub async fn insert_profile(&mut self, profile: ClientProfile) -> Result<(), Error> {
+        self.devices_map
+            .insert(profile.device_id(), profile.clone());
+        self.inner.insert_profile(profile).await
     }
 
-    pub async fn _remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
-        self.profiles.remove(device_id);
-        self.inner.remove_profile(device_id).await
+    pub async fn remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
+        match self.devices_map.get(device_id) {
+            Some(profile) => self.inner.remove_profile(&profile.get_unique_id()).await,
+            None => Err(format!("Device {} not found", device_id)).handle_err(location!()),
+        }
     }
 
-    pub fn get_profile_by_id(&self, id: &str) -> Option<&ProfileEx> {
-        self.profiles.get(id)
-    }
-
-    pub fn run(&self) {
-        let inner = self.inner.clone();
-        tokio::spawn(async move {
-            if let Err(err) = inner.run().await {
-                panic!("Tunnel server crashed with error: {}", err.to_str());
-            }
-        });
+    pub async fn get_profile_by_device_id(&self, id: &str) -> Option<&ClientProfile> {
+        self.devices_map.get(id)
     }
 }

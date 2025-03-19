@@ -1,10 +1,9 @@
-use nullnet_liberror::Error;
-use tonic::{Request, Response};
-
 use crate::{
     grpc_server::server::WallGuardImpl,
     proto::wallguard::{HeartbeatRequest, HeartbeatResponse},
 };
+use nullnet_liberror::Error;
+use tonic::{Request, Response};
 
 impl WallGuardImpl {
     pub(crate) async fn heartbeat_impl(
@@ -22,7 +21,8 @@ impl WallGuardImpl {
             .tunnel
             .lock()
             .await
-            .get_profile_by_id(&device_id)
+            .get_profile_by_device_id(&device_id)
+            .await
             .is_some();
 
         let device_info = self
