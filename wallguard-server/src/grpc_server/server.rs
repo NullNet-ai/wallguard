@@ -7,12 +7,15 @@ use crate::{
         StatusResponse,
     },
 };
+use std::net::IpAddr;
+use std::sync::mpsc::Sender;
 
 use crate::proto::wallguard::Logs;
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
     pub(crate) datastore: DatastoreWrapper,
+    pub(crate) ip_info_tx: Sender<(IpAddr, IpAddr)>,
 }
 
 #[tonic::async_trait]
