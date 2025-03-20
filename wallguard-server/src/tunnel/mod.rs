@@ -34,7 +34,7 @@ impl TunnelServer {
     }
 
     pub async fn remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
-        match self.devices_map.get(device_id) {
+        match self.devices_map.remove(device_id) {
             Some(profile) => self.inner.remove_profile(&profile.get_unique_id()).await,
             None => Err(format!("Device {} not found", device_id)).handle_err(location!()),
         }
@@ -42,5 +42,18 @@ impl TunnelServer {
 
     pub async fn get_profile_by_device_id(&self, id: &str) -> Option<&ClientProfile> {
         self.devices_map.get(id)
+    }
+
+    pub async fn get_profile_if_online_by_device_id(
+        &self,
+        device_id: &str,
+    ) -> Option<&ClientProfile> {
+        match self.get_profile_by_device_id(device_id).await {
+            Some(profile) => match self.inner.is_profile_online(&profile.get_unique_id()).await {
+                true => Some(profile),
+                false => None,
+            },
+            None => None,
+        }
     }
 }

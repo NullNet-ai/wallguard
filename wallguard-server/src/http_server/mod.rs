@@ -1,11 +1,13 @@
 mod remote_access_request;
+mod remote_access_session;
 mod remote_access_terminate;
 
 use crate::app_context::AppContext;
-use actix_web::{web, App, HttpServer};
+use actix_cors::Cors;
+use actix_web::{http, web, App, HttpServer};
 use remote_access_request::remote_access_request;
+use remote_access_session::remote_access_session;
 use remote_access_terminate::remote_access_terminate;
-
 use std::net::TcpListener;
 
 const ADDR: &str = "0.0.0.0";
@@ -19,15 +21,28 @@ pub async fn run_http_server(context: AppContext) {
     log::info!("HTTP API listening on http://{ADDR}:{PORT}");
 
     HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allowed_methods(vec!["GET", "POST", "DELETE"])
+            .allowed_headers(vec![
+                http::header::CONTENT_TYPE,
+                http::header::AUTHORIZATION,
+            ])
+            .max_age(3600);
         App::new()
             .app_data(app_state.clone())
+            .wrap(cors)
             .route(
                 "/v1/api/remote_access",
                 web::post().to(remote_access_request),
             )
             .route(
                 "/v1/api/remote_access",
-                web::get().to(remote_access_terminate),
+                web::delete().to(remote_access_terminate),
+            )
+            .route(
+                "/v1/api/remote_access",
+                web::get().to(remote_access_session),
             )
     })
     .listen(listener)

@@ -1,7 +1,6 @@
 use crate::{app_context::AppContext, tunnel::ClientProfile};
 use actix_web::{http::header::AUTHORIZATION, web, HttpRequest, HttpResponse, Responder};
-use nullnet_libtunnel::Profile;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct RequestPayload {
@@ -9,11 +8,8 @@ pub struct RequestPayload {
     ra_type: String,
 }
 
-#[derive(Serialize)]
-pub struct ResponsePayload {
-    port: u16,
-}
-
+// Request remote access
+// This request does not open the session, only register a profile for a device
 pub async fn remote_access_request(
     req: HttpRequest,
     context: web::Data<AppContext>,
@@ -45,16 +41,15 @@ pub async fn remote_access_request(
         return HttpResponse::BadRequest().body("Remote access is disabled for this device");
     }
 
-    if let Some(profile) = context
+    if context
         .tunnel
         .lock()
         .await
         .get_profile_by_device_id(&body.device_id)
         .await
+        .is_some()
     {
-        return HttpResponse::Ok().json(ResponsePayload {
-            port: profile.get_visitor_addr().port(),
-        });
+        return HttpResponse::Ok().body("");
     }
 
     let Ok(profile) = ClientProfile::new(&body.device_id, &body.ra_type).await else {
@@ -74,8 +69,6 @@ pub async fn remote_access_request(
         return HttpResponse::InternalServerError().body("Failed to save session info");
     };
 
-    let port = profile.get_visitor_addr().port();
-
     if context
         .tunnel
         .lock()
@@ -87,5 +80,5 @@ pub async fn remote_access_request(
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     }
 
-    HttpResponse::Ok().json(ResponsePayload { port })
+    HttpResponse::Ok().body("")
 }

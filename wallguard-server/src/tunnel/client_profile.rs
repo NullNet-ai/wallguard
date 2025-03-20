@@ -43,7 +43,7 @@ impl ClientProfile {
 
 impl Profile for ClientProfile {
     fn get_unique_id(&self) -> String {
-        todo!()
+        self.id.clone()
     }
 
     fn get_visitor_addr(&self) -> SocketAddr {

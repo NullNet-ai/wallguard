@@ -25,7 +25,7 @@ nullnet-libtoken = "0.1.1"
 nullnet-libfireparse = "0.3.1"
 nullnet-liberror = "0.1.1"
 nullnet-liblogging = "0.2.0"
-nullnet-libtunnel = "0.2.0"
+nullnet-libtunnel = "0.2.1"
 etherparse = "0.17.0"
 tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
 prost = "0.13.5"
@@ -41,6 +41,7 @@ if-addrs = "0.13.3"
 log = "0.4.26"
 actix-web = "4.10.2"
 uuid = { version = "1.15.1", features = [ "v4" ] } 
+actix-cors = "0.7.1"
 
 [build-dependencies]
 tonic-build = "0.12.3"
