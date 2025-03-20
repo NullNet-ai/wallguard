@@ -1,12 +1,13 @@
 use crate::rtty::TTYServer;
 use nullnet_libconfmon::Platform;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libtunnel::{Client, Config};
+use nullnet_libtunnel::{Client, ClientConfig};
 use std::net::SocketAddr;
 use tokio::sync::broadcast;
 
 pub struct RemoteAccessSession {
     shutdown_tx: broadcast::Sender<()>,
+    tunnel: Client,
 }
 
 impl RemoteAccessSession {
@@ -17,18 +18,16 @@ impl RemoteAccessSession {
 
         let rtty = TTYServer::new(rtty_server_addr, platform);
 
-        let tunnel = Client::new(Config {
+        let tunnel = Client::new(ClientConfig {
             id: tunnel_id,
             server_addr,
             local_addr: rtty_server_addr,
             reconnect_timeout: None,
-            heartbeat_timeout: None,
         });
 
         tokio::spawn(Self::run_tty_server(rtty, tx.subscribe()));
-        tokio::spawn(Self::run_tunnel_client(tunnel, tx.subscribe()));
 
-        Self { shutdown_tx: tx }
+        Self { shutdown_tx: tx, tunnel }
     }
 
     pub fn ui(
@@ -45,21 +44,19 @@ impl RemoteAccessSession {
             _ => Err("Unsupported protocol").handle_err(location!())?,
         };
 
-        let tunnel = Client::new(Config {
+        let tunnel = Client::new(ClientConfig {
             id: tunnel_id,
             server_addr,
             local_addr,
             reconnect_timeout: None,
-            heartbeat_timeout: None,
         });
 
-        tokio::spawn(Self::run_tunnel_client(tunnel, tx.subscribe()));
-
-        Ok(Self { shutdown_tx: tx })
+        Ok(Self { shutdown_tx: tx,tunnel })
     }
 
-    pub fn terminate(&self) {
+    pub async fn terminate(self) {
         let _ = self.shutdown_tx.send(());
+        self.tunnel.shutdown().await;
     }
 
     async fn run_tty_server(mut server: TTYServer, mut receiver: broadcast::Receiver<()>) {
@@ -71,12 +68,5 @@ impl RemoteAccessSession {
             Ok(_) => server.stop().await,
             Err(err) => log::error!("Failed to receive termination signal: {err:?}"),
         };
-    }
-
-    async fn run_tunnel_client(mut client: Client, mut receiver: broadcast::Receiver<()>) {
-        tokio::select! {
-            _ = client.run() => {},
-            _ = receiver.recv() => {}
-        }
     }
 }

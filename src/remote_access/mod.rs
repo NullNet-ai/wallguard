@@ -20,7 +20,7 @@ impl RemoteAccessManager {
         }
     }
 
-    pub async fn start_tty_session(&mut self, tunnel_id: String) -> Result<(), Error> {
+    pub async fn start_tty_session(&mut self, tunnel_id: String) -> Result<(), Error> {        
         if self.session.is_some() {
             return Err("Session already in progress").handle_err(location!());
         }
@@ -62,7 +62,7 @@ impl RemoteAccessManager {
 
         match self.session.take() {
             Some(session) => {
-                session.terminate();
+                session.terminate().await;
                 Ok(())
             }
             None => Err("No session in progress").handle_err(location!()),

@@ -4,7 +4,7 @@ use clap::Parser;
 #[derive(Parser, Debug, Clone)]
 pub struct Args {
     /// IP address of the gRPC server
-    #[arg(short, long, default_value = "localhost")]
+    #[arg(short, long, default_value = "127.0.0.1")]
     pub addr: String,
     /// App ID
     #[arg(long = "app_id", default_value = "")]
