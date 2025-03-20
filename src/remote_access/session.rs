@@ -27,7 +27,10 @@ impl RemoteAccessSession {
 
         tokio::spawn(Self::run_tty_server(rtty, tx.subscribe()));
 
-        Self { shutdown_tx: tx, tunnel }
+        Self {
+            shutdown_tx: tx,
+            tunnel,
+        }
     }
 
     pub fn ui(
@@ -51,7 +54,10 @@ impl RemoteAccessSession {
             reconnect_timeout: None,
         });
 
-        Ok(Self { shutdown_tx: tx,tunnel })
+        Ok(Self {
+            shutdown_tx: tx,
+            tunnel,
+        })
     }
 
     pub async fn terminate(self) {

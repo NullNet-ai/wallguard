@@ -14,7 +14,9 @@ fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
     let platform =
         nullnet_libconfmon::Platform::from_string(&args.target).expect("Unsupported platform");
 
-    let server_addr = format!("{}:{}", args.addr, args.tunnel_port).parse().expect("Failed to parse server addr");
+    let server_addr = format!("{}:{}", args.addr, args.tunnel_port)
+        .parse()
+        .expect("Failed to parse server addr");
     RemoteAccessManager::new(platform, server_addr)
 }
 
