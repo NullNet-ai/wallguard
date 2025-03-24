@@ -12,8 +12,8 @@ const IP_INFO_API_KEY: Option<&str> = option_env!("IP_INFO_API_KEY");
 pub fn ip_info_handler(
     rx: Receiver<(IpAddr, IpAddr)>,
     cache_size: usize,
-    rt_handle: Handle,
-    ds: DatastoreWrapper,
+    rt_handle: &Handle,
+    ds: &DatastoreWrapper,
 ) {
     let mut ip_cache = IpCache::new(cache_size);
     for (src_ip, dst_ip) in rx {

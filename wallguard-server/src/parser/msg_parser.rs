@@ -16,7 +16,7 @@ use super::{
 pub fn parse_message(
     message: Packets,
     token: &Token,
-    ip_info_tx: Sender<(IpAddr, IpAddr)>,
+    ip_info_tx: &Sender<(IpAddr, IpAddr)>,
 ) -> ParsedMessage {
     let mut records = Vec::new();
 
