@@ -29,9 +29,13 @@ pub async fn run_grpc_server(args: Args) {
     let datastore = DatastoreWrapper::new()
         .await
         .expect("Failed to connect to the datastore");
+    let datastore_2 = datastore.clone();
 
     let (ip_info_tx, ip_info_rx) = mpsc::channel();
-    thread::spawn(move || ip_info_handler(ip_info_rx, args.ip_info_cache_size));
+    let rt_handle = tokio::runtime::Handle::current();
+    thread::spawn(move || {
+        ip_info_handler(ip_info_rx, args.ip_info_cache_size, rt_handle, datastore_2)
+    });
 
     Server::builder()
         // .tls_config(ServerTlsConfig::new().identity(identity))
