@@ -15,7 +15,7 @@ use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
     pub(crate) datastore: DatastoreWrapper,
-    pub(crate) ip_info_tx: Sender<(IpAddr, IpAddr)>,
+    pub(crate) ip_info_tx: Sender<Option<IpAddr>>,
 }
 
 #[tonic::async_trait]

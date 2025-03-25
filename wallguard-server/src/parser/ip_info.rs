@@ -2,7 +2,7 @@ use crate::datastore::DatastoreWrapper;
 use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
 use indexmap::IndexSet;
 use nullnet_liberror::Error;
-use nullnet_libipinfo::{get_ip_to_lookup, ApiFields, IpInfoHandler, IpInfoProvider};
+use nullnet_libipinfo::{ApiFields, IpInfoHandler, IpInfoProvider};
 use std::net::IpAddr;
 use std::sync::mpsc::Receiver;
 use tokio::runtime::Handle;
@@ -10,22 +10,20 @@ use tokio::runtime::Handle;
 const IP_INFO_API_KEY: Option<&str> = option_env!("IP_INFO_API_KEY");
 
 pub fn ip_info_handler(
-    rx: Receiver<(IpAddr, IpAddr)>,
+    rx: Receiver<Option<IpAddr>>,
     cache_size: usize,
     rt_handle: &Handle,
     ds: &DatastoreWrapper,
 ) {
     let mut ip_cache = IpCache::new(cache_size);
-    for (src_ip, dst_ip) in rx {
-        if let Some(ip) = get_ip_to_lookup(src_ip, dst_ip) {
-            let is_cached = ip_cache.contains(ip);
-            ip_cache.refresh(ip);
-            if !is_cached {
-                let ds = ds.clone();
-                rt_handle.spawn(async move {
-                    get_and_store_ip_info(ip, ds).await.unwrap_or_default();
-                });
-            }
+    for ip in rx.iter().flatten() {
+        let is_cached = ip_cache.contains(ip);
+        ip_cache.refresh(ip);
+        if !is_cached {
+            let ds = ds.clone();
+            rt_handle.spawn(async move {
+                get_and_store_ip_info(ip, ds).await.unwrap_or_default();
+            });
         }
     }
 }

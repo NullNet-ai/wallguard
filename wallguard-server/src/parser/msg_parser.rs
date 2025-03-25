@@ -1,22 +1,22 @@
+use super::{
+    models::{ether::header::EthernetHeader, ip::header::IpHeader},
+    parsed_message::{ParsedMessage, ParsedRecord},
+};
 use crate::parser::models::transport::header::TransportHeader;
 use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource};
 use nullnet_liberror::{location, ErrorHandler, Location};
+use nullnet_libipinfo::get_ip_to_lookup;
 use nullnet_libtoken::Token;
 use std::net::IpAddr;
 use std::sync::mpsc::Sender;
 
-use super::{
-    models::{ether::header::EthernetHeader, ip::header::IpHeader},
-    parsed_message::{ParsedMessage, ParsedRecord},
-};
-
 pub fn parse_message(
     message: Packets,
     token: &Token,
-    ip_info_tx: &Sender<(IpAddr, IpAddr)>,
+    ip_info_tx: &Sender<Option<IpAddr>>,
 ) -> ParsedMessage {
     let mut records = Vec::new();
 
@@ -30,9 +30,10 @@ pub fn parse_message(
             if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
-                    // send addresses to the IP info channel for examination
+                    let remote_ip = get_ip_to_lookup(ip_header.source_ip, ip_header.destination_ip);
+                    // send remote address to the IP info thread for examination
                     ip_info_tx
-                        .send((ip_header.source_ip, ip_header.destination_ip))
+                        .send(remote_ip)
                         .expect("Failed to send addresses to the IP info channel");
                     // calculate total length
                     let total_length = ethernet_header.as_ref().map_or(0, |_| 12)
@@ -45,6 +46,7 @@ pub fn parse_message(
                         total_length,
                         timestamp,
                         ethernet_header,
+                        remote_ip,
                         ip_header,
                         transport_header,
                     });
