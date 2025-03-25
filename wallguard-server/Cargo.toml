@@ -21,7 +21,7 @@ strip = true
 
 [dependencies]
 nullnet-libdatastore = "0.3.0"
-nullnet-libtoken = "0.1.1"
+nullnet-libtoken = "0.2.0"
 nullnet-libfireparse = "0.3.0"
 nullnet-liberror = "0.1.1"
 nullnet-liblogging = "0.2.0"
