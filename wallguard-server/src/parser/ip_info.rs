@@ -10,7 +10,7 @@ use tokio::runtime::Handle;
 const IP_INFO_API_KEY: Option<&str> = option_env!("IP_INFO_API_KEY");
 
 pub fn ip_info_handler(
-    rx: Receiver<Option<IpAddr>>,
+    rx: &Receiver<Option<IpAddr>>,
     cache_size: usize,
     rt_handle: &Handle,
     ds: &DatastoreWrapper,

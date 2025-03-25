@@ -35,7 +35,7 @@ pub async fn run_grpc_server(args: Args) {
     let rt_handle = tokio::runtime::Handle::current();
     thread::spawn(move || {
         ip_info_handler(
-            ip_info_rx,
+            &ip_info_rx,
             args.ip_info_cache_size,
             &rt_handle,
             &datastore_2,
