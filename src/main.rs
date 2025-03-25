@@ -6,7 +6,6 @@ mod heartbeat;
 mod packet_transmitter;
 mod rtty;
 mod timer;
-mod utils;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
 use authentication::AuthHandler;
