@@ -1,5 +1,6 @@
 use crate::parser::models::transport::header::TransportHeader;
 use serde::Serialize;
+use std::net::IpAddr;
 
 use super::models::ether::header::EthernetHeader;
 use super::models::ip::header::IpHeader;
@@ -18,6 +19,8 @@ pub struct ParsedRecord {
     pub total_length: u16,
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub ethernet_header: Option<EthernetHeader>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote_ip: Option<IpAddr>,
     #[serde(flatten)]
     pub ip_header: IpHeader,
     #[serde(flatten)]
@@ -31,8 +34,10 @@ mod tests {
     use crate::parser::models::ip::protocol::IpProtocol;
     use crate::parser::models::transport::tcp::header::TcpHeader;
     use crate::parser::models::transport::udp::header::UdpHeader;
+    use std::net::IpAddr;
+    use std::str::FromStr;
 
-    const ETHERNET_IPV4_TCP_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","timestamp":"2021-08-01T00:00:00Z","total_length":1528,"source_mac":"00:00:00:00:00:00","destination_mac":"ff:ff:ff:ff:ff:ff","ether_type":"ipv4","ip_header_length":0,"payload_length":0,"protocol":"tcp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"tcp_header_length":20,"tcp_sequence_number":177,"tcp_acknowledgment_number":911,"tcp_data_offset":64,"tcp_flags":56,"tcp_window_size":256,"tcp_urgent_pointer":2}"#;
+    const ETHERNET_IPV4_TCP_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","timestamp":"2021-08-01T00:00:00Z","total_length":1528,"source_mac":"00:00:00:00:00:00","destination_mac":"ff:ff:ff:ff:ff:ff","ether_type":"ipv4","remote_ip":"8.8.8.8","ip_header_length":0,"payload_length":0,"protocol":"tcp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"tcp_header_length":20,"tcp_sequence_number":177,"tcp_acknowledgment_number":911,"tcp_data_offset":64,"tcp_flags":56,"tcp_window_size":256,"tcp_urgent_pointer":2}"#;
 
     const IPV4_UDP_JSON: &'static str = r#"{"device_id":"machine-id-5678","interface_name":"eth0","timestamp":"2022-09-01T00:00:00Z","total_length":77,"ip_header_length":40,"payload_length":1472,"protocol":"udp","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":80,"destination_port":50052}"#;
 
@@ -47,12 +52,13 @@ mod tests {
                 destination_mac: "ff:ff:ff:ff:ff:ff".to_string(),
                 ether_type: EtherType::Ipv4,
             }),
+            remote_ip: Some(IpAddr::from_str("8.8.8.8").unwrap()),
             ip_header: IpHeader {
                 ip_header_length: 0,
                 payload_length: 0,
                 protocol: IpProtocol::Tcp,
-                source_ip: "8.8.8.8".to_string(),
-                destination_ip: "9.9.9.9".to_string(),
+                source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
+                destination_ip: IpAddr::from_str("9.9.9.9").unwrap(),
             },
             transport_header: TransportHeader::Tcp(TcpHeader {
                 source_port: 443,
@@ -75,12 +81,13 @@ mod tests {
             timestamp: "2022-09-01T00:00:00Z".to_string(),
             total_length: 77,
             ethernet_header: None,
+            remote_ip: None,
             ip_header: IpHeader {
                 ip_header_length: 40,
                 payload_length: 1472,
                 protocol: IpProtocol::Udp,
-                source_ip: "8.8.8.8".to_string(),
-                destination_ip: "9.9.9.9".to_string(),
+                source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
+                destination_ip: IpAddr::from_str("9.9.9.9").unwrap(),
             },
             transport_header: TransportHeader::Udp(UdpHeader {
                 source_port: 80,

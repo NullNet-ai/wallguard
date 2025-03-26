@@ -2,6 +2,7 @@ mod config_upload;
 mod device_setup;
 mod device_status;
 mod heartbeat;
+mod ip_info;
 mod login;
 mod logs_insert;
 mod packets_insert;

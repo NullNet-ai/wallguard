@@ -1,17 +1,23 @@
+use super::{
+    models::{ether::header::EthernetHeader, ip::header::IpHeader},
+    parsed_message::{ParsedMessage, ParsedRecord},
+};
 use crate::parser::models::transport::header::TransportHeader;
 use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource};
 use nullnet_liberror::{location, ErrorHandler, Location};
+use nullnet_libipinfo::get_ip_to_lookup;
 use nullnet_libtoken::Token;
+use std::net::IpAddr;
+use std::sync::mpsc::Sender;
 
-use super::{
-    models::{ether::header::EthernetHeader, ip::header::IpHeader},
-    parsed_message::{ParsedMessage, ParsedRecord},
-};
-
-pub fn parse_message(message: Packets, token: &Token) -> ParsedMessage {
+pub fn parse_message(
+    message: Packets,
+    token: &Token,
+    ip_info_tx: &Sender<Option<IpAddr>>,
+) -> ParsedMessage {
     let mut records = Vec::new();
 
     for packet in message.packets {
@@ -24,15 +30,23 @@ pub fn parse_message(message: Packets, token: &Token) -> ParsedMessage {
             if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
+                    let remote_ip = get_ip_to_lookup(ip_header.source_ip, ip_header.destination_ip);
+                    // send remote address to the IP info thread for examination
+                    ip_info_tx
+                        .send(remote_ip)
+                        .expect("Failed to send addresses to the IP info channel");
+                    // calculate total length
                     let total_length = ethernet_header.as_ref().map_or(0, |_| 12)
                         + ip_header.ip_header_length as u16
                         + ip_header.payload_length;
+                    // create a parsed record
                     records.push(ParsedRecord {
                         device_id: token.account.device.id.clone(),
                         interface_name,
                         total_length,
                         timestamp,
                         ethernet_header,
+                        remote_ip,
                         ip_header,
                         transport_header,
                     });

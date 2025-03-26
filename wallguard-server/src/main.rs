@@ -1,7 +1,10 @@
 #![allow(clippy::module_name_repetitions)]
 
-use datastore::DatastoreWrapper;
+use crate::grpc_server::{ADDR, PORT};
+use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
+use clap::Parser;
 
+mod cli;
 mod datastore;
 mod grpc_server;
 mod http_server;
@@ -11,18 +14,20 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    // disable logging to datastore until we have an account for authenticating server to log
-    // let datastore_logger_config =
-    //     nullnet_liblogging::DatastoreConfig::new("account_id", "account_secret", ADDR, PORT);
-    let logger_config = nullnet_liblogging::LoggerConfig::new(true, false, None, vec![]);
+    let args = cli::Args::parse();
+
+    let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
+        ACCOUNT_ID.as_str(),
+        ACCOUNT_SECRET.as_str(),
+        ADDR,
+        PORT,
+    );
+    let logger_config =
+        nullnet_liblogging::LoggerConfig::new(true, false, Some(datastore_logger_config), vec![]);
     nullnet_liblogging::Logger::init(logger_config);
 
-    let datastore = DatastoreWrapper::new()
-        .await
-        .expect("Failed to connect to the datastore");
-
     tokio::join!(
-        grpc_server::run_grpc_server(datastore),
+        grpc_server::run_grpc_server(args),
         http_server::run_http_server()
     );
 }
