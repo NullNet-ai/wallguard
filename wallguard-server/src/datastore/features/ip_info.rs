@@ -39,7 +39,6 @@ impl DatastoreWrapper {
             }),
         };
 
-        // todo: verify query
         let result = self.inner.get_by_filter(request, token).await?.count > 0;
 
         Ok(result)
@@ -81,7 +80,6 @@ impl DatastoreWrapper {
             }),
         };
 
-        // todo: verify query
         self.inner.create(request, token).await
     }
 }
