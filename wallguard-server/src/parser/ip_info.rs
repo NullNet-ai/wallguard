@@ -93,7 +93,7 @@ static HANDLER: once_cell::sync::Lazy<IpInfoHandler> = once_cell::sync::Lazy::ne
     #[cfg(debug_assertions)]
     let url = "https://ipapi.co/{ip}/json";
 
-    let api_key = std::env::var("IP_INFO_API_KEY").unwrap_or({
+    let api_key = std::env::var("IP_INFO_API_KEY").unwrap_or_else(|_| {
         log::warn!("IP_INFO_API_KEY environment variable not set");
         String::new()
     });
