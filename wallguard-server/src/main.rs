@@ -16,8 +16,12 @@ mod utils;
 async fn main() {
     let args = cli::Args::parse();
 
-    let datastore_logger_config =
-        nullnet_liblogging::DatastoreConfig::new(*ACCOUNT_ID, *ACCOUNT_SECRET, ADDR, PORT);
+    let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
+        ACCOUNT_ID.as_str(),
+        ACCOUNT_SECRET.as_str(),
+        ADDR,
+        PORT,
+    );
     let logger_config =
         nullnet_liblogging::LoggerConfig::new(true, false, Some(datastore_logger_config), vec![]);
     nullnet_liblogging::Logger::init(logger_config);

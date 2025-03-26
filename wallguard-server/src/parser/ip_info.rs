@@ -10,8 +10,6 @@ use std::sync::Arc;
 use tokio::runtime::Handle;
 use tokio::sync::Mutex;
 
-const IP_INFO_API_KEY: Option<&str> = option_env!("IP_INFO_API_KEY");
-
 pub fn ip_info_handler(
     rx: &Receiver<Option<IpAddr>>,
     cache_size: usize,
@@ -45,7 +43,7 @@ async fn get_and_store_ip_info(
     let mut token = token.lock().await;
     if token.as_ref().is_none_or(Token::is_expired) {
         let new_token = ds
-            .login((*ACCOUNT_ID).to_string(), (*ACCOUNT_SECRET).to_string())
+            .login(ACCOUNT_ID.to_string(), ACCOUNT_SECRET.to_string())
             .await?;
         *token = Some(Token::from_jwt(new_token.as_str()).handle_err(location!())?);
     }
@@ -95,14 +93,14 @@ static HANDLER: once_cell::sync::Lazy<IpInfoHandler> = once_cell::sync::Lazy::ne
     #[cfg(debug_assertions)]
     let url = "https://ipapi.co/{ip}/json";
 
-    let api_key = IP_INFO_API_KEY.unwrap_or({
+    let api_key = std::env::var("IP_INFO_API_KEY").unwrap_or({
         log::warn!("IP_INFO_API_KEY environment variable not set");
-        ""
+        String::new()
     });
 
     IpInfoHandler::new(vec![IpInfoProvider::new_api_provider(
         url,
-        api_key,
+        &api_key,
         ApiFields {
             country: Some("/country"),
             asn: Some("/asn"),
