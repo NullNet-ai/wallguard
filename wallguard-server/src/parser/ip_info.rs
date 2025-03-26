@@ -45,7 +45,7 @@ async fn get_and_store_ip_info(
     let mut token = token.lock().await;
     if token.as_ref().is_none_or(Token::is_expired) {
         let new_token = ds
-            .login(ACCOUNT_ID.to_string(), ACCOUNT_SECRET.to_string())
+            .login((*ACCOUNT_ID).to_string(), (*ACCOUNT_SECRET).to_string())
             .await?;
         *token = Some(Token::from_jwt(new_token.as_str()).handle_err(location!())?);
     }
