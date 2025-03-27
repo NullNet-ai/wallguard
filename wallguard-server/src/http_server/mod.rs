@@ -1,3 +1,4 @@
+mod proxy;
 mod remote_access_request;
 mod remote_access_session;
 mod remote_access_terminate;
@@ -5,6 +6,7 @@ mod remote_access_terminate;
 use crate::app_context::AppContext;
 use actix_cors::Cors;
 use actix_web::{http, web, App, HttpServer};
+use proxy::proxy;
 use remote_access_request::remote_access_request;
 use remote_access_session::remote_access_session;
 use remote_access_terminate::remote_access_terminate;
@@ -44,6 +46,7 @@ pub async fn run_http_server(context: AppContext) {
                 "/v1/api/remote_access",
                 web::get().to(remote_access_session),
             )
+            .default_service(web::to(proxy))
     })
     .listen(listener)
     .unwrap()
