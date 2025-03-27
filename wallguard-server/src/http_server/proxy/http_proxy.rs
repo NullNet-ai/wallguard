@@ -7,7 +7,9 @@ async fn convert_original_request(
     body: actix_web::web::Payload,
     target: SocketAddr,
 ) -> Result<hyper::Request<http_body_util::Full<hyper::body::Bytes>>, actix_web::Error> {
-    let uri: hyper::Uri = format!("http://{}{}", target, request.uri())
+    let uri: hyper::Uri = request
+        .uri()
+        .to_string()
         .parse()
         .map_err(actix_web::error::ErrorInternalServerError)?;
 
@@ -27,6 +29,10 @@ async fn convert_original_request(
     let mut request_builder = hyper::Request::builder().method(method).uri(uri);
 
     for (header_name, header_value) in request.headers() {
+        if header_name.as_str() == "host" {
+            continue;
+        }
+
         if let (Ok(name), Ok(value)) = (
             hyper::header::HeaderName::from_bytes(header_name.as_str().as_bytes()),
             hyper::header::HeaderValue::from_bytes(header_value.as_bytes()),
@@ -35,11 +41,13 @@ async fn convert_original_request(
         }
     }
 
+    request_builder = request_builder.header(hyper::header::HOST, target.to_string());
+
     let bb = hyper::body::Bytes::from(body.to_bytes().await?);
     let body = http_body_util::Full::new(bb);
 
     let request = request_builder
-        .body(body) // Directly use the body as Bytes
+        .body(body)
         .map_err(actix_web::error::ErrorInternalServerError)?;
 
     Ok(request)
@@ -89,20 +97,12 @@ pub async fn proxy_http_request(
         .await
         .map_err(actix_web::error::ErrorServiceUnavailable)?;
 
-    tokio::spawn(async move {
-        log::debug!("HTTP Proxy: Http session started");
-        match conn.await {
-            Ok(_) => log::debug!("HTTP Proxy: Http session completed"),
-            Err(_) => log::error!("HTTP Proxy: Http session failed"),
-        }
-    });
+    tokio::spawn(conn);
 
     let response = sender
         .send_request(request)
         .await
         .map_err(actix_web::error::ErrorServiceUnavailable)?;
-
-        log::debug!("{:?}", &response);
 
     let response = conver_forward_response(response).await?;
 
