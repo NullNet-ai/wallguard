@@ -1,5 +1,8 @@
-mod http_proxy;
+mod http;
+mod websocket;
+
 mod not_found;
+mod ws_proxy;
 
 use actix_web::{web::Payload, HttpRequest, HttpResponse};
 use not_found::NOT_FOUND_HTML;
@@ -22,6 +25,16 @@ pub async fn proxy(request: HttpRequest, body: Payload) -> actix_web::Result<Htt
         return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
     };
 
-    // @TODO: validate session and get the sockaddr from it
-    http_proxy::proxy_http_request(request, body, "192.168.2.52:5000".parse().unwrap()).await
+    let _pfsense = "192.168.2.46:80";
+    let _tty = "192.168.2.52:3030";
+
+    if request
+        .headers()
+        .get(actix_web::http::header::SEC_WEBSOCKET_KEY)
+        .is_some()
+    {
+        websocket::proxy_request(request, body, _tty.parse().unwrap()).await
+    } else {
+        http::proxy_request(request, body, _pfsense.parse().unwrap()).await
+    }
 }
