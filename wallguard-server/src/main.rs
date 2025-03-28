@@ -9,7 +9,7 @@ use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
 use clap::Parser;
 
 mod cli;
-mod datastore; 
+mod datastore;
 mod grpc_server;
 mod http_server;
 mod parser;
@@ -36,7 +36,7 @@ async fn main() {
         .expect("Failed to initialize AppContext");
 
     tokio::select! {
-        _ = grpc_server::run_grpc_server(app_context.clone()) => {},
+        _ = grpc_server::run_grpc_server(app_context.clone(), args) => {},
         _ = http_server::run_http_server(app_context) => {},
         _ = signal::ctrl_c() => {}
     };
