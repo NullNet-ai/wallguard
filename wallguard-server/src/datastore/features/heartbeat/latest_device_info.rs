@@ -1,6 +1,6 @@
 use crate::{datastore::features::utils::map_status_value_to_enum, proto::wallguard::DeviceStatus};
 use nullnet_libdatastore::ResponseData;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 pub struct LatestDeviceInfo {
     pub status: DeviceStatus,

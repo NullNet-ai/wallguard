@@ -1,7 +1,7 @@
 use super::utils::map_status_value_to_enum;
 use crate::{datastore::DatastoreWrapper, proto::wallguard::DeviceStatus};
 use nullnet_libdatastore::{GetByIdRequest, Params, Query};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl DatastoreWrapper {
     pub async fn device_status(

@@ -1,5 +1,5 @@
 use nullnet_libdatastore::ResponseData;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 pub struct LatestConfigInfo {
     pub id: String,

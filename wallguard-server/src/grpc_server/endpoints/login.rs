@@ -1,4 +1,4 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tonic::{Request, Response};
 
 use crate::{

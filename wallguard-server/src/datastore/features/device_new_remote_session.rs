@@ -1,10 +1,9 @@
+use crate::{datastore::DatastoreWrapper, tunnel::RAType};
 use nullnet_libdatastore::{
     CreateBody, CreateParams, CreateRequest, GetByIdRequest, Params, Query,
 };
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde_json::json;
-
-use crate::{datastore::DatastoreWrapper, tunnel::RAType};
 
 impl DatastoreWrapper {
     pub async fn device_new_remote_session(

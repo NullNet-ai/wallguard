@@ -1,6 +1,6 @@
 use crate::parser::models::ip::protocol::IpProtocol;
 use etherparse::NetHeaders;
-use nullnet_liberror::{location, ErrorHandler, Location};
+use nullnet_liberror::{ErrorHandler, Location, location};
 use serde::Serialize;
 use std::net::Ipv4Addr;
 

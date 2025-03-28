@@ -2,9 +2,9 @@ use actix_web_actors::ws::CloseCode as ActixCloseCode;
 use actix_web_actors::ws::CloseReason as ActixCloseReason;
 use actix_web_actors::ws::Message as ActixMessage;
 use std::error::Error;
-use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode as TungsteniteCloseCode;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame as TungsteniteCloseFrame;
-use tokio_tungstenite::tungstenite::{protocol::Message as TungsteniteMessage, Utf8Bytes};
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode as TungsteniteCloseCode;
+use tokio_tungstenite::tungstenite::{Utf8Bytes, protocol::Message as TungsteniteMessage};
 
 pub(super) fn actix_to_tungstenite(
     message: ActixMessage,
@@ -63,7 +63,7 @@ fn actix_close_reason_to_tungstenite_close_frame(
             ActixCloseCode::Extension => TungsteniteCloseCode::Extension,
             ActixCloseCode::Restart => TungsteniteCloseCode::Restart,
             ActixCloseCode::Again => TungsteniteCloseCode::Again,
-            ActixCloseCode::Error | _ => TungsteniteCloseCode::Error,
+            _ => TungsteniteCloseCode::Error,
         },
         reason: r.description.map(|desc| desc.into()).unwrap_or_default(),
     })
@@ -85,7 +85,7 @@ fn tungstenite_close_frame_to_actix_close_reason(
             TungsteniteCloseCode::Extension => ActixCloseCode::Extension,
             TungsteniteCloseCode::Restart => ActixCloseCode::Restart,
             TungsteniteCloseCode::Again => ActixCloseCode::Again,
-            TungsteniteCloseCode::Error | _ => ActixCloseCode::Error,
+            _ => ActixCloseCode::Error,
         },
         description: Some(reason.reason.to_string()),
     })

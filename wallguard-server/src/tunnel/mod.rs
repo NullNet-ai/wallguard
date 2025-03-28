@@ -5,7 +5,7 @@ mod utils;
 
 pub use client_profile::ClientProfile;
 pub use config::Config;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libtunnel::{Profile, Server};
 pub use ra_type::RAType;
 use std::collections::HashMap;
@@ -14,7 +14,11 @@ use std::collections::HashMap;
 pub struct TunnelServer {
     inner: Server<ClientProfile>,
     devices_map: HashMap<String, ClientProfile>,
+    sessions_map: HashMap<String, ClientProfile>,
 }
+
+// @TODO: ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// Unnessesary copies are being created
 
 impl TunnelServer {
     pub fn new() -> Self {
@@ -24,18 +28,25 @@ impl TunnelServer {
         Self {
             inner: server,
             devices_map: HashMap::new(),
+            sessions_map: HashMap::new(),
         }
     }
 
     pub async fn insert_profile(&mut self, profile: ClientProfile) -> Result<(), Error> {
         self.devices_map
             .insert(profile.device_id(), profile.clone());
+        self.sessions_map
+            .insert(profile.public_session_id(), profile.clone());
         self.inner.insert_profile(profile).await
     }
 
     pub async fn remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
+        self.devices_map.remove(device_id);
         match self.devices_map.remove(device_id) {
-            Some(profile) => self.inner.remove_profile(&profile.get_unique_id()).await,
+            Some(profile) => {
+                self.sessions_map.remove(&profile.public_session_id());
+                self.inner.remove_profile(&profile.get_unique_id()).await
+            }
             None => Err(format!("Device {} not found", device_id)).handle_err(location!()),
         }
     }
@@ -49,6 +60,19 @@ impl TunnelServer {
         device_id: &str,
     ) -> Option<&ClientProfile> {
         match self.get_profile_by_device_id(device_id).await {
+            Some(profile) => match self.inner.is_profile_online(&profile.get_unique_id()).await {
+                true => Some(profile),
+                false => None,
+            },
+            None => None,
+        }
+    }
+
+    pub async fn get_profile_if_online_by_public_session_id(
+        &self,
+        session: &str,
+    ) -> Option<&ClientProfile> {
+        match self.sessions_map.get(session) {
             Some(profile) => match self.inner.is_profile_online(&profile.get_unique_id()).await {
                 true => Some(profile),
                 false => None,

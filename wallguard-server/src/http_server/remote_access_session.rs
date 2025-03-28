@@ -1,6 +1,5 @@
 use crate::app_context::AppContext;
-use actix_web::{http::header::AUTHORIZATION, web, HttpRequest, HttpResponse, Responder};
-use nullnet_libtunnel::Profile;
+use actix_web::{HttpRequest, HttpResponse, Responder, http::header::AUTHORIZATION, web};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -20,7 +19,6 @@ pub async fn remote_access_session(
     context: web::Data<AppContext>,
     query: web::Query<QueryParams>,
 ) -> impl Responder {
-    log::warn!("{:?}", query);
     let Some(jwt_token) = req
         .headers()
         .get(AUTHORIZATION)
@@ -49,7 +47,7 @@ pub async fn remote_access_session(
         .await
     {
         Some(profile) => HttpResponse::Ok().json(json!({
-            "port": profile.get_visitor_addr().port(),
+            "session": profile.public_session_id(),
             "type": profile.remote_access_type().to_string()
         })),
         None => HttpResponse::NotFound().json(json!({})),

@@ -1,10 +1,10 @@
-use actix_web::error::ErrorInternalServerError as InternalServerError;
-use actix_web::http::StatusCode as ActixStatus;
 use actix_web::HttpResponse as ActixResponse;
 use actix_web::Result as ActixResult;
+use actix_web::error::ErrorInternalServerError as InternalServerError;
+use actix_web::http::StatusCode as ActixStatus;
 use http_body_util::BodyExt;
-use hyper::body::Incoming as HyperBody;
 use hyper::Response as HyperResponse;
+use hyper::body::Incoming as HyperBody;
 
 pub(super) async fn convert_response(
     mut response: HyperResponse<HyperBody>,

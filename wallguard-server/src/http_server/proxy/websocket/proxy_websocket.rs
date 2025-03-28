@@ -4,14 +4,14 @@ use actix::AsyncContext;
 use actix::StreamHandler;
 use actix_web_actors::ws::Message as ActixWsMessage;
 use actix_web_actors::ws::ProtocolError as ActixWsProtocolError;
-use futures::stream::{SplitSink, SplitStream};
 use futures::StreamExt;
+use futures::stream::{SplitSink, SplitStream};
 use futures_util::SinkExt;
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
-use tokio_tungstenite::tungstenite::Message as TungsteniteMessage;
 use tokio_tungstenite::WebSocketStream;
+use tokio_tungstenite::tungstenite::Message as TungsteniteMessage;
 
 pub(super) struct ProxyWebsocket {
     reader: Arc<Mutex<SplitStream<WebSocketStream<TcpStream>>>>,

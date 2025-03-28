@@ -1,14 +1,14 @@
+use actix_web::HttpRequest as ActixRequest;
+use actix_web::Result as ActixResult;
 use actix_web::error::ErrorInternalServerError as InternalServerError;
 use actix_web::http::Method as ActixMethod;
 use actix_web::web::Payload as ActixBody;
-use actix_web::HttpRequest as ActixRequest;
-use actix_web::Result as ActixResult;
 use http_body_util::Full as BodyWrapper;
+use hyper::Method as HyperMethod;
+use hyper::Request as HyperRequest;
 use hyper::body::Bytes as HyperBody;
 use hyper::header::HeaderName as HyperHeaderName;
 use hyper::header::HeaderValue as HyperHeaderValue;
-use hyper::Method as HyperMethod;
-use hyper::Request as HyperRequest;
 use std::net::SocketAddr;
 
 pub(super) async fn convert_request(
@@ -42,8 +42,7 @@ pub(super) async fn convert_request(
     request_builder = request_builder.header(hyper::header::HOST, target.to_string());
     // @TODO: change origin ? Add X-Forwarded-For ?
 
-    let bbbb = HyperBody::from(body.to_bytes().await?);
-    let body = BodyWrapper::new(bbbb);
+    let body = BodyWrapper::new(body.to_bytes().await?);
 
     let request = request_builder.body(body).map_err(InternalServerError)?;
 

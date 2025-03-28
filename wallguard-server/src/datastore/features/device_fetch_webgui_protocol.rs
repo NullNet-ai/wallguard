@@ -1,7 +1,6 @@
-use nullnet_libdatastore::{GetByIdRequest, Params, Query};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
-
 use crate::datastore::DatastoreWrapper;
+use nullnet_libdatastore::{GetByIdRequest, Params, Query};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl DatastoreWrapper {
     pub async fn device_fetch_webgui_protocol(

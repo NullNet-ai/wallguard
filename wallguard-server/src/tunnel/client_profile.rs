@@ -1,6 +1,6 @@
 use super::{
     ra_type::RAType,
-    utils::{generate_addr, generate_uuid_str},
+    utils::{generate_addr, generate_random_token, generate_uuid_str},
 };
 use nullnet_liberror::Error;
 use nullnet_libtunnel::Profile;
@@ -12,6 +12,8 @@ pub struct ClientProfile {
     visitor_addr: SocketAddr,
     device_id: String,
     ra_type: RAType,
+    visitor_token: String,
+    public_session_id: String,
 }
 
 impl ClientProfile {
@@ -19,12 +21,16 @@ impl ClientProfile {
         let id = generate_uuid_str();
         let visitor_addr = generate_addr().await?;
         let ra_type = RAType::from_str(ra_type)?;
+        let visitor_token = generate_random_token(128);
+        let public_session_id = generate_random_token(32);
 
         Ok(Self {
             id,
             visitor_addr,
             ra_type,
             device_id: device_id.to_owned(),
+            visitor_token,
+            public_session_id,
         })
     }
 
@@ -39,6 +45,10 @@ impl ClientProfile {
     pub fn remote_access_type(&self) -> RAType {
         self.ra_type
     }
+
+    pub fn public_session_id(&self) -> String {
+        self.public_session_id.clone()
+    }
 }
 
 impl Profile for ClientProfile {
@@ -48,5 +58,9 @@ impl Profile for ClientProfile {
 
     fn get_visitor_addr(&self) -> SocketAddr {
         self.visitor_addr
+    }
+
+    fn get_visitor_token(&self) -> Option<String> {
+        Some(self.visitor_token.clone())
     }
 }

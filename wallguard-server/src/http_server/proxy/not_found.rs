@@ -23,6 +23,6 @@ pub const NOT_FOUND_HTML: &str = r#"<!DOCTYPE html>
 </head>
 <body>
     <h1>404</h1>
-    <p>The session you're requesting does not exist.</p>
+    <p>The session you're requesting either does not exist or not online yet.</p>
 </body>
 </html>"#;

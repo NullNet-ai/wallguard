@@ -4,7 +4,6 @@
 use actix::Message as ActixMessage;
 use tokio_tungstenite::tungstenite::Message as TungsteniteMessage;
 
-
 pub(super) struct ProxyMessage {
     pub(super) message: TungsteniteMessage,
 }

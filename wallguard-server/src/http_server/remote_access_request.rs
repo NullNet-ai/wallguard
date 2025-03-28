@@ -1,5 +1,5 @@
 use crate::{app_context::AppContext, tunnel::ClientProfile};
-use actix_web::{http::header::AUTHORIZATION, web, HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse, Responder, http::header::AUTHORIZATION, web};
 use serde::Deserialize;
 
 #[derive(Deserialize)]

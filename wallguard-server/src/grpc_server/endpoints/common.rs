@@ -1,7 +1,6 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libtoken::Token;
-
 use crate::{grpc_server::server::WallGuardImpl, proto::wallguard::Authentication};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_libtoken::Token;
 
 impl WallGuardImpl {
     pub(crate) fn authenticate(auth: Option<Authentication>) -> Result<(String, Token), Error> {

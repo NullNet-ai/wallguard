@@ -3,7 +3,7 @@ use crate::{
     proto::wallguard::{ControlChannelRequest, ControlChannelResponse},
     tunnel::RAType,
 };
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tonic::{Request, Response};
 
 impl WallGuardImpl {

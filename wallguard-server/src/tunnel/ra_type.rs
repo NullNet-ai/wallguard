@@ -1,4 +1,4 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 

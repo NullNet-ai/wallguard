@@ -4,7 +4,7 @@ use nullnet_libdatastore::{
     BatchCreateBody, BatchCreateRequest, CreateBody, CreateParams, CreateRequest, Query,
     ResponseData,
 };
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl DatastoreWrapper {
     pub async fn logs_insert(&self, token: &str, logs: Vec<Log>) -> Result<ResponseData, Error> {

@@ -1,11 +1,15 @@
+mod auth;
 mod http;
+mod not_found;
 mod websocket;
 
-mod not_found;
-mod ws_proxy;
-
-use actix_web::{web::Payload, HttpRequest, HttpResponse};
+use crate::app_context::AppContext;
+use actix_web::{
+    HttpRequest, HttpResponse,
+    web::{Data, Payload},
+};
 use not_found::NOT_FOUND_HTML;
+use nullnet_libtunnel::Profile;
 
 // @TODO:
 // full url replace the pre-defined domain and be left with the session
@@ -20,21 +24,42 @@ fn extract_session_from_request(req: &HttpRequest) -> Option<String> {
         .map(|v| v.to_owned())
 }
 
-pub async fn proxy(request: HttpRequest, body: Payload) -> actix_web::Result<HttpResponse> {
+pub async fn proxy(
+    request: HttpRequest,
+    context: Data<AppContext>,
+    body: Payload,
+) -> actix_web::Result<HttpResponse> {
+    log::debug!("PARENT: BEGIN");
+
     let Some(session) = extract_session_from_request(&request) else {
         return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
     };
 
-    let _pfsense = "192.168.2.46:80";
-    let _tty = "192.168.2.52:3030";
+    log::debug!("PARENT: SESSION FOUND: {}", session);
+
+    let Some(profile) = context
+        .tunnel
+        .lock()
+        .await
+        .get_profile_if_online_by_public_session_id(&session)
+        .await
+        .cloned()
+    else {
+        return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
+    };
+
+    log::debug!("PARENT: PROFILE FOUND: {:?}", profile);
+
+    let target = profile.get_visitor_addr();
+    let vtoken = profile.get_visitor_token();
 
     if request
         .headers()
         .get(actix_web::http::header::SEC_WEBSOCKET_KEY)
         .is_some()
     {
-        websocket::proxy_request(request, body, _tty.parse().unwrap()).await
+        websocket::proxy_request(request, body, target, vtoken).await
     } else {
-        http::proxy_request(request, body, _pfsense.parse().unwrap()).await
+        http::proxy_request(request, body, target, vtoken).await
     }
 }

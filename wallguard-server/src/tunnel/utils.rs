@@ -1,4 +1,5 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use rand::RngCore;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use uuid::Uuid;
@@ -13,4 +14,10 @@ pub async fn generate_addr() -> Result<SocketAddr, Error> {
         .handle_err(location!())?;
     let addr = listener.local_addr().handle_err(location!())?;
     Ok(addr)
+}
+
+pub fn generate_random_token(length: usize) -> String {
+    let mut data = vec![0u8; length / 2];
+    rand::rng().fill_bytes(&mut data);
+    hex::encode(&data)
 }

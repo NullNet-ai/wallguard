@@ -1,8 +1,9 @@
 use super::request_log::ServerLogger;
 use crate::app_context::AppContext;
 use crate::proto::wallguard::{
-    wall_guard_server::WallGuard, Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest,
-    HeartbeatResponse, LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
+    Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse,
+    LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
+    wall_guard_server::WallGuard,
 };
 use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
 use tonic::{Request, Response, Status};
