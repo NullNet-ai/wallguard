@@ -1,15 +1,19 @@
 use super::request_log::ServerLogger;
 use crate::app_context::AppContext;
+use crate::proto::wallguard::Logs;
 use crate::proto::wallguard::{
     Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse,
     LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
     wall_guard_server::WallGuard,
 };
 use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
+use std::net::IpAddr;
+use std::sync::mpsc::Sender;
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
     pub(crate) context: AppContext,
+    pub(crate) ip_info_tx: Sender<Option<IpAddr>>,
 }
 
 #[tonic::async_trait]
@@ -73,10 +77,8 @@ impl WallGuard for WallGuardImpl {
         &self,
         request: Request<Logs>,
     ) -> Result<Response<CommonResponse>, Status> {
-        let addr = ServerLogger::extract_address(&request);
-        let received_at = chrono::Utc::now();
+        // do not log inside here, otherwise it will loop
         let result = self.handle_logs_impl(request).await;
-        ServerLogger::log_response(&result, &addr, "/handle_logs", received_at);
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
