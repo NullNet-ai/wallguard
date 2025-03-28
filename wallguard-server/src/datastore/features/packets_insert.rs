@@ -2,7 +2,7 @@ use crate::{datastore::DatastoreWrapper, parser::parsed_message::ParsedMessage};
 use nullnet_libdatastore::{
     BatchCreateBody, BatchCreateRequest, CreateParams, Query, ResponseData,
 };
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl DatastoreWrapper {
     pub async fn packets_insert(

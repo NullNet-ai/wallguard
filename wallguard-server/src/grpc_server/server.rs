@@ -1,20 +1,17 @@
 use super::request_log::ServerLogger;
-use crate::{
-    datastore::DatastoreWrapper,
-    proto::wallguard::{
-        wall_guard_server::WallGuard, Authentication, CommonResponse, ConfigSnapshot,
-        HeartbeatRequest, HeartbeatResponse, LoginRequest, Packets, SetupRequest, StatusRequest,
-        StatusResponse,
-    },
+use crate::app_context::AppContext;
+use crate::proto::wallguard::{
+    Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse,
+    LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
+    wall_guard_server::WallGuard,
 };
+use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
 use std::net::IpAddr;
 use std::sync::mpsc::Sender;
-
-use crate::proto::wallguard::Logs;
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
-    pub(crate) datastore: DatastoreWrapper,
+    pub(crate) context: AppContext,
     pub(crate) ip_info_tx: Sender<Option<IpAddr>>,
 }
 
@@ -92,6 +89,17 @@ impl WallGuard for WallGuardImpl {
         let received_at = chrono::Utc::now();
         let result = self.device_status_impl(request).await;
         ServerLogger::log_response(&result, &addr, "/status", received_at);
+        result.map_err(|e| Status::internal(format!("{e:?}")))
+    }
+
+    async fn request_control_channel(
+        &self,
+        request: Request<ControlChannelRequest>,
+    ) -> Result<Response<ControlChannelResponse>, Status> {
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.request_control_channel_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/heartbeat", received_at);
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 }

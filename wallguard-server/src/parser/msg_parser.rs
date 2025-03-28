@@ -7,7 +7,7 @@ use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource};
-use nullnet_liberror::{location, ErrorHandler, Location};
+use nullnet_liberror::{ErrorHandler, Location, location};
 use nullnet_libipinfo::get_ip_to_lookup;
 use nullnet_libtoken::Token;
 use std::net::IpAddr;

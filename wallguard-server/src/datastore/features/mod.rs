@@ -1,4 +1,6 @@
 mod config_upload;
+mod device_fetch_webgui_protocol;
+mod device_new_remote_session;
 mod device_setup;
 mod device_status;
 mod heartbeat;

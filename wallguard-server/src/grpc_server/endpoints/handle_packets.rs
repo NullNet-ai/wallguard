@@ -26,6 +26,7 @@ impl WallGuardImpl {
         };
 
         let _ = self
+            .context
             .datastore
             .packets_insert(&jwt_token, parsed_message)
             .await?;

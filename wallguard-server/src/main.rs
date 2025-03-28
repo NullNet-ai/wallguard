@@ -1,5 +1,9 @@
 #![allow(clippy::module_name_repetitions)]
 
+use app_context::AppContext;
+use tokio::signal;
+
+mod app_context;
 use crate::grpc_server::{ADDR, PORT};
 use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
 use clap::Parser;
@@ -10,6 +14,7 @@ mod grpc_server;
 mod http_server;
 mod parser;
 mod proto;
+mod tunnel;
 mod utils;
 
 #[tokio::main]
@@ -26,8 +31,13 @@ async fn main() {
         nullnet_liblogging::LoggerConfig::new(true, false, Some(datastore_logger_config), vec![]);
     nullnet_liblogging::Logger::init(logger_config);
 
-    tokio::join!(
-        grpc_server::run_grpc_server(args),
-        http_server::run_http_server()
-    );
+    let app_context = AppContext::new()
+        .await
+        .expect("Failed to initialize AppContext");
+
+    tokio::select! {
+        _ = grpc_server::run_grpc_server(app_context.clone(), args) => {},
+        _ = http_server::run_http_server(app_context) => {},
+        _ = signal::ctrl_c() => {}
+    };
 }

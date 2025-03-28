@@ -10,6 +10,7 @@ service WallGuard {
   rpc HandlePackets (Packets) returns (CommonResponse);
   rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
   rpc HandleLogs (Logs) returns (CommonResponse);
+  rpc RequestControlChannel (ControlChannelRequest) returns (ControlChannelResponse);
 }
 
 message LoginRequest {
@@ -97,4 +98,14 @@ message Log {
   string timestamp = 1;
   string level = 2;
   string message = 3;
+}
+
+message ControlChannelRequest {
+  Authentication auth = 1;
+}
+
+message ControlChannelResponse {
+  string id = 1;
+  string type = 2;
+  optional string protocol = 3;
 }

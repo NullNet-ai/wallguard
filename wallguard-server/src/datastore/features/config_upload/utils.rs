@@ -1,5 +1,5 @@
 use nullnet_libdatastore::ResponseData;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 pub fn parse_configuraion_id(response: &ResponseData) -> Result<String, Error> {
     let json: serde_json::Value = serde_json::from_str(&response.data).handle_err(location!())?;

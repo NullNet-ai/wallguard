@@ -3,7 +3,7 @@ use crate::{
     proto::wallguard::{CommonResponse, ConfigSnapshot, ConfigStatus},
 };
 use libfireparse::{FileData, FireparseError, Parser, Platform};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tonic::{Request, Response};
 
 impl WallGuardImpl {
@@ -32,6 +32,7 @@ impl WallGuardImpl {
             .handle_err(location!())?;
 
         let config_id = &self
+            .context
             .datastore
             .config_upload(
                 &jwt_token,

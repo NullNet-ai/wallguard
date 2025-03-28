@@ -116,4 +116,21 @@ impl WallGuardGrpcInterface {
 
         Ok(response)
     }
+
+    #[allow(clippy::missing_errors_doc)]
+    pub async fn request_control_channel(
+        &mut self,
+        token: String,
+    ) -> Result<ControlChannelResponse, String> {
+        let response = self
+            .client
+            .request_control_channel(Request::new(ControlChannelRequest {
+                auth: Some(Authentication { token }),
+            }))
+            .await
+            .map(tonic::Response::into_inner)
+            .map_err(|e| e.to_string())?;
+
+        Ok(response)
+    }
 }
