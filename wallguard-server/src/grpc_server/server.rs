@@ -1,6 +1,5 @@
 use super::request_log::ServerLogger;
 use crate::app_context::AppContext;
-use crate::proto::wallguard::Logs;
 use crate::proto::wallguard::{
     Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse,
     LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,

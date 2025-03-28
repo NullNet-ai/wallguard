@@ -1,7 +1,6 @@
 use crate::cli::Args;
 use crate::parser::ip_info::ip_info_handler;
 use crate::{app_context::AppContext, proto::wallguard::wall_guard_server::WallGuardServer};
-use crate::{datastore::DatastoreWrapper, proto::wallguard::wall_guard_server::WallGuardServer};
 use server::WallGuardImpl;
 use std::net::ToSocketAddrs;
 use std::sync::mpsc;
