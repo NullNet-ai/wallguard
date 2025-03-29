@@ -1,10 +1,12 @@
 mod client_profile;
 mod config;
+mod monitor;
 mod ra_type;
 mod utils;
 
 pub use client_profile::ClientProfile;
 pub use config::Config;
+pub use monitor::monitor_idle_profiles;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libtunnel::{Profile, Server};
 pub use ra_type::RAType;
@@ -79,5 +81,9 @@ impl TunnelServer {
             },
             None => None,
         }
+    }
+
+    pub fn does_profile_exist(&self, device_id: &str) -> bool {
+        self.devices_map.contains_key(device_id)
     }
 }
