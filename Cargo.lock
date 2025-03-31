@@ -1770,7 +1770,7 @@ dependencies = [
  "chrono",
  "log",
  "nullnet-liberror",
- "nullnet-libtoken",
+ "nullnet-libtoken 0.1.1",
  "nullnet-wallguard-server",
  "once_cell",
  "serde",
@@ -1791,16 +1791,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "nullnet-libtunnel"
-version = "0.3.1"
+name = "nullnet-libtoken"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db8ca1cee965f58866ee48bb82d8933a94fb7170ebd0c5428741ed13c5f6812c"
 dependencies = [
- "bincode",
- "log",
- "nullnet-liberror",
+ "base64",
  "serde",
- "sha2",
- "tokio",
- "uuid",
+ "serde_json",
 ]
 
 [[package]]
@@ -1844,7 +1842,7 @@ dependencies = [
  "nullnet-liberror",
  "nullnet-libfireparse",
  "nullnet-liblogging 0.1.2",
- "nullnet-libtoken",
+ "nullnet-libtoken 0.1.1",
  "once_cell",
  "prost",
  "serde",
@@ -3024,8 +3022,7 @@ dependencies = [
  "nullnet-libconfmon",
  "nullnet-liberror",
  "nullnet-liblogging 0.2.0",
- "nullnet-libtoken",
- "nullnet-libtunnel",
+ "nullnet-libtoken 0.2.0",
  "nullnet-libwallguard",
  "nullnet-traffic-monitor",
  "once_cell",

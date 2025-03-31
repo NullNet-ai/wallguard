@@ -4,3 +4,4 @@
 .DS_Store
 packet_dumps
 *.pcap
+.cargo

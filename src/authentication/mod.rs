@@ -1,9 +1,8 @@
 mod request_impl;
-mod token_wrapper;
 
+use nullnet_libtoken::Token;
 use request_impl::request_impl;
 use std::sync::Arc;
-use token_wrapper::TokenWrapper;
 use tokio::sync::Mutex;
 
 #[derive(Debug, Clone)]
@@ -12,7 +11,7 @@ pub struct AuthHandler {
     app_secret: String,
     server_addr: String,
     server_port: u16,
-    token: Arc<Mutex<Option<TokenWrapper>>>,
+    token: Arc<Mutex<Option<Token>>>,
 }
 
 impl AuthHandler {
@@ -29,7 +28,7 @@ impl AuthHandler {
     pub async fn obtain_token_safe(&self) -> Result<String, String> {
         let mut token = self.token.lock().await;
 
-        if token.as_ref().is_none_or(TokenWrapper::is_expired) {
+        if token.as_ref().is_none_or(Token::is_expired) {
             let new_token = request_impl(
                 &self.server_addr,
                 self.server_port,
