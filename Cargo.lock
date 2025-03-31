@@ -1802,6 +1802,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "nullnet-libtunnel"
+version = "0.3.1"
+dependencies = [
+ "bincode",
+ "log",
+ "nullnet-liberror",
+ "serde",
+ "sha2",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "nullnet-libwallguard"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3023,6 +3036,7 @@ dependencies = [
  "nullnet-liberror",
  "nullnet-liblogging 0.2.0",
  "nullnet-libtoken 0.2.0",
+ "nullnet-libtunnel",
  "nullnet-libwallguard",
  "nullnet-traffic-monitor",
  "once_cell",
