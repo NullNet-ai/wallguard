@@ -60,12 +60,14 @@ async fn handle_hb_response(
     };
 
     if !response.is_remote_access_enabled && ra_mng.has_session() {
+        log::info!("Terminating remote access session");
         if let Err(err) = ra_mng.terminate().await {
             log::error!("Failed to terminate r.a. session: {err:?}");
         }
     } else if response.is_remote_access_enabled && !ra_mng.has_session() {
+        log::info!("Initiating remote access session");
         if let Err(err) = establish_remote_access_session(token, ra_mng, client).await {
-            log::error!("Failed to terminate r.a. session: {err:?}");
+            log::error!("Failed to initiate r.a. session: {err:?}");
         }
     }
 }
@@ -85,8 +87,9 @@ async fn establish_remote_access_session(
         "ui" => {
             let protocol = response
                 .protocol
-                .ok_or("Cannot spawn UI remote access session, because ptorocol field is missing")
+                .ok_or("Cannot spawn UI remote access session, because protocol field is missing")
                 .handle_err(location!())?;
+
             ra_mng.start_ui_session(response.id, &protocol).await
         }
         r#type => {
