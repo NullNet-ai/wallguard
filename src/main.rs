@@ -93,8 +93,8 @@ async fn main() {
     }
 
     tokio::select! {
-        _ = transmit_packets(args.clone(), auth.clone()) => {},
-        _ = heartbeat::routine(auth.clone(), args.clone()) => {},
         _ = signal::ctrl_c() => {}
+        _ = heartbeat::routine(auth.clone(), args.clone()) => {},
+        _ = transmit_packets(args.clone(), auth.clone()) => {},
     }
 }
