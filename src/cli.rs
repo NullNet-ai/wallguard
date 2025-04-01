@@ -7,7 +7,7 @@ const APP_SECRET: Option<&str> = option_env!("APP_SECRET");
 #[derive(Parser, Debug, Clone)]
 pub struct Args {
     /// IP address of the gRPC server
-    #[arg(short, long, default_value = "localhost")]
+    #[arg(short, long, default_value = "127.0.0.1")]
     pub addr: String,
     /// App ID
     #[arg(long = "app_id", default_value = APP_ID.unwrap_or_default())]
@@ -24,6 +24,9 @@ pub struct Args {
     /// Port of the gRPC server
     #[arg(short, long, default_value_t = 50051)]
     pub port: u16,
+    /// Port of the tunnel server
+    #[arg(long, default_value_t = 9000)]
+    pub tunnel_port: u16,
     /// PCAP snaplen value (bytes)
     #[arg(short, long, default_value_t = 96)]
     pub snaplen: i32,
