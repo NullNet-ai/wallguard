@@ -13,7 +13,7 @@ use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use nullnet_libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
-use tokio::signal;
+use tokio::signal::unix::{signal, SignalKind};
 
 async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
     let token = auth.obtain_token_safe().await.expect("Unauthenticated");
@@ -92,8 +92,10 @@ async fn main() {
         tokio::spawn(async move { cfg_monitor.watch().await });
     }
 
+    let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
+
     tokio::select! {
-        _ = signal::ctrl_c() => {}
+        _ = terminate_signal.recv() => {},
         _ = heartbeat::routine(auth.clone(), args.clone()) => {},
         _ = transmit_packets(args.clone(), auth.clone()) => {},
     }
