@@ -43,7 +43,6 @@ impl TunnelServer {
     }
 
     pub async fn remove_profile(&mut self, device_id: &str) -> Result<(), Error> {
-        self.devices_map.remove(device_id);
         match self.devices_map.remove(device_id) {
             Some(profile) => {
                 self.sessions_map.remove(&profile.public_session_id());
