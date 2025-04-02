@@ -1803,9 +1803,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libtunnel"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c0142db8b9d8c3f8ccd0ab431a30ed0fda3c2038ce4ede3bc0d36d6b9375fb8"
+checksum = "814a1a32d9aa732f441072d1ab3a6118dc3e87017713d906ec9bd7d21790d375"
 dependencies = [
  "bincode",
  "log",
