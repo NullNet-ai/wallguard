@@ -1,13 +1,13 @@
 use super::request_log::ServerLogger;
 use crate::app_context::AppContext;
 use crate::proto::wallguard::{
-    Authentication, CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse,
-    LoginRequest, Logs, Packets, SetupRequest, StatusRequest, StatusResponse,
+    AuthenticateRequest, AuthenticationResponse, CommonResponse, ConfigSnapshot, Logs, Packets,
     wall_guard_server::WallGuard,
 };
 use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
 use std::net::IpAddr;
 use std::sync::mpsc::Sender;
+use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 pub(crate) struct WallGuardImpl {
@@ -17,36 +17,13 @@ pub(crate) struct WallGuardImpl {
 
 #[tonic::async_trait]
 impl WallGuard for WallGuardImpl {
-    async fn heartbeat(
-        &self,
-        request: Request<HeartbeatRequest>,
-    ) -> Result<Response<HeartbeatResponse>, Status> {
-        let addr = ServerLogger::extract_address(&request);
-        let received_at = chrono::Utc::now();
-        let result = self.heartbeat_impl(request).await;
-        ServerLogger::log_response(&result, &addr, "/heartbeat", received_at);
-        result.map_err(|e| Status::internal(format!("{e:?}")))
-    }
+    type AuthenticateStream = ReceiverStream<Result<AuthenticationResponse, Status>>;
 
-    async fn setup(
+    async fn authenticate(
         &self,
-        request: Request<SetupRequest>,
-    ) -> Result<Response<CommonResponse>, Status> {
-        let addr = ServerLogger::extract_address(&request);
-        let received_at = chrono::Utc::now();
-        let result = self.setup_impl(request).await;
-        ServerLogger::log_response(&result, &addr, "/setup", received_at);
-        result.map_err(|e| Status::internal(format!("{e:?}")))
-    }
-
-    async fn login(
-        &self,
-        request: Request<LoginRequest>,
-    ) -> Result<Response<Authentication>, Status> {
-        let addr = ServerLogger::extract_address(&request);
-        let received_at = chrono::Utc::now();
-        let result = self.login_impl(request).await;
-        ServerLogger::log_response(&result, &addr, "/login", received_at);
+        request: Request<AuthenticateRequest>,
+    ) -> Result<Response<Self::AuthenticateStream>, Status> {
+        let result = self.authenticate_impl(request).await;
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 
@@ -78,17 +55,6 @@ impl WallGuard for WallGuardImpl {
     ) -> Result<Response<CommonResponse>, Status> {
         // do not log inside here, otherwise it will loop
         let result = self.handle_logs_impl(request).await;
-        result.map_err(|e| Status::internal(format!("{e:?}")))
-    }
-
-    async fn status(
-        &self,
-        request: Request<StatusRequest>,
-    ) -> Result<Response<StatusResponse>, Status> {
-        let addr = ServerLogger::extract_address(&request);
-        let received_at = chrono::Utc::now();
-        let result = self.device_status_impl(request).await;
-        ServerLogger::log_response(&result, &addr, "/status", received_at);
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 

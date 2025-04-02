@@ -3,23 +3,18 @@ syntax = "proto3";
 package wallguard;
 
 service WallGuard {
-  rpc Login (LoginRequest) returns (Authentication);
-  rpc Status (StatusRequest) returns (StatusResponse);
-  rpc Setup (SetupRequest) returns (CommonResponse);
-  rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
+  rpc Authenticate (AuthenticateRequest) returns (stream AuthenticateResponse);
   rpc HandlePackets (Packets) returns (CommonResponse);
   rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
   rpc HandleLogs (Logs) returns (CommonResponse);
   rpc RequestControlChannel (ControlChannelRequest) returns (ControlChannelResponse);
 }
 
-message LoginRequest {
+message AuthenticateRequest {
   string app_id = 1;
   string app_secret = 2;
-}
-
-message StatusRequest {
-  Authentication auth = 1;
+  string device_version = 3;
+  string device_uuid = 4;
 }
 
 message Authentication {
@@ -34,28 +29,15 @@ enum DeviceStatus {
   DS_UNKNOWN = 4;
 }
 
-message StatusResponse {
-  DeviceStatus status = 1;
-}
-
-message HeartbeatResponse {
-  DeviceStatus status = 1;
-  bool is_remote_access_enabled = 2;
-  bool is_monitoring_enabled = 3;
+message AuthenticateResponse {
+  Authentication auth = 1;
+  DeviceStatus status = 2;
+  bool is_remote_access_enabled = 3;
+  bool is_monitoring_enabled = 4;
 }
 
 message CommonResponse {
   string message = 1;
-}
-
-message SetupRequest {
-  Authentication auth = 1;
-  string device_version = 2;
-  string device_uuid = 3;
-}
-
-message HeartbeatRequest {
-  Authentication auth = 1;
 }
 
 message Packets {
