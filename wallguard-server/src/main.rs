@@ -21,6 +21,10 @@ mod utils;
 async fn main() {
     let args = cli::Args::parse();
 
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
         ACCOUNT_ID.as_str(),
         ACCOUNT_SECRET.as_str(),

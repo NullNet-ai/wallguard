@@ -29,13 +29,11 @@ pub async fn proxy(
     context: Data<AppContext>,
     body: Payload,
 ) -> actix_web::Result<HttpResponse> {
-    log::debug!("PARENT: BEGIN");
+    log::info!("Proxy request: {request:?}");
 
     let Some(session) = extract_session_from_request(&request) else {
         return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
     };
-
-    log::debug!("PARENT: SESSION FOUND: {}", session);
 
     let Some(profile) = context
         .tunnel
@@ -48,8 +46,6 @@ pub async fn proxy(
         return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
     };
 
-    log::debug!("PARENT: PROFILE FOUND: {:?}", profile);
-
     let target = profile.get_visitor_addr();
     let vtoken = profile.get_visitor_token();
 
@@ -60,6 +56,6 @@ pub async fn proxy(
     {
         websocket::proxy_request(request, body, target, vtoken).await
     } else {
-        http::proxy_request(request, body, target, vtoken).await
+        http::proxy_request(request, body, target, vtoken, false).await
     }
 }
