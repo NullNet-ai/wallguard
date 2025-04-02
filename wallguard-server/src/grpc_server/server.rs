@@ -1,7 +1,7 @@
 use super::request_log::ServerLogger;
 use crate::app_context::AppContext;
 use crate::proto::wallguard::{
-    AuthenticateRequest, AuthenticationResponse, CommonResponse, ConfigSnapshot, Logs, Packets,
+    CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse, Logs, Packets,
     wall_guard_server::WallGuard,
 };
 use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
@@ -17,13 +17,13 @@ pub(crate) struct WallGuardImpl {
 
 #[tonic::async_trait]
 impl WallGuard for WallGuardImpl {
-    type AuthenticateStream = ReceiverStream<Result<AuthenticationResponse, Status>>;
+    type HeartbeatStream = ReceiverStream<Result<HeartbeatResponse, Status>>;
 
-    async fn authenticate(
+    async fn heartbeat(
         &self,
-        request: Request<AuthenticateRequest>,
-    ) -> Result<Response<Self::AuthenticateStream>, Status> {
-        let result = self.authenticate_impl(request).await;
+        request: Request<HeartbeatRequest>,
+    ) -> Result<Response<Self::HeartbeatStream>, Status> {
+        let result = self.heartbeat_impl(request).await;
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 

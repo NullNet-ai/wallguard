@@ -43,15 +43,15 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn authenticate(
+    pub async fn heartbeat(
         &mut self,
         app_id: String,
         app_secret: String,
         device_version: String,
         device_uuid: String,
-    ) -> Result<Streaming<AuthenticationResponse>, String> {
+    ) -> Result<Streaming<HeartbeatResponse>, String> {
         self.client
-            .authenticate(Request::new(AuthenticateRequest {
+            .heartbeat(Request::new(HeartbeatRequest {
                 app_id,
                 app_secret,
                 device_version,

@@ -1,6 +1,6 @@
 use crate::datastore::DatastoreWrapper;
 use crate::proto::wallguard::wall_guard_server::WallGuard;
-use crate::proto::wallguard::{AuthenticateRequest, AuthenticationResponse, DeviceStatus};
+use crate::proto::wallguard::{DeviceStatus, HeartbeatRequest, HeartbeatResponse};
 use crate::{grpc_server::server::WallGuardImpl, proto::wallguard::Authentication};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libtoken::Token;
@@ -10,10 +10,10 @@ use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response};
 
 impl WallGuardImpl {
-    pub(crate) async fn authenticate_impl(
+    pub(crate) async fn heartbeat_impl(
         &self,
-        request: Request<AuthenticateRequest>,
-    ) -> Result<Response<<WallGuardImpl as WallGuard>::AuthenticateStream>, Error> {
+        request: Request<HeartbeatRequest>,
+    ) -> Result<Response<<WallGuardImpl as WallGuard>::HeartbeatStream>, Error> {
         let datastore = self.context.datastore.clone();
         let tunnel = self.context.tunnel.clone();
         let remote_address = request
@@ -61,7 +61,7 @@ impl WallGuardImpl {
                             .get_profile_by_device_id(&device_id)
                             .await
                             .is_some();
-                        let response = AuthenticationResponse {
+                        let response = HeartbeatResponse {
                             auth: auth.clone(),
                             status: response.status.into(),
                             is_remote_access_enabled,
