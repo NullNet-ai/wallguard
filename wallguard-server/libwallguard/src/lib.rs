@@ -1,6 +1,6 @@
 use std::time::Duration;
 use tonic::transport::Channel;
-use tonic::Request;
+use tonic::{Request, Streaming};
 
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
 pub use crate::proto::wallguard::*;
@@ -43,21 +43,19 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn login(&mut self, app_id: String, app_secret: String) -> Result<String, String> {
-        let response = self
-            .client
-            .login(Request::new(LoginRequest { app_id, app_secret }))
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(response.into_inner().token)
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn heartbeat(&mut self, token: String) -> Result<HeartbeatResponse, String> {
+    pub async fn authenticate(
+        &mut self,
+        app_id: String,
+        app_secret: String,
+        device_version: String,
+        device_uuid: String,
+    ) -> Result<Streaming<AuthenticationResponse>, String> {
         self.client
-            .heartbeat(Request::new(HeartbeatRequest {
-                auth: Some(Authentication { token }),
+            .authenticate(Request::new(AuthenticateRequest {
+                app_id,
+                app_secret,
+                device_version,
+                device_uuid,
             }))
             .await
             .map(tonic::Response::into_inner)
@@ -92,29 +90,6 @@ impl WallGuardGrpcInterface {
             .await
             .map(tonic::Response::into_inner)
             .map_err(|e| e.to_string())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn setup_client(&mut self, request: SetupRequest) -> Result<CommonResponse, String> {
-        self.client
-            .setup(Request::new(request))
-            .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn device_status(&mut self, token: String) -> Result<StatusResponse, String> {
-        let response = self
-            .client
-            .status(Request::new(StatusRequest {
-                auth: Some(Authentication { token }),
-            }))
-            .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())?;
-
-        Ok(response)
     }
 
     #[allow(clippy::missing_errors_doc)]
