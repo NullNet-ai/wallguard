@@ -10,9 +10,9 @@ use serde_json::json;
 use std::collections::HashMap;
 
 impl DatastoreWrapper {
-    // SELECT COUNT(*) FROM ip_info WHERE ip = {ip}
+    // SELECT COUNT(*) FROM ip_infos WHERE ip = {ip}
     pub(crate) async fn is_ip_info_stored(&mut self, ip: &str, token: &str) -> Result<bool, Error> {
-        let table = "ip_info";
+        let table = "ip_infos";
 
         let request = GetByFilterRequest {
             params: Some(Params {
@@ -50,7 +50,7 @@ impl DatastoreWrapper {
         ip_info: IpInfo,
         token: &str,
     ) -> Result<ResponseData, Error> {
-        let table = "ip_info";
+        let table = "ip_infos";
 
         let record = json!({
             "timestamp": Utc::now().to_rfc3339(),

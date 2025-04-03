@@ -5,12 +5,12 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 impl DatastoreWrapper {
     pub async fn device_fetch_webgui_protocol(
         &self,
-        device_id: String,
+        device_id: &str,
         token: &str,
     ) -> Result<String, Error> {
         let request = GetByIdRequest {
             params: Some(Params {
-                id: device_id,
+                id: device_id.to_owned(),
                 table: String::from("devices"),
             }),
             query: Some(Query {

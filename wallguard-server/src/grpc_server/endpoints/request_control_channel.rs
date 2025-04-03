@@ -37,7 +37,7 @@ impl WallGuardImpl {
                 let protocol = self
                     .context
                     .datastore
-                    .device_fetch_webgui_protocol(device_id, &jwt_token)
+                    .device_fetch_webgui_protocol(&device_id, &jwt_token)
                     .await?;
                 Some(protocol)
             }
