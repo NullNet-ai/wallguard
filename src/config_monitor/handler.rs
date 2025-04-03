@@ -1,16 +1,17 @@
 use super::request_impl::request_impl;
-use crate::authentication::AuthHandler;
 use nullnet_libconfmon::{Error, ErrorKind, FileData, InterfaceSnapshot, Snapshot, WatcherHandler};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub struct Handler {
-    auth: AuthHandler,
+    token: Arc<RwLock<String>>,
     addr: String,
     port: u16,
 }
 
 impl Handler {
-    pub fn new(addr: String, port: u16, auth: AuthHandler) -> Self {
-        Self { auth, addr, port }
+    pub fn new(addr: String, port: u16, token: Arc<RwLock<String>>) -> Self {
+        Self { token, addr, port }
     }
 
     fn map_error<T>(msg: T) -> Error
@@ -40,13 +41,7 @@ impl WatcherHandler for Handler {
             content: blob,
         });
 
-        let token = self
-            .auth
-            .obtain_token_safe()
-            .await
-            .map_err(Self::map_error)?;
-
-        request_impl(&self.addr, self.port, snapshot, token, state)
+        request_impl(&self.addr, self.port, snapshot, self.token.clone(), state)
             .await
             .map_err(Self::map_error)
     }
