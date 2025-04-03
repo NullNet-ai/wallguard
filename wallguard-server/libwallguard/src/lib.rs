@@ -100,7 +100,7 @@ impl WallGuardGrpcInterface {
         let response = self
             .client
             .request_control_channel(Request::new(ControlChannelRequest {
-                auth: Some(Authentication { token }),
+                token,
             }))
             .await
             .map(tonic::Response::into_inner)
