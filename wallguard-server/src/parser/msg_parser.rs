@@ -36,9 +36,8 @@ pub fn parse_message(
                         .send(remote_ip)
                         .expect("Failed to send addresses to the IP info channel");
                     // calculate total length
-                    let total_length = ethernet_header.as_ref().map_or(0, |_| 12)
-                        + ip_header.ip_header_length as u16
-                        + ip_header.payload_length;
+                    let total_length =
+                        ethernet_header.as_ref().map_or(0, |_| 14) + ip_header.packet_length;
                     // create a parsed record
                     records.push(ParsedRecord {
                         device_id: token.account.device.id.clone(),
