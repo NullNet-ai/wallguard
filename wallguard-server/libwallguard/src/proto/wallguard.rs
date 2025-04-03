@@ -10,16 +10,10 @@ pub struct HeartbeatRequest {
     #[prost(string, tag = "4")]
     pub device_uuid: ::prost::alloc::string::String,
 }
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Authentication {
-    #[prost(string, tag = "1")]
-    pub token: ::prost::alloc::string::String,
-}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HeartbeatResponse {
-    #[prost(message, optional, tag = "1")]
-    pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
     #[prost(enumeration = "DeviceStatus", tag = "2")]
     pub status: i32,
     #[prost(bool, tag = "3")]
@@ -35,8 +29,8 @@ pub struct CommonResponse {
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Packets {
-    #[prost(message, optional, tag = "1")]
-    pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub uuid: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "3")]
@@ -63,8 +57,8 @@ pub struct FileSnapshot {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConfigSnapshot {
-    #[prost(message, optional, tag = "1")]
-    pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "2")]
     pub files: ::prost::alloc::vec::Vec<FileSnapshot>,
     #[prost(enumeration = "ConfigStatus", tag = "3")]
@@ -72,8 +66,8 @@ pub struct ConfigSnapshot {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Logs {
-    #[prost(message, optional, tag = "1")]
-    pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "3")]
     pub logs: ::prost::alloc::vec::Vec<Log>,
 }
@@ -89,8 +83,8 @@ pub struct Log {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControlChannelRequest {
-    #[prost(message, optional, tag = "1")]
-    pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControlChannelResponse {

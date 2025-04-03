@@ -17,10 +17,6 @@ message HeartbeatRequest {
   string device_uuid = 4;
 }
 
-message Authentication {
-  string token = 1;
-}
-
 enum DeviceStatus {
   DS_DRAFT = 0;
   DS_ACTIVE = 1;
@@ -30,7 +26,7 @@ enum DeviceStatus {
 }
 
 message HeartbeatResponse {
-  Authentication auth = 1;
+  string token = 1;
   DeviceStatus status = 2;
   bool is_remote_access_enabled = 3;
   bool is_monitoring_enabled = 4;
@@ -41,7 +37,7 @@ message CommonResponse {
 }
 
 message Packets {
-  Authentication auth = 1;
+  string token = 1;
   string uuid = 2;
   repeated Packet packets = 3;
 }
@@ -66,13 +62,13 @@ enum ConfigStatus {
 
 
 message ConfigSnapshot {
-  Authentication auth = 1;
+  string token = 1;
   repeated FileSnapshot files = 2;
   ConfigStatus status = 3;
 }
 
 message Logs {
-  Authentication auth = 1;
+  string token = 1;
   repeated Log logs = 3;
 }
 
@@ -83,7 +79,7 @@ message Log {
 }
 
 message ControlChannelRequest {
-  Authentication auth = 1;
+  string token = 1;
 }
 
 message ControlChannelResponse {

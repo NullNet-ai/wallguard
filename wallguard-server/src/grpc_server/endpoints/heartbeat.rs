@@ -1,7 +1,7 @@
 use crate::datastore::DatastoreWrapper;
+use crate::grpc_server::server::WallGuardImpl;
 use crate::proto::wallguard::wall_guard_server::WallGuard;
 use crate::proto::wallguard::{DeviceStatus, HeartbeatRequest, HeartbeatResponse};
-use crate::{grpc_server::server::WallGuardImpl, proto::wallguard::Authentication};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libtoken::Token;
 use std::time::Duration;
@@ -27,10 +27,7 @@ impl WallGuardImpl {
             datastore.clone(),
         );
         let token = auth_handler.obtain_token_safe().await?;
-        let auth = Some(Authentication {
-            token: token.clone(),
-        });
-        let (_, token_info) = Self::authenticate(auth.clone())?;
+        let (_, token_info) = Self::authenticate(&token)?;
         let device_id = token_info.account.device.id;
         let device_version = authenticate_request.device_version;
         let device_uuid = authenticate_request.device_uuid;
@@ -62,7 +59,7 @@ impl WallGuardImpl {
                             .await
                             .is_some();
                         let response = HeartbeatResponse {
-                            auth: auth.clone(),
+                            token,
                             status: response.status.into(),
                             is_remote_access_enabled,
                             is_monitoring_enabled: response.is_monitoring_enabled,
