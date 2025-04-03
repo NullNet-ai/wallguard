@@ -52,7 +52,13 @@ pub async fn remote_access_request(
         return HttpResponse::Ok().body("");
     }
 
-    let Ok(profile) = ClientProfile::new(&body.device_id, &body.ra_type).await else {
+    let protocol = context
+        .datastore
+        .device_fetch_webgui_protocol(&body.device_id, jwt_token)
+        .await
+        .unwrap_or(String::from("https"));
+
+    let Ok(profile) = ClientProfile::new(&body.device_id, &body.ra_type, protocol).await else {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     };
 

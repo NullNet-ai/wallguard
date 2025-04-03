@@ -56,6 +56,7 @@ pub async fn proxy(
     {
         websocket::proxy_request(request, body, target, vtoken).await
     } else {
-        http::proxy_request(request, body, target, vtoken, false).await
+        let is_https = profile.ui_proto().to_lowercase() == "https";
+        http::proxy_request(request, body, target, vtoken, is_https).await
     }
 }
