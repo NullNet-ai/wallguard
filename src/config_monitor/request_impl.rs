@@ -1,7 +1,5 @@
 use nullnet_libconfmon::{Snapshot, State};
-use nullnet_libwallguard::{
-    Authentication, ConfigSnapshot, ConfigStatus, FileSnapshot, WallGuardGrpcInterface,
-};
+use nullnet_libwallguard::{ConfigSnapshot, ConfigStatus, FileSnapshot, WallGuardGrpcInterface};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -22,9 +20,7 @@ pub async fn request_impl(
                 contents: fs.content.clone(),
             })
             .collect(),
-        auth: Some(Authentication {
-            token: token.read().await.clone(),
-        }),
+        token: token.read().await.clone(),
         status: state_to_status(&state).into(),
     };
 

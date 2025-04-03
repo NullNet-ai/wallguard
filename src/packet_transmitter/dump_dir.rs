@@ -58,7 +58,7 @@ impl DumpDir {
         let dump = Packets {
             uuid,
             packets,
-            auth: None,
+            token: String::new(),
         };
         tokio::fs::write(
             file_path,
@@ -69,7 +69,7 @@ impl DumpDir {
     }
 
     pub(crate) async fn update_dump_file(&self, file_path: PathBuf, mut dump: Packets) {
-        dump.auth = None;
+        dump.token = String::new();
         tokio::fs::write(
             file_path,
             bincode::serialize(&dump).expect("Failed to serialize packets"),

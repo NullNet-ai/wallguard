@@ -4,7 +4,7 @@ use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use crate::timer::Timer;
-use nullnet_libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Packet, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
@@ -91,9 +91,7 @@ async fn send_packets(
             let packets = Packets {
                 uuid: uuid.clone(),
                 packets: packet_queue.get(range),
-                auth: Some(Authentication {
-                    token: token.clone(),
-                }),
+                token: token.clone(),
             };
             if client.handle_packets(packets).await.is_err() {
                 log::error!("Failed to send packets");

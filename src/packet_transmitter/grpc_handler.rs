@@ -1,6 +1,6 @@
 use crate::constants::BATCH_SIZE;
 use crate::packet_transmitter::dump_dir::DumpDir;
-use nullnet_libwallguard::{Authentication, Logs, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Logs, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::fs;
@@ -23,9 +23,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                 .unwrap()
                 .handle_logs(Logs {
                     logs: vec![],
-                    auth: Some(Authentication {
-                        token: token.read().await.clone(),
-                    }),
+                    token: token.read().await.clone(),
                 })
                 .await
                 .is_err()
@@ -44,9 +42,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                 let bytes = fs::read(file.path()).await.unwrap_or_default();
                 let mut dump: Packets = bincode::deserialize(&bytes).unwrap_or_default();
                 // update auth token of packets retrieved from disk
-                dump.auth = Some(Authentication {
-                    token: token.read().await.clone(),
-                });
+                dump.token = token.read().await.clone();
 
                 while !dump.packets.is_empty() {
                     let range = ..min(dump.packets.len(), BATCH_SIZE);

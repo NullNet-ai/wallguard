@@ -23,7 +23,7 @@ pub async fn routine(token: Arc<RwLock<String>>, args: Args) -> Result<(), Error
             handle_hb_response(&heartbeat_response);
             let mut t = token.write().await;
             // todo: remove unwrap
-            *t = heartbeat_response.auth.unwrap().token.clone();
+            *t = heartbeat_response.token.clone();
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
