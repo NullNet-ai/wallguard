@@ -1,6 +1,6 @@
 use crate::constants::BATCH_SIZE;
 use crate::packet_transmitter::dump_dir::DumpDir;
-use nullnet_libwallguard::{Authentication, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Authentication, Logs, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::fs;
@@ -15,12 +15,18 @@ pub(crate) async fn handle_connection_and_retransmission(
 ) {
     loop {
         if interface.lock().await.is_some() {
+            // check if the server is still up (sending empty logs)
             if interface
                 .lock()
                 .await
                 .as_mut()
                 .unwrap()
-                .heartbeat(token)
+                .handle_logs(Logs {
+                    logs: vec![],
+                    auth: Some(Authentication {
+                        token: token.read().await.clone(),
+                    }),
+                })
                 .await
                 .is_err()
             {
