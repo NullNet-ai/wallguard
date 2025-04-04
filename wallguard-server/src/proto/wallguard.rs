@@ -27,8 +27,10 @@ pub struct HeartbeatResponse {
     #[prost(enumeration = "DeviceStatus", tag = "1")]
     pub status: i32,
     #[prost(bool, tag = "2")]
-    pub is_remote_access_enabled: bool,
+    pub remote_shell_enabled: bool,
     #[prost(bool, tag = "3")]
+    pub remote_ui_enabled: bool,
+    #[prost(bool, tag = "4")]
     pub is_monitoring_enabled: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -109,6 +111,8 @@ pub struct Log {
 pub struct ControlChannelRequest {
     #[prost(message, optional, tag = "1")]
     pub auth: ::core::option::Option<Authentication>,
+    #[prost(string, tag = "2")]
+    pub session_type: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControlChannelResponse {

@@ -2,7 +2,7 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RAType {
     Shell,
     UI,

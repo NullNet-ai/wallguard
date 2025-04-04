@@ -1,6 +1,10 @@
-use crate::{app_context::AppContext, tunnel::ClientProfile};
+use crate::{
+    app_context::AppContext,
+    tunnel::{ClientProfile, RAType},
+};
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::AUTHORIZATION, web};
 use serde::Deserialize;
+use std::str::FromStr;
 
 #[derive(Deserialize)]
 pub struct RequestPayload {
@@ -15,8 +19,9 @@ pub async fn remote_access_request(
     context: web::Data<AppContext>,
     body: web::Json<RequestPayload>,
 ) -> impl Responder {
-    // @TODO:
-    // - Implement session timeout
+    let Ok(ra_type) = RAType::from_str(&body.ra_type) else {
+        return HttpResponse::BadRequest().body("Bad ra_type parameter value");
+    };
 
     let Some(jwt_token) = req
         .headers()
@@ -45,7 +50,7 @@ pub async fn remote_access_request(
         .tunnel
         .lock()
         .await
-        .get_profile_by_device_id(&body.device_id)
+        .get_profile_by_device_id(&body.device_id, &ra_type)
         .await
         .is_some()
     {
@@ -58,7 +63,7 @@ pub async fn remote_access_request(
         .await
         .unwrap_or(String::from("https"));
 
-    let Ok(profile) = ClientProfile::new(&body.device_id, &body.ra_type, protocol).await else {
+    let Ok(profile) = ClientProfile::new(&body.device_id, ra_type, protocol).await else {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     };
 
@@ -79,7 +84,7 @@ pub async fn remote_access_request(
         .tunnel
         .lock()
         .await
-        .insert_profile(profile)
+        .insert_profile(profile, ra_type)
         .await
         .is_err()
     {

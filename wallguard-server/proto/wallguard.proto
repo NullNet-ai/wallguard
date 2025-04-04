@@ -40,8 +40,9 @@ message StatusResponse {
 
 message HeartbeatResponse {
   DeviceStatus status = 1;
-  bool is_remote_access_enabled = 2;
-  bool is_monitoring_enabled = 3;
+  bool remote_shell_enabled = 2;
+  bool remote_ui_enabled = 3;
+  bool is_monitoring_enabled = 4;
 }
 
 message CommonResponse {
@@ -102,6 +103,7 @@ message Log {
 
 message ControlChannelRequest {
   Authentication auth = 1;
+  string session_type = 2;
 }
 
 message ControlChannelResponse {

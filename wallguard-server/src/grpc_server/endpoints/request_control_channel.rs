@@ -4,6 +4,7 @@ use crate::{
     tunnel::RAType,
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use std::str::FromStr;
 use tonic::{Request, Response};
 
 impl WallGuardImpl {
@@ -16,10 +17,13 @@ impl WallGuardImpl {
         let (jwt_token, token_info) = Self::authenticate(control_channel_request.auth)?;
 
         let device_id = token_info.account.device.id;
-
+        let ra_type = RAType::from_str(&control_channel_request.session_type)?;
         let tunnel_lock = self.context.tunnel.lock().await;
 
-        let Some(profile) = tunnel_lock.get_profile_by_device_id(&device_id).await else {
+        let Some(profile) = tunnel_lock
+            .get_profile_by_device_id(&device_id, &ra_type)
+            .await
+        else {
             return Err(format!(
                 "No active tunnels opened for device {}",
                 &device_id

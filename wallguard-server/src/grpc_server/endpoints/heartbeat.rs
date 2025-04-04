@@ -1,6 +1,7 @@
 use crate::{
     grpc_server::server::WallGuardImpl,
     proto::wallguard::{HeartbeatRequest, HeartbeatResponse},
+    tunnel::RAType,
 };
 use nullnet_liberror::Error;
 use tonic::{Request, Response};
@@ -16,14 +17,21 @@ impl WallGuardImpl {
 
         let device_id = token_info.account.device.id;
 
-        let is_remote_access_enabled = self
-            .context
-            .tunnel
-            .lock()
-            .await
-            .get_profile_by_device_id(&device_id)
-            .await
-            .is_some();
+        let (remote_shell_enabled, remote_ui_enabled) = {
+            let tunnel = self.context.tunnel.lock().await;
+
+            let remote_shell_enabled = tunnel
+                .get_profile_by_device_id(&device_id, &RAType::Shell)
+                .await
+                .is_some();
+
+            let remote_ui_enabled = tunnel
+                .get_profile_by_device_id(&device_id, &RAType::UI)
+                .await
+                .is_some();
+
+            (remote_shell_enabled, remote_ui_enabled)
+        };
 
         let device_info = self
             .context
@@ -33,7 +41,8 @@ impl WallGuardImpl {
 
         Ok(Response::new(HeartbeatResponse {
             status: device_info.status.into(),
-            is_remote_access_enabled,
+            remote_shell_enabled,
+            remote_ui_enabled,
             is_monitoring_enabled: device_info.is_monitoring_enabled,
         }))
     }
