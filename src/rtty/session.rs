@@ -1,8 +1,6 @@
 use actix::{Actor, AsyncContext, Handler, StreamHandler};
-use actix_web_actors::ws::{self, CloseCode, CloseReason};
-use nullnet_libconfmon::Platform;
-use nullnet_liberror::Error;
-use std::io::{Read, Write};
+use actix_web_actors::ws::{self};
+
 use std::sync::Arc;
 
 use super::pty::Pty;
@@ -13,9 +11,8 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(platform: Platform) -> Result<Self, Error> {
-        let pty = Pty::new(&platform)?;
-        Ok(Self { pty: Arc::new(pty) })
+    pub fn new(pty: Arc<Pty>) -> Self {
+        Self { pty }
     }
 }
 
@@ -24,38 +21,37 @@ impl Actor for Session {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let address = ctx.address();
-        let reader = self.pty.reader.clone();
+        let pty = self.pty.clone();
 
-        tokio::task::spawn_blocking(move || {
-            let mut buffer = [0; 1024];
+        tokio::spawn(async move {
+            let current = pty.current_buffer().await;
+            address.do_send(PtyMessage::from(current));
+
+            let mut receiver = pty.subscribe().await;
+
             loop {
-                let n = reader
-                    .lock()
-                    .map_or(0, |mut lock| lock.read(&mut buffer).unwrap_or(0));
-
-                if n == 0 {
-                    break;
+                match receiver.recv().await {
+                    Ok(value) => address.do_send(PtyMessage::from(value)),
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => {
+                        log::error!("Pty: Channel already closed");
+                        return;
+                    }
                 }
-
-                let pty_message = PtyMessage::from_slice(&buffer[..n]);
-                address.do_send(pty_message);
             }
         });
     }
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
-    fn handle(&mut self, message: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+    fn handle(&mut self, message: Result<ws::Message, ws::ProtocolError>, _: &mut Self::Context) {
         if let Ok(ws::Message::Text(text)) = message {
-            if let Ok(mut lock) = self.pty.writer.lock() {
-                let _ = lock.write(text.as_bytes());
-            } else {
-                let reason = CloseReason {
-                    code: CloseCode::Error,
-                    description: Some("Failed to write message to pty".to_string()),
-                };
-                ctx.close(Some(reason));
-            }
+            let message = Vec::from(text.as_bytes().iter().as_slice());
+            let pty = self.pty.clone();
+
+            tokio::spawn(async move {
+                let _ = pty.send(message).await;
+            });
         }
     }
 }

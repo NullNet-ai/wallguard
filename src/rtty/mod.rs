@@ -2,8 +2,9 @@ use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use nullnet_libconfmon::Platform;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use pty::Pty;
 use session::Session;
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 use tokio::{sync::oneshot, task::JoinHandle};
 
 mod pty;
@@ -17,15 +18,16 @@ struct Handle {
 
 pub struct TTYServer {
     addr: SocketAddr,
-    platform: Platform,
     handle: Option<Handle>,
+    platform: Platform,
 }
 
 impl Handle {
-    pub fn new(addr: SocketAddr, platform: Platform) -> Self {
+    pub fn new(addr: SocketAddr, platform: Platform) -> Result<Self, Error> {
+        let pty = Pty::new(platform)?;
         let (sh_tx, sh_rx) = oneshot::channel();
-        let inner = tokio::spawn(main_loop(addr, platform, sh_rx));
-        Self { inner, sh_tx }
+        let inner = tokio::spawn(main_loop(addr, pty, sh_rx));
+        Ok(Self { inner, sh_tx })
     }
 
     pub async fn shutdown(self) {
@@ -48,7 +50,8 @@ impl TTYServer {
 
     pub async fn start(&mut self) -> Result<(), Error> {
         if self.handle.is_none() {
-            self.handle = Some(Handle::new(self.addr, self.platform));
+            let handle = Handle::new(self.addr, self.platform)?;
+            self.handle = Some(handle);
         }
 
         Ok(())
@@ -63,12 +66,15 @@ impl TTYServer {
 
 async fn main_loop(
     addr: SocketAddr,
-    platform: Platform,
+    pty: Pty,
     shutdown_rx: oneshot::Receiver<()>,
 ) -> Result<(), Error> {
+    let data = web::Data::new(pty);
+
+    let factory = data.clone();
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(platform))
+            .app_data(factory.clone())
             .route("/ws/", web::get().to(websocket_handler))
     })
     .bind(addr)
@@ -85,6 +91,9 @@ async fn main_loop(
     });
 
     let _ = tokio::try_join!(server_task, shutdown_task).expect("Unable to join tasks");
+
+    Arc::try_unwrap(data.into_inner()).expect("Someone still holds a reference to the PTY even after the TTY server has been shutdown.").shutdown().await;
+
     log::debug!("TTY Server terminated");
 
     Ok(())
@@ -93,10 +102,9 @@ async fn main_loop(
 async fn websocket_handler(
     request: HttpRequest,
     stream: web::Payload,
-    platform: web::Data<Platform>,
+    data: web::Data<Pty>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let session = Session::new(*platform.get_ref())
-        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_str().to_string()))?;
+    let session = Session::new(data.into_inner());
     let response = ws::start(session, &request, stream)?;
     Ok(response)
 }

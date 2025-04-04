@@ -20,3 +20,9 @@ impl From<PtyMessage> for ByteString {
         ByteString::from(message.text)
     }
 }
+
+impl From<Vec<u8>> for PtyMessage {
+    fn from(value: Vec<u8>) -> Self {
+        Self::from_slice(&value)
+    }
+}
