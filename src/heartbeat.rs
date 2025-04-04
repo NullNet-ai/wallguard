@@ -22,8 +22,7 @@ pub async fn routine(token: Arc<RwLock<String>>, args: Args) -> Result<(), Error
         while let Some(Ok(heartbeat_response)) = heartbeat_stream.next().await {
             handle_hb_response(&heartbeat_response);
             let mut t = token.write().await;
-            // todo: remove unwrap
-            *t = heartbeat_response.token.clone();
+            *t = heartbeat_response.token;
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
