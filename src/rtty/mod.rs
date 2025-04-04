@@ -24,7 +24,7 @@ pub struct TTYServer {
 
 impl Handle {
     pub fn new(addr: SocketAddr, platform: Platform) -> Result<Self, Error> {
-        let pty = Pty::new(&platform)?;
+        let pty = Pty::new(platform)?;
         let (sh_tx, sh_rx) = oneshot::channel();
         let inner = tokio::spawn(main_loop(addr, pty, sh_rx));
         Ok(Self { inner, sh_tx })
@@ -69,12 +69,12 @@ async fn main_loop(
     pty: Pty,
     shutdown_rx: oneshot::Receiver<()>,
 ) -> Result<(), Error> {
-    let pty = Arc::new(pty);
+    let data = web::Data::new(pty);
 
-    let factory = pty.clone();
+    let factory = data.clone();
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(factory.clone()))
+            .app_data(factory.clone())
             .route("/ws/", web::get().to(websocket_handler))
     })
     .bind(addr)
@@ -92,10 +92,7 @@ async fn main_loop(
 
     let _ = tokio::try_join!(server_task, shutdown_task).expect("Unable to join tasks");
 
-    match Arc::try_unwrap(pty) {
-        Ok(value) => value.shutdown().await,
-        Err(_) => panic!("Someone still holds a reference to the PTY even after the TTY server has been shutdown."),
-    };
+    Arc::try_unwrap(data.into_inner()).expect("Someone still holds a reference to the PTY even after the TTY server has been shutdown.").shutdown().await;
 
     log::debug!("TTY Server terminated");
 

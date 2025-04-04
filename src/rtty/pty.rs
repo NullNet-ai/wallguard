@@ -1,6 +1,6 @@
 use nullnet_libconfmon::Platform;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use portable_pty::{CommandBuilder, NativePtySystem, PtyPair, PtySize, PtySystem};
+use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
 use std::collections::VecDeque;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex as StdMutex};
@@ -9,10 +9,12 @@ use tokio::sync::{broadcast, mpsc, oneshot};
 
 const MAX_BUFFER_SIZE: usize = 10 * 1024;
 const CHANNEL_CAPACITY: usize = 128;
+const CLEAR_MESSAGE: &[u8] = "\x1B[H\x1B[2J".as_bytes();
 
 type PtyReader = Box<dyn Read + Send>;
 type PtyWriter = Box<dyn Write + Send>;
 
+#[derive(Debug)]
 pub struct Pty {
     buffer: Arc<TokioMutex<VecDeque<u8>>>,
     to_pty: mpsc::Sender<Vec<u8>>,
@@ -21,21 +23,7 @@ pub struct Pty {
 }
 
 impl Pty {
-    pub fn new(platform: &Platform) -> Result<Self, Error> {
-        let pty = NativePtySystem::default()
-            .openpty(PtySize {
-                rows: 24,
-                cols: 80,
-                pixel_height: 0,
-                pixel_width: 0,
-            })
-            .handle_err(location!())?;
-
-        let _ = pty
-            .slave
-            .spawn_command(CommandBuilder::new(pty_program(platform)))
-            .handle_err(location!())?;
-
+    pub fn new(platform: Platform) -> Result<Self, Error> {
         let buffer = Arc::new(TokioMutex::new(VecDeque::new()));
 
         let (to_pty_tx, to_pty_rx) = mpsc::channel(CHANNEL_CAPACITY);
@@ -43,7 +31,7 @@ impl Pty {
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
 
         tokio::spawn(pty_routine(
-            pty,
+            platform,
             buffer.clone(),
             to_pty_rx,
             from_pty_tx.clone(),
@@ -83,30 +71,53 @@ fn pty_program(platform: &Platform) -> &'static str {
 }
 
 async fn pty_routine(
-    pty_pair: PtyPair,
+    platform: Platform,
     buffer: Arc<TokioMutex<VecDeque<u8>>>,
     to_pty: mpsc::Receiver<Vec<u8>>,
     from_pty: broadcast::Sender<Vec<u8>>,
-    shutdown: oneshot::Receiver<()>,
+    mut shutdown: oneshot::Receiver<()>,
 ) -> Result<(), Error> {
-    let reader = pty_pair.master.try_clone_reader().handle_err(location!())?;
-    let writer = pty_pair.master.take_writer().handle_err(location!())?;
+    let to_pty = Arc::new(TokioMutex::new(to_pty));
 
-    let handle = tokio::spawn(async move {
-        let _ = tokio::join!(
-            reader_routine(reader, buffer, from_pty),
-            writer_routine(writer, to_pty)
-        );
-    });
+    loop {
+        let pty = NativePtySystem::default()
+            .openpty(PtySize {
+                rows: 24,
+                cols: 80,
+                pixel_height: 0,
+                pixel_width: 0,
+            })
+            .handle_err(location!())?;
 
-    tokio::select! {
-        _ = handle => {
-            log::debug!("Pty Session terminated");
+        let mut child = pty
+            .slave
+            .spawn_command(CommandBuilder::new(pty_program(&platform)))
+            .handle_err(location!())?;
+
+        let reader = pty.master.try_clone_reader().handle_err(location!())?;
+        let writer = pty.master.take_writer().handle_err(location!())?;
+
+        tokio::select! {
+            _ = reader_routine(reader, buffer.clone(), from_pty.clone()) => {
+                log::debug!("Pty: reader terminated");
+                break;
+            },
+            _ = writer_routine(writer, to_pty.clone()) => {
+                log::debug!("Pty: writer terminated");
+                break;
+            },
+            _ = tokio::task::spawn_blocking(move || child.wait()) => {
+                log::debug!("Pty: command terminated, respawning ...");
+                let clear = Vec::from(CLEAR_MESSAGE);
+                let _ = from_pty.send(clear);
+                buffer.lock().await.clear();
+            }
+            _ = &mut shutdown => {
+                log::debug!("Pty: received shutdown");
+                break;
+            }
         }
-        _ = shutdown => {
-            log::debug!("Pty Session received shutdown signal");
-        }
-    };
+    }
 
     Ok(())
 }
@@ -157,11 +168,13 @@ async fn reader_routine(
 
 async fn writer_routine(
     writer: PtyWriter,
-    mut channel: mpsc::Receiver<Vec<u8>>,
+    channel: Arc<TokioMutex<mpsc::Receiver<Vec<u8>>>>,
 ) -> Result<(), Error> {
     let writer = Arc::new(StdMutex::new(writer));
     loop {
         let message = channel
+            .lock()
+            .await
             .recv()
             .await
             .ok_or("Channel closed unexpectedly")
