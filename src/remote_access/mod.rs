@@ -6,7 +6,9 @@ use session::RemoteAccessSession;
 use std::net::SocketAddr;
 
 pub struct RemoteAccessManager {
-    session: Option<RemoteAccessSession>,
+    shell_session: Option<RemoteAccessSession>,
+    ui_session: Option<RemoteAccessSession>,
+
     platform: Platform,
     server_addr: SocketAddr,
 }
@@ -14,24 +16,25 @@ pub struct RemoteAccessManager {
 impl RemoteAccessManager {
     pub fn new(platform: Platform, server_addr: SocketAddr) -> Self {
         Self {
-            session: None,
+            shell_session: None,
+            ui_session: None,
             platform,
             server_addr,
         }
     }
 
     pub async fn start_tty_session(&mut self, tunnel_id: String) -> Result<(), Error> {
-        if self.session.is_some() {
+        if self.shell_session.is_some() {
             return Err("Session already in progress").handle_err(location!());
         }
 
-        self.session = Some(RemoteAccessSession::tty(
+        self.shell_session = Some(RemoteAccessSession::tty(
             tunnel_id,
             self.server_addr,
             self.platform,
         ));
 
-        log::debug!("Started TTY r.a. session");
+        log::debug!("Started Shell r.a. session");
 
         Ok(())
     }
@@ -41,11 +44,11 @@ impl RemoteAccessManager {
         tunnel_id: String,
         protocol: &str,
     ) -> Result<(), Error> {
-        if self.session.is_some() {
+        if self.ui_session.is_some() {
             return Err("Session already in progress").handle_err(location!());
         }
 
-        self.session = Some(RemoteAccessSession::ui(
+        self.ui_session = Some(RemoteAccessSession::ui(
             tunnel_id,
             protocol,
             self.server_addr,
@@ -57,10 +60,10 @@ impl RemoteAccessManager {
         Ok(())
     }
 
-    pub async fn terminate(&mut self) -> Result<(), Error> {
-        log::debug!("Terminating r.a. session");
+    pub async fn terminate_ui_session(&mut self) -> Result<(), Error> {
+        log::debug!("Terminating UI r.a. session");
 
-        match self.session.take() {
+        match self.ui_session.take() {
             Some(session) => {
                 session.terminate().await;
                 Ok(())
@@ -69,7 +72,23 @@ impl RemoteAccessManager {
         }
     }
 
-    pub fn has_session(&mut self) -> bool {
-        self.session.is_some()
+    pub async fn terminate_shell_session(&mut self) -> Result<(), Error> {
+        log::debug!("Terminating Shell r.a. session");
+
+        match self.shell_session.take() {
+            Some(session) => {
+                session.terminate().await;
+                Ok(())
+            }
+            None => Err("No session in progress").handle_err(location!()),
+        }
+    }
+
+    pub fn has_ui_session(&mut self) -> bool {
+        self.ui_session.is_some()
+    }
+
+    pub fn has_shell_session(&mut self) -> bool {
+        self.shell_session.is_some()
     }
 }
