@@ -4,7 +4,7 @@ use super::{
 };
 use nullnet_liberror::Error;
 use nullnet_libtunnel::Profile;
-use std::{net::SocketAddr, str::FromStr};
+use std::net::SocketAddr;
 
 #[derive(Clone, Debug)]
 pub struct ClientProfile {
@@ -18,10 +18,9 @@ pub struct ClientProfile {
 }
 
 impl ClientProfile {
-    pub async fn new(device_id: &str, ra_type: &str, ui_proto: String) -> Result<Self, Error> {
+    pub async fn new(device_id: &str, ra_type: RAType, ui_proto: String) -> Result<Self, Error> {
         let id = generate_uuid_str();
         let visitor_addr = generate_addr().await?;
-        let ra_type = RAType::from_str(ra_type)?;
         let visitor_token = generate_random_token(128);
         let public_session_id = generate_random_token(32);
 

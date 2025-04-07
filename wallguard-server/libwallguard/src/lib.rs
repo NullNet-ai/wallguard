@@ -96,11 +96,13 @@ impl WallGuardGrpcInterface {
     pub async fn request_control_channel(
         &mut self,
         token: String,
+        session_type: String,
     ) -> Result<ControlChannelResponse, String> {
         let response = self
             .client
             .request_control_channel(Request::new(ControlChannelRequest {
                 token,
+                session_type,
             }))
             .await
             .map(tonic::Response::into_inner)

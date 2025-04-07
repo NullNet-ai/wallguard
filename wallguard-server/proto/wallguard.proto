@@ -28,8 +28,9 @@ enum DeviceStatus {
 message HeartbeatResponse {
   string token = 1;
   DeviceStatus status = 2;
-  bool is_remote_access_enabled = 3;
-  bool is_monitoring_enabled = 4;
+  bool remote_shell_enabled = 3;
+  bool remote_ui_enabled = 4;
+  bool is_monitoring_enabled = 5;
 }
 
 message CommonResponse {
@@ -80,6 +81,7 @@ message Log {
 
 message ControlChannelRequest {
   string token = 1;
+  string session_type = 2;
 }
 
 message ControlChannelResponse {

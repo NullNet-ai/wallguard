@@ -2,6 +2,7 @@ use crate::datastore::DatastoreWrapper;
 use crate::grpc_server::server::WallGuardImpl;
 use crate::proto::wallguard::wall_guard_server::WallGuard;
 use crate::proto::wallguard::{DeviceStatus, HeartbeatRequest, HeartbeatResponse};
+use crate::tunnel::RAType;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libtoken::Token;
 use std::time::Duration;
@@ -52,16 +53,28 @@ impl WallGuardImpl {
                 if let Ok(token) = auth_handler.obtain_token_safe().await {
                     if let Ok(response) = datastore.heartbeat(&token, device_id.clone()).await {
                         handle_hb_response(response.status);
-                        let is_remote_access_enabled = tunnel
-                            .lock()
-                            .await
-                            .get_profile_by_device_id(&device_id)
-                            .await
-                            .is_some();
+
+                        let (remote_shell_enabled, remote_ui_enabled) = {
+                            let tunnel = tunnel.lock().await;
+
+                            let remote_shell_enabled = tunnel
+                                .get_profile_by_device_id(&device_id, &RAType::Shell)
+                                .await
+                                .is_some();
+
+                            let remote_ui_enabled = tunnel
+                                .get_profile_by_device_id(&device_id, &RAType::UI)
+                                .await
+                                .is_some();
+
+                            (remote_shell_enabled, remote_ui_enabled)
+                        };
+
                         let response = HeartbeatResponse {
                             token,
                             status: response.status.into(),
-                            is_remote_access_enabled,
+                            remote_shell_enabled,
+                            remote_ui_enabled,
                             is_monitoring_enabled: response.is_monitoring_enabled,
                         };
                         tx.send(Ok(response)).await.unwrap();

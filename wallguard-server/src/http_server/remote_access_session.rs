@@ -1,16 +1,13 @@
-use crate::app_context::AppContext;
+use std::str::FromStr;
+
+use crate::{app_context::AppContext, tunnel::RAType};
 use actix_web::{HttpRequest, HttpResponse, Responder, http::header::AUTHORIZATION, web};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 
 #[derive(Deserialize, Debug)]
 pub struct QueryParams {
     device_id: String,
-}
-
-#[derive(Serialize)]
-pub struct ResponsePayload {
-    port: u16,
     ra_type: String,
 }
 
@@ -19,6 +16,10 @@ pub async fn remote_access_session(
     context: web::Data<AppContext>,
     query: web::Query<QueryParams>,
 ) -> impl Responder {
+    let Ok(ra_type) = RAType::from_str(&query.ra_type) else {
+        return HttpResponse::BadRequest().body("Bad ra_type parameter value");
+    };
+
     let Some(jwt_token) = req
         .headers()
         .get(AUTHORIZATION)
@@ -43,12 +44,11 @@ pub async fn remote_access_session(
         .tunnel
         .lock()
         .await
-        .get_profile_if_online_by_device_id(&query.device_id)
+        .get_profile_if_online_by_device_id(&query.device_id, &ra_type)
         .await
     {
         Some(profile) => HttpResponse::Ok().json(json!({
             "session": profile.public_session_id(),
-            "type": profile.remote_access_type().to_string()
         })),
         None => HttpResponse::NotFound().json(json!({})),
     }

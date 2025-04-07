@@ -17,8 +17,10 @@ pub struct HeartbeatResponse {
     #[prost(enumeration = "DeviceStatus", tag = "2")]
     pub status: i32,
     #[prost(bool, tag = "3")]
-    pub is_remote_access_enabled: bool,
+    pub remote_shell_enabled: bool,
     #[prost(bool, tag = "4")]
+    pub remote_ui_enabled: bool,
+    #[prost(bool, tag = "5")]
     pub is_monitoring_enabled: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -85,6 +87,8 @@ pub struct Log {
 pub struct ControlChannelRequest {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub session_type: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControlChannelResponse {
