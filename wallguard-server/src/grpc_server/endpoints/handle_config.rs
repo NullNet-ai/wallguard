@@ -13,7 +13,7 @@ impl WallGuardImpl {
     ) -> Result<Response<CommonResponse>, Error> {
         let snapshot = request.into_inner();
 
-        let (jwt_token, token_info) = Self::authenticate(snapshot.auth)?;
+        let (jwt_token, token_info) = Self::authenticate(&snapshot.token)?;
 
         let snapshot_mapped = snapshot
             .files

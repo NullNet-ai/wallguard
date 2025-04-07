@@ -2,9 +2,7 @@ use chrono::{DateTime, Utc};
 use nullnet_liberror::Error;
 use tonic::{Request, Response};
 
-use crate::proto::wallguard::{
-    Authentication, CommonResponse, ControlChannelResponse, HeartbeatResponse, StatusResponse,
-};
+use crate::proto::wallguard::{CommonResponse, ControlChannelResponse};
 
 const GREEN: &str = "\x1b[32m";
 const RED: &str = "\x1b[31m";
@@ -113,63 +111,6 @@ impl LoggableResponse for CommonResponse {
             GREEN,
             RESET,
             self.message
-        );
-    }
-}
-
-impl LoggableResponse for Authentication {
-    fn log_success(
-        &self,
-        received_str: &str,
-        completed_str: &str,
-        source_str: &str,
-        destination_str: &str,
-        duration_ms: i64,
-    ) {
-        log_success_common(
-            received_str,
-            completed_str,
-            source_str,
-            destination_str,
-            duration_ms,
-        );
-    }
-}
-
-impl LoggableResponse for StatusResponse {
-    fn log_success(
-        &self,
-        received_str: &str,
-        completed_str: &str,
-        source_str: &str,
-        destination_str: &str,
-        duration_ms: i64,
-    ) {
-        log_success_common(
-            received_str,
-            completed_str,
-            source_str,
-            destination_str,
-            duration_ms,
-        );
-    }
-}
-
-impl LoggableResponse for HeartbeatResponse {
-    fn log_success(
-        &self,
-        received_str: &str,
-        completed_str: &str,
-        source_str: &str,
-        destination_str: &str,
-        duration_ms: i64,
-    ) {
-        log_success_common(
-            received_str,
-            completed_str,
-            source_str,
-            destination_str,
-            duration_ms,
         );
     }
 }
