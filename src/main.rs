@@ -56,6 +56,6 @@ async fn main() {
     let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
     tokio::select! {
         _ = terminate_signal.recv() => {},
-        _ = transmit_packets(args, token.clone()) => {}
+        () = transmit_packets(args, token.clone()) => {}
     }
 }
