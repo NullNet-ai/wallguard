@@ -9,7 +9,7 @@ impl WallGuardImpl {
         request: Request<Logs>,
     ) -> Result<Response<CommonResponse>, Error> {
         let logs = request.into_inner();
-        let (jwt_token, _) = Self::authenticate(logs.auth.clone())?;
+        let (jwt_token, _) = Self::authenticate(&logs.token)?;
 
         let _ = self
             .context

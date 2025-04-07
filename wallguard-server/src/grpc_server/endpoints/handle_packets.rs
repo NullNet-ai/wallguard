@@ -12,7 +12,7 @@ impl WallGuardImpl {
         request: Request<Packets>,
     ) -> Result<Response<CommonResponse>, Error> {
         let packets = request.into_inner();
-        let (jwt_token, token_info) = Self::authenticate(packets.auth.clone())?;
+        let (jwt_token, token_info) = Self::authenticate(&packets.token)?;
 
         log::info!("Received {} packets.", packets.packets.len());
         let parsed_message = parse_message(packets, &token_info, &self.ip_info_tx);

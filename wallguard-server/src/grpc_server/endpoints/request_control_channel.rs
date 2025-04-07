@@ -14,7 +14,7 @@ impl WallGuardImpl {
     ) -> Result<Response<ControlChannelResponse>, Error> {
         let control_channel_request = request.into_inner();
 
-        let (jwt_token, token_info) = Self::authenticate(control_channel_request.auth)?;
+        let (jwt_token, token_info) = Self::authenticate(&control_channel_request.token)?;
 
         let device_id = token_info.account.device.id;
         let ra_type = RAType::from_str(&control_channel_request.session_type)?;
