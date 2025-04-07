@@ -1,33 +1,30 @@
-use crate::authentication::AuthHandler;
 use crate::constants::BATCH_SIZE;
 use crate::packet_transmitter::dump_dir::DumpDir;
-use nullnet_libwallguard::{Authentication, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Logs, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::fs;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 pub(crate) async fn handle_connection_and_retransmission(
     addr: &str,
     port: u16,
     interface: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
     dump_dir: DumpDir,
-    auth: AuthHandler,
+    token: Arc<RwLock<String>>,
 ) {
     loop {
-        let Ok(token) = auth.obtain_token_safe().await else {
-            log::error!("Authentication failed");
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-            continue;
-        };
-
         if interface.lock().await.is_some() {
+            // check if the server is still up (sending empty logs)
             if interface
                 .lock()
                 .await
                 .as_mut()
                 .unwrap()
-                .heartbeat(token)
+                .handle_logs(Logs {
+                    logs: vec![],
+                    token: token.read().await.clone(),
+                })
                 .await
                 .is_err()
             {
@@ -45,9 +42,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                 let bytes = fs::read(file.path()).await.unwrap_or_default();
                 let mut dump: Packets = bincode::deserialize(&bytes).unwrap_or_default();
                 // update auth token of packets retrieved from disk
-                dump.auth = Some(Authentication {
-                    token: token.clone(),
-                });
+                dump.token = token.read().await.to_string();
 
                 while !dump.packets.is_empty() {
                     let range = ..min(dump.packets.len(), BATCH_SIZE);
