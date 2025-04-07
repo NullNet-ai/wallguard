@@ -1,16 +1,15 @@
-use crate::authentication::AuthHandler;
 use crate::cli::Args;
 use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
 use crate::packet_transmitter::dump_dir::DumpDir;
 use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use crate::timer::Timer;
-use nullnet_libwallguard::{Authentication, Packet, Packets, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Packet, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
-pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
+pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
     let monitor_config = nullnet_traffic_monitor::MonitorConfig {
         addr: args.addr.clone(),
         snaplen: args.snaplen,
@@ -25,9 +24,9 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
     let client_2 = client.clone();
     let dump_dir = DumpDir::new(dump_bytes).await;
     let dump_dir_2 = dump_dir.clone();
-    let auth_2 = auth.clone();
+    let token_2 = token.clone();
     tokio::spawn(async move {
-        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, auth_2)
+        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
             .await;
     });
 
@@ -46,16 +45,12 @@ pub(crate) async fn transmit_packets(args: Args, auth: AuthHandler) {
             if packet_batch.is_full() || timer.is_expired() {
                 timer.reset();
 
-                let Ok(token) = auth.obtain_token_safe().await else {
-                    continue;
-                };
-
                 send_packets(
                     &client,
                     &mut packet_batch,
                     &mut packet_queue,
                     args.uuid.clone(),
-                    token.clone(),
+                    token.read().await.clone(),
                 )
                 .await;
                 if packet_queue.is_full() {
@@ -96,9 +91,7 @@ async fn send_packets(
             let packets = Packets {
                 uuid: uuid.clone(),
                 packets: packet_queue.get(range),
-                auth: Some(Authentication {
-                    token: token.clone(),
-                }),
+                token: token.clone(),
             };
             if client.handle_packets(packets).await.is_err() {
                 log::error!("Failed to send packets");

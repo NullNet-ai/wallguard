@@ -1,14 +1,11 @@
-use std::time::Duration;
-
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
-
-use crate::authentication::AuthHandler;
 use crate::cli::Args;
 use crate::remote_access::RemoteAccessManager;
-
-// @TODO
-// Refactor this file.
+use futures_util::StreamExt;
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::RwLock;
 
 fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
     let platform =
@@ -20,33 +17,34 @@ fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
     RemoteAccessManager::new(platform, server_addr)
 }
 
-pub async fn routine(auth: AuthHandler, args: Args) {
-    let interval = Duration::from_secs(args.heartbeat_interval);
-
+pub async fn routine(token: Arc<RwLock<String>>, args: Args) {
     let mut ra_mng = create_remote_access_manager(&args);
-
     loop {
-        match auth.obtain_token_safe().await {
-            Ok(token) => {
-                let mut client = WallGuardGrpcInterface::new(&args.addr, args.port).await;
-
-                match client.heartbeat(token.clone()).await {
-                    Ok(response) => {
-                        handle_hb_response(response, token, &mut ra_mng, client).await;
-                    }
-                    Err(msg) => log::error!("Heartbeat: Request failed failed - {msg}"),
-                }
-            }
-            Err(msg) => log::error!("Heartbeat: Authentication failed - {msg}"),
+        let mut client = WallGuardGrpcInterface::new(&args.addr, args.port).await;
+        let Ok(mut heartbeat_stream) = client
+            .heartbeat(
+                args.app_id.clone(),
+                args.app_secret.clone(),
+                args.version.clone(),
+                args.uuid.clone(),
+            )
+            .await
+        else {
+            log::warn!("Failed to send heartbeat to the server. Retrying in 10 seconds...");
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            continue;
         };
 
-        tokio::time::sleep(interval).await;
+        while let Some(Ok(heartbeat_response)) = heartbeat_stream.next().await {
+            handle_hb_response(&heartbeat_response, &mut ra_mng, client.clone()).await;
+            let mut t = token.write().await;
+            *t = heartbeat_response.token;
+        }
     }
 }
 
 async fn handle_hb_response(
-    response: HeartbeatResponse,
-    token: String,
+    response: &HeartbeatResponse,
     ra_mng: &mut RemoteAccessManager,
     client: WallGuardGrpcInterface,
 ) {
@@ -57,7 +55,7 @@ async fn handle_hb_response(
         }
         Ok(_) => {}
         Err(_) => log::error!("Unknown device status value {}", response.status),
-    };
+    }
 
     if !response.is_remote_access_enabled && ra_mng.has_session() {
         log::info!("Terminating remote access session");
@@ -66,7 +64,9 @@ async fn handle_hb_response(
         }
     } else if response.is_remote_access_enabled && !ra_mng.has_session() {
         log::info!("Initiating remote access session");
-        if let Err(err) = establish_remote_access_session(token, ra_mng, client).await {
+        if let Err(err) =
+            establish_remote_access_session(response.token.clone(), ra_mng, client).await
+        {
             log::error!("Failed to initiate r.a. session: {err:?}");
         }
     }

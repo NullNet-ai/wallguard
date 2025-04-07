@@ -1,4 +1,3 @@
-mod authentication;
 mod cli;
 mod config_monitor;
 mod constants;
@@ -9,44 +8,16 @@ mod rtty;
 mod timer;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
-use authentication::AuthHandler;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
-use nullnet_libwallguard::{Authentication, DeviceStatus, SetupRequest, WallGuardGrpcInterface};
+use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
-
-async fn setup_request(auth: &AuthHandler, args: &cli::Args) -> Result<(), String> {
-    let token = auth.obtain_token_safe().await.expect("Unauthenticated");
-
-    let _ = WallGuardGrpcInterface::new(&args.addr, args.port)
-        .await
-        .setup_client(SetupRequest {
-            auth: Some(Authentication { token }),
-            device_version: args.version.clone(),
-            device_uuid: args.uuid.clone(),
-        })
-        .await?;
-
-    Ok(())
-}
-
-async fn fetch_status(auth: &AuthHandler, args: &cli::Args) -> Result<DeviceStatus, String> {
-    let token = auth.obtain_token_safe().await.expect("Unauthenticated");
-
-    let response = WallGuardGrpcInterface::new(&args.addr, args.port)
-        .await
-        .device_status(token)
-        .await?;
-
-    let status = DeviceStatus::try_from(response.status)
-        .map_err(|e| format!("Wrong DeviceStatus value: {}", e.0))?;
-
-    Ok(status)
-}
+use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
     let args = cli::Args::parse();
+    let args_copy = args.clone();
 
     let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
         args.app_id.clone(),
@@ -60,43 +31,31 @@ async fn main() {
 
     log::info!("Arguments: {args:?}");
 
-    let auth = AuthHandler::new(
-        args.app_id.clone(),
-        args.app_secret.clone(),
-        args.addr.clone(),
-        args.port,
-    );
+    let token = Arc::new(RwLock::new(String::new()));
+    let token_copy = token.clone();
 
-    let status = fetch_status(&auth, &args)
-        .await
-        .expect("Failed to fetch device status");
-
-    if status == DeviceStatus::DsDraft {
-        setup_request(&auth, &args)
-            .await
-            .expect("Setup request failed");
-    } else if status == DeviceStatus::DsArchived || status == DeviceStatus::DsDeleted {
-        log::error!("Device is either archived or deleted, aborting ...",);
-        return;
+    tokio::spawn(async move { heartbeat::routine(token_copy, args_copy).await });
+    log::info!("Waiting for the first server heartbeat");
+    while token.read().await.is_empty() {
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
     }
+    log::info!("Received the first server heartbeat");
 
     if cfg!(not(feature = "no-cfg-monitor")) {
-        let mut cfg_monitor = ConfigurationMonitor::new(&args, auth.clone(), None)
+        let mut cfg_monitor = ConfigurationMonitor::new(&args, token.clone(), None)
             .await
             .expect("Failed to initialize configuration monitor");
 
         cfg_monitor.upload_current().await.expect(
-            "Failed to capture current configuration and \\ or to upload the snapshot to the server.",
+            "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
         );
 
         tokio::spawn(async move { cfg_monitor.watch().await });
     }
 
     let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
-
     tokio::select! {
         _ = terminate_signal.recv() => {},
-        _ = heartbeat::routine(auth.clone(), args.clone()) => {},
-        _ = transmit_packets(args.clone(), auth.clone()) => {},
+        () = transmit_packets(args, token.clone()) => {}
     }
 }

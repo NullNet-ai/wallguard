@@ -18,9 +18,6 @@ pub struct Args {
     /// Percentage of available disk space to use for packet dump files in case of server unavailability
     #[arg(short, long, default_value_t = 50, value_parser = clap::value_parser!(u8).range(1..=100))]
     pub disk_percentage: u8,
-    /// Heartbeat interval (seconds)
-    #[arg(long, default_value_t = 10)]
-    pub heartbeat_interval: u64,
     /// Port of the gRPC server
     #[arg(short, long, default_value_t = 50051)]
     pub port: u16,

@@ -1,13 +1,13 @@
 use nullnet_libconfmon::{Snapshot, State};
-use nullnet_libwallguard::{
-    Authentication, ConfigSnapshot, ConfigStatus, FileSnapshot, WallGuardGrpcInterface,
-};
+use nullnet_libwallguard::{ConfigSnapshot, ConfigStatus, FileSnapshot, WallGuardGrpcInterface};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub async fn request_impl(
     addr: &str,
     port: u16,
     snapshot: Snapshot,
-    token: String,
+    token: Arc<RwLock<String>>,
     state: State,
 ) -> Result<(), String> {
     let mut client = WallGuardGrpcInterface::new(addr, port).await;
@@ -20,7 +20,7 @@ pub async fn request_impl(
                 contents: fs.content.clone(),
             })
             .collect(),
-        auth: Some(Authentication { token }),
+        token: token.read().await.clone(),
         status: state_to_status(&state).into(),
     };
 
