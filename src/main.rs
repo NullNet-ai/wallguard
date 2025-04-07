@@ -1,4 +1,3 @@
-mod authentication;
 mod cli;
 mod config_monitor;
 mod constants;
