@@ -3,6 +3,7 @@ mod config_monitor;
 mod constants;
 mod heartbeat;
 mod packet_transmitter;
+mod remote_access;
 mod rtty;
 mod timer;
 
@@ -10,6 +11,7 @@ use crate::packet_transmitter::transmitter::transmit_packets;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use std::sync::Arc;
+use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
 
 #[tokio::main]
@@ -51,5 +53,9 @@ async fn main() {
         tokio::spawn(async move { cfg_monitor.watch().await });
     }
 
-    transmit_packets(args, token.clone()).await;
+    let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
+    tokio::select! {
+        _ = terminate_signal.recv() => {},
+        _ = transmit_packets(args, token.clone()) => {}
+    }
 }

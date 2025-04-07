@@ -42,7 +42,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                 let bytes = fs::read(file.path()).await.unwrap_or_default();
                 let mut dump: Packets = bincode::deserialize(&bytes).unwrap_or_default();
                 // update auth token of packets retrieved from disk
-                dump.token = token.read().await.clone();
+                dump.token = token.read().await.to_string();
 
                 while !dump.packets.is_empty() {
                     let range = ..min(dump.packets.len(), BATCH_SIZE);

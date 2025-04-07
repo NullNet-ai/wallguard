@@ -1,4 +1,5 @@
 use crate::cli::Args;
+use crate::remote_access::RemoteAccessManager;
 use futures_util::StreamExt;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
@@ -6,10 +7,21 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 
-pub async fn routine(token: Arc<RwLock<String>>, args: Args) -> Result<(), Error> {
+fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
+    let platform =
+        nullnet_libconfmon::Platform::from_string(&args.target).expect("Unsupported platform");
+
+    let server_addr = format!("{}:{}", args.addr, args.tunnel_port)
+        .parse()
+        .expect("Failed to parse server addr");
+    RemoteAccessManager::new(platform, server_addr)
+}
+
+pub async fn routine(token: Arc<RwLock<String>>, args: Args) {
+    let mut ra_mng = create_remote_access_manager(&args);
     loop {
-        let mut heartbeat_stream = WallGuardGrpcInterface::new(&args.addr, args.port)
-            .await
+        let mut client = WallGuardGrpcInterface::new(&args.addr, args.port).await;
+        let Ok(mut heartbeat_stream) = client
             .heartbeat(
                 args.app_id.clone(),
                 args.app_secret.clone(),
@@ -17,18 +29,25 @@ pub async fn routine(token: Arc<RwLock<String>>, args: Args) -> Result<(), Error
                 args.uuid.clone(),
             )
             .await
-            .handle_err(location!())?;
+        else {
+            log::warn!("Failed to send heartbeat to the server. Retrying in 10 seconds...");
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            continue;
+        };
 
         while let Some(Ok(heartbeat_response)) = heartbeat_stream.next().await {
-            handle_hb_response(&heartbeat_response);
+            handle_hb_response(&heartbeat_response, &mut ra_mng, client.clone()).await;
             let mut t = token.write().await;
             *t = heartbeat_response.token;
-            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 }
 
-fn handle_hb_response(response: &HeartbeatResponse) {
+async fn handle_hb_response(
+    response: &HeartbeatResponse,
+    ra_mng: &mut RemoteAccessManager,
+    client: WallGuardGrpcInterface,
+) {
     match DeviceStatus::try_from(response.status) {
         Ok(DeviceStatus::DsArchived | DeviceStatus::DsDeleted) => {
             log::warn!("Device has been archived or deleted, aborting execution ...",);
@@ -36,5 +55,45 @@ fn handle_hb_response(response: &HeartbeatResponse) {
         }
         Ok(_) => {}
         Err(_) => log::error!("Unknown device status value {}", response.status),
+    }
+
+    if !response.is_remote_access_enabled && ra_mng.has_session() {
+        log::info!("Terminating remote access session");
+        if let Err(err) = ra_mng.terminate().await {
+            log::error!("Failed to terminate r.a. session: {err:?}");
+        }
+    } else if response.is_remote_access_enabled && !ra_mng.has_session() {
+        log::info!("Initiating remote access session");
+        if let Err(err) =
+            establish_remote_access_session(response.token.clone(), ra_mng, client).await
+        {
+            log::error!("Failed to initiate r.a. session: {err:?}");
+        }
+    }
+}
+
+async fn establish_remote_access_session(
+    token: String,
+    ra_mng: &mut RemoteAccessManager,
+    mut client: WallGuardGrpcInterface,
+) -> Result<(), Error> {
+    let response = client
+        .request_control_channel(token)
+        .await
+        .handle_err(location!())?;
+
+    match response.r#type.to_lowercase().as_str() {
+        "shell" => ra_mng.start_tty_session(response.id).await,
+        "ui" => {
+            let protocol = response
+                .protocol
+                .ok_or("Cannot spawn UI remote access session, because protocol field is missing")
+                .handle_err(location!())?;
+
+            ra_mng.start_ui_session(response.id, &protocol).await
+        }
+        r#type => {
+            Err(format!("Unsupported remote access type: {}", r#type)).handle_err(location!())
+        }
     }
 }
