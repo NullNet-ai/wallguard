@@ -57,15 +57,39 @@ async fn handle_hb_response(
         Err(_) => log::error!("Unknown device status value {}", response.status),
     }
 
-    if !response.is_remote_access_enabled && ra_mng.has_session() {
+    if !response.remote_ui_enabled && ra_mng.has_ui_session() {
         log::info!("Terminating remote access session");
-        if let Err(err) = ra_mng.terminate().await {
+        if let Err(err) = ra_mng.terminate_ui_session().await {
             log::error!("Failed to terminate r.a. session: {err:?}");
         }
-    } else if response.is_remote_access_enabled && !ra_mng.has_session() {
+    } else if response.remote_ui_enabled && !ra_mng.has_ui_session() {
         log::info!("Initiating remote access session");
-        if let Err(err) =
-            establish_remote_access_session(response.token.clone(), ra_mng, client).await
+        if let Err(err) = establish_remote_access_session(
+            response.token.clone(),
+            ra_mng,
+            client.clone(),
+            String::from("ui"),
+        )
+        .await
+        {
+            log::error!("Failed to initiate r.a. session: {err:?}");
+        }
+    }
+
+    if !response.remote_shell_enabled && ra_mng.has_shell_session() {
+        log::info!("Terminating remote access session");
+        if let Err(err) = ra_mng.terminate_shell_session().await {
+            log::error!("Failed to terminate r.a. session: {err:?}");
+        }
+    } else if response.remote_shell_enabled && !ra_mng.has_shell_session() {
+        log::info!("Initiating remote access session");
+        if let Err(err) = establish_remote_access_session(
+            response.token.clone(),
+            ra_mng,
+            client,
+            String::from("shell"),
+        )
+        .await
         {
             log::error!("Failed to initiate r.a. session: {err:?}");
         }
@@ -76,9 +100,10 @@ async fn establish_remote_access_session(
     token: String,
     ra_mng: &mut RemoteAccessManager,
     mut client: WallGuardGrpcInterface,
+    session_type: String,
 ) -> Result<(), Error> {
     let response = client
-        .request_control_channel(token)
+        .request_control_channel(token, session_type)
         .await
         .handle_err(location!())?;
 
