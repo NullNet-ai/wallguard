@@ -52,8 +52,6 @@ impl WallGuardImpl {
             loop {
                 if let Ok(token) = auth_handler.obtain_token_safe().await {
                     if let Ok(response) = datastore.heartbeat(&token, device_id.clone()).await {
-                        handle_hb_response(response.status);
-
                         let (remote_shell_enabled, remote_ui_enabled) = {
                             let tunnel = tunnel.lock().await;
 
@@ -119,15 +117,5 @@ impl AuthHandler {
         }
 
         Ok(self.token.as_ref().unwrap().jwt.clone())
-    }
-}
-
-fn handle_hb_response(device_status: DeviceStatus) {
-    match device_status {
-        DeviceStatus::DsArchived | DeviceStatus::DsDeleted => {
-            log::warn!("Device has been archived or deleted, aborting execution ...",);
-            std::process::exit(0);
-        }
-        _ => {}
     }
 }
