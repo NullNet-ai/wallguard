@@ -39,6 +39,7 @@ pub async fn routine(token: Arc<RwLock<String>>, args: Args) {
             handle_hb_response(&heartbeat_response, &mut ra_mng, client.clone()).await;
             let mut t = token.write().await;
             *t = heartbeat_response.token;
+            drop(t);
         }
     }
 }
