@@ -5,20 +5,30 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libwallguard::{DeviceStatus, HeartbeatResponse, WallGuardGrpcInterface};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::net::lookup_host;
 use tokio::sync::RwLock;
 
-fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
+async fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
     let platform =
         nullnet_libconfmon::Platform::from_string(&args.target).expect("Unsupported platform");
 
-    let server_addr = format!("{}:{}", args.addr, args.tunnel_port)
-        .parse()
-        .expect("Failed to parse server addr");
+    let server_addr_str = format!("{}:{}", args.addr, args.tunnel_port);
+    let mut addrs = lookup_host(server_addr_str)
+        .await
+        .handle_err(location!())
+        .expect("Failed to resolve server address");
+
+    let server_addr = addrs
+        .next()
+        .ok_or("No address found")
+        .handle_err(location!())
+        .expect("No addresses found for server");
+
     RemoteAccessManager::new(platform, server_addr)
 }
 
 pub async fn routine(token: Arc<RwLock<String>>, args: Args) {
-    let mut ra_mng = create_remote_access_manager(&args);
+    let mut ra_mng = create_remote_access_manager(&args).await;
     loop {
         let mut client = WallGuardGrpcInterface::new(&args.addr, args.port).await;
         let Ok(mut heartbeat_stream) = client
