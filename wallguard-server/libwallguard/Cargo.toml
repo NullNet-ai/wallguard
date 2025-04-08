@@ -1,6 +1,6 @@
 [package]
 name = "nullnet-libwallguard"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 authors = ["Giuliano Bellini <gyulyvgc99@gmail.com>", "Anton Liashkevich <anton.liashkevich.eng@gmail.com>"]
 description = "A centralized management system for network firewalls"
@@ -21,9 +21,9 @@ strip = true
 [dependencies]
 tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
 prost = "0.13.5"
-tokio = "1.43.0"
-serde = { version = "1.0.218", features = ["derive"] }
-log = "0.4.26"
+tokio = "1.44.2"
+serde = { version = "1.0.219", features = ["derive"] }
+log = "0.4.27"
 
 [badges]
 maintenance = { status = "actively-developed" }
