@@ -32,7 +32,6 @@ mod tests {
             device_id: "machine-id-1234".to_string(),
             interface_name: "eth0".to_string(),
             ip_header: IpHeader {
-                packet_length: 0,
                 source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
                 destination_ip: IpAddr::from_str("9.9.9.9").unwrap(),
             },
@@ -60,7 +59,6 @@ mod tests {
             device_id: "machine-id-5678".to_string(),
             interface_name: "eth0".to_string(),
             ip_header: IpHeader {
-                packet_length: 1512,
                 source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
                 destination_ip: IpAddr::from_str("9.9.9.9").unwrap(),
             },

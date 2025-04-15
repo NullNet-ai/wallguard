@@ -5,14 +5,13 @@ use std::net::{IpAddr, Ipv4Addr};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Hash)]
 #[allow(clippy::struct_field_names)]
 pub struct IpHeader {
-    #[serde(skip)]
-    pub packet_length: u16,
     pub source_ip: IpAddr,
     pub destination_ip: IpAddr,
 }
 
 impl IpHeader {
-    pub fn from_etherparse(net: Option<NetHeaders>) -> Option<Self> {
+    // also returns the packet length
+    pub fn from_etherparse(net: Option<NetHeaders>) -> Option<(Self, u16)> {
         match net {
             Some(NetHeaders::Ipv4(h, _)) => {
                 let packet_length = h.total_len;
@@ -20,11 +19,13 @@ impl IpHeader {
                 let source_ip = IpAddr::V4(Ipv4Addr::from(h.source));
                 let destination_ip = IpAddr::V4(Ipv4Addr::from(h.destination));
 
-                Some(Self {
+                Some((
+                    Self {
+                        source_ip,
+                        destination_ip,
+                    },
                     packet_length,
-                    source_ip,
-                    destination_ip,
-                })
+                ))
             }
             Some(NetHeaders::Ipv6(h, _)) => {
                 let packet_length = 40 + h.payload_length;
@@ -32,11 +33,13 @@ impl IpHeader {
                 let source_ip = IpAddr::V6(h.source_addr());
                 let destination_ip = IpAddr::V6(h.destination_addr());
 
-                Some(Self {
+                Some((
+                    Self {
+                        source_ip,
+                        destination_ip,
+                    },
                     packet_length,
-                    source_ip,
-                    destination_ip,
-                })
+                ))
             }
             _ => None,
         }
@@ -59,11 +62,11 @@ mod tests {
         ];
 
         let etherparse = etherparse::Ipv4Header::from_slice(&raw_data).unwrap().0;
-        let header =
+        let (header, packet_length) =
             IpHeader::from_etherparse(Some(NetHeaders::Ipv4(etherparse, Default::default())))
                 .expect("Failed to parse IP header");
 
-        assert_eq!(header.packet_length, 60);
+        assert_eq!(packet_length, 60);
         assert_eq!(header.source_ip, IpAddr::from_str("192.168.1.1").unwrap());
         assert_eq!(
             header.destination_ip,
@@ -74,7 +77,6 @@ mod tests {
     #[test]
     fn test_ip_header_to_json() {
         let header = IpHeader {
-            packet_length: 60,
             source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
             destination_ip: IpAddr::from_str("10.0.0.1").unwrap(),
         };
