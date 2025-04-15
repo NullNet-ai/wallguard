@@ -1,7 +1,7 @@
 use crate::parser::models::ip::protocol::IpProtocol::Unknown;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
 #[repr(u8)]
 pub enum IpProtocol {
     #[serde(rename = "icmpv4")]

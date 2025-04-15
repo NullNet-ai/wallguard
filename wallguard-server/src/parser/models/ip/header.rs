@@ -3,7 +3,7 @@ use etherparse::NetHeaders;
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Hash)]
 #[allow(clippy::struct_field_names)]
 pub struct IpHeader {
     #[serde(skip)]
@@ -25,9 +25,9 @@ impl IpHeader {
 
                 Some(Self {
                     packet_length,
-                    protocol,
                     source_ip,
                     destination_ip,
+                    protocol,
                 })
             }
             Some(NetHeaders::Ipv6(h, _)) => {

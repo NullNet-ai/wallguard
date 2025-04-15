@@ -1,7 +1,5 @@
-use super::{
-    models::ip::header::IpHeader,
-    parsed_message::{ParsedMessage, ParsedRecord},
-};
+use super::{models::ip::header::IpHeader, parsed_message::ParsedMessage};
+use crate::parser::connections_map::{ConnectionKey, ConnectionValue, ConnectionsMap};
 use crate::parser::models::transport::header::TransportHeader;
 use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
@@ -18,7 +16,8 @@ pub fn parse_message(
     token: &Token,
     ip_info_tx: &Sender<Option<IpAddr>>,
 ) -> ParsedMessage {
-    let mut records = Vec::new();
+    let timestamp = message.timestamp;
+    let mut map = ConnectionsMap::new();
 
     for packet in message.packets {
         let interface_name = packet.interface;
@@ -29,29 +28,33 @@ pub fn parse_message(
             if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
-                    let remote_ip = get_ip_to_lookup(ip_header.source_ip, ip_header.destination_ip);
-                    // send remote address to the IP info thread for examination
-                    ip_info_tx
-                        .send(remote_ip)
-                        .expect("Failed to send addresses to the IP info channel");
-                    // calculate total length
-                    let total_length = 14 * has_ethernet as u16 + ip_header.packet_length;
-                    // create a parsed record
-                    records.push(ParsedRecord {
-                        timestamp: "2022-09-01T00:00:00Z".to_string(),
-                        device_id: token.account.device.id.clone(),
-                        interface_name,
-                        total_length,
-                        remote_ip,
-                        ip_header,
-                        transport_header,
-                    });
+                    let device_id = token.account.device.id.clone();
+                    let total_length =
+                        14 * usize::from(has_ethernet) + usize::from(ip_header.packet_length);
+                    let source_ip = ip_header.source_ip;
+                    let destination_ip = ip_header.destination_ip;
+
+                    let key =
+                        ConnectionKey::new(device_id, interface_name, ip_header, transport_header);
+
+                    map.connections
+                        .entry(key)
+                        .and_modify(|v| {
+                            v.packets += 1;
+                            v.bytes += total_length;
+                        })
+                        .or_insert({
+                            let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
+                            ip_info_tx
+                                .send(remote_ip)
+                                .expect("Failed to send addresses to the IP info channel");
+                            ConnectionValue::new(timestamp.clone(), total_length, remote_ip)
+                        });
                 }
             }
         }
     }
-
-    ParsedMessage { records }
+    map.to_parsed_message()
 }
 
 fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders> {

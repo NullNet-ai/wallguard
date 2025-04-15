@@ -87,7 +87,7 @@ impl IpCache {
     }
 }
 
-static HANDLER: once_cell::sync::Lazy<IpInfoHandler> = once_cell::sync::Lazy::new(|| {
+static HANDLER: std::sync::LazyLock<IpInfoHandler> = std::sync::LazyLock::new(|| {
     #[cfg(not(debug_assertions))]
     let url = "https://ipapi.co/{ip}/json/?key={api_key}";
     #[cfg(debug_assertions)]

@@ -23,7 +23,7 @@ impl WallGuardImpl {
                 message: "No valid connections in the message (skipping insertion to datastore)"
                     .to_string(),
             }));
-        };
+        }
 
         let _ = self
             .context

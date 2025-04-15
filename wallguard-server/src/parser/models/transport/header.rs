@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Default, Hash, Eq, PartialEq)]
 pub struct TransportHeader {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_port: Option<u16>,
@@ -27,8 +27,9 @@ impl TransportHeader {
                     destination_port: Some(destination_port),
                 })
             }
-            Some(etherparse::TransportHeader::Icmpv4(_))
-            | Some(etherparse::TransportHeader::Icmpv6(_)) => Some(Self::default()),
+            Some(
+                etherparse::TransportHeader::Icmpv4(_) | etherparse::TransportHeader::Icmpv6(_),
+            ) => Some(Self::default()),
             None => None,
         }
     }

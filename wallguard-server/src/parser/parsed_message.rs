@@ -1,8 +1,5 @@
-use crate::parser::models::transport::header::TransportHeader;
+use crate::parser::connections_map::{ConnectionKey, ConnectionValue};
 use serde::Serialize;
-use std::net::IpAddr;
-
-use super::models::ip::header::IpHeader;
 
 #[derive(Debug, Serialize)]
 #[serde(transparent)]
@@ -12,16 +9,10 @@ pub struct ParsedMessage {
 
 #[derive(Debug, Serialize)]
 pub struct ParsedRecord {
-    pub device_id: String,
-    pub interface_name: String,
-    pub timestamp: String,
-    pub total_length: u16,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub remote_ip: Option<IpAddr>,
     #[serde(flatten)]
-    pub ip_header: IpHeader,
+    pub connection_key: ConnectionKey,
     #[serde(flatten)]
-    pub transport_header: TransportHeader,
+    pub connection_value: ConnectionValue,
 }
 
 #[cfg(test)]
@@ -40,7 +31,7 @@ mod tests {
             device_id: "machine-id-1234".to_string(),
             interface_name: "eth0".to_string(),
             timestamp: "2021-08-01T00:00:00Z".to_string(),
-            total_length: 1528,
+            bytes: 1528,
             remote_ip: Some(IpAddr::from_str("8.8.8.8").unwrap()),
             ip_header: IpHeader {
                 packet_length: 0,
@@ -60,7 +51,7 @@ mod tests {
             device_id: "machine-id-5678".to_string(),
             interface_name: "eth0".to_string(),
             timestamp: "2022-09-01T00:00:00Z".to_string(),
-            total_length: 77,
+            bytes: 77,
             remote_ip: None,
             ip_header: IpHeader {
                 packet_length: 1512,
