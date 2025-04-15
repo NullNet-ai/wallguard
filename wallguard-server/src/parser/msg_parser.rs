@@ -23,7 +23,6 @@ pub fn parse_message(
     for packet in message.packets {
         let interface_name = packet.interface;
         let link_type = packet.link_type;
-        let timestamp = packet.timestamp;
 
         if let Some(headers) = get_packet_headers(&packet.data, link_type) {
             let ethernet_header = EthernetHeader::from_etherparse(headers.link);
@@ -43,7 +42,6 @@ pub fn parse_message(
                         device_id: token.account.device.id.clone(),
                         interface_name,
                         total_length,
-                        timestamp,
                         ethernet_header,
                         remote_ip,
                         ip_header,
@@ -54,7 +52,10 @@ pub fn parse_message(
         }
     }
 
-    ParsedMessage { records }
+    ParsedMessage {
+        timestamp: message.timestamp,
+        records,
+    }
 }
 
 fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders> {

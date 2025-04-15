@@ -16,11 +16,11 @@ impl WallGuardImpl {
 
         log::info!("Received {} packets.", packets.packets.len());
         let parsed_message = parse_message(packets, &token_info, &self.ip_info_tx);
-        log::info!("Parsed {} packets.", parsed_message.records.len());
+        log::info!("Parsed {} connections.", parsed_message.records.len());
 
         if parsed_message.records.is_empty() {
             return Ok(Response::new(CommonResponse {
-                message: "No valid packets in the message (skipping insertion to datastore)"
+                message: "No valid connections in the message (skipping insertion to datastore)"
                     .to_string(),
             }));
         };
@@ -28,11 +28,11 @@ impl WallGuardImpl {
         let _ = self
             .context
             .datastore
-            .packets_insert(&jwt_token, parsed_message)
+            .connections_insert(&jwt_token, parsed_message)
             .await?;
 
         Ok(Response::new(CommonResponse {
-            message: String::from("Packets successfully inserted"),
+            message: String::from("Connections successfully inserted"),
         }))
     }
 }

@@ -5,7 +5,7 @@ use nullnet_libdatastore::{
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl DatastoreWrapper {
-    pub async fn packets_insert(
+    pub async fn connections_insert(
         &self,
         token: &str,
         parsed_message: ParsedMessage,
@@ -14,7 +14,7 @@ impl DatastoreWrapper {
 
         let request = BatchCreateRequest {
             params: Some(CreateParams {
-                table: String::from("packets"),
+                table: String::from("connections"),
             }),
             query: Some(Query {
                 pluck: String::new(),

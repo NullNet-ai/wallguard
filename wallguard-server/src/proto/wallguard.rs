@@ -34,20 +34,20 @@ pub struct Packets {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    pub timestamp: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
     pub uuid: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
+    #[prost(message, repeated, tag = "4")]
     pub packets: ::prost::alloc::vec::Vec<Packet>,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Packet {
     #[prost(string, tag = "1")]
-    pub timestamp: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
     pub interface: ::prost::alloc::string::String,
-    #[prost(int32, tag = "3")]
+    #[prost(int32, tag = "2")]
     pub link_type: i32,
-    #[prost(bytes = "vec", tag = "4")]
+    #[prost(bytes = "vec", tag = "3")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

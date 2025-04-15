@@ -6,8 +6,9 @@ use super::models::ether::header::EthernetHeader;
 use super::models::ip::header::IpHeader;
 
 #[derive(Debug, Serialize)]
-#[serde(transparent)]
 pub struct ParsedMessage {
+    pub timestamp: String,
+    #[serde(flatten)]
     pub records: Vec<ParsedRecord>,
 }
 
@@ -15,7 +16,6 @@ pub struct ParsedMessage {
 pub struct ParsedRecord {
     pub device_id: String,
     pub interface_name: String,
-    pub timestamp: String,
     pub total_length: u16,
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub ethernet_header: Option<EthernetHeader>,
