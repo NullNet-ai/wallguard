@@ -1,4 +1,3 @@
-use crate::parser::models::ip::protocol::IpProtocol;
 use etherparse::NetHeaders;
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr};
@@ -10,7 +9,6 @@ pub struct IpHeader {
     pub packet_length: u16,
     pub source_ip: IpAddr,
     pub destination_ip: IpAddr,
-    pub protocol: IpProtocol,
 }
 
 impl IpHeader {
@@ -18,7 +16,6 @@ impl IpHeader {
         match net {
             Some(NetHeaders::Ipv4(h, _)) => {
                 let packet_length = h.total_len;
-                let protocol = IpProtocol::from_u8(h.protocol.0);
 
                 let source_ip = IpAddr::V4(Ipv4Addr::from(h.source));
                 let destination_ip = IpAddr::V4(Ipv4Addr::from(h.destination));
@@ -27,12 +24,10 @@ impl IpHeader {
                     packet_length,
                     source_ip,
                     destination_ip,
-                    protocol,
                 })
             }
             Some(NetHeaders::Ipv6(h, _)) => {
                 let packet_length = 40 + h.payload_length;
-                let protocol = IpProtocol::from_u8(h.next_header.0);
 
                 let source_ip = IpAddr::V6(h.source_addr());
                 let destination_ip = IpAddr::V6(h.destination_addr());
@@ -41,7 +36,6 @@ impl IpHeader {
                     packet_length,
                     source_ip,
                     destination_ip,
-                    protocol,
                 })
             }
             _ => None,
@@ -52,7 +46,6 @@ impl IpHeader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::models::ip::protocol::IpProtocol;
     use std::str::FromStr;
 
     #[test]
@@ -71,7 +64,6 @@ mod tests {
                 .expect("Failed to parse IP header");
 
         assert_eq!(header.packet_length, 60);
-        assert_eq!(header.protocol, IpProtocol::Tcp);
         assert_eq!(header.source_ip, IpAddr::from_str("192.168.1.1").unwrap());
         assert_eq!(
             header.destination_ip,
@@ -83,13 +75,12 @@ mod tests {
     fn test_ip_header_to_json() {
         let header = IpHeader {
             packet_length: 60,
-            protocol: IpProtocol::Tcp,
             source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
             destination_ip: IpAddr::from_str("10.0.0.1").unwrap(),
         };
 
         let json = serde_json::to_string(&header).unwrap();
-        let expected = r#"{"source_ip":"8.8.8.8","destination_ip":"10.0.0.1","protocol":"tcp"}"#;
+        let expected = r#"{"source_ip":"8.8.8.8","destination_ip":"10.0.0.1"}"#;
         assert_eq!(json, expected);
     }
 }

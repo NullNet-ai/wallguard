@@ -1,11 +1,12 @@
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Default, Hash, Eq, PartialEq)]
+#[derive(Debug, Serialize, Hash, Eq, PartialEq)]
 pub struct TransportHeader {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_port: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub destination_port: Option<u16>,
+    pub protocol: Protocol,
 }
 
 impl TransportHeader {
@@ -17,6 +18,7 @@ impl TransportHeader {
                 Some(Self {
                     source_port: Some(source_port),
                     destination_port: Some(destination_port),
+                    protocol: Protocol::Tcp,
                 })
             }
             Some(etherparse::TransportHeader::Udp(h)) => {
@@ -25,14 +27,34 @@ impl TransportHeader {
                 Some(Self {
                     source_port: Some(source_port),
                     destination_port: Some(destination_port),
+                    protocol: Protocol::Udp,
                 })
             }
-            Some(
-                etherparse::TransportHeader::Icmpv4(_) | etherparse::TransportHeader::Icmpv6(_),
-            ) => Some(Self::default()),
+            Some(etherparse::TransportHeader::Icmpv4(_)) => Some(Self {
+                source_port: None,
+                destination_port: None,
+                protocol: Protocol::IcmpV4,
+            }),
+            Some(etherparse::TransportHeader::Icmpv6(_)) => Some(Self {
+                source_port: None,
+                destination_port: None,
+                protocol: Protocol::IcmpV6,
+            }),
             None => None,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Hash)]
+pub enum Protocol {
+    #[serde(rename = "tcp")]
+    Tcp,
+    #[serde(rename = "udp")]
+    Udp,
+    #[serde(rename = "icmpv4")]
+    IcmpV4,
+    #[serde(rename = "icmpv6")]
+    IcmpV6,
 }
 
 #[cfg(test)]
@@ -44,11 +66,15 @@ mod tests {
         let transport_header = TransportHeader {
             source_port: Some(443),
             destination_port: Some(50051),
+            protocol: Protocol::Tcp,
         };
 
         let json = serde_json::to_string(&transport_header).unwrap();
 
-        assert_eq!(json, r#"{"source_port":443,"destination_port":50051}"#);
+        assert_eq!(
+            json,
+            r#"{"source_port":443,"destination_port":50051,"protocol":"tcp"}"#
+        );
     }
 
     #[test]
@@ -56,10 +82,25 @@ mod tests {
         let transport_header = TransportHeader {
             source_port: None,
             destination_port: None,
+            protocol: Protocol::IcmpV4,
         };
 
         let json = serde_json::to_string(&transport_header).unwrap();
 
-        assert_eq!(json, r#"{}"#);
+        assert_eq!(json, r#"{"protocol":"icmpv4"}"#);
+    }
+
+    #[test]
+    fn test_ip_protocol_serialize() {
+        assert_eq!(serde_json::to_string(&Protocol::Tcp).unwrap(), r#""tcp""#);
+        assert_eq!(serde_json::to_string(&Protocol::Udp).unwrap(), r#""udp""#);
+        assert_eq!(
+            serde_json::to_string(&Protocol::IcmpV4).unwrap(),
+            r#""icmpv4""#
+        );
+        assert_eq!(
+            serde_json::to_string(&Protocol::IcmpV6).unwrap(),
+            r#""icmpv6""#
+        );
     }
 }

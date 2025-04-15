@@ -18,13 +18,12 @@ pub struct ParsedRecord {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::models::ip::header::IpHeader;
-    use crate::parser::models::ip::protocol::IpProtocol;
-    use crate::parser::models::transport::header::TransportHeader;
+    use crate::parser::ip_header::IpHeader;
+    use crate::parser::transport_header::{Protocol, TransportHeader};
     use std::net::IpAddr;
     use std::str::FromStr;
 
-    const RECORD_1_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"tcp","source_port":443,"destination_port":50051,"timestamp":"2021-08-01T00:00:00Z","packets":11,"bytes":1528,"remote_ip":"8.8.8.8"}"#;
+    const RECORD_1_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"protocol":"tcp","timestamp":"2021-08-01T00:00:00Z","packets":11,"bytes":1528,"remote_ip":"8.8.8.8"}"#;
 
     const RECORD_2_JSON: &'static str = r#"{"device_id":"machine-id-5678","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"icmpv4","timestamp":"2022-09-01T00:00:00Z","packets":1,"bytes":77}"#;
 
@@ -34,13 +33,13 @@ mod tests {
             interface_name: "eth0".to_string(),
             ip_header: IpHeader {
                 packet_length: 0,
-                protocol: IpProtocol::Tcp,
                 source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
                 destination_ip: IpAddr::from_str("9.9.9.9").unwrap(),
             },
             transport_header: TransportHeader {
                 source_port: Some(443),
                 destination_port: Some(50051),
+                protocol: Protocol::Tcp,
             },
         };
         let value = ConnectionValue {
@@ -62,13 +61,13 @@ mod tests {
             interface_name: "eth0".to_string(),
             ip_header: IpHeader {
                 packet_length: 1512,
-                protocol: IpProtocol::IcmpV4,
                 source_ip: IpAddr::from_str("8.8.8.8").unwrap(),
                 destination_ip: IpAddr::from_str("9.9.9.9").unwrap(),
             },
             transport_header: TransportHeader {
                 source_port: None,
                 destination_port: None,
+                protocol: Protocol::IcmpV4,
             },
         };
         let value = ConnectionValue {

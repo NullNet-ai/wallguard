@@ -1,6 +1,6 @@
-use super::{models::ip::header::IpHeader, parsed_message::ParsedMessage};
+use super::{ip_header::IpHeader, parsed_message::ParsedMessage};
 use crate::parser::connections_map::{ConnectionKey, ConnectionValue, ConnectionsMap};
-use crate::parser::models::transport::header::TransportHeader;
+use crate::parser::transport_header::TransportHeader;
 use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};

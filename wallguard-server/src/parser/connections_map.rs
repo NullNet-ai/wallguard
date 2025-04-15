@@ -1,6 +1,6 @@
-use crate::parser::models::ip::header::IpHeader;
-use crate::parser::models::transport::header::TransportHeader;
+use crate::parser::ip_header::IpHeader;
 use crate::parser::parsed_message::{ParsedMessage, ParsedRecord};
+use crate::parser::transport_header::TransportHeader;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::net::IpAddr;
