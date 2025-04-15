@@ -39,9 +39,9 @@ impl IpHeader {
 
                 Some(Self {
                     packet_length,
-                    protocol,
                     source_ip,
                     destination_ip,
+                    protocol,
                 })
             }
             _ => None,

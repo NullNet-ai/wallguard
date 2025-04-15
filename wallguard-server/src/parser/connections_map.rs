@@ -16,7 +16,7 @@ impl ConnectionsMap {
         }
     }
 
-    pub fn to_parsed_message(self) -> ParsedMessage {
+    pub fn into_parsed_message(self) -> ParsedMessage {
         let records = self
             .connections
             .into_iter()

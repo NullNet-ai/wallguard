@@ -54,7 +54,7 @@ pub fn parse_message(
             }
         }
     }
-    map.to_parsed_message()
+    map.into_parsed_message()
 }
 
 fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders> {

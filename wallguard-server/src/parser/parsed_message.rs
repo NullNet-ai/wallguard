@@ -18,21 +18,20 @@ pub struct ParsedRecord {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::models::ip::header::IpHeader;
     use crate::parser::models::ip::protocol::IpProtocol;
+    use crate::parser::models::transport::header::TransportHeader;
     use std::net::IpAddr;
     use std::str::FromStr;
 
-    const RECORD_1_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","timestamp":"2021-08-01T00:00:00Z","total_length":1528,"remote_ip":"8.8.8.8","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"tcp","source_port":443,"destination_port":50051}"#;
+    const RECORD_1_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"tcp","source_port":443,"destination_port":50051,"timestamp":"2021-08-01T00:00:00Z","packets":11,"bytes":1528,"remote_ip":"8.8.8.8"}"#;
 
-    const RECORD_2_JSON: &'static str = r#"{"device_id":"machine-id-5678","interface_name":"eth0","timestamp":"2022-09-01T00:00:00Z","total_length":77,"source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"icmpv4"}"#;
+    const RECORD_2_JSON: &'static str = r#"{"device_id":"machine-id-5678","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"icmpv4","timestamp":"2022-09-01T00:00:00Z","packets":1,"bytes":77}"#;
 
     fn parsed_record_1() -> ParsedRecord {
-        ParsedRecord {
+        let key = ConnectionKey {
             device_id: "machine-id-1234".to_string(),
             interface_name: "eth0".to_string(),
-            timestamp: "2021-08-01T00:00:00Z".to_string(),
-            bytes: 1528,
-            remote_ip: Some(IpAddr::from_str("8.8.8.8").unwrap()),
             ip_header: IpHeader {
                 packet_length: 0,
                 protocol: IpProtocol::Tcp,
@@ -43,16 +42,24 @@ mod tests {
                 source_port: Some(443),
                 destination_port: Some(50051),
             },
+        };
+        let value = ConnectionValue {
+            timestamp: "2021-08-01T00:00:00Z".to_string(),
+            packets: 11,
+            bytes: 1528,
+            remote_ip: Some(IpAddr::from_str("8.8.8.8").unwrap()),
+        };
+
+        ParsedRecord {
+            connection_key: key,
+            connection_value: value,
         }
     }
 
     fn parsed_record_2() -> ParsedRecord {
-        ParsedRecord {
+        let key = ConnectionKey {
             device_id: "machine-id-5678".to_string(),
             interface_name: "eth0".to_string(),
-            timestamp: "2022-09-01T00:00:00Z".to_string(),
-            bytes: 77,
-            remote_ip: None,
             ip_header: IpHeader {
                 packet_length: 1512,
                 protocol: IpProtocol::IcmpV4,
@@ -63,6 +70,17 @@ mod tests {
                 source_port: None,
                 destination_port: None,
             },
+        };
+        let value = ConnectionValue {
+            timestamp: "2022-09-01T00:00:00Z".to_string(),
+            packets: 1,
+            bytes: 77,
+            remote_ip: None,
+        };
+
+        ParsedRecord {
+            connection_key: key,
+            connection_value: value,
         }
     }
 
