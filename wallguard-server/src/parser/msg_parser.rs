@@ -16,21 +16,17 @@ pub fn parse_message(
     token: &Token,
     ip_info_tx: &Sender<Option<IpAddr>>,
 ) -> ParsedMessage {
-    let timestamp = message.timestamp;
     let mut map = ConnectionsMap::new();
-
     for packet in message.packets {
-        let interface_name = packet.interface;
         let link_type = packet.link_type;
-
         if let Some(headers) = get_packet_headers(&packet.data, link_type) {
-            let has_ethernet = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
             if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
                     let device_id = token.account.device.id.clone();
-                    let total_length =
-                        14 * usize::from(has_ethernet) + usize::from(ip_header.packet_length);
+                    let interface_name = packet.interface;
+                    let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
+                    let bytes = 14 * usize::from(has_eth) + usize::from(ip_header.packet_length);
                     let source_ip = ip_header.source_ip;
                     let destination_ip = ip_header.destination_ip;
 
@@ -40,15 +36,13 @@ pub fn parse_message(
                     map.connections
                         .entry(key)
                         .and_modify(|v| {
-                            v.packets += 1;
-                            v.bytes += total_length;
+                            v.update(bytes);
                         })
                         .or_insert({
+                            let timestamp = packet.timestamp;
                             let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
-                            ip_info_tx
-                                .send(remote_ip)
-                                .expect("Failed to send addresses to the IP info channel");
-                            ConnectionValue::new(timestamp.clone(), total_length, remote_ip)
+                            let _ = ip_info_tx.send(remote_ip);
+                            ConnectionValue::new(timestamp, bytes, remote_ip)
                         });
                 }
             }

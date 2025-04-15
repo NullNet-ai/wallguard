@@ -39,15 +39,15 @@ message CommonResponse {
 
 message Packets {
   string token = 1;
-  string timestamp = 2;
-  string uuid = 3;
-  repeated Packet packets = 4;
+  string uuid = 2;
+  repeated Packet packets = 3;
 }
 
 message Packet {
-  string interface = 1;
-  int32 link_type = 2;
-  bytes data = 3;
+  string timestamp = 1;
+  string interface = 2;
+  int32 link_type = 3;
+  bytes data = 4;
 }
 
 message FileSnapshot {

@@ -73,4 +73,9 @@ impl ConnectionValue {
             remote_ip,
         }
     }
+
+    pub fn update(&mut self, bytes: usize) {
+        self.packets += 1;
+        self.bytes += bytes;
+    }
 }
