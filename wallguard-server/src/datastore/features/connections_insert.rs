@@ -22,7 +22,7 @@ impl DatastoreWrapper {
             }),
             body: Some(BatchCreateBody {
                 records,
-                entity_prefix: String::from("PK"),
+                entity_prefix: String::from("CN"),
             }),
         };
 
