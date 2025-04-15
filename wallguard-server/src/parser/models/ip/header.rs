@@ -8,9 +8,9 @@ use std::net::{IpAddr, Ipv4Addr};
 pub struct IpHeader {
     #[serde(skip)]
     pub packet_length: u16,
-    pub protocol: IpProtocol,
     pub source_ip: IpAddr,
     pub destination_ip: IpAddr,
+    pub protocol: IpProtocol,
 }
 
 impl IpHeader {
@@ -89,7 +89,7 @@ mod tests {
         };
 
         let json = serde_json::to_string(&header).unwrap();
-        let expected = r#"{"protocol":"tcp","source_ip":"8.8.8.8","destination_ip":"10.0.0.1"}"#;
+        let expected = r#"{"source_ip":"8.8.8.8","destination_ip":"10.0.0.1","protocol":"tcp"}"#;
         assert_eq!(json, expected);
     }
 }

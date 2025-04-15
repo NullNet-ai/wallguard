@@ -1,12 +1,12 @@
 use super::{
-    models::{ether::header::EthernetHeader, ip::header::IpHeader},
+    models::ip::header::IpHeader,
     parsed_message::{ParsedMessage, ParsedRecord},
 };
 use crate::parser::models::transport::header::TransportHeader;
 use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
-use etherparse::{LaxPacketHeaders, LenSource};
+use etherparse::{LaxPacketHeaders, LenSource, LinkHeader};
 use nullnet_liberror::{ErrorHandler, Location, location};
 use nullnet_libipinfo::get_ip_to_lookup;
 use nullnet_libtoken::Token;
@@ -25,7 +25,7 @@ pub fn parse_message(
         let link_type = packet.link_type;
 
         if let Some(headers) = get_packet_headers(&packet.data, link_type) {
-            let ethernet_header = EthernetHeader::from_etherparse(headers.link);
+            let has_ethernet = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
             if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
@@ -35,14 +35,13 @@ pub fn parse_message(
                         .send(remote_ip)
                         .expect("Failed to send addresses to the IP info channel");
                     // calculate total length
-                    let total_length =
-                        ethernet_header.as_ref().map_or(0, |_| 14) + ip_header.packet_length;
+                    let total_length = 14 * has_ethernet as u16 + ip_header.packet_length;
                     // create a parsed record
                     records.push(ParsedRecord {
+                        timestamp: "2022-09-01T00:00:00Z".to_string(),
                         device_id: token.account.device.id.clone(),
                         interface_name,
                         total_length,
-                        ethernet_header,
                         remote_ip,
                         ip_header,
                         transport_header,
@@ -52,10 +51,7 @@ pub fn parse_message(
         }
     }
 
-    ParsedMessage {
-        timestamp: message.timestamp,
-        records,
-    }
+    ParsedMessage { records }
 }
 
 fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders> {
