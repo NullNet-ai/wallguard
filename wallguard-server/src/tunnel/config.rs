@@ -30,7 +30,7 @@ impl Config {
 /// - `default_port`: Default port to use if the environment variable is not set or parsing fails.
 fn read_port_from_env(default_port: u16) -> u16 {
     let port = env::var("TUNNEL_PORT").unwrap_or_else(|_| {
-        log::error!(
+        log::warn!(
             "Failed to read 'TUNNEL_PORT' env var. Using default port {}...",
             default_port
         );
@@ -53,7 +53,7 @@ fn read_duration_from_env(default_secs: u64) -> Duration {
         .ok()
         .and_then(|val| val.parse::<u64>().ok())
         .unwrap_or_else(|| {
-            log::error!(
+            log::warn!(
                 "Failed to read 'IDLE_CHANNEL_TIMEOUT' or invalid value. Using default {} seconds...", default_secs
             );
             default_secs
