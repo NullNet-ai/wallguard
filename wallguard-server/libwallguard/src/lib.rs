@@ -12,7 +12,7 @@ pub struct WallGuardGrpcInterface {
     client: WallGuardClient<Channel>,
 }
 
-// static CA_CERT: once_cell::sync::Lazy<Certificate> = once_cell::sync::Lazy::new(|| {
+// static CA_CERT: std::sync::LazyLock<Certificate> = std::sync::LazyLock::new(|| {
 //     Certificate::from_pem(
 //         std::fs::read_to_string("tls/ca.pem").expect("Failed to read CA certificate"),
 //     )

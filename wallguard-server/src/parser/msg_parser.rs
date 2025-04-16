@@ -1,12 +1,10 @@
-use super::{
-    models::{ether::header::EthernetHeader, ip::header::IpHeader},
-    parsed_message::{ParsedMessage, ParsedRecord},
-};
-use crate::parser::models::transport::header::TransportHeader;
+use super::{ip_header::IpHeader, parsed_message::ParsedMessage};
+use crate::parser::connections_map::{ConnectionKey, ConnectionValue, ConnectionsMap};
+use crate::parser::transport_header::TransportHeader;
 use crate::proto::wallguard::Packets;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
 use etherparse::err::{Layer, LenError};
-use etherparse::{LaxPacketHeaders, LenSource};
+use etherparse::{LaxPacketHeaders, LenSource, LinkHeader};
 use nullnet_liberror::{ErrorHandler, Location, location};
 use nullnet_libipinfo::get_ip_to_lookup;
 use nullnet_libtoken::Token;
@@ -18,43 +16,39 @@ pub fn parse_message(
     token: &Token,
     ip_info_tx: &Sender<Option<IpAddr>>,
 ) -> ParsedMessage {
-    let mut records = Vec::new();
-
+    let mut map = ConnectionsMap::new();
     for packet in message.packets {
-        let interface_name = packet.interface;
         let link_type = packet.link_type;
-        let timestamp = packet.timestamp;
-
         if let Some(headers) = get_packet_headers(&packet.data, link_type) {
-            let ethernet_header = EthernetHeader::from_etherparse(headers.link);
-            if let Some(ip_header) = IpHeader::from_etherparse(headers.net) {
+            if let Some((ip_header, packet_length)) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
-                    let remote_ip = get_ip_to_lookup(ip_header.source_ip, ip_header.destination_ip);
-                    // send remote address to the IP info thread for examination
-                    ip_info_tx
-                        .send(remote_ip)
-                        .expect("Failed to send addresses to the IP info channel");
-                    // calculate total length
-                    let total_length =
-                        ethernet_header.as_ref().map_or(0, |_| 14) + ip_header.packet_length;
-                    // create a parsed record
-                    records.push(ParsedRecord {
-                        device_id: token.account.device.id.clone(),
-                        interface_name,
-                        total_length,
-                        timestamp,
-                        ethernet_header,
-                        remote_ip,
-                        ip_header,
-                        transport_header,
-                    });
+                    let device_id = token.account.device.id.clone();
+                    let interface_name = packet.interface;
+                    let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
+                    let bytes = 14 * usize::from(has_eth) + usize::from(packet_length);
+                    let source_ip = ip_header.source_ip;
+                    let destination_ip = ip_header.destination_ip;
+
+                    let key =
+                        ConnectionKey::new(device_id, interface_name, ip_header, transport_header);
+
+                    map.connections
+                        .entry(key)
+                        .and_modify(|v| {
+                            v.update(bytes);
+                        })
+                        .or_insert_with(|| {
+                            let timestamp = packet.timestamp;
+                            let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
+                            let _ = ip_info_tx.send(remote_ip);
+                            ConnectionValue::new(timestamp, bytes, remote_ip)
+                        });
                 }
             }
         }
     }
-
-    ParsedMessage { records }
+    map.into_parsed_message()
 }
 
 fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders> {

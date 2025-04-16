@@ -1,4 +1,5 @@
 mod config_upload;
+mod connections_insert;
 mod device_fetch_webgui_protocol;
 mod device_new_remote_session;
 mod device_setup;
@@ -7,5 +8,4 @@ mod heartbeat;
 mod ip_info;
 mod login;
 mod logs_insert;
-mod packets_insert;
 mod utils;

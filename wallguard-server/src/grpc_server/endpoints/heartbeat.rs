@@ -77,7 +77,7 @@ impl WallGuardImpl {
                         };
                         tx.send(Ok(response)).await.unwrap();
                     }
-                };
+                }
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
         });
