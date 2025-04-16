@@ -38,7 +38,7 @@ pub fn parse_message(
                         .and_modify(|v| {
                             v.update(bytes);
                         })
-                        .or_insert({
+                        .or_insert_with(|| {
                             let timestamp = packet.timestamp;
                             let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
                             let _ = ip_info_tx.send(remote_ip);
