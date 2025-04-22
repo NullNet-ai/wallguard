@@ -9,6 +9,9 @@ pub struct Args {
     /// IP address of the gRPC server
     #[arg(short, long, default_value = "127.0.0.1")]
     pub addr: String,
+    /// Port of the gRPC server
+    #[arg(short, long, default_value_t = 50051)]
+    pub port: u16,
     /// App ID
     #[arg(long = "app_id", default_value = APP_ID.unwrap_or_default())]
     pub app_id: String,
@@ -18,9 +21,9 @@ pub struct Args {
     /// Percentage of available disk space to use for packet dump files in case of server unavailability
     #[arg(short, long, default_value_t = 50, value_parser = clap::value_parser!(u8).range(1..=100))]
     pub disk_percentage: u8,
-    /// Port of the gRPC server
-    #[arg(short, long, default_value_t = 50051)]
-    pub port: u16,
+    /// IP address of the tunnel server
+    #[arg(short, long, default_value = "127.0.0.1")]
+    pub tunnel_addr: String,
     /// Port of the tunnel server
     #[arg(long, default_value_t = 9000)]
     pub tunnel_port: u16,

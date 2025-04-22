@@ -12,8 +12,8 @@ async fn create_remote_access_manager(args: &Args) -> RemoteAccessManager {
     let platform =
         nullnet_libconfmon::Platform::from_string(&args.target).expect("Unsupported platform");
 
-    let server_addr_str = format!("{}:{}", args.addr, args.tunnel_port);
-    let mut addrs = lookup_host(server_addr_str)
+    let addr = format!("{}:{}", args.tunnel_addr, args.tunnel_port);
+    let mut addrs = lookup_host(addr)
         .await
         .handle_err(location!())
         .expect("Failed to resolve server address");
