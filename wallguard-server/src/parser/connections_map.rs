@@ -59,23 +59,23 @@ impl ConnectionKey {
 pub struct ConnectionValue {
     pub timestamp: String,
     pub packets: usize,
-    pub bytes: usize,
+    pub byte_data: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_ip: Option<IpAddr>,
 }
 
 impl ConnectionValue {
-    pub fn new(timestamp: String, bytes: usize, remote_ip: Option<IpAddr>) -> Self {
+    pub fn new(timestamp: String, byte_data: usize, remote_ip: Option<IpAddr>) -> Self {
         ConnectionValue {
             timestamp,
             packets: 1,
-            bytes,
+            byte_data,
             remote_ip,
         }
     }
 
-    pub fn update(&mut self, bytes: usize) {
+    pub fn update(&mut self, byte_data: usize) {
         self.packets += 1;
-        self.bytes += bytes;
+        self.byte_data += byte_data;
     }
 }
