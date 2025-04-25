@@ -26,7 +26,7 @@ pub fn parse_message(
                     let device_id = token.account.device.id.clone();
                     let interface_name = packet.interface;
                     let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
-                    let byte_data = 14 * usize::from(has_eth) + usize::from(packet_length);
+                    let total_byte = 14 * usize::from(has_eth) + usize::from(packet_length);
                     let source_ip = ip_header.source_ip;
                     let destination_ip = ip_header.destination_ip;
 
@@ -36,13 +36,13 @@ pub fn parse_message(
                     map.connections
                         .entry(key)
                         .and_modify(|v| {
-                            v.update(byte_data);
+                            v.update(total_byte);
                         })
                         .or_insert_with(|| {
                             let timestamp = packet.timestamp;
                             let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
                             let _ = ip_info_tx.send(remote_ip);
-                            ConnectionValue::new(timestamp, byte_data, remote_ip)
+                            ConnectionValue::new(timestamp, total_byte, remote_ip)
                         });
                 }
             }
