@@ -91,5 +91,16 @@ pub async fn remote_access_request(
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     }
 
+    if context
+        .clients_manager
+        .lock()
+        .await
+        .force_heartbeat(&body.device_id)
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().body("Failed to send heartbeat");
+    }
+
     HttpResponse::Ok().body("")
 }

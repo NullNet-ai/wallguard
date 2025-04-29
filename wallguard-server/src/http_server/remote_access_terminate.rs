@@ -40,14 +40,25 @@ pub async fn remote_access_terminate(
     }
 
     let body = body.into_inner();
-    match context
+    if let Err(err) = context
         .tunnel
         .lock()
         .await
         .remove_profile(&body.device_id, &ra_type)
         .await
     {
-        Ok(_) => HttpResponse::Ok().body(""),
-        Err(err) => HttpResponse::NotFound().json(json!({"error": err.to_str()})),
+        return HttpResponse::NotFound().json(json!({"error": err.to_str()}));
     }
+
+    if let Err(err) = context
+        .clients_manager
+        .lock()
+        .await
+        .force_heartbeat(&body.device_id)
+        .await
+    {
+        return HttpResponse::InternalServerError().json(json!({"error": err.to_str()}));
+    }
+
+    HttpResponse::Ok().body("")
 }

@@ -9,6 +9,7 @@ use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
 use clap::Parser;
 
 mod cli;
+mod client_stream;
 mod datastore;
 mod grpc_server;
 mod http_server;
