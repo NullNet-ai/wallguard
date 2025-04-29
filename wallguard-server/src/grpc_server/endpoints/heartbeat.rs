@@ -30,7 +30,7 @@ impl WallGuardImpl {
         let device_version = authenticate_request.device_version;
         let device_uuid = authenticate_request.device_uuid;
 
-        if !self
+        if self
             .context
             .clients_manager
             .lock()
