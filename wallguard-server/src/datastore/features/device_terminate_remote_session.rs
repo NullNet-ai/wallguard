@@ -28,14 +28,14 @@ impl DatastoreWrapper {
                         field: "remote_access_type".to_string(),
                         operator: "equal".to_string(),
                         entity: table.to_string(),
-                        values: format!("[\"{}\"]", remote_access_type.to_string()),
+                        values: format!("[\"{}\"]", remote_access_type),
                     },
                     AdvanceFilter {
                         r#type: "operator".to_string(),
                         field: String::new(),
                         operator: "and".to_string(),
                         entity: String::new(),
-                        values: format!("[\"{}\"]", remote_access_type.to_string()),
+                        values: String::new(),
                     },
                     AdvanceFilter {
                         r#type: "criteria".to_string(),
