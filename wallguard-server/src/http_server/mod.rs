@@ -8,7 +8,7 @@ use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use proxy::proxy;
 use remote_access_request::remote_access_request;
-use remote_access_session::remote_access_session;
+// use remote_access_session::remote_access_session;
 use remote_access_terminate::remote_access_terminate;
 use std::net::TcpListener;
 
@@ -42,10 +42,10 @@ pub async fn run_http_server(context: AppContext) {
                 "/v1/api/remote_access",
                 web::delete().to(remote_access_terminate),
             )
-            .route(
-                "/v1/api/remote_access",
-                web::get().to(remote_access_session),
-            )
+            // .route(
+            //     "/v1/api/remote_access",
+            //     web::get().to(remote_access_session),
+            // )
             .default_service(web::to(proxy))
     })
     .listen(listener)
