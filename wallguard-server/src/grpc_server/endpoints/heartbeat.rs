@@ -1,11 +1,9 @@
 use crate::datastore::DatastoreWrapper;
 use crate::grpc_server::server::WallGuardImpl;
 use crate::proto::wallguard::wall_guard_server::WallGuard;
-use crate::proto::wallguard::{DeviceStatus, HeartbeatRequest, HeartbeatResponse};
-use crate::tunnel::RAType;
+use crate::proto::wallguard::{DeviceStatus, HeartbeatRequest};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libtoken::Token;
-use std::time::Duration;
 use tokio::sync::mpsc;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response};
@@ -16,7 +14,6 @@ impl WallGuardImpl {
         request: Request<HeartbeatRequest>,
     ) -> Result<Response<<WallGuardImpl as WallGuard>::HeartbeatStream>, Error> {
         let datastore = self.context.datastore.clone();
-        let tunnel = self.context.tunnel.clone();
         let remote_address = request
             .remote_addr()
             .map_or_else(|| "Unknown".to_string(), |addr| addr.ip().to_string());
@@ -33,6 +30,20 @@ impl WallGuardImpl {
         let device_version = authenticate_request.device_version;
         let device_uuid = authenticate_request.device_uuid;
 
+        if self
+            .context
+            .clients_manager
+            .lock()
+            .await
+            .is_client_connected(&device_id)
+            .await
+        {
+            return Err(format!(
+                "Client with device id {device_id} is already connected"
+            ))
+            .handle_err(location!())?;
+        }
+
         let status = datastore.device_status(device_id.clone(), &token).await?;
         if status == DeviceStatus::DsDraft {
             datastore
@@ -48,46 +59,19 @@ impl WallGuardImpl {
 
         let (tx, rx) = mpsc::channel(6);
 
-        tokio::spawn(async move {
-            loop {
-                if let Ok(token) = auth_handler.obtain_token_safe().await {
-                    if let Ok(response) = datastore.heartbeat(&token, device_id.clone()).await {
-                        let (remote_shell_enabled, remote_ui_enabled) = {
-                            let tunnel = tunnel.lock().await;
-
-                            let remote_shell_enabled = tunnel
-                                .get_profile_by_device_id(&device_id, &RAType::Shell)
-                                .await
-                                .is_some();
-
-                            let remote_ui_enabled = tunnel
-                                .get_profile_by_device_id(&device_id, &RAType::UI)
-                                .await
-                                .is_some();
-
-                            (remote_shell_enabled, remote_ui_enabled)
-                        };
-
-                        let response = HeartbeatResponse {
-                            token,
-                            status: response.status.into(),
-                            remote_shell_enabled,
-                            remote_ui_enabled,
-                            is_monitoring_enabled: response.is_monitoring_enabled,
-                        };
-                        tx.send(Ok(response)).await.unwrap();
-                    }
-                }
-                tokio::time::sleep(Duration::from_secs(10)).await;
-            }
-        });
+        self.context
+            .clients_manager
+            .lock()
+            .await
+            .on_client_connected(device_id, auth_handler, self.context.clone(), tx)
+            .await?;
 
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 }
 
 #[derive(Debug)]
-struct AuthHandler {
+pub struct AuthHandler {
     app_id: String,
     app_secret: String,
     datastore: DatastoreWrapper,

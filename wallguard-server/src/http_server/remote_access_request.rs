@@ -67,18 +67,7 @@ pub async fn remote_access_request(
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     };
 
-    if context
-        .datastore
-        .device_new_remote_session(
-            jwt_token,
-            body.device_id.clone(),
-            profile.remote_access_type(),
-        )
-        .await
-        .is_err()
-    {
-        return HttpResponse::InternalServerError().body("Failed to save session info");
-    };
+    let public_session_id = profile.public_session_id();
 
     if context
         .tunnel
@@ -90,6 +79,31 @@ pub async fn remote_access_request(
     {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     }
+
+    if context
+        .clients_manager
+        .lock()
+        .await
+        .force_heartbeat(&body.device_id)
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().body("Failed to send heartbeat");
+    }
+
+    if context
+        .datastore
+        .device_new_remote_session(
+            jwt_token,
+            body.device_id.clone(),
+            ra_type,
+            public_session_id,
+        )
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().body("Failed to save session info");
+    };
 
     HttpResponse::Ok().body("")
 }

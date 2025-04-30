@@ -11,6 +11,8 @@ mod endpoints;
 mod request_log;
 mod server;
 
+pub use endpoints::AuthHandler;
+
 pub(crate) const ADDR: &str = "0.0.0.0";
 pub(crate) const PORT: u16 = 50051;
 
