@@ -1,14 +1,14 @@
 #![allow(clippy::module_name_repetitions)]
 
+use crate::grpc_server::{ADDR, PORT};
+use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
 use app_context::AppContext;
+use clap::Parser;
 use nullnet_liberror::Error;
+use std::time::Duration;
 use tokio::signal;
 
 mod app_context;
-use crate::grpc_server::{ADDR, PORT};
-use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
-use clap::Parser;
-
 mod cli;
 mod client_stream;
 mod datastore;
@@ -44,6 +44,7 @@ async fn main() {
     let _ = terminate_active_rm_sessions(&app_context).await;
 
     tokio::select! {
+        _ = tunnel::monitor_idle_profiles(app_context.clone(), Duration::from_secs(60 * 30)) => {},
         _ = grpc_server::run_grpc_server(app_context.clone(), args) => {},
         _ = http_server::run_http_server(app_context) => {},
         _ = signal::ctrl_c() => {}

@@ -1,10 +1,6 @@
-use crate::{
-    client_stream::Manager,
-    datastore::DatastoreWrapper,
-    tunnel::{TunnelServer, monitor_idle_profiles},
-};
+use crate::{client_stream::Manager, datastore::DatastoreWrapper, tunnel::TunnelServer};
 use nullnet_liberror::Error;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone)]
@@ -19,13 +15,6 @@ impl AppContext {
         let datastore = DatastoreWrapper::new().await?;
         let clients_manager = Arc::new(Mutex::new(Manager::new()));
         let tunnel = Arc::new(Mutex::new(TunnelServer::new()));
-
-        if false {
-            tokio::spawn(monitor_idle_profiles(
-                tunnel.clone(),
-                Duration::from_secs(60 * 30),
-            ));
-        }
 
         Ok(Self {
             datastore,

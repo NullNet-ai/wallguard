@@ -80,16 +80,13 @@ pub async fn remote_access_request(
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     }
 
-    if context
+    // Ignore error if client is not yet connected
+    let _ = context
         .clients_manager
         .lock()
         .await
         .force_heartbeat(&body.device_id)
-        .await
-        .is_err()
-    {
-        return HttpResponse::InternalServerError().body("Failed to send heartbeat");
-    }
+        .await;
 
     if context
         .datastore

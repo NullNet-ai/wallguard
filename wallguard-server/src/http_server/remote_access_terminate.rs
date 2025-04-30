@@ -50,15 +50,13 @@ pub async fn remote_access_terminate(
         return HttpResponse::NotFound().json(json!({"error": err.to_str()}));
     }
 
-    if let Err(err) = context
+    // Ignore error if client is not yet connected
+    let _ = context
         .clients_manager
         .lock()
         .await
         .force_heartbeat(&body.device_id)
-        .await
-    {
-        return HttpResponse::InternalServerError().json(json!({"error": err.to_str()}));
-    }
+        .await;
 
     if context
         .datastore

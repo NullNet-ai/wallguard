@@ -1,3 +1,9 @@
+use crate::{
+    app_context::AppContext,
+    grpc_server::AuthHandler,
+    utils::{ACCOUNT_ID, ACCOUNT_SECRET},
+};
+
 use super::{RAType, TunnelServer};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::{sync::Mutex, time::Instant};
@@ -6,39 +12,56 @@ use tokio::{sync::Mutex, time::Instant};
 
 const DEFAULT_PERIOD_SECONDS: u64 = 5;
 
-pub async fn monitor_idle_profiles(tunnel: Arc<Mutex<TunnelServer>>, timeout: Duration) {
+pub async fn monitor_idle_profiles(context: AppContext, timeout: Duration) {
     let mut shells: HashMap<String, Instant> = HashMap::new();
     let mut uis: HashMap<String, Instant> = HashMap::new();
 
-    loop {
-        update_map(&mut shells, tunnel.clone(), RAType::Shell).await;
-        update_map(&mut uis, tunnel.clone(), RAType::UI).await;
+    let mut auth_handler = AuthHandler::new(
+        ACCOUNT_ID.to_string(),
+        ACCOUNT_SECRET.to_string(),
+        context.datastore.clone(),
+    );
 
-        remove_non_existing_profiles(&mut shells, tunnel.clone(), RAType::Shell).await;
-        remove_non_existing_profiles(&mut uis, tunnel.clone(), RAType::UI).await;
+    loop {
+        update_map(&mut shells, context.tunnel.clone(), RAType::Shell).await;
+        update_map(&mut uis, context.tunnel.clone(), RAType::UI).await;
+
+        remove_non_existing_profiles(&mut shells, context.tunnel.clone(), RAType::Shell).await;
+        remove_non_existing_profiles(&mut uis, context.tunnel.clone(), RAType::UI).await;
 
         let doomed_shells = update_timestamps_and_find_doomed_profiles(
             &mut shells,
-            tunnel.clone(),
+            context.tunnel.clone(),
             timeout,
             RAType::Shell,
         )
         .await;
 
         if !doomed_shells.is_empty() {
-            terminate_profiles(doomed_shells, &mut shells, tunnel.clone(), RAType::Shell).await;
+            if let Ok(token) = auth_handler.obtain_token_safe().await {
+                terminate_profiles(
+                    doomed_shells,
+                    &mut shells,
+                    context.clone(),
+                    RAType::Shell,
+                    &token,
+                )
+                .await;
+            }
         }
 
         let doomed_uis = update_timestamps_and_find_doomed_profiles(
             &mut uis,
-            tunnel.clone(),
+            context.tunnel.clone(),
             timeout,
             RAType::UI,
         )
         .await;
 
         if !doomed_uis.is_empty() {
-            terminate_profiles(doomed_uis, &mut uis, tunnel.clone(), RAType::UI).await;
+            if let Ok(token) = auth_handler.obtain_token_safe().await {
+                terminate_profiles(doomed_uis, &mut uis, context.clone(), RAType::UI, &token).await;
+            }
         }
 
         tokio::time::sleep(Duration::from_secs(DEFAULT_PERIOD_SECONDS)).await;
@@ -110,18 +133,26 @@ async fn update_timestamps_and_find_doomed_profiles(
 async fn terminate_profiles(
     devices_to_remove: Vec<String>,
     map: &mut HashMap<String, Instant>,
-    tunnel: Arc<Mutex<TunnelServer>>,
+    context: AppContext,
     ra_type: RAType,
+    token: &str,
 ) {
     for device_id in devices_to_remove {
         log::info!(
             "Terminating Remote Session for device '{}' because it was idle for too long",
             device_id
         );
-        let _ = tunnel
+
+        let _ = context
+            .tunnel
             .lock()
             .await
             .remove_profile(&device_id, &ra_type)
+            .await;
+
+        let _ = context
+            .datastore
+            .device_terminate_remote_session(token, device_id.clone(), ra_type)
             .await;
 
         map.remove(&device_id);
