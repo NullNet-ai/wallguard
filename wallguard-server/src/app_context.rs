@@ -20,10 +20,12 @@ impl AppContext {
         let clients_manager = Arc::new(Mutex::new(Manager::new()));
         let tunnel = Arc::new(Mutex::new(TunnelServer::new()));
 
-        tokio::spawn(monitor_idle_profiles(
-            tunnel.clone(),
-            Duration::from_secs(60 * 30),
-        ));
+        if false {
+            tokio::spawn(monitor_idle_profiles(
+                tunnel.clone(),
+                Duration::from_secs(60 * 30),
+            ));
+        }
 
         Ok(Self {
             datastore,
