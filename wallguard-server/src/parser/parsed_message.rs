@@ -23,9 +23,9 @@ mod tests {
     use std::net::IpAddr;
     use std::str::FromStr;
 
-    const RECORD_1_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"protocol":"tcp","timestamp":"2021-08-01T00:00:00Z","packets":11,"total_byte":1528,"remote_ip":"8.8.8.8"}"#;
+    const RECORD_1_JSON: &'static str = r#"{"device_id":"machine-id-1234","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","source_port":443,"destination_port":50051,"protocol":"tcp","timestamp":"2021-08-01T00:00:00Z","total_packet":11,"total_byte":1528,"remote_ip":"8.8.8.8"}"#;
 
-    const RECORD_2_JSON: &'static str = r#"{"device_id":"machine-id-5678","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"icmpv4","timestamp":"2022-09-01T00:00:00Z","packets":1,"total_byte":77}"#;
+    const RECORD_2_JSON: &'static str = r#"{"device_id":"machine-id-5678","interface_name":"eth0","source_ip":"8.8.8.8","destination_ip":"9.9.9.9","protocol":"icmpv4","timestamp":"2022-09-01T00:00:00Z","total_packet":1,"total_byte":77}"#;
 
     fn parsed_record_1() -> ParsedRecord {
         let key = ConnectionKey {
@@ -43,7 +43,7 @@ mod tests {
         };
         let value = ConnectionValue {
             timestamp: "2021-08-01T00:00:00Z".to_string(),
-            packets: 11,
+            total_packet: 11,
             total_byte: 1528,
             remote_ip: Some(IpAddr::from_str("8.8.8.8").unwrap()),
         };
@@ -70,7 +70,7 @@ mod tests {
         };
         let value = ConnectionValue {
             timestamp: "2022-09-01T00:00:00Z".to_string(),
-            packets: 1,
+            total_packet: 1,
             total_byte: 77,
             remote_ip: None,
         };

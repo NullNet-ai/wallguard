@@ -58,7 +58,7 @@ impl ConnectionKey {
 #[derive(Debug, Serialize)]
 pub struct ConnectionValue {
     pub timestamp: String,
-    pub packets: usize,
+    pub total_packet: usize,
     pub total_byte: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_ip: Option<IpAddr>,
@@ -68,14 +68,14 @@ impl ConnectionValue {
     pub fn new(timestamp: String, total_byte: usize, remote_ip: Option<IpAddr>) -> Self {
         ConnectionValue {
             timestamp,
-            packets: 1,
+            total_packet: 1,
             total_byte,
             remote_ip,
         }
     }
 
     pub fn update(&mut self, total_byte: usize) {
-        self.packets += 1;
+        self.total_packet += 1;
         self.total_byte += total_byte;
     }
 }
