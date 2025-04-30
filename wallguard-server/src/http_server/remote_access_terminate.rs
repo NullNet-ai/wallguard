@@ -60,5 +60,14 @@ pub async fn remote_access_terminate(
         return HttpResponse::InternalServerError().json(json!({"error": err.to_str()}));
     }
 
+    if context
+        .datastore
+        .device_terminate_remote_session(jwt_token, body.device_id.clone(), ra_type)
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().body("Failed to save session info");
+    };
+
     HttpResponse::Ok().body("")
 }

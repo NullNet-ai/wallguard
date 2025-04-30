@@ -11,6 +11,7 @@ impl DatastoreWrapper {
         token: &str,
         device_id: String,
         remote_access_type: RAType,
+        remote_access_session: String,
     ) -> Result<(), Error> {
         let request = CreateRequest {
             params: Some(CreateParams {
@@ -24,6 +25,8 @@ impl DatastoreWrapper {
                 record: json!({
                     "device_id": device_id,
                     "remote_access_type": remote_access_type.to_string(),
+                    "remote_access_session": remote_access_session,
+                    "remote_access_status": "active"
                 })
                 .to_string(),
                 entity_prefix: String::from("RAS"),
