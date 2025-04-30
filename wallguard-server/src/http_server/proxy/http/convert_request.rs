@@ -27,7 +27,7 @@ pub(super) async fn convert_request(
     let mut request_builder = hyper::Request::builder().method(method).uri(uri);
 
     for (header_name, header_value) in request.headers() {
-        if header_name.as_str() == "host" {
+        if header_name.as_str() == "host" || header_name.as_str() == "referer" {
             continue;
         }
 
