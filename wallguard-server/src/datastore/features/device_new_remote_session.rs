@@ -26,7 +26,8 @@ impl DatastoreWrapper {
                     "device_id": device_id,
                     "remote_access_type": remote_access_type.to_string(),
                     "remote_access_session": remote_access_session,
-                    "remote_access_status": "active"
+                    "remote_access_status": "active",
+                    "categories": vec![remote_access_type.to_string()]
                 })
                 .to_string(),
                 entity_prefix: String::from("RAS"),
