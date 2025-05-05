@@ -1,6 +1,7 @@
 use std::time::Duration;
+use tonic::Request;
+pub use tonic::Streaming;
 use tonic::transport::Channel;
-use tonic::{Request, Streaming};
 
 use crate::proto::wallguard::wall_guard_client::WallGuardClient;
 pub use crate::proto::wallguard::*;
