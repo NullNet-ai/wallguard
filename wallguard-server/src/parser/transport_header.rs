@@ -57,6 +57,17 @@ pub enum Protocol {
     IcmpV6,
 }
 
+impl From<Protocol> for String {
+    fn from(value: Protocol) -> Self {
+        match value {
+            Protocol::Tcp => String::from("tcp"),
+            Protocol::Udp => String::from("udp"),
+            Protocol::IcmpV4 => String::from("icmpv4"),
+            Protocol::IcmpV6 => String::from("icmpv6"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
