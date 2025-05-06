@@ -25,7 +25,7 @@ impl AppContext {
             Ok(value) => value.to_lowercase() == "true",
             Err(err) => {
                 log::warn!(
-                    "Failed to read 'DATASTORE_TLS_EXP' env var: {err}. Using default value ..."
+                    "Failed to read 'USE_EXPERIMENTAL_DATASTORE' env var: {err}. Using default value ..."
                 );
                 false
             }
