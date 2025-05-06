@@ -113,6 +113,8 @@ impl WallGuardImpl {
             entity_prefix: String::from("CN"),
         };
 
+        log::error!("Sending create connection request: {:?}", request);
+
         let timestamp = chrono::Utc::now();
 
         if let Ok(response) = self
