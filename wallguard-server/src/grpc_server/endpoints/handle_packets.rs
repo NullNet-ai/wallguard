@@ -117,7 +117,7 @@ impl WallGuardImpl {
 
         let timestamp = chrono::Utc::now();
 
-        if let Ok(response) = self
+        match self
             .context
             .datastore_exp
             .clone()
@@ -126,12 +126,17 @@ impl WallGuardImpl {
             .create_connections(request)
             .await
         {
-            let diff = chrono::Utc::now() - timestamp;
-            log::info!(
-                "Request to Experimental datastore took {} ms. Response: {:?}",
-                diff.num_milliseconds(),
-                response
-            );
+            Ok(response) => {
+                let diff = chrono::Utc::now() - timestamp;
+                log::info!(
+                    "Request to Experimental datastore took {} ms. Response: {:?}",
+                    diff.num_milliseconds(),
+                    response
+                );
+            }
+            Err(err) => {
+                log::error!("Request to Experimental datastore failed: {:?}", err)
+            }
         }
     }
 }
