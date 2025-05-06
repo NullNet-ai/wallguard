@@ -70,7 +70,7 @@ impl WallGuardImpl {
             interface_name: connection.connection_key.interface_name.clone().into(),
             hypertable_timestamp: None,
             total_packet: (connection.connection_value.total_packet as i32).into(),
-            total_bytes: (connection.connection_value.total_byte as i32).into(),
+            total_byte: (connection.connection_value.total_byte as i32).into(),
             device_id: connection.connection_key.device_id.clone().into(),
             protocol: String::from(connection.connection_key.transport_header.protocol).into(),
             source_ip: connection
@@ -113,7 +113,7 @@ impl WallGuardImpl {
             entity_prefix: String::from("CN"),
         };
 
-        log::error!("Sending create connection request: {:?}", request);
+        log::debug!("Sending create connection request: {:?}", request);
 
         let timestamp = chrono::Utc::now();
 
