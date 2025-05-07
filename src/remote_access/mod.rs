@@ -28,11 +28,9 @@ impl RemoteAccessManager {
             return Err("Session already in progress").handle_err(location!());
         }
 
-        self.shell_session = Some(RemoteAccessSession::tty(
-            tunnel_id,
-            self.server_addr,
-            self.platform,
-        ));
+        let session = RemoteAccessSession::tty(tunnel_id, self.server_addr, self.platform)?;
+
+        self.shell_session = Some(session);
 
         log::debug!("Started Shell r.a. session");
 

@@ -2,7 +2,7 @@ use crate::rtty::TTYServer;
 use nullnet_libconfmon::Platform;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libtunnel::{Client, ClientConfig};
-use std::net::SocketAddr;
+use std::net::{SocketAddr, TcpListener};
 use tokio::sync::broadcast;
 
 pub struct RemoteAccessSession {
@@ -11,10 +11,15 @@ pub struct RemoteAccessSession {
 }
 
 impl RemoteAccessSession {
-    pub fn tty(tunnel_id: String, server_addr: SocketAddr, platform: Platform) -> Self {
+    pub fn tty(
+        tunnel_id: String,
+        server_addr: SocketAddr,
+        platform: Platform,
+    ) -> Result<Self, Error> {
         let (tx, _) = broadcast::channel(8);
 
-        let rtty_server_addr = "127.0.0.1:3030".parse().unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").handle_err(location!())?;
+        let rtty_server_addr = listener.local_addr().handle_err(location!())?;
 
         let rtty = TTYServer::new(rtty_server_addr, platform);
 
@@ -27,10 +32,10 @@ impl RemoteAccessSession {
 
         tokio::spawn(Self::run_tty_server(rtty, tx.subscribe()));
 
-        Self {
+        Ok(Self {
             shutdown_tx: tx,
             tunnel,
-        }
+        })
     }
 
     pub fn ui(
