@@ -19,7 +19,7 @@ lto = true
 strip = true
 
 [dependencies]
-tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
+tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
 tokio = "1.44.2"
 serde = { version = "1.0.219", features = ["derive"] }

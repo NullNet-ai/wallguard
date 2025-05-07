@@ -24,13 +24,13 @@ nullnet-libdatastore = "0.4.4"
 nullnet-libtoken = "0.2.0"
 nullnet-libfireparse = "0.3.2"
 nullnet-liberror = "0.1.1"
-nullnet-liblogging = "0.2.0"
+nullnet-liblogging = "0.3.0"
 nullnet-libipinfo = "0.2.0"
 nullnet-libtunnel = "0.3.2"
-etherparse = "0.17.0"
-tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
+etherparse = "0.18.0"
+tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
-tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.45.0", features = ["rt-multi-thread"] }
 serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.139"
 chrono = "0.4.40"
@@ -56,7 +56,7 @@ rustls = "0.23.25"
 webpki-roots = "0.26.8"
 
 [build-dependencies]
-tonic-build = "0.12.3"
+tonic-build = "0.13.1"
 
 [badges]
 maintenance = { status = "actively-developed" }

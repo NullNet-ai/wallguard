@@ -1,12 +1,16 @@
 #![allow(clippy::module_name_repetitions)]
 
-use crate::grpc_server::{ADDR, PORT};
+use crate::datastore::DatastoreWrapper;
+use crate::grpc_server::{ADDR, AuthHandler, PORT};
 use crate::utils::{ACCOUNT_ID, ACCOUNT_SECRET};
 use app_context::AppContext;
 use clap::Parser;
 use nullnet_liberror::Error;
+use nullnet_liblogging::ServerKind;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
+use tokio::sync::RwLock;
 
 mod app_context;
 mod cli;
@@ -28,10 +32,11 @@ async fn main() {
         .expect("Failed to install rustls crypto provider");
 
     let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
-        ACCOUNT_ID.as_str(),
-        ACCOUNT_SECRET.as_str(),
-        ADDR,
+        server_token(),
+        ServerKind::WallGuard,
+        ADDR.to_string(),
         PORT,
+        false,
     );
     let logger_config =
         nullnet_liblogging::LoggerConfig::new(true, false, Some(datastore_logger_config), vec![]);
@@ -67,4 +72,27 @@ async fn terminate_active_rm_sessions(context: &AppContext) -> Result<(), Error>
         .await?;
 
     Ok(())
+}
+
+fn server_token() -> Arc<RwLock<String>> {
+    let token = Arc::new(RwLock::new(String::new()));
+    let token_clone = token.clone();
+
+    tokio::spawn(async move {
+        let mut auth_handler = AuthHandler::new(
+            ACCOUNT_ID.to_string(),
+            ACCOUNT_SECRET.to_string(),
+            DatastoreWrapper::new()
+                .await
+                .expect("Unable to connect to datastore"),
+        );
+        loop {
+            if let Ok(token_value) = auth_handler.obtain_token_safe().await {
+                *token_clone.write().await = token_value;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+        }
+    });
+
+    token
 }
