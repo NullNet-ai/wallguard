@@ -20,6 +20,7 @@ impl RemoteAccessSession {
 
         let listener = TcpListener::bind("127.0.0.1:0").handle_err(location!())?;
         let rtty_server_addr = listener.local_addr().handle_err(location!())?;
+        drop(listener);
 
         let rtty = TTYServer::new(rtty_server_addr, platform);
 
