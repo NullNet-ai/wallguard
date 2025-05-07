@@ -22,7 +22,7 @@ pub struct Args {
     #[arg(short, long, default_value_t = 50, value_parser = clap::value_parser!(u8).range(1..=100))]
     pub disk_percentage: u8,
     /// IP address of the tunnel server
-    #[arg(short, long, default_value = "127.0.0.1")]
+    #[arg(long, default_value = "127.0.0.1")]
     pub tunnel_addr: String,
     /// Port of the tunnel server
     #[arg(long, default_value_t = 9000)]

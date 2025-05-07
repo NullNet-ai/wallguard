@@ -10,6 +10,7 @@ mod timer;
 use crate::packet_transmitter::transmitter::transmit_packets;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
+use nullnet_liblogging::ServerKind;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
@@ -18,21 +19,21 @@ use tokio::sync::RwLock;
 async fn main() {
     let args = cli::Args::parse();
     let args_copy = args.clone();
+    let token = Arc::new(RwLock::new(String::new()));
+    let token_copy = token.clone();
 
     let datastore_logger_config = nullnet_liblogging::DatastoreConfig::new(
-        args.app_id.clone(),
-        args.app_secret.clone(),
+        token.clone(),
+        ServerKind::WallGuard,
         args.addr.clone(),
         args.port,
+        false,
     );
     let logger_config =
         nullnet_liblogging::LoggerConfig::new(true, true, Some(datastore_logger_config), vec![]);
     nullnet_liblogging::Logger::init(logger_config);
 
     log::info!("Arguments: {args:?}");
-
-    let token = Arc::new(RwLock::new(String::new()));
-    let token_copy = token.clone();
 
     tokio::spawn(async move { heartbeat::routine(token_copy, args_copy).await });
     log::info!("Waiting for the first server heartbeat");
