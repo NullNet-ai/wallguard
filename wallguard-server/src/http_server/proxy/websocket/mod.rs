@@ -1,6 +1,7 @@
 mod convert_message;
 mod proxy_message;
 mod proxy_websocket;
+mod stop_message;
 
 use super::auth::authenticate;
 use actix_web::error::ErrorServiceUnavailable;

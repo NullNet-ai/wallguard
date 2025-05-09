@@ -1,5 +1,6 @@
 use super::convert_message;
 use super::proxy_message::ProxyMessage;
+use super::stop_message::StopMessage;
 use actix::AsyncContext;
 use actix::StreamHandler;
 use actix_web_actors::ws::Message as ActixWsMessage;
@@ -41,7 +42,12 @@ impl actix::Actor for ProxyWebsocket {
                     Ok(message) => {
                         address.do_send(ProxyMessage::from(message));
                     }
-                    Err(_) => {
+                    Err(err) => {
+                        log::error!(
+                            "ProxyWebsocket: failed to read data from the stream: {}",
+                            err
+                        );
+                        address.do_send(StopMessage {});
                         break;
                     }
                 }
@@ -90,5 +96,13 @@ impl actix::Handler<ProxyMessage> for ProxyWebsocket {
             ActixWsMessage::Close(close_reason) => ctx.close(close_reason),
             ActixWsMessage::Continuation(_) | ActixWsMessage::Nop => unreachable!(),
         }
+    }
+}
+
+impl actix::Handler<StopMessage> for ProxyWebsocket {
+    type Result = ();
+
+    fn handle(&mut self, _msg: StopMessage, ctx: &mut Self::Context) -> Self::Result {
+        ctx.close(None);
     }
 }
