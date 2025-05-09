@@ -35,7 +35,7 @@ async fn main() {
 
     log::info!("Arguments: {args:?}");
 
-    tokio::spawn(async move { heartbeat::routine(token_copy, args_copy).await });
+    let hb_handle = tokio::spawn(async move { heartbeat::routine(token_copy, args_copy).await });
     log::info!("Waiting for the first server heartbeat");
     while token.read().await.is_empty() {
         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
@@ -58,5 +58,6 @@ async fn main() {
     tokio::select! {
         _ = terminate_signal.recv() => {},
         () = transmit_packets(args, token.clone()) => {}
+        _ = hb_handle => {}
     }
 }
