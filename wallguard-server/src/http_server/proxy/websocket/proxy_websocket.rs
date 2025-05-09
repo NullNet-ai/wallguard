@@ -47,11 +47,12 @@ impl actix::Actor for ProxyWebsocket {
                             "ProxyWebsocket: failed to read data from the stream: {}",
                             err
                         );
-                        address.do_send(StopMessage {});
                         break;
                     }
                 }
             }
+
+            address.do_send(StopMessage {});
         });
     }
 }
