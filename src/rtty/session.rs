@@ -1,6 +1,6 @@
 use actix::{Actor, AsyncContext, Handler, StreamHandler};
 use actix_web_actors::ws::{self};
-
+use actix_web_actors::ws::{CloseCode, CloseReason};
 use std::sync::Arc;
 
 use super::pty::Pty;
@@ -40,6 +40,15 @@ impl Actor for Session {
                 }
             }
         });
+    }
+
+    fn stopping(&mut self, ctx: &mut Self::Context) -> actix::Running {
+        ctx.close(Some(CloseReason {
+            code: CloseCode::Normal,
+            description: None,
+        }));
+
+        actix::Running::Stop
     }
 }
 
