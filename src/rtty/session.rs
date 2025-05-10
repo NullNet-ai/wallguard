@@ -41,6 +41,11 @@ impl Actor for Session {
             }
         });
     }
+
+    fn stopping(&mut self, ctx: &mut Self::Context) -> actix::Running {
+        ctx.close(None);
+        actix::Running::Stop
+    }
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
