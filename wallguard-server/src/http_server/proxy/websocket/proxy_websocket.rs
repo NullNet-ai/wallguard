@@ -6,9 +6,12 @@ use actix::StreamHandler;
 use actix_web_actors::ws::Message as ActixWsMessage;
 use actix_web_actors::ws::ProtocolError as ActixWsProtocolError;
 use futures::StreamExt;
+use futures::TryStreamExt;
 use futures::stream::{SplitSink, SplitStream};
 use futures_util::SinkExt;
+use hyper::body::Bytes;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_tungstenite::WebSocketStream;
@@ -37,19 +40,42 @@ impl actix::Actor for ProxyWebsocket {
         let reader = self.reader.clone();
 
         tokio::spawn(async move {
-            while let Some(message) = reader.lock().await.next().await {
-                match message {
-                    Ok(message) => {
-                        address.do_send(ProxyMessage::from(message));
-                    }
-                    Err(err) => {
-                        log::error!(
-                            "ProxyWebsocket: failed to read data from the stream: {}",
-                            err
-                        );
-                        break;
-                    }
+            loop {
+                let result = reader.lock().await.try_next().await;
+
+                if result.is_err() {
+                    break;
                 }
+
+                let Some(message) = result.unwrap() else {
+                    break;
+                };
+
+                address.do_send(ProxyMessage::from(message));
+            }
+
+            address.do_send(StopMessage {});
+        });
+
+        //
+        // This block is a workaround for detecting unexpected resets of the underlying TCP stream.
+        // The Tungstenite library does not reliably surface such resets, so we periodically send
+        // WebSocket ping messages to force activity and reveal broken connections.
+        // This is a temporary, duct-tape solution and should be revisited for a more robust approach.
+        //
+        // Since this proxy is solely intended for tunneling into TTY sessions,
+        // we may want to replace the WebSocket server on the WallGuard client side
+        // with a plain TCP stream to simplify the design and avoid unnecessary abstraction.
+        //
+        let address = ctx.address();
+        let writer = self.writer.clone();
+        tokio::spawn(async move {
+            loop {
+                let ping = TungsteniteMessage::Ping(Bytes::from(&b"ping"[..]));
+                if writer.lock().await.send(ping).await.is_err() {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_secs(1)).await;
             }
 
             address.do_send(StopMessage {});
@@ -61,7 +87,7 @@ impl StreamHandler<Result<ActixWsMessage, ActixWsProtocolError>> for ProxyWebsoc
     fn handle(
         &mut self,
         msg: Result<ActixWsMessage, ActixWsProtocolError>,
-        _ctx: &mut Self::Context,
+        ctx: &mut Self::Context,
     ) {
         let Ok(message) = msg else {
             log::error!("Recevied an error instead of message: {}", msg.unwrap_err());
@@ -74,8 +100,11 @@ impl StreamHandler<Result<ActixWsMessage, ActixWsProtocolError>> for ProxyWebsoc
         };
 
         let writer = self.writer.clone();
+        let address = ctx.address();
         tokio::spawn(async move {
-            let _ = writer.lock().await.send(tungstenite_message).await;
+            if writer.lock().await.send(tungstenite_message).await.is_err() {
+                address.do_send(StopMessage {});
+            };
         });
     }
 }
