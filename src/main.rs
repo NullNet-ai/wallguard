@@ -11,6 +11,7 @@ use crate::packet_transmitter::transmitter::transmit_packets;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use nullnet_liblogging::ServerKind;
+use remote_access::remove_added_ssh_keys;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
@@ -59,4 +60,6 @@ async fn main() {
         _ = terminate_signal.recv() => {},
         () = transmit_packets(args, token.clone()) => {}
     }
+
+    let _ = remove_added_ssh_keys();
 }

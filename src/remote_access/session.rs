@@ -5,6 +5,8 @@ use nullnet_libtunnel::{Client, ClientConfig};
 use std::net::{SocketAddr, TcpListener};
 use tokio::sync::broadcast;
 
+use super::utils::add_ssh_key_if_missing;
+
 pub struct RemoteAccessSession {
     shutdown_tx: broadcast::Sender<()>,
     tunnel: Client,
@@ -59,6 +61,30 @@ impl RemoteAccessSession {
             local_addr,
             reconnect_timeout: None,
         });
+
+        Ok(Self {
+            shutdown_tx: tx,
+            tunnel,
+        })
+    }
+
+    pub fn ssh(
+        tunnel_id: String,
+        server_addr: SocketAddr,
+        ssh_port: i32,
+        ssh_key: &str,
+    ) -> Result<Self, Error> {
+        add_ssh_key_if_missing(ssh_key).handle_err(location!())?;
+        let local_addr: SocketAddr = format!("127.0.0.1:{}", ssh_port).parse().unwrap();
+
+        let tunnel = Client::new(ClientConfig {
+            id: tunnel_id,
+            server_addr,
+            local_addr,
+            reconnect_timeout: None,
+        });
+
+        let (tx, _) = broadcast::channel(8);
 
         Ok(Self {
             shutdown_tx: tx,
