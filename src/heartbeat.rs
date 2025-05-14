@@ -97,8 +97,27 @@ async fn handle_hb_response(
         if let Err(err) = establish_remote_access_session(
             response.token.clone(),
             ra_mng,
-            client,
+            client.clone(),
             String::from("shell"),
+        )
+        .await
+        {
+            log::error!("Failed to initiate r.a. session: {err:?}");
+        }
+    }
+
+    if !response.remote_ssh_enabled && ra_mng.has_ssh_session() {
+        log::info!("Terminating remote access session");
+        if let Err(err) = ra_mng.terminate_ssh_session().await {
+            log::error!("Failed to terminate r.a. session: {err:?}");
+        }
+    } else if response.remote_ssh_enabled && !ra_mng.has_ssh_session() {
+        log::info!("Initiating remote access session");
+        if let Err(err) = establish_remote_access_session(
+            response.token.clone(),
+            ra_mng,
+            client,
+            String::from("ssh"),
         )
         .await
         {
@@ -120,6 +139,7 @@ async fn establish_remote_access_session(
 
     match response.r#type.to_lowercase().as_str() {
         "shell" => ra_mng.start_tty_session(response.id).await,
+
         "ui" => {
             let protocol = response
                 .protocol
@@ -127,6 +147,20 @@ async fn establish_remote_access_session(
                 .handle_err(location!())?;
 
             ra_mng.start_ui_session(response.id, &protocol).await
+        }
+
+        "ssh" => {
+            let port = response
+                .ssh_port
+                .ok_or("Cannot spawn SSH remote access session, because port field is missing")
+                .handle_err(location!())?;
+
+            let key = response
+                .ssh_key
+                .ok_or("Cannot spawn SSH remote access session, because key field is missing")
+                .handle_err(location!())?;
+
+            ra_mng.start_ssh_session(response.id, port, &key).await
         }
         r#type => {
             Err(format!("Unsupported remote access type: {}", r#type)).handle_err(location!())
