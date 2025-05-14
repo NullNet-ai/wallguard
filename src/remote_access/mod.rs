@@ -68,11 +68,11 @@ impl RemoteAccessManager {
         ssh_port: i32,
         ssh_key: &str,
     ) -> Result<(), Error> {
-        if self.ui_session.is_some() {
+        if self.ssh_session.is_some() {
             return Err("Session already in progress").handle_err(location!());
         }
 
-        self.ui_session = Some(RemoteAccessSession::ssh(
+        self.ssh_session = Some(RemoteAccessSession::ssh(
             tunnel_id,
             self.server_addr,
             ssh_port,
