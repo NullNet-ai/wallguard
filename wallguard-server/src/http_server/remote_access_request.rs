@@ -63,6 +63,16 @@ pub async fn remote_access_request(
         .await
         .unwrap_or(String::from("https"));
 
+    if ra_type == RAType::Ssh
+        && context
+            .datastore
+            .create_ssh_keypair_if_not_exists(&body.device_id, jwt_token)
+            .await
+            .is_err()
+    {
+        return HttpResponse::InternalServerError().body("Failed to create SSH keypair");
+    }
+
     let Ok(profile) = ClientProfile::new(&body.device_id, ra_type, protocol).await else {
         return HttpResponse::InternalServerError().body("Failed to create client profile");
     };

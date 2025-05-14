@@ -30,7 +30,8 @@ message HeartbeatResponse {
   DeviceStatus status = 2;
   bool remote_shell_enabled = 3;
   bool remote_ui_enabled = 4;
-  bool is_monitoring_enabled = 5;
+  bool remote_ssh_enabled = 5;
+  bool is_monitoring_enabled = 6;
 }
 
 message CommonResponse {
@@ -84,8 +85,11 @@ message ControlChannelRequest {
   string session_type = 2;
 }
 
+// TODO: Refactor
 message ControlChannelResponse {
   string id = 1;
   string type = 2;
   optional string protocol = 3;
+  optional string ssh_key = 4;
+  optional int32 ssh_port = 5;
 }

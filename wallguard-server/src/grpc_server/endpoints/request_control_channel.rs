@@ -36,7 +36,7 @@ impl WallGuardImpl {
         drop(tunnel_lock);
 
         let protocol = match ra_type {
-            RAType::Shell => None,
+            RAType::Shell | RAType::Ssh => None,
             RAType::UI => {
                 let protocol = self
                     .context
@@ -47,10 +47,32 @@ impl WallGuardImpl {
             }
         };
 
+        let (ssh_key, ssh_port) = {
+            if ra_type != RAType::Ssh {
+                (None, None)
+            } else {
+                let ssh_keypair = self
+                    .context
+                    .datastore
+                    .fetch_ssh_keypair_for_device(&device_id, &jwt_token)
+                    .await;
+
+                if ssh_keypair.is_none() {
+                    return Err("Failed to fetch SSH key").handle_err(location!());
+                }
+
+                // @TODO: fetch actual port
+
+                (Some(ssh_keypair.unwrap().public_key.clone()), Some(22))
+            }
+        };
+
         Ok(Response::new(ControlChannelResponse {
             id: tunnel_id,
             r#type: ra_type.to_string(),
             protocol,
+            ssh_key,
+            ssh_port,
         }))
     }
 }

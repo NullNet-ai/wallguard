@@ -50,7 +50,7 @@ async fn stream_impl(
                 let device_id = token_info.account.device.id;
 
                 if let Ok(response) = context.datastore.heartbeat(&token, device_id.clone()).await {
-                    let (remote_shell_enabled, remote_ui_enabled) = {
+                    let (remote_shell_enabled, remote_ui_enabled, remote_ssh_enabled) = {
                         let tunnel = context.tunnel.lock().await;
 
                         let remote_shell_enabled = tunnel
@@ -63,7 +63,11 @@ async fn stream_impl(
                             .await
                             .is_some();
 
-                        (remote_shell_enabled, remote_ui_enabled)
+                        let remote_ssh_enabled = tunnel
+                            .get_profile_by_device_id(&device_id, &RAType::Ssh)
+                            .await
+                            .is_some();
+                        (remote_shell_enabled, remote_ui_enabled, remote_ssh_enabled)
                     };
 
                     let response = HeartbeatResponse {
@@ -71,6 +75,7 @@ async fn stream_impl(
                         status: response.status.into(),
                         remote_shell_enabled,
                         remote_ui_enabled,
+                        remote_ssh_enabled,
                         is_monitoring_enabled: response.is_monitoring_enabled,
                     };
 

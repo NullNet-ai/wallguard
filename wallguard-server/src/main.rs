@@ -20,6 +20,7 @@ mod grpc_server;
 mod http_server;
 mod parser;
 mod proto;
+mod ssh_keypair;
 mod tunnel;
 mod utils;
 

@@ -6,6 +6,7 @@ use std::str::FromStr;
 pub enum RAType {
     Shell,
     UI,
+    Ssh,
 }
 
 impl FromStr for RAType {
@@ -15,6 +16,7 @@ impl FromStr for RAType {
         match s.to_uppercase().as_str() {
             "SHELL" => Ok(RAType::Shell),
             "UI" => Ok(RAType::UI),
+            "SSH" => Ok(RAType::Ssh),
             _ => Err(format!("Invalid RAType: {}", s)).handle_err(location!()),
         }
     }
@@ -25,6 +27,7 @@ impl Display for RAType {
         match self {
             RAType::Shell => write!(f, "SHELL"),
             RAType::UI => write!(f, "UI"),
+            RAType::Ssh => write!(f, "SSH"),
         }
     }
 }

@@ -1,28 +1,15 @@
-mod auth;
+pub mod auth;
 mod http;
 mod not_found;
 mod websocket;
 
-use crate::app_context::AppContext;
+use crate::{app_context::AppContext, http_server::common::extract_session_from_request};
 use actix_web::{
     HttpRequest, HttpResponse,
     web::{Data, Payload},
 };
 use not_found::NOT_FOUND_HTML;
 use nullnet_libtunnel::Profile;
-
-// @TODO:
-// full url replace the pre-defined domain and be left with the session
-fn extract_session_from_domain(domain: &str) -> Option<&str> {
-    domain.split_once('.').map(|(session, _)| session)
-}
-
-fn extract_session_from_request(req: &HttpRequest) -> Option<String> {
-    req.full_url()
-        .domain()
-        .and_then(extract_session_from_domain)
-        .map(|v| v.to_owned())
-}
 
 pub async fn proxy(
     request: HttpRequest,
