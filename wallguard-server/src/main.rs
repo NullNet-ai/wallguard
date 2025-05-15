@@ -52,7 +52,7 @@ async fn main() {
     tokio::select! {
         _ = tunnel::monitor_idle_profiles(app_context.clone(), Duration::from_secs(60 * 30)) => {},
         _ = grpc_server::run_grpc_server(app_context.clone(), args) => {},
-        _ = http_server::run_http_server(app_context) => {},
+        _ = http_server::run_http_server(app_context, false) => {},
         _ = signal::ctrl_c() => {}
     };
 }
