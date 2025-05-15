@@ -24,18 +24,6 @@ const DEFAULT_CERT_PATH: &str = "./dev/cert.pem";
 const DEFAULT_KEY_PATH: &str = "./dev/key.pem";
 
 pub async fn run_http_server(context: AppContext, tls: bool) {
-    let cert_path =
-        std::env::var("TLS_CERT_PATH").unwrap_or_else(|_| DEFAULT_CERT_PATH.to_string());
-    let key_path = std::env::var("TLS_KEY_PATH").unwrap_or_else(|_| DEFAULT_KEY_PATH.to_string());
-
-    let config = match load_tls_config(&cert_path, &key_path) {
-        Some(cfg) => cfg,
-        None => panic!(
-            "Unable to load TLS config from {:?} and {:?}",
-            cert_path, key_path
-        ),
-    };
-
     let app_state = web::Data::new(context);
 
     let server = HttpServer::new(move || {
@@ -63,6 +51,19 @@ pub async fn run_http_server(context: AppContext, tls: bool) {
     });
 
     if tls {
+        let cert_path =
+            std::env::var("TLS_CERT_PATH").unwrap_or_else(|_| DEFAULT_CERT_PATH.to_string());
+        let key_path =
+            std::env::var("TLS_KEY_PATH").unwrap_or_else(|_| DEFAULT_KEY_PATH.to_string());
+
+        let config = match load_tls_config(&cert_path, &key_path) {
+            Some(cfg) => cfg,
+            None => panic!(
+                "Unable to load TLS config from {:?} and {:?}",
+                cert_path, key_path
+            ),
+        };
+
         log::info!("HTTP API listening on https://{ADDR}:{PORT}");
         server
             .bind_rustls_0_23(format!("{ADDR}:{PORT}"), config)
