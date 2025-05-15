@@ -10,17 +10,33 @@ use actix_web::{App, HttpServer, http, web};
 use proxy::proxy;
 use remote_access_request::remote_access_request;
 use remote_access_terminate::remote_access_terminate;
-use std::net::TcpListener;
+use rustls::ServerConfig;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
+use rustls_pemfile::{certs, pkcs8_private_keys};
+use std::{fs::File, io::BufReader};
 
 const ADDR: &str = "0.0.0.0";
 const PORT: u16 = 4444;
 
-pub async fn run_http_server(context: AppContext) {
-    let app_state = web::Data::new(context);
-    let listener =
-        TcpListener::bind(format!("{ADDR}:{PORT}")).expect("Failed to bind to HTTP server addr");
+const DEFAULT_CERT_PATH: &str = "./dev/cert.pem";
+const DEFAULT_KEY_PATH: &str = "./dev/key.pem";
 
-    log::info!("HTTP API listening on http://{ADDR}:{PORT}");
+pub async fn run_http_server(context: AppContext) {
+    let cert_path =
+        std::env::var("TLS_CERT_PATH").unwrap_or_else(|_| DEFAULT_CERT_PATH.to_string());
+    let key_path = std::env::var("TLS_KEY_PATH").unwrap_or_else(|_| DEFAULT_KEY_PATH.to_string());
+
+    let config = match load_tls_config(&cert_path, &key_path) {
+        Some(cfg) => cfg,
+        None => panic!(
+            "Unable to load TLS config from {:?} and {:?}",
+            cert_path, key_path
+        ),
+    };
+
+    let app_state = web::Data::new(context);
+
+    log::info!("HTTP API listening on https://{ADDR}:{PORT}");
 
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -45,9 +61,40 @@ pub async fn run_http_server(context: AppContext) {
             .route("/v1/api/ssh", web::to(ssh_gateway::open_ssh_session))
             .default_service(web::to(proxy))
     })
-    .listen(listener)
+    .bind_rustls_0_23(format!("{ADDR}:{PORT}"), config)
     .unwrap()
     .run()
     .await
     .unwrap();
+}
+
+fn load_tls_config(cert_path: &str, key_path: &str) -> Option<ServerConfig> {
+    let cert_file = File::open(cert_path).ok()?;
+    let key_file = File::open(key_path).ok()?;
+
+    let mut cert_reader = BufReader::new(cert_file);
+    let mut key_reader = BufReader::new(key_file);
+
+    let cert_chain: Vec<CertificateDer> = certs(&mut cert_reader)
+        .map(|r| r.ok())
+        .collect::<Option<Vec<_>>>()?;
+
+    if cert_chain.is_empty() {
+        log::warn!("No certificates found.");
+        return None;
+    }
+
+    let mut keys: Vec<PrivateKeyDer> = pkcs8_private_keys(&mut key_reader)
+        .map(|r| r.ok().map(PrivateKeyDer::Pkcs8))
+        .collect::<Option<Vec<_>>>()?;
+
+    if keys.is_empty() {
+        log::warn!("No private keys found.");
+        return None;
+    }
+
+    ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert_chain, keys.remove(0))
+        .ok()
 }
