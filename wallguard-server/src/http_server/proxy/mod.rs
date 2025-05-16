@@ -19,8 +19,10 @@ pub async fn proxy(
     log::info!("Proxy request: {request:?}");
 
     let Some(session) = extract_session_from_request(&request) else {
+        log::error!("Could not extract session. Request URL: {}", request.full_url());
         return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
     };
+
 
     let Some(profile) = context
         .tunnel
@@ -30,6 +32,7 @@ pub async fn proxy(
         .await
         .cloned()
     else {
+        log::error!("Can not proxy request, because client is not connected to the client");
         return Ok(HttpResponse::NotFound().body(NOT_FOUND_HTML));
     };
 
