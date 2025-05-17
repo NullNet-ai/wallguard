@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package wallguard_commands;
 
+import "google/protobuf/empty.proto";
+
 message SSHSessionData {
     string tunnel_token = 1;
     string public_key = 2;
@@ -17,5 +19,6 @@ message WallGuardCommand {
         SSHSessionData open_ssh_session_command = 5;
         string open_tty_session_command = 6;
         string open_ui_session_command = 7;
+        google.protobuf.Empty heartbeat_command = 8;
     }
 }

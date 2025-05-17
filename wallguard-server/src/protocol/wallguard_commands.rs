@@ -8,7 +8,7 @@ pub struct SshSessionData {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WallGuardCommand {
-    #[prost(oneof = "wall_guard_command::Command", tags = "1, 2, 3, 4, 5, 6, 7")]
+    #[prost(oneof = "wall_guard_command::Command", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
     pub command: ::core::option::Option<wall_guard_command::Command>,
 }
 /// Nested message and enum types in `WallGuardCommand`.
@@ -29,5 +29,7 @@ pub mod wall_guard_command {
         OpenTtySessionCommand(::prost::alloc::string::String),
         #[prost(string, tag = "7")]
         OpenUiSessionCommand(::prost::alloc::string::String),
+        #[prost(message, tag = "8")]
+        HeartbeatCommand(()),
     }
 }

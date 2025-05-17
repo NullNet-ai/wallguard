@@ -7,6 +7,8 @@ use crate::protocol::wallguard_commands::WallGuardCommand;
 use crate::protocol::wallguard_commands::wall_guard_command::Command;
 use crate::token_provider::TokenProvider;
 
+use super::stream::control_stream_task;
+
 pub(crate) type ControlStream = mpsc::Sender<Result<WallGuardCommand, Status>>;
 
 #[derive(Debug, Clone)]
@@ -18,10 +20,18 @@ pub struct Client {
 
 impl Client {
     pub fn new(
-        device_id: impl Into<String>,
+        device_id: &str,
         token_provider: TokenProvider,
         control_stream: ControlStream,
+        complete: mpsc::Sender<String>,
     ) -> Self {
+        tokio::spawn(control_stream_task(
+            device_id.into(),
+            control_stream.clone(),
+            token_provider.clone(),
+            complete,
+        ));
+
         Self {
             device_id: device_id.into(),
             token_provider,
