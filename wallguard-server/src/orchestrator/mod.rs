@@ -14,7 +14,7 @@ pub struct Orchestrator {
 
 
 impl Orchestrator {
-    pub async fn is_client_connected(&self) -> bool {
+    pub async fn is_client_connected(&self, device_id: &str) -> bool {
         todo!()
     }
 }

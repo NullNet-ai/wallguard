@@ -6,6 +6,7 @@ mod control_service;
 mod datastore;
 mod orchestrator;
 mod protocol;
+mod token_provider;
 
 #[tokio::main]
 async fn main() {

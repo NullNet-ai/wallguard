@@ -1,3 +1,4 @@
+use nullnet_libtoken::Token;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
@@ -16,16 +17,38 @@ impl WallGuard for WallGuardService {
     ) -> Result<Response<Self::ControlChannelStream>, Status> {
         let request = request.into_inner();
 
-        let response = self
+        let jwt = self
             .context
             .datastore
             .login(&request.app_id, &request.app_secret)
             .await
             .map_err(|err| {
                 let message = format!("Datastore request faield: {}", err.to_str());
+                log::error!("{}", message);
                 Status::internal(message)
             })?;
 
-        todo!()
+        let token = Token::from_jwt(&jwt).map_err(|_| {
+            let message = "Invalid JWT: malformed token or wrong credentials";
+            log::error!("{}", message);
+            Status::internal(message)
+        })?;
+
+        let device_id = &token.account.device.id;
+
+        if self
+            .context
+            .orchestractor
+            .is_client_connected(device_id)
+            .await
+        {
+            let message = format!("Client for device '{}' is already connected", device_id);
+            log::error!("{message}");
+            return Err(Status::internal(message));
+        }
+
+        let (_sender, receiver) = tokio::sync::mpsc::channel(6);
+
+        Ok(Response::new(ReceiverStream::new(receiver)))
     }
 }

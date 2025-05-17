@@ -29,6 +29,7 @@ tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
 log = "0.4.27"
 env_logger = "0.11.8"
+nullnet-libtoken = "0.2.0"
 
 
 [build-dependencies]
