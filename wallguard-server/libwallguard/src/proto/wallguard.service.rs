@@ -101,7 +101,9 @@ pub mod wall_guard_client {
             &mut self,
             request: impl tonic::IntoRequest<super::ControlChannelRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::commands::WallGuardCommand>>,
+            tonic::Response<
+                tonic::codec::Streaming<super::super::commands::WallGuardCommand>,
+            >,
             tonic::Status,
         > {
             self.inner
@@ -114,11 +116,16 @@ pub mod wall_guard_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/wallguard.WallGuard/ControlChannelStream",
+                "/wallguard.service.WallGuard/ControlChannelStream",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("wallguard.WallGuard", "ControlChannelStream"));
+                .insert(
+                    GrpcMethod::new(
+                        "wallguard.service.WallGuard",
+                        "ControlChannelStream",
+                    ),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -139,7 +146,7 @@ pub mod wall_guard_server {
         /// Server streaming response type for the ControlChannelStream method.
         type ControlChannelStreamStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
-                    super::commands::WallGuardCommand,
+                    super::super::commands::WallGuardCommand,
                     tonic::Status,
                 >,
             >
@@ -229,14 +236,14 @@ pub mod wall_guard_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/wallguard.WallGuard/ControlChannelStream" => {
+                "/wallguard.service.WallGuard/ControlChannelStream" => {
                     #[allow(non_camel_case_types)]
                     struct ControlChannelStreamSvc<T: WallGuard>(pub Arc<T>);
                     impl<
                         T: WallGuard,
                     > tonic::server::ServerStreamingService<super::ControlChannelRequest>
                     for ControlChannelStreamSvc<T> {
-                        type Response = super::commands::WallGuardCommand;
+                        type Response = super::super::commands::WallGuardCommand;
                         type ResponseStream = T::ControlChannelStreamStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
@@ -311,7 +318,7 @@ pub mod wall_guard_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "wallguard.WallGuard";
+    pub const SERVICE_NAME: &str = "wallguard.service.WallGuard";
     impl<T> tonic::server::NamedService for WallGuardServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }

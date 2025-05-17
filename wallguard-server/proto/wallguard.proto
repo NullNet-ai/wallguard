@@ -1,95 +1,15 @@
 syntax = "proto3";
 
-package wallguard;
+package wallguard_service;
 
-service WallGuard {
-  rpc Heartbeat (HeartbeatRequest) returns (stream HeartbeatResponse);
-  rpc HandlePackets (Packets) returns (CommonResponse);
-  rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
-  rpc HandleLogs (Logs) returns (CommonResponse);
-  rpc RequestControlChannel (ControlChannelRequest) returns (ControlChannelResponse);
-}
-
-message HeartbeatRequest {
-  string app_id = 1;
-  string app_secret = 2;
-  string device_version = 3;
-  string device_uuid = 4;
-}
-
-enum DeviceStatus {
-  DS_DRAFT = 0;
-  DS_ACTIVE = 1;
-  DS_ARCHIVED = 2;
-  DS_DELETED = 3;
-  DS_UNKNOWN = 4;
-}
-
-message HeartbeatResponse {
-  string token = 1;
-  DeviceStatus status = 2;
-  bool remote_shell_enabled = 3;
-  bool remote_ui_enabled = 4;
-  bool remote_ssh_enabled = 5;
-  bool is_monitoring_enabled = 6;
-}
-
-message CommonResponse {
-  string message = 1;
-}
-
-message Packets {
-  string token = 1;
-  string uuid = 2;
-  repeated Packet packets = 3;
-}
-
-message Packet {
-  string timestamp = 1;
-  string interface = 2;
-  int32 link_type = 3;
-  bytes data = 4;
-}
-
-message FileSnapshot {
-  string filename = 1;
-  bytes contents = 2;
-}
-
-enum ConfigStatus {
-  CS_DRAFT = 0;
-  CS_APPLIED = 1;
-  CS_UNDEFINED = 2;
-}
-
-
-message ConfigSnapshot {
-  string token = 1;
-  repeated FileSnapshot files = 2;
-  ConfigStatus status = 3;
-}
-
-message Logs {
-  string token = 1;
-  repeated Log logs = 3;
-}
-
-message Log {
-  string timestamp = 1;
-  string level = 2;
-  string message = 3;
-}
+import "commands.proto";
 
 message ControlChannelRequest {
-  string token = 1;
-  string session_type = 2;
+    string app_id = 1;
+    string app_secret = 2;
 }
 
-// TODO: Refactor
-message ControlChannelResponse {
-  string id = 1;
-  string type = 2;
-  optional string protocol = 3;
-  optional string ssh_key = 4;
-  optional int32 ssh_port = 5;
+service WallGuard {
+  rpc ControlChannel(ControlChannelRequest) returns (stream wallguard_commands.WallGuardCommand);
 }
+

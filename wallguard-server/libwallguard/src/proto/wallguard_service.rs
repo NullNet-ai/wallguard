@@ -97,11 +97,15 @@ pub mod wall_guard_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn control_channel_stream(
+        pub async fn control_channel(
             &mut self,
             request: impl tonic::IntoRequest<super::ControlChannelRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::commands::WallGuardCommand>>,
+            tonic::Response<
+                tonic::codec::Streaming<
+                    super::super::wallguard_commands::WallGuardCommand,
+                >,
+            >,
             tonic::Status,
         > {
             self.inner
@@ -114,11 +118,13 @@ pub mod wall_guard_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/wallguard.WallGuard/ControlChannelStream",
+                "/wallguard_service.WallGuard/ControlChannel",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("wallguard.WallGuard", "ControlChannelStream"));
+                .insert(
+                    GrpcMethod::new("wallguard_service.WallGuard", "ControlChannel"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -136,20 +142,20 @@ pub mod wall_guard_server {
     /// Generated trait containing gRPC methods that should be implemented for use with WallGuardServer.
     #[async_trait]
     pub trait WallGuard: std::marker::Send + std::marker::Sync + 'static {
-        /// Server streaming response type for the ControlChannelStream method.
-        type ControlChannelStreamStream: tonic::codegen::tokio_stream::Stream<
+        /// Server streaming response type for the ControlChannel method.
+        type ControlChannelStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
-                    super::commands::WallGuardCommand,
+                    super::super::wallguard_commands::WallGuardCommand,
                     tonic::Status,
                 >,
             >
             + std::marker::Send
             + 'static;
-        async fn control_channel_stream(
+        async fn control_channel(
             &self,
             request: tonic::Request<super::ControlChannelRequest>,
         ) -> std::result::Result<
-            tonic::Response<Self::ControlChannelStreamStream>,
+            tonic::Response<Self::ControlChannelStream>,
             tonic::Status,
         >;
     }
@@ -229,15 +235,15 @@ pub mod wall_guard_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/wallguard.WallGuard/ControlChannelStream" => {
+                "/wallguard_service.WallGuard/ControlChannel" => {
                     #[allow(non_camel_case_types)]
-                    struct ControlChannelStreamSvc<T: WallGuard>(pub Arc<T>);
+                    struct ControlChannelSvc<T: WallGuard>(pub Arc<T>);
                     impl<
                         T: WallGuard,
                     > tonic::server::ServerStreamingService<super::ControlChannelRequest>
-                    for ControlChannelStreamSvc<T> {
-                        type Response = super::commands::WallGuardCommand;
-                        type ResponseStream = T::ControlChannelStreamStream;
+                    for ControlChannelSvc<T> {
+                        type Response = super::super::wallguard_commands::WallGuardCommand;
+                        type ResponseStream = T::ControlChannelStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
@@ -248,8 +254,7 @@ pub mod wall_guard_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as WallGuard>::control_channel_stream(&inner, request)
-                                    .await
+                                <T as WallGuard>::control_channel(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -260,7 +265,7 @@ pub mod wall_guard_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = ControlChannelStreamSvc(inner);
+                        let method = ControlChannelSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -311,7 +316,7 @@ pub mod wall_guard_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "wallguard.WallGuard";
+    pub const SERVICE_NAME: &str = "wallguard_service.WallGuard";
     impl<T> tonic::server::NamedService for WallGuardServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }
