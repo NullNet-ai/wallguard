@@ -1,4 +1,3 @@
-use nullnet_libtoken::Token;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
@@ -6,6 +5,7 @@ use crate::control_service::service::WallGuardService;
 use crate::protocol::wallguard_commands::WallGuardCommand;
 use crate::protocol::wallguard_service::ControlChannelRequest;
 use crate::protocol::wallguard_service::wall_guard_server::WallGuard;
+use crate::token_provider::TokenProvider;
 
 #[tonic::async_trait]
 impl WallGuard for WallGuardService {
@@ -17,22 +17,16 @@ impl WallGuard for WallGuardService {
     ) -> Result<Response<Self::ControlChannelStream>, Status> {
         let request = request.into_inner();
 
-        let jwt = self
-            .context
-            .datastore
-            .login(&request.app_id, &request.app_secret)
-            .await
-            .map_err(|err| {
-                let message = format!("Datastore request faield: {}", err.to_str());
-                log::error!("{}", message);
-                Status::internal(message)
-            })?;
+        let token_provider = TokenProvider::new(
+            request.app_id,
+            request.app_secret,
+            self.context.datastore.clone(),
+        );
 
-        let token = Token::from_jwt(&jwt).map_err(|_| {
-            let message = "Invalid JWT: malformed token or wrong credentials";
-            log::error!("{}", message);
-            Status::internal(message)
-        })?;
+        let token = token_provider
+            .get()
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?;
 
         let device_id = &token.account.device.id;
 
@@ -47,7 +41,13 @@ impl WallGuard for WallGuardService {
             return Err(Status::internal(message));
         }
 
-        let (_sender, receiver) = tokio::sync::mpsc::channel(6);
+        let (sender, receiver) = tokio::sync::mpsc::channel(32);
+
+        self.context
+            .orchestractor
+            .on_client_connected(device_id, token_provider, sender)
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?;
 
         Ok(Response::new(ReceiverStream::new(receiver)))
     }

@@ -12,7 +12,7 @@ pub struct AppContext {
 impl AppContext {
     pub async fn new() -> Result<Self, Error> {
         let datastore = Datastore::new().await?;
-        let orchestractor = Orchestrator::default();
+        let orchestractor = Orchestrator::new(datastore.clone());
 
         Ok(Self {
             datastore,

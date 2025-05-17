@@ -2,43 +2,20 @@ syntax = "proto3";
 
 package wallguard_commands;
 
-message UpdateTokenCommand {
-    string token = 1;
-}
-
-message EnableNetworkMonitoringCommand {
-    bool enable = 1;
-}
-
-message EnableConfigurationMonitoringCommand {
-    bool enable = 1;
-}
-
-message EnableTelemetryMonitoringCommand {
-    bool enable = 1;
-}
-
-message OpenSSHSessionCommand {
+message SSHSessionData {
     string tunnel_token = 1;
     string public_key = 2;
 }
 
-message OpenTTYSessionCommand {
-    string tunnel_token = 1;
-}
-
-message OpenUISessionCommand {
-    string tunnel_token = 1;
-}
 
 message WallGuardCommand {
     oneof command {
-        UpdateTokenCommand update_token = 1;
-        EnableNetworkMonitoringCommand enable_network_monitoring = 2;
-        EnableConfigurationMonitoringCommand enable_config_monitoring = 3;
-        EnableTelemetryMonitoringCommand enable_telemetry_monitoring = 4;
-        OpenSSHSessionCommand open_ssh_session = 5;
-        OpenTTYSessionCommand open_tty_session = 6;
-        OpenUISessionCommand open_ui_session = 7;
+        string update_token_command = 1;
+        bool enable_network_monitoring_command = 2;
+        bool enable_configuration_monitoring_command = 3;
+        bool enable_telemetry_monitoring_command = 4;
+        SSHSessionData open_ssh_session_command = 5;
+        string open_tty_session_command = 6;
+        string open_ui_session_command = 7;
     }
 }

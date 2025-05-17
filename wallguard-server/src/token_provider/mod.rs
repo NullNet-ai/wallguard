@@ -22,7 +22,11 @@ impl TokenProvider {
     /// * `app_id` - Application identifier used for authentication.
     /// * `app_secret` - Secret associated with the application.
     /// * `datastore` - A `Datastore` instance used to perform login requests.
-    pub fn new(app_id: &str, app_secret: &str, datastore: Datastore) -> Self {
+    pub fn new(
+        app_id: impl Into<String>,
+        app_secret: impl Into<String>,
+        datastore: Datastore,
+    ) -> Self {
         let data = AuthData::new(app_id, app_secret);
         Self {
             datastore,
@@ -36,9 +40,9 @@ impl TokenProvider {
     /// using the stored credentials and updates the token.
     ///
     /// # Returns
-    /// * `Ok(String)` - The valid JWT token.
+    /// * `Ok(Arc<Token>)` - The valid token.
     /// * `Err(Error)` - If login or token parsing fails.
-    pub async fn get(&self) -> Result<String, Error> {
+    pub async fn get(&self) -> Result<Arc<Token>, Error> {
         let mut lock = self.data.lock().await;
 
         if lock.needs_refresh() {
@@ -46,9 +50,9 @@ impl TokenProvider {
 
             let token = Token::from_jwt(&jwt).handle_err(location!())?;
 
-            lock.token = Some(token);
+            lock.token = Some(Arc::new(token));
         }
 
-        Ok(lock.token.as_ref().unwrap().jwt.clone())
+        Ok(lock.token.as_ref().unwrap().clone())
     }
 }
