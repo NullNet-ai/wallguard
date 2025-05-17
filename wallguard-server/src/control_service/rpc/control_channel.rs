@@ -12,8 +12,20 @@ impl WallGuard for WallGuardService {
 
     async fn control_channel(
         &self,
-        _request: Request<ControlChannelRequest>,
+        request: Request<ControlChannelRequest>,
     ) -> Result<Response<Self::ControlChannelStream>, Status> {
+        let request = request.into_inner();
+
+        let response = self
+            .context
+            .datastore
+            .login(&request.app_id, &request.app_secret)
+            .await
+            .map_err(|err| {
+                let message = format!("Datastore request faield: {}", err.to_str());
+                Status::internal(message)
+            })?;
+
         todo!()
     }
 }

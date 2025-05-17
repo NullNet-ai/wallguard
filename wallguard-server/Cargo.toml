@@ -22,11 +22,13 @@ lto = true
 strip = true
 
 [dependencies]
+nullnet-liberror = "0.1.1"
+nullnet-libdatastore = "0.4.4"
 tokio = { version = "1.45.0", features = ["rt-multi-thread"] }
 tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
 log = "0.4.27"
-nullnet-liberror = "0.1.1"
+env_logger = "0.11.8"
 
 
 [build-dependencies]
