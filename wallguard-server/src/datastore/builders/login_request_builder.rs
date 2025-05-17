@@ -1,32 +1,26 @@
 use nullnet_libdatastore::{LoginBody, LoginData, LoginRequest};
 
+#[derive(Default)]
 pub struct LoginRequestBuilder {
     account_id: Option<String>,
     account_secret: Option<String>,
 }
 
 impl LoginRequestBuilder {
-    /// Creates a new builder instance.
     pub fn new() -> Self {
-        Self {
-            account_id: None,
-            account_secret: None,
-        }
+        Self::default()
     }
 
-    /// Sets the account ID.
     pub fn account_id(mut self, id: impl Into<String>) -> Self {
         self.account_id = Some(id.into());
         self
     }
 
-    /// Sets the account secret.
     pub fn account_secret(mut self, secret: impl Into<String>) -> Self {
         self.account_secret = Some(secret.into());
         self
     }
 
-    /// Builds the final `LoginRequest`.
     pub fn build(self) -> LoginRequest {
         LoginRequest {
             body: Some(LoginBody {

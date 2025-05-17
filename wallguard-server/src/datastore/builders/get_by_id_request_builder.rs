@@ -1,5 +1,6 @@
 use nullnet_libdatastore::{GetByIdRequest, Params, Query};
 
+#[derive(Default)]
 pub struct GetByIdRequestBuilder {
     id: Option<String>,
     table: Option<String>,
@@ -9,12 +10,7 @@ pub struct GetByIdRequestBuilder {
 
 impl GetByIdRequestBuilder {
     pub fn new() -> Self {
-        Self {
-            id: None,
-            table: None,
-            pluck: None,
-            durability: None,
-        }
+        Self::default()
     }
 
     pub fn id(mut self, id: impl Into<String>) -> Self {
