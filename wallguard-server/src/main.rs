@@ -6,7 +6,9 @@ mod control_service;
 mod datastore;
 mod orchestrator;
 mod protocol;
+mod reverse_tunnel;
 mod token_provider;
+mod utilities;
 
 #[tokio::main]
 async fn main() {
