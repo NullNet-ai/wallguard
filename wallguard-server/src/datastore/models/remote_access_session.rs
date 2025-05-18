@@ -28,11 +28,11 @@ impl TryFrom<&str> for RemoteAccessType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemoteAccessSession {
-    device_id: String,
+    pub device_id: String,
     #[serde(rename = "remote_access_session")]
-    token: String,
+    pub token: String,
     #[serde(rename = "remote_access_type")]
-    r#type: RemoteAccessType,
+    pub r#type: RemoteAccessType,
 }
 
 impl RemoteAccessSession {

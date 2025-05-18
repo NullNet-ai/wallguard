@@ -7,11 +7,11 @@ impl Datastore {
     pub async fn obtain_session(
         &self,
         token: &str,
-        device_id: &str,
+        session_token: &str,
     ) -> Result<RemoteAccessSession, Error> {
         let filter = AdvanceFilterBuilder::new()
-            .field("device_id")
-            .values(format!("[\"{device_id}\"]"))
+            .field("remote_access_type")
+            .values(format!("[\"{session_token}\"]"))
             .r#type("criteria")
             .operator("equal")
             .entity(RemoteAccessSession::table())
