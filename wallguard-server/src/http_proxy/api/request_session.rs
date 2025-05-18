@@ -68,13 +68,14 @@ async fn handle_ssh_edgecase(
     }
 
     match context.datastore.obtain_ssh_keypair(token, device_id).await {
-        Ok(_) => {
+        Ok(Some(_)) => {
             // Future enhancement: Validate SSH key expiry or other constraints.
             Ok(())
         }
-        Err(_) => {
+        Ok(None) => {
             let data = SSHKeypair::generate(device_id).await?;
             context.datastore.create_ssh_keypair(token, &data).await
         }
+        Err(err) => Err(err),
     }
 }

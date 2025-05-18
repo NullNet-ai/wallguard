@@ -18,9 +18,9 @@ impl ErrorJson {
     /// let err = ErrorJson::new("something went wrong");
     /// ```
     pub fn new<S: Into<String>>(error: S) -> Self {
-        Self {
-            error: error.into(),
-        }
+        let error = error.into();
+        log::error!("ErrorJson: {}", error);
+        Self { error }
     }
 }
 
