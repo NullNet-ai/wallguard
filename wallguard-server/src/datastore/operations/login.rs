@@ -30,9 +30,6 @@ impl Datastore {
 }
 
 /// Validates that the provided token is non-empty.
-///
-/// Returns an `Unauthenticated` gRPC `Status` error if the token is empty,
-/// indicating that authentication has failed.
 fn validate_token(token: &str) -> Result<(), Error> {
     match token.is_empty() {
         true => Err("Unauthenticated: wrong app_id and/or app_secret").handle_err(location!()),
