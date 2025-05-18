@@ -1,4 +1,4 @@
-pub use config::ReverseTunnelConfig;
+use config::ReverseTunnelConfig;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -124,6 +124,8 @@ async fn tunnel_task(config: ReverseTunnelConfig, listeners: ListenersMap) {
     }
 }
 
+/// Gracefully shuts down the given TCP stream. \
+/// Logs a warning if the shutdown operation fails.
 async fn shutdown_stream(mut stream: TcpStream) {
     use tokio::io::AsyncWriteExt;
 

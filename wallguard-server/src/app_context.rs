@@ -15,7 +15,6 @@ impl AppContext {
     pub async fn new() -> Result<Self, Error> {
         let datastore = Datastore::new().await?;
         let orchestractor = Orchestrator::new();
-
         let tunnel = ReverseTunnel::new();
 
         Ok(Self {

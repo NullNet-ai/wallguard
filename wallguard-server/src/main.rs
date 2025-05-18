@@ -1,9 +1,11 @@
 use app_context::AppContext;
-use control_service::{ControlServiceConfig, run_control_service};
+use control_service::run_control_service;
+use http_proxy::run_http_proxy;
 
 mod app_context;
 mod control_service;
 mod datastore;
+mod http_proxy;
 mod orchestrator;
 mod protocol;
 mod reverse_tunnel;
@@ -19,13 +21,9 @@ async fn main() {
         std::process::exit(1);
     });
 
-    let csconf = ControlServiceConfig::from_env().unwrap_or_else(|err| {
-        log::error!(
-            "Failed to construct `ControlServiceConfig` from environment: {}",
-            err
-        );
-        std::process::exit(1);
-    });
-
-    run_control_service(csconf, app_context).await
+    tokio::select! {
+        _ = tokio::signal::ctrl_c() => {},
+        _ = run_control_service(app_context.clone()) => {},
+        _ = run_http_proxy(app_context) => {}
+    }
 }

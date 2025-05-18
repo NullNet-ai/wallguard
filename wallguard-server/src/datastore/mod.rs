@@ -2,7 +2,11 @@ use nullnet_libdatastore::{DatastoreClient, DatastoreConfig};
 use nullnet_liberror::Error;
 
 mod builders;
+mod models;
 mod operations;
+mod db_tables;
+
+pub use models::*;
 
 #[derive(Debug, Clone)]
 pub struct Datastore {

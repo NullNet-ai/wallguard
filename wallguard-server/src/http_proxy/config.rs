@@ -1,18 +1,18 @@
 use std::net::SocketAddr;
 
 #[derive(Debug, Clone)]
-pub struct ReverseTunnelConfig {
+pub struct HttpProxyConfig {
     pub(crate) addr: SocketAddr,
 }
 
-impl ReverseTunnelConfig {
-    /// Constructs a `ReverseTunnelConfig` from the environment variables
-    /// `REVERSE_TUNNEL_HOST` and `REVERSE_TUNNEL_PORT`.
+impl HttpProxyConfig {
+    /// Constructs a `HttpProxyConfig` from the environment variables
+    /// `HTTP_PROXY_HOST` and `HTTP_PROXY_PORT`.
     ///
     /// Falls back to `Default` if either environment variable is missing or invalid.
     pub fn from_env() -> Self {
-        let host = std::env::var("REVERSE_TUNNEL_HOST").ok();
-        let port = std::env::var("REVERSE_TUNNEL_PORT")
+        let host = std::env::var("HTTP_PROXY_HOST").ok();
+        let port = std::env::var("HTTP_PROXY_PORT")
             .ok()
             .and_then(|p| p.parse::<u16>().ok());
 
@@ -26,9 +26,9 @@ impl ReverseTunnelConfig {
     }
 }
 
-impl Default for ReverseTunnelConfig {
+impl Default for HttpProxyConfig {
     fn default() -> Self {
-        let addr = "127.0.0.1:7777".parse().unwrap();
+        let addr = "127.0.0.1:4444".parse().unwrap();
         Self { addr }
     }
 }
