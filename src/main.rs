@@ -1,19 +1,16 @@
-use clap::Parser;
+use app_context::AppContext;
+use control_channel::ControlChannel;
 
+mod app_context;
 mod cli;
+mod control_channel;
+mod reverse_tunnel;
+mod token_provider;
+mod utilities;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    
-    let args = match cli::Args::try_parse() {
-        Ok(args) => args,
-        Err(err) => return log::error!("Failed to parse CLI arguments: {}", err),
-    };
-
-    if let Err(err) = args.validate() {
-        return log::error!("{}", err);
-    }
-
-    log::info!("Execution complete");
+    let context = AppContext::new().await;
+    ControlChannel::new(context).run().await.unwrap();
 }

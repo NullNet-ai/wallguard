@@ -28,7 +28,7 @@ pub struct Args {
     pub tunnel_addr: String,
 
     /// Port of the tunnel server
-    #[arg(long, default_value_t = 9000)]
+    #[arg(long, default_value_t = 7777)]
     pub tunnel_port: u16,
 }
 
