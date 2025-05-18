@@ -1,7 +1,7 @@
 use crate::{datastore::db_tables::DBTable, utilities::random::generate_random_string};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum RemoteAccessType {
     Ssh,
