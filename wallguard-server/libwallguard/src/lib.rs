@@ -39,7 +39,7 @@ impl WallGuardGrpcInterface {
     }
 
     pub async fn request_control_channel(
-        &mut self,
+        &self,
         app_id: &str,
         app_secret: &str,
     ) -> Result<Streaming<WallGuardCommand>, Status> {
@@ -49,6 +49,7 @@ impl WallGuardGrpcInterface {
         });
 
         self.client
+            .clone()
             .control_channel(request)
             .await
             .map(tonic::Response::into_inner)
