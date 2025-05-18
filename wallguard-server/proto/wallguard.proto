@@ -12,4 +12,3 @@ message ControlChannelRequest {
 service WallGuard {
   rpc ControlChannel(ControlChannelRequest) returns (stream wallguard_commands.WallGuardCommand);
 }
-

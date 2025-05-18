@@ -9,7 +9,6 @@ message SSHSessionData {
     string public_key = 2;
 }
 
-
 message WallGuardCommand {
     oneof command {
         string update_token_command = 1;

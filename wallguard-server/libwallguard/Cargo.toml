@@ -1,9 +1,12 @@
 [package]
 name = "nullnet-libwallguard"
-version = "0.1.5"
+version = "1.0.0"
 edition = "2024"
-authors = ["Giuliano Bellini <gyulyvgc99@gmail.com>", "Anton Liashkevich <anton.liashkevich.eng@gmail.com>"]
-description = "A centralized management system for network firewalls"
+authors = [
+    "Giuliano Bellini <gyulyvgc99@gmail.com>", 
+    "Anton Liashkevich <anton.liashkevich.eng@gmail.com>"
+]
+description = "Library-connector to the wallguard server"
 readme = "../README.md"
 #homepage = ""
 repository = "https://github.com/NullNet-ai/wallguard-server"
