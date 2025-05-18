@@ -2,9 +2,9 @@ use nullnet_libdatastore::{DatastoreClient, DatastoreConfig};
 use nullnet_liberror::Error;
 
 mod builders;
+mod db_tables;
 mod models;
 mod operations;
-mod db_tables;
 
 pub use models::*;
 

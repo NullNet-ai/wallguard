@@ -43,5 +43,12 @@ pub async fn request_session(
         )));
     }
 
+    let session = context
+        .datastore
+        .obtain_session(&jwt, &body.device_id)
+        .await;
+
+    log::warn!("{:?}", session);
+
     return HttpResponse::Created().json(json!({}));
 }

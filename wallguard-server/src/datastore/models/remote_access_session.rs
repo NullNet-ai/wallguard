@@ -47,7 +47,11 @@ impl RemoteAccessSession {
     }
 
     pub fn pluck() -> Vec<String> {
-        vec!["device_id".into(), "remote_access_session".into()]
+        vec![
+            "device_id".into(),
+            "remote_access_session".into(),
+            "remote_access_type".into(),
+        ]
     }
 
     pub fn table() -> DBTable {
