@@ -8,9 +8,9 @@ impl Datastore {
         &self,
         token: &str,
         session_token: &str,
-    ) -> Result<RemoteAccessSession, Error> {
+    ) -> Result<Option<RemoteAccessSession>, Error> {
         let filter = AdvanceFilterBuilder::new()
-            .field("remote_access_type")
+            .field("remote_access_session")
             .values(format!("[\"{session_token}\"]"))
             .r#type("criteria")
             .operator("equal")
@@ -28,11 +28,14 @@ impl Datastore {
 
         let response = self.inner.clone().get_by_filter(request, token).await?;
         if response.count == 0 {
-            return Err("Query returned no results").handle_err(location!());
+            return Ok(None);
         }
 
         let json_data = json::parse_string(&response.data)?;
-        let keypair_data = json::first_element_from_array(&json_data)?;
-        serde_json::from_value::<RemoteAccessSession>(keypair_data).handle_err(location!())
+        let data = json::first_element_from_array(&json_data)?;
+
+        let session =
+            serde_json::from_value::<RemoteAccessSession>(data).handle_err(location!())?;
+        Ok(Some(session))
     }
 }

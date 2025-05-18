@@ -10,12 +10,13 @@ use tokio::sync::Mutex;
 type Reader = ReadHalf<AsyncChannel<TcpStream>>;
 type Writer = WriteHalf<AsyncChannel<TcpStream>>;
 
-pub(super) struct Session {
-    reader: Arc<Mutex<Reader>>,
-    writer: Arc<Mutex<Writer>>,
+#[derive(Clone)]
+pub(crate) struct SSHSession {
+    pub(crate) reader: Arc<Mutex<Reader>>,
+    pub(crate) writer: Arc<Mutex<Writer>>,
 }
 
-impl Session {
+impl SSHSession {
     pub async fn new(stream: TcpStream, key: &SSHKeypair) -> Result<Self, Error> {
         let mut session = AsyncSession::new(stream, None).handle_err(location!())?;
 

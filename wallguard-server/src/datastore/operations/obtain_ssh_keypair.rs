@@ -8,7 +8,7 @@ impl Datastore {
         &self,
         token: &str,
         device_id: &str,
-    ) -> Result<SSHKeypair, Error> {
+    ) -> Result<Option<SSHKeypair>, Error> {
         let filter = AdvanceFilterBuilder::new()
             .field("device_id")
             .values(format!("[\"{device_id}\"]"))
@@ -28,11 +28,13 @@ impl Datastore {
 
         let response = self.inner.clone().get_by_filter(request, token).await?;
         if response.count == 0 {
-            return Err("Query returned no results").handle_err(location!());
+            return Ok(None);
         }
 
         let json_data = json::parse_string(&response.data)?;
-        let session_data = json::first_element_from_array(&json_data)?;
-        serde_json::from_value::<SSHKeypair>(session_data).handle_err(location!())
+        let data = json::first_element_from_array(&json_data)?;
+
+        let keypair = serde_json::from_value::<SSHKeypair>(data).handle_err(location!())?;
+        Ok(Some(keypair))
     }
 }

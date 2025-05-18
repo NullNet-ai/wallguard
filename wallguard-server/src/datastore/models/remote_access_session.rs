@@ -37,7 +37,7 @@ pub struct RemoteAccessSession {
 
 impl RemoteAccessSession {
     pub fn new(device_id: impl Into<String>, r#type: RemoteAccessType) -> Self {
-        let token = generate_random_string(16);
+        let token = generate_random_string(32).to_ascii_lowercase();
 
         Self {
             device_id: device_id.into(),
