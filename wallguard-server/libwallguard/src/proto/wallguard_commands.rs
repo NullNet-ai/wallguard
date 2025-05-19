@@ -7,6 +7,13 @@ pub struct SshSessionData {
     pub public_key: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UiSessionData {
+    #[prost(string, tag = "1")]
+    pub tunnel_token: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub protocol: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WallGuardCommand {
     #[prost(oneof = "wall_guard_command::Command", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
     pub command: ::core::option::Option<wall_guard_command::Command>,
@@ -27,8 +34,8 @@ pub mod wall_guard_command {
         OpenSshSessionCommand(super::SshSessionData),
         #[prost(string, tag = "6")]
         OpenTtySessionCommand(::prost::alloc::string::String),
-        #[prost(string, tag = "7")]
-        OpenUiSessionCommand(::prost::alloc::string::String),
+        #[prost(message, tag = "7")]
+        OpenUiSessionCommand(super::UiSessionData),
         #[prost(message, tag = "8")]
         HeartbeatCommand(()),
     }

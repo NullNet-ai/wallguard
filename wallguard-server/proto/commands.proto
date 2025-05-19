@@ -9,6 +9,11 @@ message SSHSessionData {
     string public_key = 2;
 }
 
+message UISessionData {
+    string tunnel_token = 1;
+    string protocol = 2;
+}
+
 message WallGuardCommand {
     oneof command {
         string update_token_command = 1;
@@ -17,7 +22,7 @@ message WallGuardCommand {
         bool enable_telemetry_monitoring_command = 4;
         SSHSessionData open_ssh_session_command = 5;
         string open_tty_session_command = 6;
-        string open_ui_session_command = 7;
+        UISessionData open_ui_session_command = 7;
         google.protobuf.Empty heartbeat_command = 8;
     }
 }

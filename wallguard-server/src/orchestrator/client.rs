@@ -3,6 +3,7 @@ use tokio::sync::mpsc;
 use tonic::Status;
 
 use crate::protocol::wallguard_commands::SshSessionData;
+use crate::protocol::wallguard_commands::UiSessionData;
 use crate::protocol::wallguard_commands::WallGuardCommand;
 use crate::protocol::wallguard_commands::wall_guard_command::Command;
 use crate::token_provider::TokenProvider;
@@ -134,15 +135,20 @@ impl Client {
     pub async fn request_ui_session(
         &self,
         tunnel_token: impl Into<String>,
-        _protocol: impl Into<String>,
+        protocol: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
             "Sending OpenUiSessionCommand to the client with device id {}",
             self.device_id
         );
 
+        let ui_session_data = UiSessionData {
+            tunnel_token: tunnel_token.into(),
+            protocol: protocol.into(),
+        };
+
         let command = WallGuardCommand {
-            command: Some(Command::OpenUiSessionCommand(tunnel_token.into())),
+            command: Some(Command::OpenUiSessionCommand(ui_session_data)),
         };
 
         self.control_stream
