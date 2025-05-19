@@ -11,9 +11,8 @@ use actix_web::web::{Data, Payload};
 use relay::relay;
 
 mod relay;
-mod ssh_session;
 
-pub(super) async fn open_ssh_session(
+pub(super) async fn open_tty_session(
     request: HttpRequest,
     context: Data<AppContext>,
     body: Payload,
@@ -34,37 +33,22 @@ pub(super) async fn open_ssh_session(
         Err(resp) => return resp,
     };
 
-    if let Err(resp) = request_handling::ensure_session_type(&session, RemoteAccessType::Ssh) {
+    if let Err(resp) = request_handling::ensure_session_type(&session, RemoteAccessType::Tty) {
         return resp;
     }
 
-    let keypair =
-        match request_handling::fetch_ssh_keypair(&context, &token.jwt, &session.device_id).await {
-            Ok(kp) => kp,
-            Err(resp) => return resp,
-        };
-
-    let Ok(stream) =
-        tunneling::establish_tunneled_ssh(&context, &session.device_id, &keypair.public_key).await
-    else {
+    let Ok(stream) = tunneling::establish_tunneled_tty(&context, &session.device_id).await else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    let ssh_session = match ssh_session::SSHSession::new(stream, &keypair).await {
-        Ok(sess) => sess,
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Failed to establish SSH session"));
-        }
-    };
+    let (response, ws_session, ws_stream) =
+        match request_handling::upgrade_to_websocket(request, body) {
+            Ok(r) => r,
+            Err(resp) => return resp,
+        };
 
-    let (response, ws_session, stream) = match request_handling::upgrade_to_websocket(request, body)
-    {
-        Ok(r) => r,
-        Err(resp) => return resp,
-    };
+    rt::spawn(relay(ws_stream, ws_session, stream));
 
-    rt::spawn(relay(stream, ws_session, ssh_session));
     response
 }

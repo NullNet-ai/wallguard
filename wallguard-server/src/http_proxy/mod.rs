@@ -1,14 +1,13 @@
 use crate::app_context::AppContext;
-use api::request_session;
-use config::HttpProxyConfig;
-use ssh_gateway::open_ssh_session;
-
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
+use api::request_session;
+use config::HttpProxyConfig;
 
 mod api;
 mod config;
 mod ssh_gateway;
+mod tty_gateway;
 mod utilities;
 
 pub async fn run_http_proxy(context: AppContext) {
@@ -37,6 +36,10 @@ pub async fn run_http_proxy(context: AppContext) {
             .route(
                 "/wallguard/gateway/ssh",
                 web::to(ssh_gateway::open_ssh_session),
+            )
+            .route(
+                "/wallguard/gateway/tty",
+                web::to(tty_gateway::open_tty_session),
             )
         // .route(
         //     "/v1/api/remote_access",

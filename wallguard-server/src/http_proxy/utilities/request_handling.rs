@@ -42,8 +42,11 @@ pub async fn fetch_session(
     }
 }
 
-pub fn ensure_session_is_ssh(session: &RemoteAccessSession) -> Result<(), HttpResponse> {
-    if session.r#type != RemoteAccessType::Ssh {
+pub fn ensure_session_type(
+    session: &RemoteAccessSession,
+    expected: RemoteAccessType,
+) -> Result<(), HttpResponse> {
+    if session.r#type != expected {
         Err(HttpResponse::BadRequest().json(ErrorJson::from("Wrong session type")))
     } else {
         Ok(())

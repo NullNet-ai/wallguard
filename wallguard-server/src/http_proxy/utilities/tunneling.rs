@@ -83,7 +83,7 @@ async fn establish_tunneled_channel(
                 .request_ssh_session(token.clone(), public_key)
                 .await?
         }
-        // TunnelType::Tty => client.request_tty_session(token).await?,
+        TunnelType::Tty => client.request_tty_session(token.clone()).await?,
         // TunnelType::UI(protocol) => client.request_ui_session(token).await?,
         _ => todo!(),
     };
