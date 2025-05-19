@@ -6,6 +6,7 @@ use config::HttpProxyConfig;
 
 mod api;
 mod config;
+mod proxy;
 mod ssh_gateway;
 mod tty_gateway;
 mod utilities;
@@ -41,16 +42,7 @@ pub async fn run_http_proxy(context: AppContext) {
                 "/wallguard/gateway/tty",
                 web::to(tty_gateway::open_tty_session),
             )
-        // .route(
-        //     "/v1/api/remote_access",
-        //     web::post().to(remote_access_request),
-        // )
-        // .route(
-        //     "/v1/api/remote_access",
-        //     web::delete().to(remote_access_terminate),
-        // )
-        // .route("/v1/api/ssh", web::to(ssh_gateway::open_ssh_session))
-        // .default_service(web::to(proxy))
+            .default_service(web::to(proxy::proxy_http_request))
     })
     .bind(config.addr)
     .unwrap()

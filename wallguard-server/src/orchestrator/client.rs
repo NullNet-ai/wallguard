@@ -131,7 +131,11 @@ impl Client {
             .handle_err(location!())
     }
 
-    pub async fn request_ui_session(&self, tunnel_token: impl Into<String>) -> Result<(), Error> {
+    pub async fn request_ui_session(
+        &self,
+        tunnel_token: impl Into<String>,
+        _protocol: impl Into<String>,
+    ) -> Result<(), Error> {
         log::info!(
             "Sending OpenUiSessionCommand to the client with device id {}",
             self.device_id

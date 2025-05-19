@@ -12,7 +12,6 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
 enum TunnelType {
     Ssh(String),
     Tty,
-    // TODO: replace with protocol, e.g. `UIProtocol``
     UI(String),
 }
 
@@ -51,9 +50,9 @@ pub async fn establish_tunneled_tty(
 pub async fn establish_tunneled_ui(
     context: &AppContext,
     device_id: &str,
-    protocol: String, //@TODO: change to enum
+    protocol: &str,
 ) -> Result<TcpStream, Error> {
-    establish_tunneled_channel(context, device_id, TunnelType::UI(protocol)).await
+    establish_tunneled_channel(context, device_id, TunnelType::UI(protocol.into())).await
 }
 
 /// Core handler that establishes a tunneled channel of the given `TunnelType`.
@@ -84,8 +83,7 @@ async fn establish_tunneled_channel(
                 .await?
         }
         TunnelType::Tty => client.request_tty_session(token.clone()).await?,
-        // TunnelType::UI(protocol) => client.request_ui_session(token).await?,
-        _ => todo!(),
+        TunnelType::UI(protocol) => client.request_ui_session(token.clone(), protocol).await?,
     };
 
     tokio::select! {
