@@ -1,13 +1,15 @@
 use crate::app_context::AppContext;
 use command::ExecutableCommand;
 use commands::{
-    HeartbeatCommand, OpenSshSessionCommand, OpenTtySessionCommand, UpdateTokenCommand,
+    HeartbeatCommand, OpenSshSessionCommand, OpenTtySessionCommand, OpenUiSessionCommand,
+    UpdateTokenCommand,
 };
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libwallguard::Command;
 
 mod command;
 mod commands;
+
 #[derive(Clone)]
 pub struct ControlChannel {
     context: AppContext,
@@ -62,7 +64,14 @@ impl ControlChannel {
                             log::error!("OpenTtySessionCommand execution failed: {}", err.to_str());
                         }
                     }
-                    Command::OpenUiSessionCommand(_) => todo!(),
+                    Command::OpenUiSessionCommand(token) => {
+                        let cmd =
+                            OpenUiSessionCommand::new(self.context.clone(), token, "http".into());
+
+                        if let Err(err) = cmd.execute().await {
+                            log::error!("OpenUiSessionCommand execution failed: {}", err.to_str());
+                        }
+                    }
                     Command::HeartbeatCommand(_) => {
                         if let Err(err) = HeartbeatCommand::new().execute().await {
                             log::error!("HeartbeatCommand execution failed: {}", err.to_str());

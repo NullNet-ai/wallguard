@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
-use nullnet_liberror::{location, ErrorHandler, Location};
-use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
-use tokio::net::TcpStream;
-
 use crate::app_context::AppContext;
 use crate::control_channel::command::ExecutableCommand;
 use crate::pty::{Pty, PtyReader, PtyWriter};
+use nullnet_liberror::{location, ErrorHandler, Location};
+use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
+use tokio::net::TcpStream;
 
 pub struct OpenTtySessionCommand {
     context: AppContext,
