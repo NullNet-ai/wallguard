@@ -1,9 +1,10 @@
 use crate::app_context::AppContext;
 use command::ExecutableCommand;
-use commands::{HeartbeatCommand, OpenSshSessionCommand, UpdateTokenCommand};
+use commands::{
+    HeartbeatCommand, OpenSshSessionCommand, OpenTtySessionCommand, UpdateTokenCommand,
+};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libwallguard::{Command, SshSessionData};
-use tokio::{io::copy_bidirectional, net::TcpStream};
+use nullnet_libwallguard::Command;
 
 mod command;
 mod commands;
@@ -55,7 +56,12 @@ impl ControlChannel {
                             log::error!("OpenSshSessionCommand execution failed: {}", err.to_str());
                         }
                     }
-                    Command::OpenTtySessionCommand(_) => todo!(),
+                    Command::OpenTtySessionCommand(token) => {
+                        let cmd = OpenTtySessionCommand::new(self.context.clone(), token);
+                        if let Err(err) = cmd.execute().await {
+                            log::error!("OpenTtySessionCommand execution failed: {}", err.to_str());
+                        }
+                    }
                     Command::OpenUiSessionCommand(_) => todo!(),
                     Command::HeartbeatCommand(_) => {
                         if let Err(err) = HeartbeatCommand::new().execute().await {

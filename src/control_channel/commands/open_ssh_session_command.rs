@@ -20,23 +20,23 @@ impl ExecutableCommand for OpenSshSessionCommand {
             return Err(err).handle_err(location!());
         }
 
+        let Ok(sshd_stream) = TcpStream::connect("127.0.0.1:22").await else {
+            return Err("Cant establish sshd connection").handle_err(location!());
+        };
+
+        let Ok(tunnel_stream) = self
+            .context
+            .tunnel
+            .request_channel(&self.data.tunnel_token)
+            .await
+        else {
+            return Err("Cant establish tunnel connection").handle_err(location!());
+        };
+
         tokio::spawn(async move {
-            let Ok(mut tunnel_stream) = self
-                .context
-                .tunnel
-                .request_channel(&self.data.tunnel_token)
-                .await
-            else {
-                log::error!("Cant establish tunnel connection");
-                return;
-            };
-
-            let Ok(mut sshd_stream) = TcpStream::connect("127.0.0.1:22").await else {
-                log::error!("Cant establish sshd connection");
-                return;
-            };
-
-            let _ = copy_bidirectional(&mut tunnel_stream, &mut sshd_stream).await;
+            let mut s1 = tunnel_stream;
+            let mut s2 = sshd_stream;
+            let _ = copy_bidirectional(&mut s1, &mut s2).await;
         });
 
         Ok(())

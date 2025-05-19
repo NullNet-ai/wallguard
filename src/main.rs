@@ -7,6 +7,7 @@ mod control_channel;
 mod reverse_tunnel;
 mod token_provider;
 mod utilities;
+mod pty;
 
 #[tokio::main]
 async fn main() {
