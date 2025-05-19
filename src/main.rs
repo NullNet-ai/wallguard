@@ -4,10 +4,10 @@ use control_channel::ControlChannel;
 mod app_context;
 mod cli;
 mod control_channel;
+mod pty;
 mod reverse_tunnel;
 mod token_provider;
 mod utilities;
-mod pty;
 
 #[tokio::main]
 async fn main() {

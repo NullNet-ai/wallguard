@@ -16,11 +16,23 @@ impl ExecutableCommand for OpenSshSessionCommand {
         log::debug!("Received OpenSshSessionCommand");
 
         if let Err(err) = utilities::ssh::add_ssh_key_if_missing(&self.data.public_key).await {
-            log::error!("Failed authorize public key: {}", err);
+            log::error!("Failed to authorize public key: {}", err);
             return Err(err).handle_err(location!());
         }
 
-        let Ok(sshd_stream) = TcpStream::connect("127.0.0.1:22").await else {
+        let ports = match utilities::ssh::get_sshd_ports_from_sshd_t().await {
+            Ok(values) if !values.is_empty() => values,
+            Ok(_) => {
+                log::error!("No SSHD ports found in configuration");
+                return Err("No ports found").handle_err(location!());
+            }
+            Err(err) => {
+                log::error!("Failed to get sshd port: {}", err);
+                return Err(err).handle_err(location!());
+            }
+        };
+
+        let Ok(sshd_stream) = TcpStream::connect(format!("127.0.0.1:{}", ports[0])).await else {
             return Err("Cant establish sshd connection").handle_err(location!());
         };
 
