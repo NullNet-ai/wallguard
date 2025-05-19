@@ -64,9 +64,8 @@ impl ControlChannel {
                             log::error!("OpenTtySessionCommand execution failed: {}", err.to_str());
                         }
                     }
-                    Command::OpenUiSessionCommand(token) => {
-                        let cmd =
-                            OpenUiSessionCommand::new(self.context.clone(), token, "http".into());
+                    Command::OpenUiSessionCommand(data) => {
+                        let cmd = OpenUiSessionCommand::new(self.context.clone(), data);
 
                         if let Err(err) = cmd.execute().await {
                             log::error!("OpenUiSessionCommand execution failed: {}", err.to_str());
