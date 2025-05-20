@@ -4,10 +4,12 @@ mod constants;
 mod heartbeat;
 mod packet_transmitter;
 mod remote_access;
+mod resources_monitor;
 mod rtty;
 mod timer;
 
 use crate::packet_transmitter::transmitter::transmit_packets;
+use crate::resources_monitor::monitor_system_resources;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use nullnet_liblogging::ServerKind;
@@ -58,7 +60,8 @@ async fn main() {
     let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
     tokio::select! {
         _ = terminate_signal.recv() => {},
-        () = transmit_packets(args, token.clone()) => {}
+        () = transmit_packets(args, token.clone()) => {},
+        () = monitor_system_resources(token.clone()) => {}
     }
 
     let _ = remove_added_ssh_keys();

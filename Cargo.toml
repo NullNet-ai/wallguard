@@ -19,12 +19,13 @@ nullnet-libwallguard = "0.1.5"
 nullnet-liblogging = "0.3.0"
 nullnet-liberror = "0.1.1"
 nullnet-libtunnel = "0.3.2"
+nullnet-libresmon = "0.1.0"
 chrono = { version = "0.4.39", features = ["clock"] }
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 uuid = { version = "1.12.0", features = ["v4"] }
 clap = { version = "4.5.26", features = ["derive"] }
 bincode = "1.3.3"
-sysinfo = { version = "0.33.1", default-features = false, features = ["disk"] }
+sysinfo = { version = "0.35.1", default-features = false, features = ["disk"] }
 log = "0.4.25"
 portable-pty = "0.9.0"
 futures-util = "0.3.31"
