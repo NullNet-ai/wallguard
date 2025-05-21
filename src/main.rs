@@ -60,8 +60,8 @@ async fn main() {
     let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
     tokio::select! {
         _ = terminate_signal.recv() => {},
-        () = transmit_packets(args, token.clone()) => {},
-        () = monitor_system_resources(token.clone()) => {}
+        () = transmit_packets(args.clone(), token.clone()) => {},
+        () = monitor_system_resources(args, token.clone()) => {}
     }
 
     let _ = remove_added_ssh_keys();
