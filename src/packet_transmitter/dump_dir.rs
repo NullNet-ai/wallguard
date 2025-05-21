@@ -1,7 +1,7 @@
 use crate::constants::DUMP_DIR;
 use nullnet_libwallguard::{Packet, Packets};
 use std::os::unix::fs::MetadataExt;
-use std::path::PathBuf;
+// use std::path::PathBuf;
 use tokio::fs;
 
 #[derive(Clone)]
@@ -68,13 +68,13 @@ impl DumpDir {
         .expect("Failed to write dump file");
     }
 
-    pub(crate) async fn update_dump_file(&self, file_path: PathBuf, mut dump: Packets) {
-        dump.token = String::new();
-        tokio::fs::write(
-            file_path,
-            bincode::serialize(&dump).expect("Failed to serialize packets"),
-        )
-        .await
-        .expect("Failed to write dump file");
-    }
+    // pub(crate) async fn update_dump_file(&self, file_path: PathBuf, mut dump: Packets) {
+    //     dump.token = String::new();
+    //     tokio::fs::write(
+    //         file_path,
+    //         bincode::serialize(&dump).expect("Failed to serialize packets"),
+    //     )
+    //     .await
+    //     .expect("Failed to write dump file");
+    // }
 }

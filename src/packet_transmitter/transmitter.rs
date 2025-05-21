@@ -7,6 +7,7 @@ use crate::timer::Timer;
 use nullnet_libwallguard::{Packet, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
+use async_channel::Sender;
 use tokio::sync::{Mutex, RwLock};
 
 pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
@@ -15,6 +16,9 @@ pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
         snaplen: args.snaplen,
     };
     let mut rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
+    // this channel is used for gRPC client-side packet streaming to the server
+    let (tonic_tx, tonic_rx) = async_channel::unbounded();
+    let tonic_tx_2 = tonic_tx.clone();
 
     let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
 
@@ -26,7 +30,9 @@ pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
     let dump_dir_2 = dump_dir.clone();
     let token_2 = token.clone();
     tokio::spawn(async move {
-        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
+        handle_connection_and_retransmission(
+            &tonic_tx_2, tonic_rx,
+            &args.addr, args.port, client_2, dump_dir_2, token_2)
             .await;
     });
 
@@ -46,6 +52,7 @@ pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
                 timer.reset();
 
                 send_packets(
+                    &tonic_tx,
                     &client,
                     &mut packet_batch,
                     &mut packet_queue,
@@ -78,6 +85,7 @@ pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
 }
 
 async fn send_packets(
+    tx: &Sender<Packets>,
     interface: &Arc<Mutex<Option<WallGuardGrpcInterface>>>,
     packet_batch: &mut PacketBuffer,
     packet_queue: &mut PacketBuffer,
@@ -85,7 +93,7 @@ async fn send_packets(
     token: String,
 ) {
     packet_queue.extend(packet_batch.take());
-    if let Some(client) = interface.lock().await.as_mut() {
+    if interface.lock().await.is_some() {
         while !packet_queue.is_empty() {
             let range = ..min(packet_queue.len(), BATCH_SIZE);
             let packets = Packets {
@@ -93,10 +101,7 @@ async fn send_packets(
                 packets: packet_queue.get(range),
                 token: token.clone(),
             };
-            if client.handle_packets(packets).await.is_err() {
-                log::error!("Failed to send packets");
-                break;
-            }
+            tx.send(packets).await.unwrap();
             packet_queue.drain(range);
         }
     }

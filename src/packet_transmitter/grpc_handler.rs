@@ -3,10 +3,13 @@ use crate::packet_transmitter::dump_dir::DumpDir;
 use nullnet_libwallguard::{Logs, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
+use async_channel::{Receiver, Sender};
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
 
 pub(crate) async fn handle_connection_and_retransmission(
+    tx: &Sender<Packets>,
+    rx: Receiver<Packets>,
     addr: &str,
     port: u16,
     interface: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
@@ -37,8 +40,18 @@ pub(crate) async fn handle_connection_and_retransmission(
             // wait for the server to come up...
             let client = WallGuardGrpcInterface::new(addr, port).await;
             *interface.lock().await = Some(client);
+            // setup packet gRPC stream
+            interface
+                .lock()
+                .await
+                .as_mut()
+                .unwrap()
+                .handle_packets(rx.clone())
+                .await
+                .unwrap();
+
             // send packets accumulated in dump files
-            'file_loop: for file in dump_dir.get_files_sorted().await {
+            for file in dump_dir.get_files_sorted().await {
                 let bytes = fs::read(file.path()).await.unwrap_or_default();
                 let mut dump: Packets = bincode::deserialize(&bytes).unwrap_or_default();
                 // update auth token of packets retrieved from disk
@@ -50,22 +63,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                         packets: dump.packets.get(range).unwrap_or_default().to_vec(),
                         ..dump.clone()
                     };
-                    if interface
-                        .lock()
-                        .await
-                        .as_mut()
-                        .unwrap()
-                        .handle_packets(packets)
-                        .await
-                        .is_err()
-                    {
-                        // server is down again, try again later
-                        *interface.lock().await = None;
-                        log::error!("Failed to send packet dump. Reconnecting...",);
-                        // update dump file with unsent packets
-                        dump_dir.update_dump_file(file.path(), dump).await;
-                        break 'file_loop;
-                    }
+                    tx.send(packets).await.unwrap();
                     // remove sent packets from dump
                     dump.packets.drain(range);
                 }
