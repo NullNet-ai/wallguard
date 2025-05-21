@@ -1,13 +1,12 @@
-use crate::cli::Args;
 use chrono::Utc;
-use nullnet_liberror::{location, ErrorHandler, Location};
 use nullnet_libwallguard::{SystemResources, WallGuardGrpcInterface};
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
-pub(crate) async fn monitor_system_resources(args: Args, token: Arc<RwLock<String>>) {
-    // todo: reconnections to the server
-    let mut client = WallGuardGrpcInterface::new(&args.addr, args.port).await;
+pub(crate) async fn monitor_system_resources(
+    token: Arc<RwLock<String>>,
+    client: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
+) {
     let rx = nullnet_libresmon::poll_system_resources(1000);
     while let Ok(res) = rx.recv().await {
         // create proper gRPC object including token and timestamp
@@ -32,9 +31,10 @@ pub(crate) async fn monitor_system_resources(args: Args, token: Arc<RwLock<Strin
         };
 
         // send it to the server
-        let _ = client
-            .handle_system_resources(resources)
-            .await
-            .handle_err(location!());
+        if let Some(client) = client.lock().await.as_mut() {
+            if client.handle_system_resources(resources).await.is_err() {
+                log::error!("Failed to send system resources");
+            }
+        }
     }
 }

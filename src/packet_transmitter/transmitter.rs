@@ -1,7 +1,6 @@
 use crate::cli::Args;
-use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
+use crate::constants::{BATCH_SIZE, QUEUE_SIZE};
 use crate::packet_transmitter::dump_dir::DumpDir;
-use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
 use crate::packet_transmitter::packet_buffer::PacketBuffer;
 use crate::timer::Timer;
 use nullnet_libwallguard::{Packet, Packets, WallGuardGrpcInterface};
@@ -9,26 +8,17 @@ use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
-pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
+pub(crate) async fn transmit_packets(
+    args: Args,
+    token: Arc<RwLock<String>>,
+    dump_dir: DumpDir,
+    client: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
+) {
     let monitor_config = nullnet_traffic_monitor::MonitorConfig {
         addr: args.addr.clone(),
         snaplen: args.snaplen,
     };
     let mut rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
-
-    let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
-
-    log::info!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
-
-    let client = Arc::new(Mutex::new(None));
-    let client_2 = client.clone();
-    let dump_dir = DumpDir::new(dump_bytes).await;
-    let dump_dir_2 = dump_dir.clone();
-    let token_2 = token.clone();
-    tokio::spawn(async move {
-        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
-            .await;
-    });
 
     let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
     let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
