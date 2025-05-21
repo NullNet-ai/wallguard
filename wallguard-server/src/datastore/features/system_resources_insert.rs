@@ -17,14 +17,14 @@ impl DatastoreWrapper {
             "timestamp": resources.timestamp,
             "num_cpus": resources.num_cpus,
             "global_cpu_usage": resources.global_cpu_usage,
-            "cpu_usages": resources.cpu_usages,
+            "cpu_usages": format!("{:?}", resources.cpu_usages),
             "total_memory": resources.total_memory,
             "used_memory": resources.used_memory,
             "total_disk_space": resources.total_disk_space,
             "available_disk_space": resources.available_disk_space,
             "read_bytes": resources.read_bytes,
             "written_bytes": resources.written_bytes,
-            "temperatures": resources.temperatures,
+            "temperatures": format!("{:?}", resources.temperatures),
         })
         .to_string();
 
