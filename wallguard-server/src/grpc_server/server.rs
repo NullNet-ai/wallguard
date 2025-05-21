@@ -2,7 +2,7 @@ use super::request_log::ServerLogger;
 use crate::app_context::AppContext;
 use crate::proto::wallguard::{
     CommonResponse, ConfigSnapshot, HeartbeatRequest, HeartbeatResponse, Logs, Packets,
-    wall_guard_server::WallGuard,
+    SystemResources, wall_guard_server::WallGuard,
 };
 use crate::proto::wallguard::{ControlChannelRequest, ControlChannelResponse};
 use std::net::IpAddr;
@@ -55,6 +55,17 @@ impl WallGuard for WallGuardImpl {
     ) -> Result<Response<CommonResponse>, Status> {
         // do not log inside here, otherwise it will loop
         let result = self.handle_logs_impl(request).await;
+        result.map_err(|e| Status::internal(format!("{e:?}")))
+    }
+
+    async fn handle_system_resources(
+        &self,
+        request: Request<SystemResources>,
+    ) -> Result<Response<CommonResponse>, Status> {
+        let addr = ServerLogger::extract_address(&request);
+        let received_at = chrono::Utc::now();
+        let result = self.handle_system_resources_impl(request).await;
+        ServerLogger::log_response(&result, &addr, "/handle_system_resources", received_at);
         result.map_err(|e| Status::internal(format!("{e:?}")))
     }
 

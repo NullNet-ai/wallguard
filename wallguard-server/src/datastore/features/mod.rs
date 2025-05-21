@@ -11,4 +11,5 @@ mod heartbeat;
 mod ip_info;
 mod login;
 mod logs_insert;
+mod system_resources_insert;
 mod utils;

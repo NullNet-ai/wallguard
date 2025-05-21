@@ -86,6 +86,33 @@ pub struct Log {
     pub message: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SystemResources {
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub timestamp: ::prost::alloc::string::String,
+    #[prost(int64, tag = "3")]
+    pub num_cpus: i64,
+    #[prost(float, tag = "4")]
+    pub global_cpu_usage: f32,
+    #[prost(map = "string, float", tag = "5")]
+    pub cpu_usages: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
+    #[prost(int64, tag = "6")]
+    pub total_memory: i64,
+    #[prost(int64, tag = "7")]
+    pub used_memory: i64,
+    #[prost(int64, tag = "8")]
+    pub total_disk_space: i64,
+    #[prost(int64, tag = "9")]
+    pub available_disk_space: i64,
+    #[prost(int64, tag = "10")]
+    pub read_bytes: i64,
+    #[prost(int64, tag = "11")]
+    pub written_bytes: i64,
+    #[prost(map = "string, float", tag = "12")]
+    pub temperatures: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControlChannelRequest {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
@@ -348,6 +375,27 @@ pub mod wall_guard_client {
                 .insert(GrpcMethod::new("wallguard.WallGuard", "HandleLogs"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn handle_system_resources(
+            &mut self,
+            request: impl tonic::IntoRequest<super::SystemResources>,
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/wallguard.WallGuard/HandleSystemResources",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("wallguard.WallGuard", "HandleSystemResources"));
+            self.inner.unary(req, path, codec).await
+        }
         pub async fn request_control_channel(
             &mut self,
             request: impl tonic::IntoRequest<super::ControlChannelRequest>,
@@ -408,6 +456,10 @@ pub mod wall_guard_server {
         async fn handle_logs(
             &self,
             request: tonic::Request<super::Logs>,
+        ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
+        async fn handle_system_resources(
+            &self,
+            request: tonic::Request<super::SystemResources>,
         ) -> std::result::Result<tonic::Response<super::CommonResponse>, tonic::Status>;
         async fn request_control_channel(
             &self,
@@ -653,6 +705,52 @@ pub mod wall_guard_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = HandleLogsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/wallguard.WallGuard/HandleSystemResources" => {
+                    #[allow(non_camel_case_types)]
+                    struct HandleSystemResourcesSvc<T: WallGuard>(pub Arc<T>);
+                    impl<
+                        T: WallGuard,
+                    > tonic::server::UnaryService<super::SystemResources>
+                    for HandleSystemResourcesSvc<T> {
+                        type Response = super::CommonResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::SystemResources>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WallGuard>::handle_system_resources(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = HandleSystemResourcesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
