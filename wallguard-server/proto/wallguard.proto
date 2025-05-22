@@ -90,14 +90,16 @@ message SystemResource {
   string timestamp = 1;
   int64 num_cpus = 2;
   float global_cpu_usage = 3;
-  map<string, float> cpu_usages = 4;
+  // will be a map<string, float> once we have Rust datastore
+  string cpu_usages = 4;
   int64 total_memory = 5;
   int64 used_memory = 6;
   int64 total_disk_space = 7;
   int64 available_disk_space = 8;
   int64 read_bytes = 9;
   int64 written_bytes = 10;
-  map<string, float> temperatures = 11;
+  // will be a map<string, float> once we have Rust datastore
+  string temperatures = 11;
 }
 
 message ControlChannelRequest {

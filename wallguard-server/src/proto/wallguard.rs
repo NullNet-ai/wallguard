@@ -102,8 +102,9 @@ pub struct SystemResource {
     pub num_cpus: i64,
     #[prost(float, tag = "3")]
     pub global_cpu_usage: f32,
-    #[prost(map = "string, float", tag = "4")]
-    pub cpu_usages: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
+    /// will be a map<string, float> once we have Rust datastore
+    #[prost(string, tag = "4")]
+    pub cpu_usages: ::prost::alloc::string::String,
     #[prost(int64, tag = "5")]
     pub total_memory: i64,
     #[prost(int64, tag = "6")]
@@ -116,8 +117,9 @@ pub struct SystemResource {
     pub read_bytes: i64,
     #[prost(int64, tag = "10")]
     pub written_bytes: i64,
-    #[prost(map = "string, float", tag = "11")]
-    pub temperatures: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
+    /// will be a map<string, float> once we have Rust datastore
+    #[prost(string, tag = "11")]
+    pub temperatures: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ControlChannelRequest {

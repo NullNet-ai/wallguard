@@ -11,6 +11,8 @@ impl WallGuardImpl {
         let resources = request.into_inner();
         let (jwt_token, _) = Self::authenticate(&resources.token)?;
 
+        log::info!("Received {} system resources.", resources.resources.len());
+
         // todo ???
         // self.experimental_create_system_resources(...).await;
 
