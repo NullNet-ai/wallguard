@@ -10,10 +10,15 @@ pub const QUEUE_SIZE: usize = 1_000;
 #[cfg(not(debug_assertions))]
 pub const QUEUE_SIZE: usize = 1_000_000;
 
+#[cfg(debug_assertions)]
+pub const QUEUE_SIZE_RESOURCES: usize = 10;
+#[cfg(not(debug_assertions))]
+pub const QUEUE_SIZE_RESOURCES: usize = 60;
+
 pub static UUID: std::sync::LazyLock<String> =
     std::sync::LazyLock::new(|| uuid::Uuid::new_v4().to_string());
 
-pub const DUMP_DIR: &str = "packet_dumps";
+pub const DUMP_DIR: &str = "dumps";
 
 pub static DISK_SIZE: std::sync::LazyLock<u64> = std::sync::LazyLock::new(|| {
     let disks = sysinfo::Disks::new_with_refreshed_list();

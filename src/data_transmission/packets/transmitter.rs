@@ -1,37 +1,27 @@
 use crate::cli::Args;
-use crate::constants::{BATCH_SIZE, DISK_SIZE, QUEUE_SIZE};
-use crate::packet_transmitter::dump_dir::DumpDir;
-use crate::packet_transmitter::grpc_handler::handle_connection_and_retransmission;
-use crate::packet_transmitter::packet_buffer::PacketBuffer;
+use crate::constants::{BATCH_SIZE, QUEUE_SIZE};
+use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
+use crate::data_transmission::item_buffer::ItemBuffer;
 use crate::timer::Timer;
 use nullnet_libwallguard::{Packet, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
-pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
+pub(crate) async fn transmit_packets(
+    args: Args,
+    token: Arc<RwLock<String>>,
+    dump_dir: DumpDir,
+    client: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
+) {
     let monitor_config = nullnet_traffic_monitor::MonitorConfig {
         addr: args.addr.clone(),
         snaplen: args.snaplen,
     };
     let mut rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
 
-    let dump_bytes = (u64::from(args.disk_percentage) * *DISK_SIZE) / 100;
-
-    log::info!("Will use at most {dump_bytes} bytes of disk space for packet dump files");
-
-    let client = Arc::new(Mutex::new(None));
-    let client_2 = client.clone();
-    let dump_dir = DumpDir::new(dump_bytes).await;
-    let dump_dir_2 = dump_dir.clone();
-    let token_2 = token.clone();
-    tokio::spawn(async move {
-        handle_connection_and_retransmission(&args.addr, args.port, client_2, dump_dir_2, token_2)
-            .await;
-    });
-
-    let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
-    let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
+    let mut packet_batch = ItemBuffer::new(BATCH_SIZE);
+    let mut packet_queue = ItemBuffer::new(QUEUE_SIZE);
     let mut timer = Timer::new(args.transmit_interval);
     loop {
         if let Ok(packet) = rx.recv() {
@@ -54,11 +44,18 @@ pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
                 )
                 .await;
                 if packet_queue.is_full() {
-                    dump_dir
-                        .dump_packets_to_file(packet_queue.take(), args.uuid.clone())
-                        .await;
+                    log::warn!(
+                        "Queue is full. Dumping {} packets to file",
+                        packet_queue.len(),
+                    );
+                    let dump_item = DumpItem::Packets(Packets {
+                        uuid: args.uuid.clone(),
+                        packets: packet_queue.take(),
+                        token: String::new(),
+                    });
+                    dump_dir.dump_item_to_file(dump_item).await;
                     if dump_dir.is_full().await {
-                        log::warn!("Dump size maximum limit reached. Entering idle mode...",);
+                        log::warn!("Dump size maximum limit reached. Packets routine entering idle mode...",);
                         // stop traffic monitoring
                         drop(rx);
                         // wait for the server to come up again
@@ -79,8 +76,8 @@ pub(crate) async fn transmit_packets(args: Args, token: Arc<RwLock<String>>) {
 
 async fn send_packets(
     interface: &Arc<Mutex<Option<WallGuardGrpcInterface>>>,
-    packet_batch: &mut PacketBuffer,
-    packet_queue: &mut PacketBuffer,
+    packet_batch: &mut ItemBuffer<Packet>,
+    packet_queue: &mut ItemBuffer<Packet>,
     uuid: String,
     token: String,
 ) {

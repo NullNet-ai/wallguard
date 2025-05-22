@@ -1,13 +1,13 @@
 mod cli;
 mod config_monitor;
 mod constants;
+mod data_transmission;
 mod heartbeat;
-mod packet_transmitter;
 mod remote_access;
 mod rtty;
 mod timer;
 
-use crate::packet_transmitter::transmitter::transmit_packets;
+use crate::data_transmission::entrypoint::spawn_long_running_tasks;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use nullnet_liblogging::ServerKind;
@@ -55,10 +55,11 @@ async fn main() {
         tokio::spawn(async move { cfg_monitor.watch().await });
     }
 
+    spawn_long_running_tasks(args, token).await;
+
     let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
     tokio::select! {
         _ = terminate_signal.recv() => {},
-        () = transmit_packets(args, token.clone()) => {}
     }
 
     let _ = remove_added_ssh_keys();
