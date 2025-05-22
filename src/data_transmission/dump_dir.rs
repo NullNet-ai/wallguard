@@ -58,7 +58,7 @@ impl DumpDir {
         let file_path = self.get_file_path(&now, &dump_item);
         tokio::fs::write(
             file_path,
-            bincode::serialize(&dump_item).expect("Failed to serialize item"),
+            serde_json::to_string(&dump_item).expect("Failed to serialize item"),
         )
         .await
         .expect("Failed to write dump file");
@@ -68,7 +68,7 @@ impl DumpDir {
         dump.set_token(String::new());
         tokio::fs::write(
             file_path,
-            bincode::serialize(&dump).expect("Failed to serialize packets"),
+            serde_json::to_string(&dump).expect("Failed to serialize items"),
         )
         .await
         .expect("Failed to write dump file");

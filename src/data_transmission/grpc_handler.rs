@@ -39,12 +39,12 @@ pub(crate) async fn handle_connection_and_retransmission(
             *interface.lock().await = Some(client);
             // send packets accumulated in dump files
             'file_loop: for file in dump_dir.get_files_sorted().await {
-                let bytes = fs::read(file.path()).await.unwrap_or_default();
-                let mut dump: DumpItem = bincode::deserialize(&bytes).unwrap_or_default();
+                let Ok(string) = fs::read_to_string(file.path()).await else { continue };
+                let Ok(mut dump) = serde_json::from_str::<DumpItem>(&string) else { continue };
                 // update auth token of items retrieved from disk
                 dump.set_token(token.read().await.to_string());
 
-                while !dump.size() == 0 {
+                while dump.size() != 0 {
                     let range = ..min(dump.size(), BATCH_SIZE);
                     let send_res = match &dump {
                         DumpItem::Packets(p) => {
@@ -74,14 +74,15 @@ pub(crate) async fn handle_connection_and_retransmission(
                                 .await
                         }
                         DumpItem::Empty => {
-                            continue;
+                            log::warn!("Invalid dump file found. Skipping...");
+                            continue 'file_loop;
                         }
                     };
                     if send_res.is_err() {
                         // server is down again, try again later
                         *interface.lock().await = None;
                         log::error!("Failed to send dump. Reconnecting...",);
-                        // update dump file with unsent packets
+                        // update dump file with unsent items
                         dump_dir.update_items_dump_file(file.path(), dump).await;
                         break 'file_loop;
                     }
