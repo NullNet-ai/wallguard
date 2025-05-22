@@ -1,6 +1,6 @@
 [package]
 name = "nullnet-libwallguard"
-version = "1.0.3"
+version = "0.1.6"
 edition = "2024"
 authors = ["Giuliano Bellini <gyulyvgc99@gmail.com>", "Anton Liashkevich <anton.liashkevich.eng@gmail.com>"]
 description = "A centralized management system for network firewalls"
