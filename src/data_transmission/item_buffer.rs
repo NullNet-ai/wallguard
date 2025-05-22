@@ -1,12 +1,11 @@
-use nullnet_libwallguard::Packet;
 use std::ops::RangeTo;
 
-pub(crate) struct PacketBuffer {
-    buffer: Vec<Packet>,
+pub(crate) struct ItemBuffer<T> {
+    buffer: Vec<T>,
     size: usize,
 }
 
-impl PacketBuffer {
+impl<T: Clone> ItemBuffer<T> {
     pub(crate) fn new(size: usize) -> Self {
         Self {
             buffer: Vec::with_capacity(size),
@@ -14,20 +13,20 @@ impl PacketBuffer {
         }
     }
 
-    pub(crate) fn push(&mut self, packet: Packet) {
-        self.buffer.push(packet);
+    pub(crate) fn push(&mut self, item: T) {
+        self.buffer.push(item);
     }
 
-    pub(crate) fn take(&mut self) -> Vec<Packet> {
+    pub(crate) fn take(&mut self) -> Vec<T> {
         std::mem::take(&mut self.buffer)
     }
 
-    pub(crate) fn get(&mut self, range: RangeTo<usize>) -> Vec<Packet> {
+    pub(crate) fn get(&mut self, range: RangeTo<usize>) -> Vec<T> {
         self.buffer.get(range).unwrap_or_default().to_vec()
     }
 
-    pub(crate) fn extend(&mut self, packets: Vec<Packet>) {
-        self.buffer.extend(packets);
+    pub(crate) fn extend(&mut self, items: Vec<T>) {
+        self.buffer.extend(items);
     }
 
     pub(crate) fn drain(&mut self, range: RangeTo<usize>) {

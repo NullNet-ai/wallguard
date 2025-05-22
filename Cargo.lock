@@ -2693,6 +2693,7 @@ dependencies = [
  "nullnet-libwallguard 0.1.5",
  "nullnet-traffic-monitor",
  "portable-pty",
+ "serde",
  "sysinfo",
  "tokio",
  "uuid",

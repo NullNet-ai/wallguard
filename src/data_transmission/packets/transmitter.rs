@@ -1,7 +1,7 @@
 use crate::cli::Args;
 use crate::constants::{BATCH_SIZE, QUEUE_SIZE};
-use crate::packet_transmitter::dump_dir::DumpDir;
-use crate::packet_transmitter::packet_buffer::PacketBuffer;
+use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
+use crate::data_transmission::item_buffer::ItemBuffer;
 use crate::timer::Timer;
 use nullnet_libwallguard::{Packet, Packets, WallGuardGrpcInterface};
 use std::cmp::min;
@@ -20,8 +20,8 @@ pub(crate) async fn transmit_packets(
     };
     let mut rx = nullnet_traffic_monitor::monitor_devices(&monitor_config);
 
-    let mut packet_batch = PacketBuffer::new(BATCH_SIZE);
-    let mut packet_queue = PacketBuffer::new(QUEUE_SIZE);
+    let mut packet_batch = ItemBuffer::new(BATCH_SIZE);
+    let mut packet_queue = ItemBuffer::new(QUEUE_SIZE);
     let mut timer = Timer::new(args.transmit_interval);
     loop {
         if let Ok(packet) = rx.recv() {
@@ -44,11 +44,18 @@ pub(crate) async fn transmit_packets(
                 )
                 .await;
                 if packet_queue.is_full() {
-                    dump_dir
-                        .dump_packets_to_file(packet_queue.take(), args.uuid.clone())
-                        .await;
+                    log::warn!(
+                        "Queue is full. Dumping {} packets to file",
+                        packet_queue.len(),
+                    );
+                    let dump_item = DumpItem::Packets(Packets {
+                        uuid: args.uuid.clone(),
+                        packets: packet_queue.take(),
+                        token: String::new(),
+                    });
+                    dump_dir.dump_item_to_file(dump_item).await;
                     if dump_dir.is_full().await {
-                        log::warn!("Dump size maximum limit reached. Entering idle mode...",);
+                        log::warn!("Dump size maximum limit reached. Packets routine entering idle mode...",);
                         // stop traffic monitoring
                         drop(rx);
                         // wait for the server to come up again
@@ -69,8 +76,8 @@ pub(crate) async fn transmit_packets(
 
 async fn send_packets(
     interface: &Arc<Mutex<Option<WallGuardGrpcInterface>>>,
-    packet_batch: &mut PacketBuffer,
-    packet_queue: &mut PacketBuffer,
+    packet_batch: &mut ItemBuffer<Packet>,
+    packet_queue: &mut ItemBuffer<Packet>,
     uuid: String,
     token: String,
 ) {

@@ -34,3 +34,4 @@ actix-web = "4.10.2"
 actix-web-actors = "4.3.1"
 bytestring = "1.4.0"
 dirs = "6.0.0"
+serde = { version = "1.0.219", features = ["derive"] }
