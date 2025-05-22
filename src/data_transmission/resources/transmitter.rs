@@ -6,7 +6,7 @@ use nullnet_libwallguard::{SystemResource, SystemResources, WallGuardGrpcInterfa
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
-pub(crate) async fn monitor_system_resources(
+pub(crate) async fn transmit_system_resources(
     token: Arc<RwLock<String>>,
     dump_dir: DumpDir,
     client: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
@@ -35,9 +35,10 @@ pub(crate) async fn monitor_system_resources(
                     .collect::<Vec<_>>()
             ),
         };
+        resources_queue.push(resource);
         let resources = SystemResources {
             token: token.read().await.clone(),
-            resources: vec![resource.clone()],
+            resources: resources_queue.get(..resources_queue.len()),
         };
 
         // send it to the server
@@ -45,12 +46,12 @@ pub(crate) async fn monitor_system_resources(
             if client.handle_system_resources(resources).await.is_err() {
                 log::error!("Failed to send system resources");
             } else {
+                resources_queue.drain(..resources_queue.len());
                 continue;
             }
         }
 
-        // if arrived here something went wrong: store the resources in the queue / dump to file
-        resources_queue.push(resource);
+        // if arrived here something went wrong: dump to file if queue is full
         if resources_queue.is_full() {
             log::warn!(
                 "Queue is full. Dumping {} system resources to file",

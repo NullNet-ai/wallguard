@@ -28,7 +28,7 @@ pub(crate) async fn handle_connection_and_retransmission(
                 .await
                 .is_err()
             {
-                log::error!("Failed to send heartbeat. Reconnecting...",);
+                log::error!("Failed to contact server. Reconnecting...",);
                 *interface.lock().await = None;
             } else {
                 tokio::time::sleep(std::time::Duration::from_secs(10)).await;
@@ -39,8 +39,12 @@ pub(crate) async fn handle_connection_and_retransmission(
             *interface.lock().await = Some(client);
             // send packets accumulated in dump files
             'file_loop: for file in dump_dir.get_files_sorted().await {
-                let Ok(string) = fs::read_to_string(file.path()).await else { continue };
-                let Ok(mut dump) = serde_json::from_str::<DumpItem>(&string) else { continue };
+                let Ok(string) = fs::read_to_string(file.path()).await else {
+                    continue;
+                };
+                let Ok(mut dump) = serde_json::from_str::<DumpItem>(&string) else {
+                    continue;
+                };
                 // update auth token of items retrieved from disk
                 dump.set_token(token.read().await.to_string());
 

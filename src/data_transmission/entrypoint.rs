@@ -3,7 +3,7 @@ use crate::constants::DISK_SIZE;
 use crate::data_transmission::dump_dir::DumpDir;
 use crate::data_transmission::grpc_handler::handle_connection_and_retransmission;
 use crate::data_transmission::packets::transmitter::transmit_packets;
-use crate::data_transmission::resources::transmitter::monitor_system_resources;
+use crate::data_transmission::resources::transmitter::transmit_system_resources;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
@@ -35,6 +35,6 @@ pub(crate) async fn spawn_long_running_tasks(args: Args, token: Arc<RwLock<Strin
     });
 
     tokio::spawn(async move {
-        monitor_system_resources(token_3, dump_dir_3, client_3).await;
+        transmit_system_resources(token_3, dump_dir_3, client_3).await;
     });
 }
