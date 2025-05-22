@@ -4,13 +4,14 @@ use chrono::Utc;
 use nullnet_libwallguard::{SystemResource, SystemResources, WallGuardGrpcInterface};
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
+use crate::constants::QUEUE_SIZE_RESOURCES;
 
 pub(crate) async fn monitor_system_resources(
     token: Arc<RwLock<String>>,
     dump_dir: DumpDir,
     client: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
 ) {
-    let mut resources_queue = ItemBuffer::new(5);
+    let mut resources_queue = ItemBuffer::new(QUEUE_SIZE_RESOURCES);
     let mut rx = nullnet_libresmon::poll_system_resources(1000);
     while let Ok(res) = rx.recv().await {
         // create proper gRPC object including token and timestamp
@@ -19,18 +20,18 @@ pub(crate) async fn monitor_system_resources(
             timestamp: Utc::now().to_rfc3339(),
             num_cpus: res.num_cpus as i64,
             global_cpu_usage: res.global_cpu_usage,
-            cpu_usages: res.cpu_usages,
+            cpu_usages: format!("{:?}", res.cpu_usages.into_iter().collect::<Vec<_>>()),
             total_memory: res.total_memory as i64,
             used_memory: res.used_memory as i64,
             total_disk_space: res.total_disk_space as i64,
             available_disk_space: res.available_disk_space as i64,
             read_bytes: res.read_bytes as i64,
             written_bytes: res.written_bytes as i64,
-            temperatures: res
+            temperatures: format!("{:?}", res
                 .temperatures
                 .into_iter()
                 .filter_map(|(k, v)| v.map(|v| (k, v)))
-                .collect(),
+                .collect::<Vec<_>>()),
         };
         let resources = SystemResources {
             token: token.read().await.clone(),
