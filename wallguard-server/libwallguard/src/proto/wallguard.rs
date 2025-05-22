@@ -85,31 +85,38 @@ pub struct Log {
     #[prost(string, tag = "3")]
     pub message: ::prost::alloc::string::String,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SystemResources {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(message, repeated, tag = "2")]
+    pub resources: ::prost::alloc::vec::Vec<SystemResource>,
+}
+#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SystemResource {
+    #[prost(string, tag = "1")]
     pub timestamp: ::prost::alloc::string::String,
-    #[prost(int64, tag = "3")]
+    #[prost(int64, tag = "2")]
     pub num_cpus: i64,
-    #[prost(float, tag = "4")]
+    #[prost(float, tag = "3")]
     pub global_cpu_usage: f32,
-    #[prost(map = "string, float", tag = "5")]
+    #[prost(map = "string, float", tag = "4")]
     pub cpu_usages: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
-    #[prost(int64, tag = "6")]
+    #[prost(int64, tag = "5")]
     pub total_memory: i64,
-    #[prost(int64, tag = "7")]
+    #[prost(int64, tag = "6")]
     pub used_memory: i64,
-    #[prost(int64, tag = "8")]
+    #[prost(int64, tag = "7")]
     pub total_disk_space: i64,
-    #[prost(int64, tag = "9")]
+    #[prost(int64, tag = "8")]
     pub available_disk_space: i64,
-    #[prost(int64, tag = "10")]
+    #[prost(int64, tag = "9")]
     pub read_bytes: i64,
-    #[prost(int64, tag = "11")]
+    #[prost(int64, tag = "10")]
     pub written_bytes: i64,
-    #[prost(map = "string, float", tag = "12")]
+    #[prost(map = "string, float", tag = "11")]
     pub temperatures: ::std::collections::HashMap<::prost::alloc::string::String, f32>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

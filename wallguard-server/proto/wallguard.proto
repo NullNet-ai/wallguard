@@ -83,17 +83,21 @@ message Log {
 
 message SystemResources {
   string token = 1;
-  string timestamp = 2;
-  int64 num_cpus = 3;
-  float global_cpu_usage = 4;
-  map<string, float> cpu_usages = 5;
-  int64 total_memory = 6;
-  int64 used_memory = 7;
-  int64 total_disk_space = 8;
-  int64 available_disk_space = 9;
-  int64 read_bytes = 10;
-  int64 written_bytes = 11;
-  map<string, float> temperatures = 12;
+  repeated SystemResource resources = 2;
+}
+
+message SystemResource {
+  string timestamp = 1;
+  int64 num_cpus = 2;
+  float global_cpu_usage = 3;
+  map<string, float> cpu_usages = 4;
+  int64 total_memory = 5;
+  int64 used_memory = 6;
+  int64 total_disk_space = 7;
+  int64 available_disk_space = 8;
+  int64 read_bytes = 9;
+  int64 written_bytes = 10;
+  map<string, float> temperatures = 11;
 }
 
 message ControlChannelRequest {

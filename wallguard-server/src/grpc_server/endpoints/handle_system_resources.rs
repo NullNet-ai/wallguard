@@ -17,7 +17,7 @@ impl WallGuardImpl {
         let _ = self
             .context
             .datastore
-            .system_resources_insert(&jwt_token, resources)
+            .system_resources_insert(&jwt_token, resources.resources)
             .await?;
 
         Ok(Response::new(CommonResponse {
