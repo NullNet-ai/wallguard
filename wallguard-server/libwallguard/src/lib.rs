@@ -94,6 +94,15 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
+    pub async fn handle_system_resources(&mut self, message: SystemResources) -> Result<CommonResponse, String> {
+        self.client
+            .handle_system_resources(Request::new(message))
+            .await
+            .map(tonic::Response::into_inner)
+            .map_err(|e| e.to_string())
+    }
+
+    #[allow(clippy::missing_errors_doc)]
     pub async fn request_control_channel(
         &mut self,
         token: String,

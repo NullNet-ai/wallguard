@@ -14,6 +14,14 @@ fn main() {
                 "#[derive(serde::Serialize, serde::Deserialize)]",
             )
             .type_attribute(
+                "wallguard.SystemResources",
+                "#[derive(serde::Serialize, serde::Deserialize)]",
+            )
+            .type_attribute(
+                "wallguard.SystemResource",
+                "#[derive(serde::Serialize, serde::Deserialize)]",
+            )
+            .type_attribute(
                 "wallguard.Log",
                 "#[derive(serde::Serialize, serde::Deserialize)]",
             )

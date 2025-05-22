@@ -7,6 +7,7 @@ service WallGuard {
   rpc HandlePackets (Packets) returns (CommonResponse);
   rpc HandleConfig (ConfigSnapshot) returns (CommonResponse);
   rpc HandleLogs (Logs) returns (CommonResponse);
+  rpc HandleSystemResources (SystemResources) returns (CommonResponse);
   rpc RequestControlChannel (ControlChannelRequest) returns (ControlChannelResponse);
 }
 
@@ -78,6 +79,27 @@ message Log {
   string timestamp = 1;
   string level = 2;
   string message = 3;
+}
+
+message SystemResources {
+  string token = 1;
+  repeated SystemResource resources = 2;
+}
+
+message SystemResource {
+  string timestamp = 1;
+  int64 num_cpus = 2;
+  float global_cpu_usage = 3;
+  // will be a map<string, float> once we have Rust datastore
+  string cpu_usages = 4;
+  int64 total_memory = 5;
+  int64 used_memory = 6;
+  int64 total_disk_space = 7;
+  int64 available_disk_space = 8;
+  int64 read_bytes = 9;
+  int64 written_bytes = 10;
+  // will be a map<string, float> once we have Rust datastore
+  string temperatures = 11;
 }
 
 message ControlChannelRequest {
