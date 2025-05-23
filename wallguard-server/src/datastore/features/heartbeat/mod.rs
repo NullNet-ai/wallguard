@@ -65,7 +65,7 @@ impl DatastoreWrapper {
                 table: String::from("devices"),
             }),
             query: Some(Query {
-                pluck: String::from("status,is_monitoring_enabled,is_remote_access_enabled"),
+                pluck: String::from("status,is_monitoring_enabled,is_remote_access_enabled,is_packet_capture_enabled,is_resource_monitoring_enabled"),
                 durability: String::from("soft"),
             }),
         };

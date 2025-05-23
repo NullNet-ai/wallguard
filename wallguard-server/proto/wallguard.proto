@@ -32,7 +32,10 @@ message HeartbeatResponse {
   bool remote_shell_enabled = 3;
   bool remote_ui_enabled = 4;
   bool remote_ssh_enabled = 5;
+  // rename this to is_config_monitoring_enabled ???
   bool is_monitoring_enabled = 6;
+  bool is_packet_capture_enabled = 7;
+  bool is_resource_monitoring_enabled = 8;
 }
 
 message CommonResponse {

@@ -22,8 +22,13 @@ pub struct HeartbeatResponse {
     pub remote_ui_enabled: bool,
     #[prost(bool, tag = "5")]
     pub remote_ssh_enabled: bool,
+    /// rename this to is_config_monitoring_enabled ???
     #[prost(bool, tag = "6")]
     pub is_monitoring_enabled: bool,
+    #[prost(bool, tag = "7")]
+    pub is_packet_capture_enabled: bool,
+    #[prost(bool, tag = "8")]
+    pub is_resource_monitoring_enabled: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommonResponse {
