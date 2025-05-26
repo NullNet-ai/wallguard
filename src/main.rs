@@ -7,7 +7,6 @@ mod remote_access;
 mod rtty;
 mod timer;
 
-use crate::data_transmission::entrypoint::spawn_long_running_tasks;
 use clap::Parser;
 use config_monitor::ConfigurationMonitor;
 use nullnet_liblogging::ServerKind;
@@ -49,13 +48,11 @@ async fn main() {
             .expect("Failed to initialize configuration monitor");
 
         cfg_monitor.upload_current().await.expect(
-            "Failed to capture current configuration and \\ or updaload the snapshot to the server.",
+            "Failed to capture current configuration and \\ or upload the snapshot to the server.",
         );
 
         tokio::spawn(async move { cfg_monitor.watch().await });
     }
-
-    spawn_long_running_tasks(args, token).await;
 
     let mut terminate_signal = signal(SignalKind::terminate()).unwrap();
     tokio::select! {
