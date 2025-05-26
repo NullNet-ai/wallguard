@@ -44,8 +44,7 @@ message CommonResponse {
 
 message Packets {
   string token = 1;
-  string uuid = 2;
-  repeated Packet packets = 3;
+  repeated Packet packets = 2;
 }
 
 message Packet {

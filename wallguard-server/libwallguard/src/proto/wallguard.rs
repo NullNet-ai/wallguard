@@ -40,9 +40,7 @@ pub struct CommonResponse {
 pub struct Packets {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub uuid: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
+    #[prost(message, repeated, tag = "2")]
     pub packets: ::prost::alloc::vec::Vec<Packet>,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
