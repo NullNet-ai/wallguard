@@ -15,7 +15,7 @@ strip = true
 [dependencies]
 nullnet-traffic-monitor = { version = "0.1.5", features = ["export-pcap"] }
 nullnet-libconfmon = "=0.2.5"
-nullnet-libwallguard = "0.1.7"
+nullnet-libwallguard = "0.1.8"
 nullnet-liblogging = "0.3.0"
 nullnet-liberror = "0.1.1"
 nullnet-libtunnel = "0.3.2"

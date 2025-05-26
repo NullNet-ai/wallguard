@@ -35,7 +35,6 @@ pub(crate) async fn transmit_packets(
                 &client,
                 &mut packet_batch,
                 &mut packet_queue,
-                args.uuid.clone(),
                 token.read().await.clone(),
             )
             .await;
@@ -45,7 +44,6 @@ pub(crate) async fn transmit_packets(
                     packet_queue.len(),
                 );
                 let dump_item = DumpItem::Packets(Packets {
-                    uuid: args.uuid.clone(),
                     packets: packet_queue.take(),
                     token: String::new(),
                 });
@@ -71,7 +69,6 @@ async fn send_packets(
     interface: &Arc<Mutex<Option<WallGuardGrpcInterface>>>,
     packet_batch: &mut ItemBuffer<Packet>,
     packet_queue: &mut ItemBuffer<Packet>,
-    uuid: String,
     token: String,
 ) {
     packet_queue.extend(packet_batch.take());
@@ -79,7 +76,6 @@ async fn send_packets(
         while !packet_queue.is_empty() {
             let range = ..min(packet_queue.len(), BATCH_SIZE);
             let packets = Packets {
-                uuid: uuid.clone(),
                 packets: packet_queue.get(range),
                 token: token.clone(),
             };
