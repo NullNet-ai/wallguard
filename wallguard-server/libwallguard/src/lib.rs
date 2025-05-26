@@ -94,7 +94,10 @@ impl WallGuardGrpcInterface {
     }
 
     #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_system_resources(&mut self, message: SystemResources) -> Result<CommonResponse, String> {
+    pub async fn handle_system_resources(
+        &mut self,
+        message: SystemResources,
+    ) -> Result<CommonResponse, String> {
         self.client
             .handle_system_resources(Request::new(message))
             .await

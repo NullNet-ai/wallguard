@@ -77,6 +77,8 @@ async fn stream_impl(
                         remote_ui_enabled,
                         remote_ssh_enabled,
                         is_monitoring_enabled: response.is_monitoring_enabled,
+                        is_packet_capture_enabled: response.is_packet_capture_enabled,
+                        is_resource_monitoring_enabled: response.is_resource_monitoring_enabled,
                     };
 
                     if tx.send(Ok(response)).await.is_err() {

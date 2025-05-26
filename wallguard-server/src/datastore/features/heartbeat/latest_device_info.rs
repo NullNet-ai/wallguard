@@ -5,6 +5,8 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 pub struct LatestDeviceInfo {
     pub status: DeviceStatus,
     pub is_monitoring_enabled: bool,
+    pub is_packet_capture_enabled: bool,
+    pub is_resource_monitoring_enabled: bool,
 }
 
 impl LatestDeviceInfo {
@@ -28,6 +30,18 @@ impl LatestDeviceInfo {
             .ok_or("Could not parse 'is_monitoring_enabled'")
             .handle_err(location!())?;
 
+        let is_packet_capture_enabled = object
+            .get("is_packet_capture_enabled")
+            .and_then(serde_json::Value::as_bool)
+            .ok_or("Could not parse 'is_packet_capture_enabled'")
+            .handle_err(location!())?;
+
+        let is_resource_monitoring_enabled = object
+            .get("is_resource_monitoring_enabled")
+            .and_then(serde_json::Value::as_bool)
+            .ok_or("Could not parse 'is_resource_monitoring_enabled'")
+            .handle_err(location!())?;
+
         let status = object
             .get("status")
             .and_then(|v| v.as_str())
@@ -38,6 +52,8 @@ impl LatestDeviceInfo {
         Ok(Self {
             status: map_status_value_to_enum(&status),
             is_monitoring_enabled,
+            is_packet_capture_enabled,
+            is_resource_monitoring_enabled,
         })
     }
 }
