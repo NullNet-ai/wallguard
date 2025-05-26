@@ -1553,7 +1553,7 @@ dependencies = [
  "chrono",
  "log",
  "nullnet-libappguard",
- "nullnet-libwallguard 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nullnet-libwallguard",
  "syslog",
  "tokio",
 ]
@@ -1585,20 +1585,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libwallguard"
-version = "0.1.6"
-dependencies = [
- "log",
- "prost",
- "serde",
- "tokio",
- "tonic",
-]
-
-[[package]]
-name = "nullnet-libwallguard"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "275714809aaf56697cd069f77ed426a4cd7859646fc82ea26022b34717ea3929"
+checksum = "89e3d4b943be76a96e04b70ab8b0709301c8d0e66661a4e0124fa99a75a002f3"
 dependencies = [
  "log",
  "prost",
@@ -2692,7 +2681,7 @@ dependencies = [
  "nullnet-liblogging",
  "nullnet-libresmon",
  "nullnet-libtunnel",
- "nullnet-libwallguard 0.1.6",
+ "nullnet-libwallguard",
  "nullnet-traffic-monitor",
  "portable-pty",
  "serde",

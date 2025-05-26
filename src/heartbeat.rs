@@ -48,12 +48,8 @@ pub async fn routine(token: Arc<RwLock<String>>, args: Args) {
         handle_connection_and_retransmission(&addr, args.port, client_2, dump_dir_2, token_2).await;
     });
 
-    let mut tx_mng = TransmissionManager::new(
-        args.clone(),
-        client.clone(),
-        dump_dir.clone(),
-        token.clone(),
-    );
+    let mut tx_mng =
+        TransmissionManager::new(args.clone(), client.clone(), dump_dir, token.clone());
 
     loop {
         let Some(mut c) = client.lock().await.clone() else {
