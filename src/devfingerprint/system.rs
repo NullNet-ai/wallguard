@@ -24,27 +24,16 @@ fn collect_smbios_identifiers() -> Option<String> {
         if let Some(uuid) = sysinfo.uuid() {
             parts.push(format!("{}\n", uuid));
         }
-
-        push_smbiosstring!(parts, sysinfo.manufacturer());
-        push_smbiosstring!(parts, sysinfo.product_name());
-        push_smbiosstring!(parts, sysinfo.version());
-        push_smbiosstring!(parts, sysinfo.serial_number());
-        push_smbiosstring!(parts, sysinfo.family());
-        push_smbiosstring!(parts, sysinfo.sku_number());
     }
 
     if let Some(boardinfo) = data.find_map(|val: SMBiosBaseboardInformation| Some(val)) {
         push_smbiosstring!(parts, boardinfo.manufacturer());
         push_smbiosstring!(parts, boardinfo.serial_number());
-        push_smbiosstring!(parts, boardinfo.version());
         push_smbiosstring!(parts, boardinfo.product());
     }
 
     if let Some(procinfo) = data.find_map(|val: SMBiosProcessorInformation| Some(val)) {
-        push_smbiosstring!(parts, procinfo.asset_tag());
         push_smbiosstring!(parts, procinfo.part_number());
-        push_smbiosstring!(parts, procinfo.processor_manufacturer());
-        push_smbiosstring!(parts, procinfo.processor_version());
         push_smbiosstring!(parts, procinfo.serial_number());
         push_smbiosstring!(parts, procinfo.socket_designation());
     }
@@ -57,6 +46,5 @@ fn collect_smbios_identifiers() -> Option<String> {
 }
 
 pub fn system_fingerprint() -> Option<String> {
-    let raw_id = collect_smbios_identifiers()?;
-    Some(utilities::hash::sha256_digest_hex(&raw_id))
+    collect_smbios_identifiers().map(|raw| utilities::hash::sha256_digest_hex(&raw))
 }

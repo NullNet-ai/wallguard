@@ -1,17 +1,21 @@
-use sysinfo::Disks;
 use crate::utilities;
+use sysinfo::Disks;
 
 fn collect_disks_info() -> Option<String> {
     let disks = Disks::new_with_refreshed_list();
 
-    let mut parts = Vec::new();
-    for disk in &disks {
-        parts.push(format!("{}", disk.name().to_string_lossy()));
-        parts.push(format!("{}", disk.kind().to_string()));
-        parts.push(format!("{}", disk.file_system().to_string_lossy()));
-        parts.push(format!("{}", disk.file_system().to_string_lossy()));
-        parts.push(format!("{}", disk.total_space()));
-    }
+    let parts: Vec<String> = disks
+        .iter()
+        .map(|disk| {
+            format!(
+                "{}|{}|{}|{}",
+                disk.name().to_string_lossy(),
+                disk.kind().to_string(),
+                disk.file_system().to_string_lossy(),
+                disk.total_space()
+            )
+        })
+        .collect();
 
     if parts.is_empty() {
         None
@@ -21,6 +25,5 @@ fn collect_disks_info() -> Option<String> {
 }
 
 pub fn disks_fingerprint() -> Option<String> {
-    let raw_id = collect_disks_info()?;
-    Some(utilities::hash::sha256_digest_hex(&raw_id))
+    collect_disks_info().map(|raw| utilities::hash::sha256_digest_hex(&raw))
 }
