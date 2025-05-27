@@ -1,29 +1,58 @@
 use crate::utilities;
-use sysinfo::Disks;
+use libudev::{Context, Enumerator};
 
-fn collect_disks_info() -> Option<String> {
-    let disks = Disks::new_with_refreshed_list();
+fn list_disks_with_serials() -> Vec<(String, String)> {
+    let context = match Context::new() {
+        Ok(ctx) => ctx,
+        Err(_) => return Vec::new(),
+    };
 
-    let parts: Vec<String> = disks
-        .iter()
-        .map(|disk| {
-            format!(
-                "{}|{}|{}|{}",
-                disk.name().to_string_lossy(),
-                disk.kind().to_string(),
-                disk.file_system().to_string_lossy(),
-                disk.total_space()
-            )
-        })
-        .collect();
+    let mut enumerator = match Enumerator::new(&context) {
+        Ok(en) => en,
+        Err(_) => return Vec::new(),
+    };
 
-    if parts.is_empty() {
-        None
-    } else {
-        Some(parts.join("\n"))
+    if enumerator.match_subsystem("block").is_err() {
+        return Vec::new();
     }
+
+    if enumerator.match_property("DEVTYPE", "disk").is_err() {
+        return Vec::new();
+    }
+
+    let devices = match enumerator.scan_devices() {
+        Ok(devices) => devices,
+        Err(_) => return Vec::new(),
+    };
+
+    let mut disks = Vec::new();
+
+    for device in devices {
+        if let Some(devnode) = device.devnode() {
+            if let Some(serial) = device.property_value("ID_SERIAL") {
+                disks.push((
+                    devnode.to_string_lossy().into_owned(),
+                    serial.to_string_lossy().into(),
+                ));
+            }
+        }
+    }
+
+    disks
 }
 
 pub fn disks_fingerprint() -> Option<String> {
-    collect_disks_info().map(|raw| utilities::hash::sha256_digest_hex(&raw))
+    let disks = list_disks_with_serials();
+    
+    if disks.is_empty() {
+        return None;
+    }
+
+    let raw = disks
+        .iter()
+        .map(|(devnode, serial)| format!("{}|{}", devnode, serial))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    Some(utilities::hash::sha256_digest_hex(&raw))
 }
