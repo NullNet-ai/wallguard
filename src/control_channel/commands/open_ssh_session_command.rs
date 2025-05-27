@@ -5,6 +5,7 @@ use nullnet_liberror::{location, ErrorHandler, Location};
 use nullnet_libwallguard::SshSessionData;
 use tokio::io::copy_bidirectional;
 use tokio::net::TcpStream;
+use tokio::io::AsyncWriteExt as _;
 
 pub struct OpenSshSessionCommand {
     context: AppContext,
@@ -48,7 +49,11 @@ impl ExecutableCommand for OpenSshSessionCommand {
         tokio::spawn(async move {
             let mut s1 = tunnel_stream;
             let mut s2 = sshd_stream;
+            
             let _ = copy_bidirectional(&mut s1, &mut s2).await;
+
+            let _ = s1.shutdown().await;
+            let _ = s2.shutdown().await;
         });
 
         Ok(())

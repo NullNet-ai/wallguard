@@ -34,6 +34,7 @@ impl ExecutableCommand for OpenTtySessionCommand {
                 _ = stream_to_pty(reader, pty.writer) => {},
                 _ = pty_to_stream(writer, pty.reader) => {},
             }
+            // @todo reunite the stream and call ::shutdown just in case ?
         });
 
         Ok(())
