@@ -44,13 +44,13 @@ impl ExecutableCommand for OpenUiSessionCommand {
         tokio::spawn(async move {
             let mut s1 = local_stream;
             let mut s2 = remote_stream;
-            
+
             let _ = tokio::io::copy_bidirectional(&mut s1, &mut s2).await;
 
             let _ = s1.shutdown().await;
             let _ = s2.shutdown().await;
         });
-        
+
         Ok(())
     }
 }

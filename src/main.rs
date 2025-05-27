@@ -5,16 +5,16 @@ use devfingerprint::devfingerprint;
 mod app_context;
 mod cli;
 mod control_channel;
+mod devfingerprint;
 mod pty;
 mod reverse_tunnel;
 mod token_provider;
 mod utilities;
-mod devfingerprint;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    
+
     let Some(devfingerprint) = devfingerprint() else {
         log::error!("Failed to calculate device fingerprint, exiting ...");
         std::process::exit(-1);

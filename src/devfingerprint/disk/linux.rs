@@ -43,7 +43,7 @@ fn list_disks_with_serials() -> Vec<(String, String)> {
 
 pub fn disks_fingerprint() -> Option<String> {
     let disks = list_disks_with_serials();
-    
+
     if disks.is_empty() {
         return None;
     }

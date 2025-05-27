@@ -1,2 +1,2 @@
-pub mod ssh;
 pub mod hash;
+pub mod ssh;

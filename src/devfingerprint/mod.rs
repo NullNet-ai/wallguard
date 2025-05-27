@@ -1,10 +1,9 @@
-use _disk::disks_fingerprint;
+use disk::disks_fingerprint;
 use system::system_fingerprint;
 
 use crate::utilities;
 
 mod disk;
-mod _disk;
 mod system;
 
 pub fn devfingerprint() -> Option<String> {
