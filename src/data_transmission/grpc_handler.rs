@@ -37,6 +37,10 @@ pub(crate) async fn handle_connection_and_retransmission(
             // wait for the server to come up...
             let client = WallGuardGrpcInterface::new(addr, port).await;
             *interface.lock().await = Some(client);
+            // wait for the token to be available
+            while token.read().await.is_empty() {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            }
             // send packets accumulated in dump files
             'file_loop: for file in dump_dir.get_files_sorted().await {
                 let Ok(string) = fs::read_to_string(file.path()).await else {
