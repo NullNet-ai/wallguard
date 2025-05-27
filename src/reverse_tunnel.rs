@@ -5,6 +5,8 @@ use std::net::SocketAddr;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 
+use crate::utilities;
+
 #[derive(Debug, Clone, Copy)]
 pub struct ReverseTunnel {
     addr: SocketAddr,
@@ -20,7 +22,7 @@ impl ReverseTunnel {
     }
 
     pub async fn request_channel(&self, token: &str) -> Result<TcpStream, Error> {
-        let mut hash = token_digest(token);
+        let mut hash = utilities::hash::sha256_digest_bytes(token);
 
         let mut stream = TcpStream::connect(self.addr)
             .await
@@ -32,11 +34,4 @@ impl ReverseTunnel {
 
         Ok(stream)
     }
-}
-
-fn token_digest(token: &str) -> [u8; 32] {
-    let mut hasher = Sha256::new();
-    hasher.update(token.as_bytes());
-    let result = hasher.finalize();
-    result.as_slice().try_into().unwrap()
 }
