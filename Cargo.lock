@@ -220,6 +220,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
+name = "cfg_aliases"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
+
+[[package]]
 name = "clap"
 version = "4.5.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -439,6 +445,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "getopts"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14dbbfd5c71d70241ecf9e6f13737f7b5ce823821063188d7e46c41d371eebd5"
+dependencies = [
+ "unicode-width",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -596,6 +611,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "io-kit-sys"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617ee6cf8e3f66f3b4ea67a4058564628cde41901316e19f559e14c7c72c5e7b"
+dependencies = [
+ "core-foundation-sys",
+ "mach2",
+]
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -648,9 +673,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.170"
+version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "875b3680cb2f8f71bdcf9a30f38d48282f5d3c95cbf9b3fa57269bb5d5c06828"
+checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
 
 [[package]]
 name = "libredox"
@@ -677,6 +702,15 @@ name = "log"
 version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
+
+[[package]]
+name = "mach2"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19b955cdeb2a02b9117f121ce63aa52d08ade45de53e48fe6a38b39c10f6f709"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "matchit"
@@ -724,7 +758,19 @@ checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
 dependencies = [
  "bitflags 2.8.0",
  "cfg-if",
- "cfg_aliases",
+ "cfg_aliases 0.1.1",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
+dependencies = [
+ "bitflags 2.8.0",
+ "cfg-if",
+ "cfg_aliases 0.2.1",
  "libc",
 ]
 
@@ -866,7 +912,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "log",
- "nix",
+ "nix 0.28.0",
  "serial2",
  "shared_library",
  "shell-words",
@@ -1034,6 +1080,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
 
 [[package]]
+name = "ryu"
+version = "1.0.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
+
+[[package]]
 name = "schannel"
 version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1089,6 +1141,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.140"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+dependencies = [
+ "itoa",
+ "memchr",
+ "ryu",
+ "serde",
 ]
 
 [[package]]
@@ -1158,6 +1222,22 @@ name = "smallvec"
 version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
+
+[[package]]
+name = "smbios-lib"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48c18320ad3d997a100cb948fc020111936c530eddfde947f467083730e39e72"
+dependencies = [
+ "core-foundation",
+ "core-foundation-sys",
+ "getopts",
+ "io-kit-sys",
+ "libc",
+ "mach2",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "socket2"
@@ -1413,6 +1493,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00e2473a93778eb0bad35909dff6a10d28e63f792f16ed15e404fca9d5eeedbe"
 
 [[package]]
+name = "unicode-width"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
+
+[[package]]
 name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1437,11 +1523,14 @@ dependencies = [
  "clap",
  "dirs",
  "env_logger",
+ "libc",
  "log",
+ "nix 0.30.1",
  "nullnet-liberror",
  "nullnet-libwallguard",
  "portable-pty",
  "sha2",
+ "smbios-lib",
  "tokio",
 ]
 
