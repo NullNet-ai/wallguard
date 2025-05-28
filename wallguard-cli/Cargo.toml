@@ -13,3 +13,6 @@ strip = true
 prost.workspace = true
 tonic.workspace = true
 tokio.workspace = true
+
+[build-dependencies]
+tonic-build = "0.13.1"
