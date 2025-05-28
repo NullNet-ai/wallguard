@@ -3,3 +3,8 @@ members = [
     "wallguard",
     "wallguard-cli"
 ]
+
+[workspace.dependencies]
+tokio = { version = "1.43.0", features = ["full"] }
+tonic = "0.13.1"
+prost = "0.13.5"

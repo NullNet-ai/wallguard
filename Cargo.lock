@@ -1540,27 +1540,20 @@ dependencies = [
  "nullnet-liberror",
  "nullnet-libwallguard",
  "portable-pty",
+ "prost",
  "sha2",
  "smbios-lib",
  "tokio",
+ "tonic",
 ]
 
 [[package]]
 name = "wallguard-cli"
 version = "0.1.0"
 dependencies = [
- "clap",
- "dirs",
- "env_logger",
- "libc",
- "log",
- "nix 0.30.1",
- "nullnet-liberror",
- "nullnet-libwallguard",
- "portable-pty",
- "sha2",
- "smbios-lib",
+ "prost",
  "tokio",
+ "tonic",
 ]
 
 [[package]]
