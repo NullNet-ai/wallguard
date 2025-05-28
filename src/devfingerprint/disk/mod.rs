@@ -14,5 +14,5 @@ pub fn disks_fingerprint() -> Option<String> {
         return freebsd::disks_fingerprint();
     }
 
-    None
+    todo!("OS not supported")
 }
