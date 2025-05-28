@@ -71,23 +71,22 @@ fn get_disknames() -> io::Result<Vec<String>> {
 }
 
 pub fn disks_fingerprint() -> Option<String> {
-    // Get disks and serials as Vec<(String, Option<String>)>
-    let disks = match disks_fingerprint_raw() {
-        Ok(disks) => disks,
-        Err(_) => return None,
-    };
+    let disknames = get_disknames().ok()?;
 
-    // Filter out disks without serial or replace None with empty string
-    let filtered: Vec<_> = disks
-        .into_iter()
-        .filter_map(|(devnode, serial_opt)| serial_opt.map(|serial| (devnode, serial)))
-        .collect();
+    let mut disks = Vec::new();
 
-    if filtered.is_empty() {
+    for dname in disknames {
+        let devpath = format!("/dev/{}", dname);
+        if let Ok(Some(serial)) = get_serial_from_device(&devpath) {
+            disks.push((dname, serial));
+        }
+    }
+
+    if disks.is_empty() {
         return None;
     }
 
-    let raw = filtered
+    let raw = disks
         .iter()
         .map(|(devnode, serial)| format!("{}|{}", devnode, serial))
         .collect::<Vec<_>>()
