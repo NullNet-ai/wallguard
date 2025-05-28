@@ -77,8 +77,9 @@ pub fn disks_fingerprint() -> Option<String> {
 
     for dname in disknames {
         let devpath = format!("/dev/{}", dname);
-        if let Ok(Some(serial)) = get_serial_from_device(&devpath) {
-            disks.push((dname, serial));
+        match get_serial_from_device(&devpath) {
+            Ok(Some(serial)) => disks.push((dname, serial)),
+            _ => return None,
         }
     }
 
