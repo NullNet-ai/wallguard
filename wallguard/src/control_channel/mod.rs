@@ -24,10 +24,7 @@ impl ControlChannel {
         let mut stream = self
             .context
             .server
-            .request_control_channel(
-                &self.context.arguments.app_id,
-                &self.context.arguments.app_secret,
-            )
+            .request_control_channel(todo!(), todo!())
             .await
             .handle_err(location!())?;
 

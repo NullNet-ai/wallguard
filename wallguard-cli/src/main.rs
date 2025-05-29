@@ -35,8 +35,6 @@ pub async fn main() -> AnyResult<()> {
         std::process::exit(-1);
     };
 
-    println!("WallGuard State:");
-
     match arguments.command {
         arguments::Command::Status => {
             let response = client.get_status(Empty {}).await?.into_inner();
