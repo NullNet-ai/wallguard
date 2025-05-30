@@ -3,7 +3,7 @@
 pub struct Empty {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Status {
-    #[prost(oneof = "status::State", tags = "1, 2, 3")]
+    #[prost(oneof = "status::State", tags = "1, 2, 3, 4")]
     pub state: ::core::option::Option<status::State>,
 }
 /// Nested message and enum types in `Status`.
@@ -13,30 +13,35 @@ pub mod status {
         #[prost(message, tag = "1")]
         Idle(super::Idle),
         #[prost(message, tag = "2")]
-        Connected(super::Connected),
+        Authorization(super::Authorization),
         #[prost(message, tag = "3")]
+        Connected(super::Connected),
+        #[prost(message, tag = "4")]
         Error(super::Error),
     }
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct Idle {
-    #[prost(string, tag = "1")]
-    pub message: ::prost::alloc::string::String,
+    #[prost(uint64, tag = "1")]
+    pub timestamp: u64,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct Authorization {
+    #[prost(uint64, tag = "2")]
+    pub timestamp: u64,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Connected {
-    #[prost(string, tag = "1")]
+    #[prost(uint64, tag = "1")]
+    pub timestamp: u64,
+    #[prost(string, tag = "2")]
     pub org_id: ::prost::alloc::string::String,
-    #[prost(bool, tag = "2")]
-    pub traffic: bool,
-    #[prost(bool, tag = "3")]
-    pub telemetry: bool,
-    #[prost(bool, tag = "4")]
-    pub sysconfig: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Error {
-    #[prost(string, tag = "1")]
+    #[prost(uint64, tag = "1")]
+    pub timestamp: u64,
+    #[prost(string, tag = "2")]
     pub message: ::prost::alloc::string::String,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]

@@ -14,24 +14,28 @@ message Empty {}
 message Status {
     oneof state {
         Idle idle = 1;
-        Connected connected = 2;
-        Error error = 3;
+        Authorization authorization = 2;
+        Connected connected = 3;
+        Error error = 4;
     }
 }
 
 message Idle {
-    string message = 1;
+    uint64 timestamp = 1;
+}
+
+message Authorization {
+    uint64 timestamp = 2;
 }
 
 message Connected {
-    string org_id = 1;
-    bool traffic = 2;
-    bool telemetry = 3;
-    bool sysconfig = 4;
+    uint64 timestamp = 1;
+    string org_id = 2;
 }
 
 message Error {
-    string message = 1;
+    uint64 timestamp = 1;
+    string message = 2;
 }
 
 message Caps {

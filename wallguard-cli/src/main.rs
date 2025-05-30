@@ -49,18 +49,21 @@ pub async fn main() -> AnyResult<()> {
             match response.state.unwrap() {
                 State::Idle(idle) => {
                     println!("  STATE    : IDLE");
-                    println!("  Message  : {}", idle.message);
+                    println!("  Timestamp: {}", idle.timestamp);
                 }
                 State::Connected(connected) => {
                     println!("  STATE    : CONNECTED");
                     println!("  Org ID   : {}", connected.org_id);
-                    println!("  Traffic  : {}", connected.traffic);
-                    println!("  SysConf  : {}", connected.sysconfig);
-                    println!("  Telemetry: {}", connected.telemetry);
+                    println!("  Timestamp: {}", connected.timestamp);
                 }
                 State::Error(error) => {
                     println!("  STATE    : ERROR");
                     println!("  Message  : {}", error.message);
+                }
+                State::Authorization(auth) => {
+                    println!("  STATE    : AUTHORIZATION");
+                    println!("  Timestamp: {}", auth.timestamp);
+
                 }
             }
         }
