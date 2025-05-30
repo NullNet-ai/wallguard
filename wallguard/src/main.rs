@@ -1,9 +1,15 @@
 use app_context::AppContext;
 use control_channel::ControlChannel;
 
+use crate::daemon::Daemon;
+
+// use crate::cli::CliServer;
+
 mod app_context;
-mod cli;
+// mod cli;
+mod arguments;
 mod control_channel;
+mod daemon;
 mod device_uuid;
 mod pty;
 mod reverse_tunnel;
@@ -24,8 +30,5 @@ async fn main() {
         std::process::exit(-1);
     };
 
-    println!("Device UUID: {}", device_uuid);
-
-    // let context = AppContext::new().await;
-    // ControlChannel::new(context).run().await.unwrap();
+    Daemon::run().await.unwrap()
 }

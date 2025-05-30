@@ -1,29 +1,31 @@
-use crate::{cli, reverse_tunnel::ReverseTunnel, token_provider::TokenProvider};
+use std::sync::Arc;
+
+use crate::arguments::Arguments;
+use crate::daemon::Daemon;
+use crate::reverse_tunnel::ReverseTunnel;
+use crate::token_provider::TokenProvider;
 use clap::Parser;
 use nullnet_libwallguard::WallGuardGrpcInterface;
+use tokio::sync::Mutex;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AppContext {
-    pub arguments: cli::Args,
+    pub arguments: Arguments,
     pub token_provider: TokenProvider,
     pub server: WallGuardGrpcInterface,
     pub tunnel: ReverseTunnel,
+    // pub daemon: Arc<Mutex<Daemon>>,
 }
 
 impl AppContext {
     pub async fn new() -> Self {
-        let arguments = match cli::Args::try_parse() {
+        let arguments = match Arguments::try_parse() {
             Ok(args) => args,
             Err(err) => {
                 log::error!("Failed to parse CLI arguments: {}", err);
                 std::process::exit(1);
             }
         };
-
-        if let Err(err) = arguments.validate() {
-            log::error!("{}", err);
-            std::process::exit(1);
-        }
 
         let token_provider = TokenProvider::new();
 

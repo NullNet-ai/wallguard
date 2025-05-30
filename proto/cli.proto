@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package wallguard_cli;
+
+service WallguardCli {
+    rpc GetStatus(Empty) returns (Status);
+    rpc GetCapabilities(Empty) returns (Caps);
+    rpc JoinOrg(JoinOrgReq) returns (JoinOrgRes);
+    rpc LeaveOrg(Empty) returns (LeaveOrgRes);
+}
+
+message Empty {}
+
+message Status {
+    oneof state {
+        Idle idle = 1;
+        Authorization authorization = 2;
+        Connected connected = 3;
+        Error error = 4;
+    }
+}
+
+message Idle {
+    uint64 timestamp = 1;
+}
+
+message Authorization {
+    uint64 timestamp = 2;
+}
+
+message Connected {
+    uint64 timestamp = 1;
+    string org_id = 2;
+}
+
+message Error {
+    uint64 timestamp = 1;
+    string message = 2;
+}
+
+message Caps {
+    bool traffic = 1;
+    bool telemetry = 2;
+    bool sysconfig = 3;
+}
+
+message JoinOrgReq {
+    string org_id = 1;
+}
+
+message JoinOrgRes {
+    bool success = 1;
+    string message = 2;
+}
+
+message LeaveOrgRes {
+    bool success = 1;
+    string message = 2;
+}
