@@ -1,17 +1,20 @@
 use app_context::AppContext;
 use control_channel::ControlChannel;
 
-use crate::cli::CliServer;
+use crate::daemon::Daemon;
+
+// use crate::cli::CliServer;
 
 mod app_context;
-mod cli;
+// mod cli;
+mod arguments;
 mod control_channel;
+mod daemon;
 mod device_uuid;
 mod pty;
 mod reverse_tunnel;
 mod token_provider;
 mod utilities;
-mod arguments;
 
 #[tokio::main]
 async fn main() {
@@ -27,17 +30,5 @@ async fn main() {
         std::process::exit(-1);
     };
 
-
-    let context = AppContext::new().await;
-    
-    tokio::select! {
-        _ = tokio::signal::ctrl_c() => {}
-        retval = CliServer::new(context).run() => {
-            if let Err(err) = retval {
-                log::error!("CLI server failed: {}", err);
-            }
-        }
-    }
-    
-    // ControlChannel::new(context).run().await.unwrap();
+    Daemon::run().await.unwrap()
 }

@@ -1,8 +1,12 @@
+use std::sync::Arc;
+
 use crate::arguments::Arguments;
+use crate::daemon::Daemon;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
 use clap::Parser;
 use nullnet_libwallguard::WallGuardGrpcInterface;
+use tokio::sync::Mutex;
 
 #[derive(Clone, Debug)]
 pub struct AppContext {
@@ -10,6 +14,7 @@ pub struct AppContext {
     pub token_provider: TokenProvider,
     pub server: WallGuardGrpcInterface,
     pub tunnel: ReverseTunnel,
+    // pub daemon: Arc<Mutex<Daemon>>,
 }
 
 impl AppContext {
