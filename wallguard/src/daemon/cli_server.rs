@@ -51,7 +51,7 @@ impl WallguardCli for CliServer {
     ) -> Result<tonic::Response<JoinOrgRes>, tonic::Status> {
         let org_id = request.into_inner().org_id;
 
-        let response = match self.inner.lock().await.join_org(org_id).await {
+        let response = match Daemon::join_org(self.inner.clone(), org_id).await {
             Ok(_) => JoinOrgRes {
                 success: true,
                 message: String::from("OK"),
@@ -69,7 +69,7 @@ impl WallguardCli for CliServer {
         &self,
         _: tonic::Request<Empty>,
     ) -> Result<tonic::Response<LeaveOrgRes>, tonic::Status> {
-        let response = match self.inner.lock().await.leave_org().await {
+        let response = match Daemon::leave_org(self.inner.clone()).await {
             Ok(_) => LeaveOrgRes {
                 success: true,
                 message: String::from("OK"),

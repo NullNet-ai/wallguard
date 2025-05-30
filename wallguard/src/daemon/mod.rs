@@ -1,8 +1,10 @@
 #[rustfmt::skip]
 mod wallguard_cli;
+mod authorization_task;
 mod cli_server;
 mod state;
 
+use crate::daemon::authorization_task::AuthorizationTask;
 use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
 use crate::utilities;
@@ -10,15 +12,7 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use wallguard_cli::status::State;
-use wallguard_cli::wallguard_cli_server::WallguardCli;
 use wallguard_cli::wallguard_cli_server::WallguardCliServer;
-use wallguard_cli::Caps;
-use wallguard_cli::Empty;
-use wallguard_cli::Idle;
-use wallguard_cli::JoinOrgReq;
-use wallguard_cli::JoinOrgRes;
-use wallguard_cli::LeaveOrgRes;
 use wallguard_cli::Status;
 
 #[derive(Debug, Default)]
@@ -44,33 +38,49 @@ impl Daemon {
         self.state.clone().into()
     }
 
-    pub async fn join_org(&mut self, org_id: String) -> Result<(), String> {
-        match &self.state {
+    pub(crate) async fn join_org(this: Arc<Mutex<Daemon>>, org_id: String) -> Result<(), String> {
+        let mut lock = this.lock().await;
+        match &lock.state {
             DaemonState::Idle(_) => {
-                let timestamp = utilities::time::timestamp();
-                // @TODO: perform actual connection attempt
-                self.state = DaemonState::Authorization(timestamp as u64, org_id);
+                let task = AuthorizationTask::new(this.clone());
+                task.run();
+                lock.state = DaemonState::Authorization(task);
                 Ok(())
             }
             _ => Err(format!(
-                "Can not join a new organization from the current state. {}",
-                self.state
+                "Can not join a new organization from the current state: {}",
+                lock.state
             )),
         }
     }
 
-    pub async fn leave_org(&mut self) -> Result<(), String> {
-        match &self.state {
-            DaemonState::Connected(_, _) | DaemonState::Authorization(_, _) => {
+    pub(crate) async fn leave_org(this: Arc<Mutex<Daemon>>) -> Result<(), String> {
+        let mut this = this.lock().await;
+
+        match &this.state {
+            DaemonState::Connected(_, _) => {
                 let timestamp = utilities::time::timestamp();
                 // @TODO: perform actual reset
-                self.state = DaemonState::Idle(timestamp as u64);
+                this.state = DaemonState::Idle(timestamp as u64);
+                Ok(())
+            }
+            DaemonState::Authorization(task) => {
+                task.shutdown();
+                let timestamp = utilities::time::timestamp();
+                this.state = DaemonState::Idle(timestamp as u64);
                 Ok(())
             }
             _ => Err(format!(
-                "Can not leave current organization from the current state. {}",
-                self.state
+                "Can not leave current organization from the current state: {}",
+                this.state
             )),
         }
+    }
+
+    pub(crate) async fn on_authorized(this: Arc<Mutex<Daemon>>) {
+        let mut lock = this.lock().await;
+        // Establish control stream and spawn a task
+        // let task = ConnectionTask::new();
+        lock.state = DaemonState::Connected(1, String::new());
     }
 }

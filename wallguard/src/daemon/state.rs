@@ -1,18 +1,17 @@
+use crate::daemon::authorization_task::AuthorizationTask;
+
 use super::wallguard_cli::status::State;
 use super::wallguard_cli::Authorization;
 use super::wallguard_cli::Connected;
 use super::wallguard_cli::Error;
 use super::wallguard_cli::Idle;
 use super::wallguard_cli::Status;
-use crate::utilities;
 use std::fmt;
-
-
 
 #[derive(Debug, Clone)]
 pub enum DaemonState {
     Idle(u64),
-    Authorization(u64, String),
+    Authorization(AuthorizationTask),
     Connected(u64, String),
     Error(u64, String),
 }
@@ -37,8 +36,10 @@ impl Into<Status> for DaemonState {
                 let data = Idle { timestamp };
                 State::Idle(data)
             }
-            DaemonState::Authorization(timestamp, _) => {
-                let data = Authorization { timestamp };
+            DaemonState::Authorization(task) => {
+                let data = Authorization {
+                    timestamp: task.timestamp(),
+                };
                 State::Authorization(data)
             }
             DaemonState::Connected(timestamp, org_id) => {
@@ -58,26 +59,10 @@ impl Into<Status> for DaemonState {
 impl fmt::Display for DaemonState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DaemonState::Idle(ts) => {
-                let datetime = utilities::time::timestamp_to_iso_string(*ts as i64);
-                write!(f, "Idle since {}", datetime)
-            }
-            DaemonState::Authorization(ts, org) => {
-                let datetime = utilities::time::timestamp_to_iso_string(*ts as i64);
-                write!(
-                    f,
-                    "Awaiting authorization for organization '{}' since {}",
-                    org, datetime
-                )
-            }
-            DaemonState::Connected(ts, org) => {
-                let datetime = utilities::time::timestamp_to_iso_string(*ts as i64);
-                write!(f, "Connected to organization '{}' since {}", org, datetime)
-            }
-            DaemonState::Error(ts, errmsg) => {
-                let datetime = utilities::time::timestamp_to_iso_string(*ts as i64);
-                write!(f, "Error occurred at {}: '{}'", datetime, errmsg)
-            }
+            DaemonState::Idle(_) => write!(f, "IDLE"),
+            DaemonState::Authorization(_) => write!(f, "AUTH"),
+            DaemonState::Connected(_, _) => write!(f, "CONN"),
+            DaemonState::Error(_, _) => write!(f, "ERR"),
         }
     }
 }
