@@ -7,6 +7,7 @@ mod state;
 use crate::daemon::authorization_task::AuthorizationTask;
 use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
+use crate::storage::{Secret, Storage};
 use crate::utilities;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
@@ -23,6 +24,13 @@ pub struct Daemon {
 impl Daemon {
     pub async fn run() -> Result<(), Error> {
         let daemon = Arc::new(Mutex::new(Daemon::default()));
+
+        if let Some(org_id) = Storage::get_value(Secret::ORG_ID) {
+            log::info!("Found org id {org_id}, attempting to connect");
+            let _ = Daemon::join_org(daemon.clone(), org_id).await;
+        } else {
+            log::info!("No org ID, entering idle state");
+        }
 
         let addr: SocketAddr = "127.0.0.1:54056".parse().unwrap();
         let cli_server = WallguardCliServer::new(CliServer::from(daemon));
@@ -42,8 +50,12 @@ impl Daemon {
         let mut lock = this.lock().await;
         match &lock.state {
             DaemonState::Idle(_) => {
+                Storage::set_value(Secret::ORG_ID, &org_id)
+                    .map_err(|err| err.to_str().to_string())?;
+
                 let task = AuthorizationTask::new(this.clone());
                 task.run();
+
                 lock.state = DaemonState::Authorization(task);
                 Ok(())
             }
