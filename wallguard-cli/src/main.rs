@@ -63,7 +63,6 @@ pub async fn main() -> AnyResult<()> {
                 State::Authorization(auth) => {
                     println!("  STATE    : AUTHORIZATION");
                     println!("  Timestamp: {}", auth.timestamp);
-
                 }
             }
         }

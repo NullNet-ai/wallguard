@@ -1,24 +1,23 @@
 use app_context::AppContext;
 use control_channel::ControlChannel;
 
-use crate::daemon::Daemon;
-
-// use crate::cli::CliServer;
+use crate::{daemon::Daemon, storage::Storage};
 
 mod app_context;
-// mod cli;
 mod arguments;
 mod control_channel;
 mod daemon;
 mod device_uuid;
 mod pty;
 mod reverse_tunnel;
+mod storage;
 mod token_provider;
 mod utilities;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
+    Storage::init().await.unwrap();
 
     if !nix::unistd::Uid::effective().is_root() {
         log::error!("This program must be run as root. Exiting ...");
