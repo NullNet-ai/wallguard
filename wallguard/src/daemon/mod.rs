@@ -25,7 +25,7 @@ impl Daemon {
     pub async fn run() -> Result<(), Error> {
         let daemon = Arc::new(Mutex::new(Daemon::default()));
 
-        if let Some(org_id) = Storage::get_value(Secret::ORG_ID) {
+        if let Some(org_id) = Storage::get_value(Secret::ORG_ID).await {
             log::info!("Found org id {org_id}, attempting to connect");
             let _ = Daemon::join_org(daemon.clone(), org_id).await;
         } else {
@@ -51,6 +51,7 @@ impl Daemon {
         match &lock.state {
             DaemonState::Idle(_) => {
                 Storage::set_value(Secret::ORG_ID, &org_id)
+                    .await
                     .map_err(|err| err.to_str().to_string())?;
 
                 let task = AuthorizationTask::new(this.clone());
@@ -71,8 +72,11 @@ impl Daemon {
 
         match &this.state {
             DaemonState::Connected(_, _) => {
+                Storage::delete_value(Secret::ORG_ID)
+                    .await
+                    .map_err(|err| err.to_str().to_string())?;
+
                 let timestamp = utilities::time::timestamp();
-                // @TODO: perform actual reset
                 this.state = DaemonState::Idle(timestamp as u64);
                 Ok(())
             }

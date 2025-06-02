@@ -17,7 +17,7 @@ mod utilities;
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    Storage::init().unwrap();
+    Storage::init().await.unwrap();
 
     if !nix::unistd::Uid::effective().is_root() {
         log::error!("This program must be run as root. Exiting ...");

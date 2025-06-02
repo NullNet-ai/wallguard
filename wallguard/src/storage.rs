@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::fs::{create_dir_all, read_to_string, write, File};
-use std::io::Write;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use tokio::fs::{create_dir_all, read_to_string, write, File};
+use tokio::io::AsyncWriteExt;
+use tokio::sync::Mutex;
 
 use dirs::config_dir;
 use once_cell::sync::Lazy;
@@ -40,14 +40,7 @@ static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
     path
 });
 
-static STORE: Lazy<Mutex<ConfigStore>> = Lazy::new(|| {
-    let full_path = Storage::file_path();
-    let data = read_to_string(&full_path).ok();
-    let values = data
-        .and_then(|s| serde_json::from_str::<ConfigStore>(&s).ok())
-        .unwrap_or_default();
-    Mutex::new(values)
-});
+static STORE: Lazy<Mutex<Option<ConfigStore>>> = Lazy::new(|| Mutex::new(None));
 
 impl Storage {
     const FILE_NAME: &'static str = "config.json";
@@ -58,31 +51,59 @@ impl Storage {
         path
     }
 
-    pub fn init() -> Result<(), Error> {
+    pub async fn init() -> Result<(), Error> {
         let dir = STORAGE_PATH.clone();
         let file_path = Self::file_path();
 
-        create_dir_all(&dir).handle_err(location!())?;
+        create_dir_all(&dir).await.handle_err(location!())?;
 
-        if !file_path.exists() {
+        let config = if file_path.exists() {
+            read_to_string(&file_path)
+                .await
+                .ok()
+                .and_then(|s| serde_json::from_str::<ConfigStore>(&s).ok())
+                .unwrap_or_default()
+        } else {
             let default = ConfigStore::default();
             let json = serde_json::to_string_pretty(&default).handle_err(location!())?;
-            let mut file = File::create(&file_path).handle_err(location!())?;
-            file.write_all(json.as_bytes()).handle_err(location!())?;
-        }
+            let mut file = File::create(&file_path).await.handle_err(location!())?;
+            file.write_all(json.as_bytes())
+                .await
+                .handle_err(location!())?;
+            default
+        };
 
+        let mut store = STORE.lock().await;
+        *store = Some(config);
         Ok(())
     }
 
-    pub fn get_value(secret: Secret) -> Option<String> {
-        let store = STORE.lock().ok()?;
-        store.values.get(secret.as_str()).cloned()
+    pub async fn get_value(secret: Secret) -> Option<String> {
+        let store = STORE.lock().await;
+        store.as_ref()?.values.get(secret.as_str()).cloned()
     }
 
-    pub fn set_value(secret: Secret, value: &str) -> Result<(), Error> {
-        let mut store = STORE.lock().handle_err(location!())?;
-        store.values.insert(secret.as_str().into(), value.into());
-        let json = serde_json::to_string_pretty(&*store).handle_err(location!())?;
-        write(Self::file_path(), json).handle_err(location!())
+    pub async fn set_value(secret: Secret, value: &str) -> Result<(), Error> {
+        let mut store = STORE.lock().await;
+        let config = store
+            .as_mut()
+            .ok_or("Storage not initialized")
+            .handle_err(location!())?;
+
+        config.values.insert(secret.as_str().into(), value.into());
+        let json = serde_json::to_string_pretty(&*config).handle_err(location!())?;
+        write(Self::file_path(), json).await.handle_err(location!())
+    }
+
+    pub async fn delete_value(secret: Secret) -> Result<(), Error> {
+        let mut store = STORE.lock().await;
+        let config = store
+            .as_mut()
+            .ok_or("Storage not initialized")
+            .handle_err(location!())?;
+
+        config.values.remove(secret.as_str());
+        let json = serde_json::to_string_pretty(&*config).handle_err(location!())?;
+        write(Self::file_path(), json).await.handle_err(location!())
     }
 }
