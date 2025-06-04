@@ -1,50 +1,45 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use tokio::sync::mpsc;
-use tonic::Status;
 
+use super::control_stream::control_stream_task;
+use crate::orchestrator::Orchestrator;
+use crate::orchestrator::control_stream::ControlStream;
 use crate::protocol::wallguard_commands::SshSessionData;
 use crate::protocol::wallguard_commands::UiSessionData;
 use crate::protocol::wallguard_commands::WallGuardCommand;
 use crate::protocol::wallguard_commands::wall_guard_command::Command;
 use crate::token_provider::TokenProvider;
 
-use super::stream::control_stream_task;
-
-pub(crate) type ControlStream = mpsc::Sender<Result<WallGuardCommand, Status>>;
-
 #[derive(Debug, Clone)]
 pub struct Client {
-    device_id: String,
-    token_provider: TokenProvider,
+    device_uuid: String,
     control_stream: ControlStream,
 }
 
 impl Client {
     pub fn new(
-        device_id: &str,
+        device_uuid: &str,
         token_provider: TokenProvider,
         control_stream: ControlStream,
-        complete: mpsc::Sender<String>,
+        orchestrator: Orchestrator,
     ) -> Self {
         tokio::spawn(control_stream_task(
-            device_id.into(),
+            device_uuid.into(),
             control_stream.clone(),
             token_provider.clone(),
-            complete,
+            orchestrator,
         ));
 
         Self {
-            device_id: device_id.into(),
-            token_provider,
+            device_uuid: device_uuid.into(),
             control_stream,
         }
     }
 
     pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableNetworkMonitoringCommand('{}') to the client with device id {}",
+            "Sending EnableNetworkMonitoringCommand('{}') to the client with device UUID {}",
             enable,
-            self.device_id
+            self.device_uuid
         );
 
         let command = WallGuardCommand {
@@ -59,9 +54,9 @@ impl Client {
 
     pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableConfigurationMonitoringCommand('{}') to the client with device id {}",
+            "Sending EnableConfigurationMonitoringCommand('{}') to the client with device UUID {}",
             enable,
-            self.device_id
+            self.device_uuid
         );
 
         let command = WallGuardCommand {
@@ -76,9 +71,9 @@ impl Client {
 
     pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableTelemetryMonitoringCommand('{}') to the client with device id {}",
+            "Sending EnableTelemetryMonitoringCommand('{}') to the client with device UUID {}",
             enable,
-            self.device_id
+            self.device_uuid
         );
 
         let command = WallGuardCommand {
@@ -97,8 +92,8 @@ impl Client {
         public_key: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenSshSessionCommandto to the client with device id {}",
-            self.device_id
+            "Sending OpenSshSessionCommandto to the client with device UUID {}",
+            self.device_uuid
         );
 
         let ssh_session_data = SshSessionData {
@@ -118,8 +113,8 @@ impl Client {
 
     pub async fn request_tty_session(&self, tunnel_token: impl Into<String>) -> Result<(), Error> {
         log::info!(
-            "Sending OpenTtySessionCommand to the client with device id {}",
-            self.device_id
+            "Sending OpenTtySessionCommand to the client with device UUID {}",
+            self.device_uuid
         );
 
         let command = WallGuardCommand {
@@ -138,8 +133,8 @@ impl Client {
         protocol: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenUiSessionCommand to the client with device id {}",
-            self.device_id
+            "Sending OpenUiSessionCommand to the client with device UUID {}",
+            self.device_uuid
         );
 
         let ui_session_data = UiSessionData {

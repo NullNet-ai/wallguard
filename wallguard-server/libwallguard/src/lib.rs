@@ -1,13 +1,13 @@
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+pub use proto::wallguard_authorization::*;
+pub use proto::wallguard_commands::wall_guard_command::*;
+pub use proto::wallguard_commands::*;
+use proto::wallguard_service::wall_guard_client::*;
+pub use proto::wallguard_service::*;
 use std::time::Duration;
 pub use tonic::Streaming;
 use tonic::transport::Channel;
 use tonic::{Request, Status};
-
-pub use proto::wallguard_commands::wall_guard_command::*;
-pub use proto::wallguard_commands::*;
-
-use proto::wallguard_service::wall_guard_client::*;
-pub use proto::wallguard_service::*;
 
 mod proto;
 
@@ -18,24 +18,20 @@ pub struct WallGuardGrpcInterface {
 
 impl WallGuardGrpcInterface {
     #[allow(clippy::missing_panics_doc)]
-    pub async fn new(addr: &str, port: u16) -> Self {
-        let s = format!("http://{addr}:{port}");
+    pub async fn new(addr: &str, port: u16) -> Result<Self, Error> {
+        let addr = format!("http://{addr}:{port}");
 
-        let Ok(channel) = Channel::from_shared(s)
+        let channel = Channel::from_shared(addr)
             .expect("Failed to parse address")
             .timeout(Duration::from_secs(10))
+            .keep_alive_timeout(Duration::from_secs(10))
             .connect()
             .await
-        else {
-            // @TODO: Perhaps jusr return an error and let client deal with it ?
-            log::warn!("Failed to connect to the server. Retrying in 10 seconds...");
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-            return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
-        };
+            .handle_err(location!())?;
 
-        Self {
-            client: WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024),
-        }
+        let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
+
+        Ok(Self { client })
     }
 
     pub async fn request_control_channel(
@@ -51,6 +47,23 @@ impl WallGuardGrpcInterface {
         self.client
             .clone()
             .control_channel(request)
+            .await
+            .map(tonic::Response::into_inner)
+    }
+
+    pub async fn authorization_request(
+        &self,
+        uuid: &str,
+        org_id: &str,
+    ) -> Result<Streaming<AuthorizationStatus>, Status> {
+        let request = Request::new(AuthorizationRequest {
+            organization_id: org_id.into(),
+            device_uuid: uuid.into(),
+        });
+
+        self.client
+            .clone()
+            .device_authorization(request)
             .await
             .map(tonic::Response::into_inner)
     }

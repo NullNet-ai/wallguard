@@ -1,6 +1,7 @@
 use crate::app_context::AppContext;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
+use api::authorize_device;
 use api::request_session;
 use config::HttpProxyConfig;
 
@@ -33,6 +34,10 @@ pub async fn run_http_proxy(context: AppContext) {
             .route(
                 "/wallguard/api/v1/remote_access",
                 web::post().to(request_session),
+            )
+            .route(
+                "/wallguard/api/v1/authorize_device",
+                web::post().to(authorize_device),
             )
             .route(
                 "/wallguard/gateway/ssh",

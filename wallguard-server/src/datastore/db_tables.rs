@@ -4,6 +4,7 @@ pub enum DBTable {
     Devices,
     SSHKeys,
     RemoteAccessSessions,
+    OgranizationAccounts,
 }
 
 impl Display for DBTable {
@@ -12,6 +13,7 @@ impl Display for DBTable {
             DBTable::Devices => "devices",
             DBTable::SSHKeys => "device_ssh_keys",
             DBTable::RemoteAccessSessions => "device_remote_access_sessions",
+            DBTable::OgranizationAccounts => "organization_accounts",
         };
         write!(f, "{}", table_name)
     }

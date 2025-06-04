@@ -1,20 +1,15 @@
+use crate::control_service::service::WallGuardService;
+use crate::protocol::wallguard_commands::ControlChannelRequest;
+use crate::protocol::wallguard_service::wall_guard_server::WallGuard;
+use crate::token_provider::TokenProvider;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
-use crate::control_service::service::WallGuardService;
-use crate::protocol::wallguard_commands::WallGuardCommand;
-use crate::protocol::wallguard_service::ControlChannelRequest;
-use crate::protocol::wallguard_service::wall_guard_server::WallGuard;
-use crate::token_provider::TokenProvider;
-
-#[tonic::async_trait]
-impl WallGuard for WallGuardService {
-    type ControlChannelStream = ReceiverStream<Result<WallGuardCommand, Status>>;
-
-    async fn control_channel(
+impl WallGuardService {
+    pub(crate) async fn control_channel_impl(
         &self,
         request: Request<ControlChannelRequest>,
-    ) -> Result<Response<Self::ControlChannelStream>, Status> {
+    ) -> Result<Response<<WallGuardService as WallGuard>::ControlChannelStream>, Status> {
         let request = request.into_inner();
 
         let token_provider = TokenProvider::new(
@@ -28,15 +23,30 @@ impl WallGuard for WallGuardService {
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
-        let device_id = &token.account.device.id;
+        let device = self
+            .context
+            .datastore
+            .obtain_device_by_id(&token.jwt, &token.account.device.id)
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?
+            .ok_or(format!(
+                "Unexpected error: no device found by id {}",
+                &token.account.device.id
+            ))
+            .map_err(|err| Status::internal(err))?;
+
+        if !device.authorized {
+            let status = Status::invalid_argument("Device is not authorized");
+            return Err(status);
+        }
 
         if self
             .context
             .orchestractor
-            .is_client_connected(device_id)
+            .is_client_connected(&device.uuid)
             .await
         {
-            let message = format!("Client for device '{}' is already connected", device_id);
+            let message = format!("Client for device '{}' is already connected", &device.uuid);
             log::error!("{message}");
             return Err(Status::internal(message));
         }
@@ -45,7 +55,7 @@ impl WallGuard for WallGuardService {
 
         self.context
             .orchestractor
-            .on_client_connected(device_id, token_provider, sender)
+            .on_client_connected(&device.uuid, token_provider, sender)
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 

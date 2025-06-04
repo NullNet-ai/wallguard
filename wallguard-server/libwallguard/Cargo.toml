@@ -27,6 +27,7 @@ prost = "0.13.5"
 tokio = "1.44.2"
 serde = { version = "1.0.219", features = ["derive"] }
 log = "0.4.27"
+nullnet-liberror = "0.1.1"
 
 [badges]
 maintenance = { status = "actively-developed" }

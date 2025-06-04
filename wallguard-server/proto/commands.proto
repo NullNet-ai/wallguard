@@ -4,6 +4,11 @@ package wallguard_commands;
 
 import "google/protobuf/empty.proto";
 
+message ControlChannelRequest {
+    string app_id = 1;
+    string app_secret = 2;
+}
+
 message SSHSessionData {
     string tunnel_token = 1;
     string public_key = 2;
