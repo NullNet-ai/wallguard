@@ -4,15 +4,15 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libwallguard::UiSessionData;
 use tokio::{io::AsyncWriteExt, net::TcpStream};
 
-use crate::{app_context::AppContext, control_channel::command::ExecutableCommand};
+use crate::{context::Context, control_channel::command::ExecutableCommand};
 
 pub struct OpenUiSessionCommand {
-    context: AppContext,
+    context: Context,
     data: UiSessionData,
 }
 
 impl OpenUiSessionCommand {
-    pub fn new(context: AppContext, data: UiSessionData) -> Self {
+    pub fn new(context: Context, data: UiSessionData) -> Self {
         Self { context, data }
     }
 }

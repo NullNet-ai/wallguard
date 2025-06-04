@@ -1,4 +1,4 @@
-use crate::app_context::AppContext;
+use crate::context::Context;
 use command::ExecutableCommand;
 use commands::{
     HeartbeatCommand, OpenSshSessionCommand, OpenTtySessionCommand, OpenUiSessionCommand,
@@ -12,11 +12,11 @@ mod commands;
 
 #[derive(Clone)]
 pub struct ControlChannel {
-    context: AppContext,
+    context: Context,
 }
 
 impl ControlChannel {
-    pub fn new(context: AppContext) -> Self {
+    pub fn new(context: Context) -> Self {
         Self { context }
     }
 

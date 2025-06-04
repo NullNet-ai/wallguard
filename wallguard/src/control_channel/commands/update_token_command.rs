@@ -1,12 +1,12 @@
-use crate::{app_context::AppContext, control_channel::command::ExecutableCommand};
+use crate::{context::Context, control_channel::command::ExecutableCommand};
 
 pub struct UpdateTokenCommand {
-    context: AppContext,
+    context: Context,
     token: String,
 }
 
 impl UpdateTokenCommand {
-    pub fn new(context: AppContext, token: String) -> Self {
+    pub fn new(context: Context, token: String) -> Self {
         Self { context, token }
     }
 }

@@ -1,4 +1,4 @@
-use crate::app_context::AppContext;
+use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::utilities;
 use nullnet_liberror::{location, ErrorHandler, Location};
@@ -8,7 +8,7 @@ use tokio::io::AsyncWriteExt as _;
 use tokio::net::TcpStream;
 
 pub struct OpenSshSessionCommand {
-    context: AppContext,
+    context: Context,
     data: SshSessionData,
 }
 
@@ -61,7 +61,7 @@ impl ExecutableCommand for OpenSshSessionCommand {
 }
 
 impl OpenSshSessionCommand {
-    pub fn new(context: AppContext, data: SshSessionData) -> Self {
+    pub fn new(context: Context, data: SshSessionData) -> Self {
         Self { context, data }
     }
 }

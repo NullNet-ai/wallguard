@@ -903,10 +903,9 @@ dependencies = [
 [[package]]
 name = "nullnet-libwallguard"
 version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e8005e8eb66693a607c8075324893a824f9ec72402a2bc3a4c4823f883fc6f0"
 dependencies = [
  "log",
+ "nullnet-liberror",
  "prost",
  "serde",
  "tokio",
