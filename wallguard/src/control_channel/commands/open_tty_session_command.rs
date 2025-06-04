@@ -1,4 +1,4 @@
-use crate::app_context::AppContext;
+use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::pty::{Pty, PtyReader, PtyWriter};
 use nullnet_liberror::{location, ErrorHandler, Location};
@@ -7,12 +7,12 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 
 pub struct OpenTtySessionCommand {
-    context: AppContext,
+    context: Context,
     token: String,
 }
 
 impl OpenTtySessionCommand {
-    pub fn new(context: AppContext, token: String) -> Self {
+    pub fn new(context: Context, token: String) -> Self {
         Self { context, token }
     }
 }

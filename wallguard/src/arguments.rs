@@ -1,7 +1,7 @@
 use clap::Parser;
 
 /// Application configuration from CLI arguments
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug, Clone, Default)]
 #[command(
     name = "wallguard",
     about = "WallGuard agent that monitors the device and provides remote access."

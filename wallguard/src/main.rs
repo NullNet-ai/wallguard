@@ -1,10 +1,8 @@
-use app_context::AppContext;
-use control_channel::ControlChannel;
+use crate::{arguments::Arguments, daemon::Daemon, storage::Storage};
+use clap::Parser as _;
 
-use crate::{daemon::Daemon, storage::Storage};
-
-mod app_context;
 mod arguments;
+mod context;
 mod control_channel;
 mod daemon;
 mod device_uuid;
@@ -17,6 +15,15 @@ mod utilities;
 #[tokio::main]
 async fn main() {
     env_logger::init();
+
+    let arguments = match Arguments::try_parse() {
+        Ok(args) => args,
+        Err(err) => {
+            log::error!("Failed to parse CLI arguments: {}", err);
+            std::process::exit(1);
+        }
+    };
+
     Storage::init().await.unwrap();
 
     if !nix::unistd::Uid::effective().is_root() {
@@ -29,5 +36,5 @@ async fn main() {
         std::process::exit(-1);
     };
 
-    Daemon::run().await.unwrap()
+    Daemon::run(device_uuid, arguments).await.unwrap()
 }
