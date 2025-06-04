@@ -77,6 +77,10 @@ async fn wait_for_authorization(
 
         let state = status.unwrap().state;
 
+        if state.is_none() {
+            return Err("Server responeded with empty state").handle_err(location!());
+        }
+
         match state.unwrap() {
             State::Pending(_) => {
                 tokio::task::yield_now().await;
