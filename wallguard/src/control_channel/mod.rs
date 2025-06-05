@@ -95,7 +95,9 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
         }
     }
 
-    send_authenticate(outbound).await?;
+    // Clone the outbound stream to keep it alive—closing it signals
+    // an error to the server, which closes the connection.
+    send_authenticate(outbound.clone()).await?;
 
     while let Ok(message) = inbound.lock().await.message().await {
         let message = message
@@ -157,5 +159,6 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
             }
         }
     }
+
     Ok(())
 }

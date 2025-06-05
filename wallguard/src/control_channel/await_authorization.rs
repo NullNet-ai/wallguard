@@ -59,9 +59,11 @@ pub async fn await_authorization(
                 return Ok(Verdict::Approved);
             }
             server_message::Message::AuthorizationRejectedMessage(_) => {
-                return Ok(Verdict::Rejected)
+                return Ok(Verdict::Rejected);
             }
-            server_message::Message::HeartbeatMessage(_) => todo!(),
+            server_message::Message::HeartbeatMessage(_) => {
+                continue;
+            }
             _ => Err("Unexpected message").handle_err(location!())?,
         };
     }

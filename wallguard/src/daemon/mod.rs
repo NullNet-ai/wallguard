@@ -65,8 +65,7 @@ impl Daemon {
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
-                let control_channel =
-                    ControlChannel::new(context, this.lock().await.uuid.clone(), org_id);
+                let control_channel = ControlChannel::new(context, lock.uuid.clone(), org_id);
 
                 lock.state = DaemonState::Connected(control_channel);
 
