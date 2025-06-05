@@ -1,13 +1,13 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-pub use proto::wallguard_authorization::*;
-pub use proto::wallguard_commands::wall_guard_command::*;
 pub use proto::wallguard_commands::*;
 use proto::wallguard_service::wall_guard_client::*;
 pub use proto::wallguard_service::*;
 use std::time::Duration;
+use tokio::sync::mpsc;
+use tonic::Request;
 pub use tonic::Streaming;
+use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Channel;
-use tonic::{Request, Status};
 
 mod proto;
 
@@ -36,35 +36,17 @@ impl WallGuardGrpcInterface {
 
     pub async fn request_control_channel(
         &self,
-        app_id: &str,
-        app_secret: &str,
-    ) -> Result<Streaming<WallGuardCommand>, Status> {
-        let request = Request::new(ControlChannelRequest {
-            app_id: app_id.into(),
-            app_secret: app_secret.into(),
-        });
+        receiver: mpsc::Receiver<ClientMessage>,
+    ) -> Result<Streaming<ServerMessage>, Error> {
+        let receiver = ReceiverStream::new(receiver);
 
-        self.client
+        let response = self
+            .client
             .clone()
-            .control_channel(request)
+            .control_channel(Request::new(receiver))
             .await
-            .map(tonic::Response::into_inner)
-    }
+            .handle_err(location!())?;
 
-    pub async fn authorization_request(
-        &self,
-        uuid: &str,
-        org_id: &str,
-    ) -> Result<Streaming<AuthorizationStatus>, Status> {
-        let request = Request::new(AuthorizationRequest {
-            organization_id: org_id.into(),
-            device_uuid: uuid.into(),
-        });
-
-        self.client
-            .clone()
-            .device_authorization(request)
-            .await
-            .map(tonic::Response::into_inner)
+        Ok(response.into_inner())
     }
 }

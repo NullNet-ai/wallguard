@@ -90,48 +90,14 @@ pub mod wall_guard_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn device_authorization(
-            &mut self,
-            request: impl tonic::IntoRequest<
-                super::super::wallguard_authorization::AuthorizationRequest,
-            >,
-        ) -> std::result::Result<
-            tonic::Response<
-                tonic::codec::Streaming<
-                    super::super::wallguard_authorization::AuthorizationStatus,
-                >,
-            >,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::unknown(
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/wallguard_service.WallGuard/DeviceAuthorization",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("wallguard_service.WallGuard", "DeviceAuthorization"),
-                );
-            self.inner.server_streaming(req, path, codec).await
-        }
         pub async fn control_channel(
             &mut self,
-            request: impl tonic::IntoRequest<
-                super::super::wallguard_commands::ControlChannelRequest,
+            request: impl tonic::IntoStreamingRequest<
+                Message = super::super::wallguard_commands::ClientMessage,
             >,
         ) -> std::result::Result<
             tonic::Response<
-                tonic::codec::Streaming<
-                    super::super::wallguard_commands::WallGuardCommand,
-                >,
+                tonic::codec::Streaming<super::super::wallguard_commands::ServerMessage>,
             >,
             tonic::Status,
         > {
@@ -147,12 +113,12 @@ pub mod wall_guard_client {
             let path = http::uri::PathAndQuery::from_static(
                 "/wallguard_service.WallGuard/ControlChannel",
             );
-            let mut req = request.into_request();
+            let mut req = request.into_streaming_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new("wallguard_service.WallGuard", "ControlChannel"),
                 );
-            self.inner.server_streaming(req, path, codec).await
+            self.inner.streaming(req, path, codec).await
         }
     }
 }
@@ -169,28 +135,10 @@ pub mod wall_guard_server {
     /// Generated trait containing gRPC methods that should be implemented for use with WallGuardServer.
     #[async_trait]
     pub trait WallGuard: std::marker::Send + std::marker::Sync + 'static {
-        /// Server streaming response type for the DeviceAuthorization method.
-        type DeviceAuthorizationStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<
-                    super::super::wallguard_authorization::AuthorizationStatus,
-                    tonic::Status,
-                >,
-            >
-            + std::marker::Send
-            + 'static;
-        async fn device_authorization(
-            &self,
-            request: tonic::Request<
-                super::super::wallguard_authorization::AuthorizationRequest,
-            >,
-        ) -> std::result::Result<
-            tonic::Response<Self::DeviceAuthorizationStream>,
-            tonic::Status,
-        >;
         /// Server streaming response type for the ControlChannel method.
         type ControlChannelStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
-                    super::super::wallguard_commands::WallGuardCommand,
+                    super::super::wallguard_commands::ServerMessage,
                     tonic::Status,
                 >,
             >
@@ -199,7 +147,7 @@ pub mod wall_guard_server {
         async fn control_channel(
             &self,
             request: tonic::Request<
-                super::super::wallguard_commands::ControlChannelRequest,
+                tonic::Streaming<super::super::wallguard_commands::ClientMessage>,
             >,
         ) -> std::result::Result<
             tonic::Response<Self::ControlChannelStream>,
@@ -282,65 +230,15 @@ pub mod wall_guard_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/wallguard_service.WallGuard/DeviceAuthorization" => {
-                    #[allow(non_camel_case_types)]
-                    struct DeviceAuthorizationSvc<T: WallGuard>(pub Arc<T>);
-                    impl<
-                        T: WallGuard,
-                    > tonic::server::ServerStreamingService<
-                        super::super::wallguard_authorization::AuthorizationRequest,
-                    > for DeviceAuthorizationSvc<T> {
-                        type Response = super::super::wallguard_authorization::AuthorizationStatus;
-                        type ResponseStream = T::DeviceAuthorizationStream;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::ResponseStream>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<
-                                super::super::wallguard_authorization::AuthorizationRequest,
-                            >,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as WallGuard>::device_authorization(&inner, request)
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let method = DeviceAuthorizationSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
                 "/wallguard_service.WallGuard/ControlChannel" => {
                     #[allow(non_camel_case_types)]
                     struct ControlChannelSvc<T: WallGuard>(pub Arc<T>);
                     impl<
                         T: WallGuard,
-                    > tonic::server::ServerStreamingService<
-                        super::super::wallguard_commands::ControlChannelRequest,
+                    > tonic::server::StreamingService<
+                        super::super::wallguard_commands::ClientMessage,
                     > for ControlChannelSvc<T> {
-                        type Response = super::super::wallguard_commands::WallGuardCommand;
+                        type Response = super::super::wallguard_commands::ServerMessage;
                         type ResponseStream = T::ControlChannelStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
@@ -349,7 +247,9 @@ pub mod wall_guard_server {
                         fn call(
                             &mut self,
                             request: tonic::Request<
-                                super::super::wallguard_commands::ControlChannelRequest,
+                                tonic::Streaming<
+                                    super::super::wallguard_commands::ClientMessage,
+                                >,
                             >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
@@ -376,7 +276,7 @@ pub mod wall_guard_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.server_streaming(method, req).await;
+                        let res = grpc.streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

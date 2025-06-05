@@ -1,99 +1,153 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
-use super::control_stream::control_stream_task;
-use crate::orchestrator::Orchestrator;
-use crate::orchestrator::control_stream::ControlStream;
+use tokio::sync::mpsc;
+use tonic::Status;
+use tonic::Streaming;
+
+use crate::app_context::AppContext;
+use crate::orchestrator::control_stream::control_stream;
+use crate::protocol::wallguard_commands::AuthenticationData;
+use crate::protocol::wallguard_commands::ClientMessage;
+use crate::protocol::wallguard_commands::ServerMessage;
 use crate::protocol::wallguard_commands::SshSessionData;
 use crate::protocol::wallguard_commands::UiSessionData;
-use crate::protocol::wallguard_commands::WallGuardCommand;
-use crate::protocol::wallguard_commands::wall_guard_command::Command;
-use crate::token_provider::TokenProvider;
+use crate::protocol::wallguard_commands::server_message::Message;
 
-#[derive(Debug, Clone)]
+pub(crate) type OutboundStream = mpsc::Sender<Result<ServerMessage, Status>>;
+pub(crate) type InboundStream = Streaming<ClientMessage>;
+
+#[derive(Debug)]
 pub struct Client {
-    device_uuid: String,
-    control_stream: ControlStream,
+    uuid: String,
+    org_id: String,
+    outbound: OutboundStream,
+    authorized: bool,
 }
 
 impl Client {
     pub fn new(
-        device_uuid: &str,
-        token_provider: TokenProvider,
-        control_stream: ControlStream,
-        orchestrator: Orchestrator,
+        uuid: String,
+        org_id: String,
+        inbound: InboundStream,
+        outbound: OutboundStream,
+        context: AppContext,
     ) -> Self {
-        tokio::spawn(control_stream_task(
-            device_uuid.into(),
-            control_stream.clone(),
-            token_provider.clone(),
-            orchestrator,
+        tokio::spawn(control_stream(
+            uuid.clone(),
+            inbound,
+            outbound.clone(),
+            context,
         ));
 
         Self {
-            device_uuid: device_uuid.into(),
-            control_stream,
+            uuid,
+            outbound,
+            org_id,
+            authorized: false,
         }
     }
 
-    pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
-        log::info!(
-            "Sending EnableNetworkMonitoringCommand('{}') to the client with device UUID {}",
-            enable,
-            self.device_uuid
-        );
+    pub async fn authorize(&mut self, data: AuthenticationData) -> Result<(), Error> {
+        log::debug!("Authorizing device {}", self.uuid);
 
-        let command = WallGuardCommand {
-            command: Some(Command::EnableNetworkMonitoringCommand(enable)),
+        self.authorized = true;
+
+        let message = ServerMessage {
+            message: Some(Message::DeviceAuthorizedMessage(data)),
         };
 
-        self.control_stream
-            .send(Ok(command))
+        self.outbound
+            .send(Ok(message))
             .await
-            .handle_err(location!())
+            .handle_err(location!())?;
+
+        Ok(())
     }
 
-    pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
-        log::info!(
-            "Sending EnableConfigurationMonitoringCommand('{}') to the client with device UUID {}",
-            enable,
-            self.device_uuid
-        );
+    pub async fn deauthorize(&mut self) -> Result<(), Error> {
+        log::debug!("Deauthorizing device {}", self.uuid);
 
-        let command = WallGuardCommand {
-            command: Some(Command::EnableConfigurationMonitoringCommand(enable)),
+        self.authorized = false;
+
+        let message = ServerMessage {
+            message: Some(Message::DeviceDeauthorizedMessage(())),
         };
 
-        self.control_stream
-            .send(Ok(command))
+        self.outbound
+            .send(Ok(message))
             .await
-            .handle_err(location!())
+            .handle_err(location!())?;
+
+        Ok(())
     }
 
-    pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
-        log::info!(
-            "Sending EnableTelemetryMonitoringCommand('{}') to the client with device UUID {}",
-            enable,
-            self.device_uuid
-        );
-
-        let command = WallGuardCommand {
-            command: Some(Command::EnableTelemetryMonitoringCommand(enable)),
-        };
-
-        self.control_stream
-            .send(Ok(command))
-            .await
-            .handle_err(location!())
+    pub fn is_authorized(&self) -> bool {
+        self.authorized
     }
+
+    // pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
+    //     log::info!(
+    //         "Sending EnableNetworkMonitoringCommand('{}') to the client with device UUID {}",
+    //         enable,
+    //         self.device_uuid
+    //     );
+
+    //     let command = WallGuardCommand {
+    //         command: Some(Command::EnableNetworkMonitoringCommand(enable)),
+    //     };
+
+    //     self.control_stream
+    //         .send(Ok(command))
+    //         .await
+    //         .handle_err(location!())
+    // }
+
+    // pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
+    //     log::info!(
+    //         "Sending EnableConfigurationMonitoringCommand('{}') to the client with device UUID {}",
+    //         enable,
+    //         self.device_uuid
+    //     );
+
+    //     let command = WallGuardCommand {
+    //         command: Some(Command::EnableConfigurationMonitoringCommand(enable)),
+    //     };
+
+    //     self.control_stream
+    //         .send(Ok(command))
+    //         .await
+    //         .handle_err(location!())
+    // }
+
+    // pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
+    //     log::info!(
+    //         "Sending EnableTelemetryMonitoringCommand('{}') to the client with device UUID {}",
+    //         enable,
+    //         self.device_uuid
+    //     );
+
+    //     let command = WallGuardCommand {
+    //         command: Some(Command::EnableTelemetryMonitoringCommand(enable)),
+    //     };
+
+    //     self.control_stream
+    //         .send(Ok(command))
+    //         .await
+    //         .handle_err(location!())
+    // }
 
     pub async fn request_ssh_session(
         &self,
         tunnel_token: impl Into<String>,
         public_key: impl Into<String>,
     ) -> Result<(), Error> {
+        if !self.authorized {
+            return Err("Device is not authorized yet").handle_err(location!());
+        }
+
         log::info!(
             "Sending OpenSshSessionCommandto to the client with device UUID {}",
-            self.device_uuid
+            self.uuid
         );
 
         let ssh_session_data = SshSessionData {
@@ -101,28 +155,32 @@ impl Client {
             public_key: public_key.into(),
         };
 
-        let command = WallGuardCommand {
-            command: Some(Command::OpenSshSessionCommand(ssh_session_data)),
+        let message: ServerMessage = ServerMessage {
+            message: Some(Message::OpenSshSessionCommand(ssh_session_data)),
         };
 
-        self.control_stream
-            .send(Ok(command))
+        self.outbound
+            .send(Ok(message))
             .await
             .handle_err(location!())
     }
 
     pub async fn request_tty_session(&self, tunnel_token: impl Into<String>) -> Result<(), Error> {
+        if !self.authorized {
+            return Err("Device is not authorized yet").handle_err(location!());
+        }
+
         log::info!(
             "Sending OpenTtySessionCommand to the client with device UUID {}",
-            self.device_uuid
+            self.uuid
         );
 
-        let command = WallGuardCommand {
-            command: Some(Command::OpenTtySessionCommand(tunnel_token.into())),
+        let message = ServerMessage {
+            message: Some(Message::OpenTtySessionCommand(tunnel_token.into())),
         };
 
-        self.control_stream
-            .send(Ok(command))
+        self.outbound
+            .send(Ok(message))
             .await
             .handle_err(location!())
     }
@@ -132,9 +190,13 @@ impl Client {
         tunnel_token: impl Into<String>,
         protocol: impl Into<String>,
     ) -> Result<(), Error> {
+        if !self.authorized {
+            return Err("Device is not authorized yet").handle_err(location!());
+        }
+
         log::info!(
             "Sending OpenUiSessionCommand to the client with device UUID {}",
-            self.device_uuid
+            self.uuid
         );
 
         let ui_session_data = UiSessionData {
@@ -142,12 +204,12 @@ impl Client {
             protocol: protocol.into(),
         };
 
-        let command = WallGuardCommand {
-            command: Some(Command::OpenUiSessionCommand(ui_session_data)),
+        let message = ServerMessage {
+            message: Some(Message::OpenUiSessionCommand(ui_session_data)),
         };
 
-        self.control_stream
-            .send(Ok(command))
+        self.outbound
+            .send(Ok(message))
             .await
             .handle_err(location!())
     }

@@ -38,6 +38,21 @@ pub(super) async fn open_ssh_session(
         return resp;
     }
 
+    let Ok(device) = context
+        .datastore
+        .obtain_device_by_id(&token.jwt, &session.device_id)
+        .await
+    else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Unable to retrieve device from datastore"));
+    };
+
+    if device.is_none() {
+        return HttpResponse::NotFound().json(ErrorJson::from("Associated device not found"));
+    }
+
+    let device = device.unwrap();
+
     let keypair =
         match request_handling::fetch_ssh_keypair(&context, &token.jwt, &session.device_id).await {
             Ok(kp) => kp,
@@ -45,7 +60,7 @@ pub(super) async fn open_ssh_session(
         };
 
     let Ok(stream) =
-        tunneling::establish_tunneled_ssh(&context, &session.device_id, &keypair.public_key).await
+        tunneling::establish_tunneled_ssh(&context, &device.uuid, &keypair.public_key).await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));

@@ -2,12 +2,8 @@ syntax = "proto3";
 package wallguard_service;
 
 import "commands.proto";
-import "authorization.proto";
 
 service WallGuard {
-  rpc DeviceAuthorization(wallguard_authorization.AuthorizationRequest)
-    returns (stream wallguard_authorization.AuthorizationStatus);
-
-  rpc ControlChannel(wallguard_commands.ControlChannelRequest)
-    returns (stream wallguard_commands.WallGuardCommand);
+  rpc ControlChannel(stream wallguard_commands.ClientMessage)
+    returns (stream wallguard_commands.ServerMessage);
 }

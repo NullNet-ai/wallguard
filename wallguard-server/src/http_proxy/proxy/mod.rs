@@ -1,3 +1,7 @@
+//! TODO:
+//! - Fetch session and related device in 1 Datastore query
+//! - Use actual device HTTP protocol (http vs https)
+
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -38,10 +42,23 @@ pub async fn proxy_http_request(
         return resp;
     }
 
-    // @TODO: fetch actual protocol
+    let Ok(device) = context
+        .datastore
+        .obtain_device_by_id(&token.jwt, &session.device_id)
+        .await
+    else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Unable to retrieve device from datastore"));
+    };
+
+    if device.is_none() {
+        return HttpResponse::NotFound().json(ErrorJson::from("Associated device not found"));
+    }
+
+    let device = device.unwrap();
     let protocol = "http";
 
-    let Ok(stream) = tunneling::establish_tunneled_ui(&context, &session.device_id, protocol).await
+    let Ok(stream) = tunneling::establish_tunneled_ui(&context, &device.uuid, protocol).await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));
@@ -49,30 +66,3 @@ pub async fn proxy_http_request(
 
     request::proxy_request(request, body, "domain.com", false, stream).await
 }
-
-// async fn proxy_request(
-//     request: HttpRequest,
-//     body: actix_web::web::Payload,
-//     target: SocketAddr,
-//     auth_token: Option<String>,
-//     is_https: bool,
-// ) -> ActixResult<HttpResponse> {
-//     let request = convert_request(request, body, target).await?;
-
-//     let io = build_stream(target, is_https)
-//         .await
-//         .map_err(ErrorServiceUnavailable)?;
-
-//     let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
-//         .await
-//         .map_err(ErrorServiceUnavailable)?;
-
-//     tokio::spawn(conn);
-
-//     let response = sender
-//         .send_request(request)
-//         .await
-//         .map_err(ErrorServiceUnavailable)?;
-
-//     convert_response(response).await
-// }

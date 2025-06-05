@@ -37,7 +37,22 @@ pub(super) async fn open_tty_session(
         return resp;
     }
 
-    let Ok(stream) = tunneling::establish_tunneled_tty(&context, &session.device_id).await else {
+    let Ok(device) = context
+        .datastore
+        .obtain_device_by_id(&token.jwt, &session.device_id)
+        .await
+    else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Unable to retrieve device from datastore"));
+    };
+
+    if device.is_none() {
+        return HttpResponse::NotFound().json(ErrorJson::from("Associated device not found"));
+    }
+
+    let device = device.unwrap();
+
+    let Ok(stream) = tunneling::establish_tunneled_tty(&context, &device.uuid).await else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
