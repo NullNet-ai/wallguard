@@ -3,7 +3,7 @@ use arguments::Arguments;
 use clap::Parser;
 use std::time::Duration;
 use tonic::transport::{Channel, Error};
-use wallguard_cli::{status::State, wallguard_cli_client::WallguardCliClient, Empty, JoinOrgReq};
+use wallguard_cli::{status::State, wallguard_cli_client::WallguardCliClient, JoinOrgReq};
 
 #[rustfmt::skip]
 mod wallguard_cli;
@@ -37,7 +37,7 @@ pub async fn main() -> AnyResult<()> {
 
     match arguments.command {
         arguments::Command::Status => {
-            let response = client.get_status(Empty {}).await?.into_inner();
+            let response = client.get_status(()).await?.into_inner();
 
             if response.state.is_none() {
                 eprintln!("wallguard returned empty status");
@@ -49,25 +49,19 @@ pub async fn main() -> AnyResult<()> {
             match response.state.unwrap() {
                 State::Idle(idle) => {
                     println!("  STATE    : IDLE");
-                    println!("  Timestamp: {}", idle.timestamp);
                 }
                 State::Connected(connected) => {
                     println!("  STATE    : CONNECTED");
                     println!("  Org ID   : {}", connected.org_id);
-                    println!("  Timestamp: {}", connected.timestamp);
                 }
                 State::Error(error) => {
                     println!("  STATE    : ERROR");
                     println!("  Message  : {}", error.message);
                 }
-                State::Authorization(auth) => {
-                    println!("  STATE    : AUTHORIZATION");
-                    println!("  Timestamp: {}", auth.timestamp);
-                }
             }
         }
         arguments::Command::Capabilities => {
-            let response = client.get_capabilities(Empty {}).await?.into_inner();
+            let response = client.get_capabilities(()).await?.into_inner();
 
             println!("WallGuard Capabilities:");
             println!("  Traffic  : {}", response.traffic);
@@ -83,7 +77,7 @@ pub async fn main() -> AnyResult<()> {
             }
         }
         arguments::Command::Leave => {
-            let response = client.leave_org(Empty::default()).await?.into_inner();
+            let response = client.leave_org(()).await?.into_inner();
 
             match response.success {
                 true => println!("Successfully left the current organization."),

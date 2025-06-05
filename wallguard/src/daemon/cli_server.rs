@@ -1,6 +1,5 @@
 use super::wallguard_cli::wallguard_cli_server::WallguardCli;
 use super::wallguard_cli::Caps;
-use super::wallguard_cli::Empty;
 use super::wallguard_cli::JoinOrgReq;
 use super::wallguard_cli::JoinOrgRes;
 use super::wallguard_cli::LeaveOrgRes;
@@ -25,7 +24,7 @@ impl From<Arc<Mutex<Daemon>>> for CliServer {
 impl WallguardCli for CliServer {
     async fn get_status(
         &self,
-        _: tonic::Request<Empty>,
+        _: tonic::Request<()>,
     ) -> Result<tonic::Response<Status>, tonic::Status> {
         let status = self.inner.lock().await.get_status();
         Ok(tonic::Response::from(status))
@@ -33,7 +32,7 @@ impl WallguardCli for CliServer {
 
     async fn get_capabilities(
         &self,
-        _: tonic::Request<Empty>,
+        _: tonic::Request<()>,
     ) -> Result<tonic::Response<Caps>, tonic::Status> {
         let caps = Caps {
             traffic: false,
@@ -67,7 +66,7 @@ impl WallguardCli for CliServer {
 
     async fn leave_org(
         &self,
-        _: tonic::Request<Empty>,
+        _: tonic::Request<()>,
     ) -> Result<tonic::Response<LeaveOrgRes>, tonic::Status> {
         let response = match Daemon::leave_org(self.inner.clone()).await {
             Ok(_) => LeaveOrgRes {
