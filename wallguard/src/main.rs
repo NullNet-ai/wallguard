@@ -5,12 +5,15 @@ mod arguments;
 mod context;
 mod control_channel;
 mod daemon;
+mod data_transmission;
 mod device_uuid;
 mod pty;
 mod reverse_tunnel;
 mod storage;
+mod timer;
 mod token_provider;
 mod utilities;
+mod constants;
 
 #[tokio::main]
 async fn main() {

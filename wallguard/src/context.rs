@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use crate::arguments::Arguments;
+use crate::constants::DISK_SIZE;
 use crate::daemon::Daemon;
+use crate::data_transmission::dump_dir::DumpDir;
+use crate::data_transmission::transmission_manager::TransmissionManager;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
 use nullnet_liberror::Error;
@@ -14,6 +17,7 @@ pub struct Context {
     pub server: WallGuardGrpcInterface,
     pub tunnel: ReverseTunnel,
     pub daemon: Arc<Mutex<Daemon>>,
+    pub transmission_manager: TransmissionManager,
 }
 
 impl Context {
@@ -24,11 +28,20 @@ impl Context {
 
         let tunnel = ReverseTunnel::new(&arguments.tunnel_addr, arguments.tunnel_port).unwrap();
 
+        let dump_dir = DumpDir::new(*DISK_SIZE / 2).await;
+        let transmission_manager = TransmissionManager::new(
+            server.clone(),
+            dump_dir,
+            token_provider.clone(),
+            arguments.addr.clone(),
+        );
+
         Ok(Self {
             token_provider,
             server,
             tunnel,
             daemon,
+            transmission_manager,
         })
     }
 }

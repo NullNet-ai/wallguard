@@ -1,7 +1,8 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
-    HeartbeatCommand, OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
+    EnableNetworkMonitoringCommand, HeartbeatCommand, OpenTtySessionCommand, OpenUiSessionCommand,
+    UpdateTokenCommand,
 };
 use crate::daemon::Daemon;
 use crate::storage::{Secret, Storage};
@@ -113,7 +114,16 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
                     log::error!("UpdateTokenCommand execution failed: {}", err.to_str());
                 }
             }
-            server_message::Message::EnableNetworkMonitoringCommand(_) => todo!(),
+            server_message::Message::EnableNetworkMonitoringCommand(value) => {
+                let cmd = EnableNetworkMonitoringCommand::new(context.clone(), value);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "EnableNetworkMonitoringCommand execution failed: {}",
+                        err.to_str()
+                    );
+                }
+            }
             server_message::Message::EnableConfigurationMonitoringCommand(_) => todo!(),
             server_message::Message::EnableTelemetryMonitoringCommand(_) => todo!(),
             server_message::Message::OpenSshSessionCommand(ssh_session_data) => {
