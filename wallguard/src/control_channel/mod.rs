@@ -1,8 +1,8 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
-    EnableNetworkMonitoringCommand, HeartbeatCommand, OpenTtySessionCommand, OpenUiSessionCommand,
-    UpdateTokenCommand,
+    EnableNetworkMonitoringCommand, EnableTelemetryMonitoringCommand, HeartbeatCommand,
+    OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
 };
 use crate::daemon::Daemon;
 use crate::storage::{Secret, Storage};
@@ -125,7 +125,16 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
                 }
             }
             server_message::Message::EnableConfigurationMonitoringCommand(_) => todo!(),
-            server_message::Message::EnableTelemetryMonitoringCommand(_) => todo!(),
+            server_message::Message::EnableTelemetryMonitoringCommand(value) => {
+                let cmd = EnableTelemetryMonitoringCommand::new(context.clone(), value);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "EnableTelemetryMonitoringCommand execution failed: {}",
+                        err.to_str()
+                    );
+                }
+            }
             server_message::Message::OpenSshSessionCommand(ssh_session_data) => {
                 let cmd = OpenSshSessionCommand::new(context.clone(), ssh_session_data);
 
@@ -155,8 +164,8 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
             }
             server_message::Message::DeviceDeauthorizedMessage(_) => {
                 // @TODO: Command
-                _ = Storage::delete_value(Secret::APP_ID).await;
-                _ = Storage::delete_value(Secret::APP_SECRET).await;
+                _ = Storage::delete_value(Secret::AppId).await;
+                _ = Storage::delete_value(Secret::AppSecret).await;
                 // Gracefuly transition to IDLE state
                 todo!();
             }

@@ -32,7 +32,7 @@ impl Daemon {
             state: DaemonState::default(),
         }));
 
-        if let Some(org_id) = Storage::get_value(Secret::ORG_ID).await {
+        if let Some(org_id) = Storage::get_value(Secret::OrgId).await {
             log::info!("Found org id {org_id}, attempting to connect");
             let _ = Daemon::join_org(daemon.clone(), org_id).await;
         } else {
@@ -57,7 +57,7 @@ impl Daemon {
         let mut lock = this.lock().await;
         match &lock.state {
             DaemonState::Idle => {
-                Storage::set_value(Secret::ORG_ID, &org_id)
+                Storage::set_value(Secret::OrgId, &org_id)
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
@@ -83,7 +83,7 @@ impl Daemon {
 
         match &this.state {
             DaemonState::Connected(control_channel) => {
-                Storage::delete_value(Secret::ORG_ID)
+                Storage::delete_value(Secret::OrgId)
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
