@@ -85,22 +85,45 @@ impl Client {
         self.authorized
     }
 
-    // pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
-    //     log::info!(
-    //         "Sending EnableNetworkMonitoringCommand('{}') to the client with device UUID {}",
-    //         enable,
-    //         self.device_uuid
-    //     );
+    pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
+        if !self.authorized {
+            return Err("Device is not authorized yet").handle_err(location!());
+        }
 
-    //     let command = WallGuardCommand {
-    //         command: Some(Command::EnableNetworkMonitoringCommand(enable)),
-    //     };
+        log::info!(
+            "Sending EnableNetworkMonitoringCommand to the client with device UUID {}",
+            self.uuid
+        );
 
-    //     self.control_stream
-    //         .send(Ok(command))
-    //         .await
-    //         .handle_err(location!())
-    // }
+        let message = ServerMessage {
+            message: Some(Message::EnableNetworkMonitoringCommand(enable)),
+        };
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
+
+    pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
+        if !self.authorized {
+            return Err("Device is not authorized yet").handle_err(location!());
+        }
+
+        log::info!(
+            "Sending EnableTelemetryMonitoringCommand to the client with device UUID {}",
+            self.uuid
+        );
+
+        let message = ServerMessage {
+            message: Some(Message::EnableTelemetryMonitoringCommand(enable)),
+        };
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
 
     // pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
     //     log::info!(
@@ -111,23 +134,6 @@ impl Client {
 
     //     let command = WallGuardCommand {
     //         command: Some(Command::EnableConfigurationMonitoringCommand(enable)),
-    //     };
-
-    //     self.control_stream
-    //         .send(Ok(command))
-    //         .await
-    //         .handle_err(location!())
-    // }
-
-    // pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
-    //     log::info!(
-    //         "Sending EnableTelemetryMonitoringCommand('{}') to the client with device UUID {}",
-    //         enable,
-    //         self.device_uuid
-    //     );
-
-    //     let command = WallGuardCommand {
-    //         command: Some(Command::EnableTelemetryMonitoringCommand(enable)),
     //     };
 
     //     self.control_stream

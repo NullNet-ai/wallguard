@@ -1,7 +1,10 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+
 pub use proto::wallguard_commands::*;
-use proto::wallguard_service::wall_guard_client::*;
 pub use proto::wallguard_service::*;
+
+use proto::wallguard_service::wall_guard_client::WallGuardClient;
+
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tonic::Request;
@@ -48,5 +51,38 @@ impl WallGuardGrpcInterface {
             .handle_err(location!())?;
 
         Ok(response.into_inner())
+    }
+
+    pub async fn handle_packets_data(&self, data: PacketsData) -> Result<(), Error> {
+        self.client
+            .clone()
+            .handle_packets_data(Request::new(data))
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
+
+    pub async fn handle_system_resources_data(
+        &self,
+        data: SystemResourcesData,
+    ) -> Result<(), Error> {
+        self.client
+            .clone()
+            .handle_system_resources_data(Request::new(data))
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
+
+    pub async fn get_device_settings(
+        &self,
+        request: DeviceSettingsRequest,
+    ) -> Result<DeviceSettingsResponse, Error> {
+        self.client
+            .clone()
+            .get_device_settings(request)
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
     }
 }

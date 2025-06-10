@@ -1,9 +1,62 @@
 syntax = "proto3";
 package wallguard_service;
 
+import "google/protobuf/empty.proto";
 import "commands.proto";
 
 service WallGuard {
   rpc ControlChannel(stream wallguard_commands.ClientMessage)
     returns (stream wallguard_commands.ServerMessage);
+  
+  rpc GetDeviceSettings(DeviceSettingsRequest) 
+    returns (DeviceSettingsResponse);
+
+  rpc HandlePacketsData(PacketsData) 
+    returns (google.protobuf.Empty);
+
+  rpc HandleSystemResourcesData(SystemResourcesData) 
+    returns (google.protobuf.Empty);
+}
+
+message PacketsData {
+  string token = 1;
+  repeated Packet packets = 2;
+}
+
+message Packet {
+  string timestamp = 1;
+  string interface = 2;
+  int32 link_type = 3;
+  bytes data = 4;
+}
+
+message SystemResourcesData {
+  string token = 1;
+  repeated SystemResource resources = 2;
+}
+
+message SystemResource {
+  string timestamp = 1;
+  int64 num_cpus = 2;
+  float global_cpu_usage = 3;
+  // will be a map<string, float> once we have Rust datastore
+  string cpu_usages = 4;
+  int64 total_memory = 5;
+  int64 used_memory = 6;
+  int64 total_disk_space = 7;
+  int64 available_disk_space = 8;
+  int64 read_bytes = 9;
+  int64 written_bytes = 10;
+  // will be a map<string, float> once we have Rust datastore
+  string temperatures = 11;
+}
+
+message DeviceSettingsRequest {
+  string token = 1;
+}
+
+message DeviceSettingsResponse {
+  bool traffic_monitoring = 1;
+  bool telemetry_monitoring = 2;
+  bool config_monitoring = 3;
 }

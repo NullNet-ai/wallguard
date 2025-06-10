@@ -5,22 +5,22 @@ fn main() {
     for out_dir in ["./src/protocol", "./libwallguard/src/proto"] {
         tonic_build::configure()
             .out_dir(out_dir)
-            // .type_attribute(
-            //     "wallguard.Packets",
-            //     "#[derive(serde::Serialize, serde::Deserialize)]",
-            // )
-            // .type_attribute(
-            //     "wallguard.Packet",
-            //     "#[derive(serde::Serialize, serde::Deserialize)]",
-            // )
-            // .type_attribute(
-            //     "wallguard.Log",
-            //     "#[derive(serde::Serialize, serde::Deserialize)]",
-            // )
-            // .type_attribute(
-            //     "wallguard.Authentication",
-            //     "#[derive(serde::Serialize, serde::Deserialize)]",
-            // )
+            .type_attribute(
+                "wallguard_service.PacketsData",
+                "#[derive(serde::Serialize, serde::Deserialize)]",
+            )
+            .type_attribute(
+                "wallguard_service.Packet",
+                "#[derive(serde::Serialize, serde::Deserialize)]",
+            )
+            .type_attribute(
+                "wallguard_service.SystemResourcesData",
+                "#[derive(serde::Serialize, serde::Deserialize)]",
+            )
+            .type_attribute(
+                "wallguard_service.SystemResource",
+                "#[derive(serde::Serialize, serde::Deserialize)]",
+            )
             .compile_protos(&[WALLGUARD_PROTOBUF_PATH], &[PROTOBUF_DIR_PATH])
             .expect("Protobuf files generation failed");
     }

@@ -1,4 +1,6 @@
 use crate::app_context::AppContext;
+use crate::http_proxy::api::enable_telemetry_monitoring;
+use crate::http_proxy::api::enable_traffic_monitoring;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use api::authorize_device;
@@ -38,6 +40,14 @@ pub async fn run_http_proxy(context: AppContext) {
             .route(
                 "/wallguard/api/v1/authorize_device",
                 web::post().to(authorize_device),
+            )
+            .route(
+                "/wallguard/api/v1/enable_traffic_monitoring",
+                web::post().to(enable_traffic_monitoring),
+            )
+            .route(
+                "/wallguard/api/v1/enable_telemetry_monitoring",
+                web::post().to(enable_telemetry_monitoring),
             )
             .route(
                 "/wallguard/gateway/ssh",

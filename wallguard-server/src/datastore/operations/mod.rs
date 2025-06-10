@@ -1,7 +1,11 @@
+mod create_connections;
 mod create_device;
+mod create_ip_info;
 mod create_org_account;
 mod create_session;
 mod create_ssh_keypair;
+mod create_system_resources;
+mod is_ip_info_stored;
 mod login;
 mod obtain_device;
 mod obtain_session;

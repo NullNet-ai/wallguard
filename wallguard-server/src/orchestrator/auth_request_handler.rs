@@ -124,12 +124,7 @@ impl AuthReqHandler {
                     self.context.clone(),
                 );
 
-                self.context
-                    .orchestractor
-                    .clients
-                    .lock()
-                    .await
-                    .insert(auth.uuid, Arc::new(Mutex::new(client)));
+                clients.insert(auth.uuid, Arc::new(Mutex::new(client)));
             } else {
                 let client = Client::new(
                     auth.uuid.clone(),

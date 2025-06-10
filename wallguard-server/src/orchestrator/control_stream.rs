@@ -79,16 +79,26 @@ async fn authstream(
         context.datastore,
     );
 
+    outbound
+        .send(Ok(ServerMessage {
+            message: Some(server_message::Message::UpdateTokenCommand(
+                token_provider.get().await?.jwt.clone(),
+            )),
+        }))
+        .await
+        .handle_err(location!())?;
+
     loop {
         tokio::select! {
             _ = tokio::time::sleep(TOKEN_UPDATE_TIME) => {
-                let token = token_provider.get().await?;
-
-                let message = ServerMessage {
-                    message: Some(server_message::Message::UpdateTokenCommand(token.jwt.clone())),
-                };
-
-                outbound.send(Ok(message)).await.handle_err(location!())?;
+                outbound
+                    .send(Ok(ServerMessage {
+                        message: Some(server_message::Message::UpdateTokenCommand(
+                            token_provider.get().await?.jwt.clone(),
+                        )),
+                    }))
+                    .await
+                    .handle_err(location!())?;
             }
 
             msg = inbound.message() => {
