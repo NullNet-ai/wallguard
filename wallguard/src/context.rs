@@ -7,6 +7,7 @@ use crate::data_transmission::dump_dir::DumpDir;
 use crate::data_transmission::transmission_manager::TransmissionManager;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
+use crate::wg_server::WGServer;
 use nullnet_liberror::Error;
 use nullnet_libwallguard::WallGuardGrpcInterface;
 use tokio::sync::Mutex;
@@ -14,7 +15,7 @@ use tokio::sync::Mutex;
 #[derive(Clone, Debug)]
 pub struct Context {
     pub token_provider: TokenProvider,
-    pub server: WallGuardGrpcInterface,
+    pub server: WGServer,
     pub tunnel: ReverseTunnel,
     pub daemon: Arc<Mutex<Daemon>>,
     pub transmission_manager: TransmissionManager,
@@ -24,7 +25,7 @@ impl Context {
     pub async fn new(arguments: Arguments, daemon: Arc<Mutex<Daemon>>) -> Result<Self, Error> {
         let token_provider = TokenProvider::new();
 
-        let server = WallGuardGrpcInterface::new(&arguments.addr, arguments.port).await?;
+        let server = WGServer::new(arguments.addr.clone(), arguments.port);
 
         let tunnel = ReverseTunnel::new(&arguments.tunnel_addr, arguments.tunnel_port).unwrap();
 

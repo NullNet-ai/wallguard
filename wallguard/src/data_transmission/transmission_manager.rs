@@ -1,10 +1,10 @@
 use crate::constants::SNAPLEN;
 use crate::data_transmission::packets::transmitter::transmit_packets;
 use crate::data_transmission::resources::transmitter::transmit_system_resources;
+use crate::wg_server::WGServer;
 use crate::{data_transmission::dump_dir::DumpDir, token_provider::TokenProvider};
 use async_channel::Receiver;
 use nullnet_libresmon::SystemResources;
-use nullnet_libwallguard::WallGuardGrpcInterface;
 use nullnet_traffic_monitor::PacketInfo;
 
 #[derive(Debug, Clone)]
@@ -12,7 +12,7 @@ pub(crate) struct TransmissionManager {
     packet_capture: Option<Receiver<PacketInfo>>,
     resource_monitoring: Option<Receiver<SystemResources>>,
 
-    interface: WallGuardGrpcInterface,
+    interface: WGServer,
     dump_dir: DumpDir,
     token_provider: TokenProvider,
 
@@ -21,7 +21,7 @@ pub(crate) struct TransmissionManager {
 
 impl TransmissionManager {
     pub(crate) fn new(
-        interface: WallGuardGrpcInterface,
+        interface: WGServer,
         dump_dir: DumpDir,
         token_provider: TokenProvider,
         server_addr: String,

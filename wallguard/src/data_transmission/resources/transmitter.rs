@@ -2,15 +2,16 @@ use crate::constants::QUEUE_SIZE_RESOURCES;
 use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
 use crate::data_transmission::item_buffer::ItemBuffer;
 use crate::token_provider::TokenProvider;
+use crate::wg_server::WGServer;
 use async_channel::Receiver;
 use chrono::Utc;
-use nullnet_libwallguard::{SystemResource, SystemResourcesData, WallGuardGrpcInterface};
+use nullnet_libwallguard::{SystemResource, SystemResourcesData};
 
 pub(crate) async fn transmit_system_resources(
     rx: Receiver<nullnet_libresmon::SystemResources>,
     token_provider: TokenProvider,
     dump_dir: DumpDir,
-    client: WallGuardGrpcInterface,
+    client: WGServer,
 ) {
     let mut resources_queue = ItemBuffer::new(QUEUE_SIZE_RESOURCES);
     while let Ok(res) = rx.recv().await {
@@ -73,15 +74,12 @@ pub(crate) async fn transmit_system_resources(
             if dump_dir.is_full().await {
                 log::warn!("Dump size maximum limit reached. System resources routine entering idle mode...",);
                 // wait for the server to come up again
-
-                todo!();
-
-                // loop {
-                //     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                //     if client.lock().await.is_some() {
-                //         break;
-                //     }
-                // }
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    if client.is_connected().await {
+                        break;
+                    }
+                }
             }
         }
     }

@@ -3,8 +3,9 @@ use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
 use crate::data_transmission::item_buffer::ItemBuffer;
 use crate::timer::Timer;
 use crate::token_provider::TokenProvider;
+use crate::wg_server::WGServer;
 use async_channel::Receiver;
-use nullnet_libwallguard::{Packet, PacketsData, WallGuardGrpcInterface};
+use nullnet_libwallguard::{Packet, PacketsData};
 use nullnet_traffic_monitor::PacketInfo;
 use std::cmp::min;
 
@@ -12,7 +13,7 @@ pub(crate) async fn transmit_packets(
     rx: Receiver<PacketInfo>,
     token_provider: TokenProvider,
     dump_dir: DumpDir,
-    client: WallGuardGrpcInterface,
+    client: WGServer,
 ) {
     let mut packet_batch = ItemBuffer::new(BATCH_SIZE);
     let mut packet_queue = ItemBuffer::new(QUEUE_SIZE);
@@ -51,14 +52,12 @@ pub(crate) async fn transmit_packets(
                         "Dump size maximum limit reached. Packets routine entering idle mode...",
                     );
 
-                    // loop {
-                    //     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                    //     if client.lock().await.is_some() {
-                    //         break;
-                    //     }
-                    // }
-
-                    todo!();
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                        if client.is_connected().await {
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -66,7 +65,7 @@ pub(crate) async fn transmit_packets(
 }
 
 async fn send_packets(
-    interface: &WallGuardGrpcInterface,
+    interface: &WGServer,
     packet_batch: &mut ItemBuffer<Packet>,
     packet_queue: &mut ItemBuffer<Packet>,
     token_provider: &TokenProvider,

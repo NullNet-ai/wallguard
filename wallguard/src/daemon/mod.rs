@@ -5,11 +5,10 @@ mod state;
 
 use crate::arguments::Arguments;
 use crate::context::Context;
-use crate::control_channel::{self, ControlChannel};
+use crate::control_channel::ControlChannel;
 use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
 use crate::storage::{Secret, Storage};
-use crate::utilities;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -101,10 +100,6 @@ impl Daemon {
                 this.state
             )),
         }
-    }
-
-    pub(crate) async fn get_uuid(this: Arc<Mutex<Daemon>>) -> String {
-        this.lock().await.uuid.clone()
     }
 
     pub(crate) async fn on_error(this: Arc<Mutex<Daemon>>, reason: impl Into<String>) {

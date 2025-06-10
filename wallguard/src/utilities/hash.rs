@@ -7,8 +7,3 @@ pub fn sha256_digest_bytes(input: &str) -> [u8; 32] {
     let result = hasher.finalize();
     result.as_slice().try_into().unwrap()
 }
-
-pub fn sha256_digest_hex(input: &str) -> String {
-    let hash_bytes = sha256_digest_bytes(input);
-    hash_bytes.iter().map(|b| format!("{:02x}", b)).collect()
-}

@@ -14,6 +14,7 @@ mod timer;
 mod token_provider;
 mod utilities;
 mod constants;
+mod wg_server;
 
 #[tokio::main]
 async fn main() {
