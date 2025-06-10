@@ -1,8 +1,6 @@
-use std::time::Duration;
-
-use nullnet_libwallguard::DeviceSettingsRequest;
-
 use crate::{context::Context, token_provider::RetrievalStrategy};
+use nullnet_libwallguard::DeviceSettingsRequest;
+use std::time::Duration;
 
 pub async fn post_startup(mut context: Context) {
     let timeout = Duration::from_secs(10);

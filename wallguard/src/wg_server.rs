@@ -3,7 +3,7 @@ use nullnet_libwallguard::{
     ClientMessage, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, ServerMessage,
     SystemResourcesData, WallGuardGrpcInterface,
 };
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tokio::sync::{mpsc, Mutex};
 use tonic::Streaming;
 
@@ -40,15 +40,34 @@ impl WGServer {
     }
 
     async fn get_interface(&self) -> Result<WallGuardGrpcInterface, Error> {
-        if !self.is_connected().await {
-            self.connect().await?;
+        let max_retries = 3;
+        let retry_delay = Duration::from_secs(5);
+
+        for attempt in 0..=max_retries {
+            if !self.is_connected().await {
+                if let Err(e) = self.connect().await {
+                    if attempt == max_retries {
+                        return Err(e);
+                    }
+
+                    tokio::time::sleep(retry_delay).await;
+                    continue;
+                }
+            }
+
+            let lock = self.interface.lock().await;
+            if let Some(interface) = &*lock {
+                return Ok(interface.clone());
+            }
+
+            if attempt == max_retries {
+                return Err("Failed to connect to the server").handle_err(location!());
+            }
+
+            tokio::time::sleep(retry_delay).await;
         }
 
-        let lock = self.interface.lock().await;
-        match &*lock {
-            Some(interface) => Ok(interface.clone()),
-            None => Err("Interface unexpectedly None").handle_err(location!()),
-        }
+        Err("Failed to connect to the server").handle_err(location!())
     }
 
     pub async fn request_control_channel(

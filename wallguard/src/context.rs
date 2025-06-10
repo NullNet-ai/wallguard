@@ -9,7 +9,6 @@ use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
 use nullnet_liberror::Error;
-use nullnet_libwallguard::WallGuardGrpcInterface;
 use tokio::sync::Mutex;
 
 #[derive(Clone, Debug)]

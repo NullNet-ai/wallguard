@@ -7,6 +7,10 @@ use std::cmp::min;
 use std::time::Duration;
 use tokio::fs;
 
+/**
+ * TODO: Handle reconnections & retransmissions
+ */
+
 pub(crate) async fn handle_connection_and_retransmission(
     interface: WGServer,
     dump_dir: DumpDir,
