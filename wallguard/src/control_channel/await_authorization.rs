@@ -49,11 +49,11 @@ pub async fn await_authorization(
         match message {
             server_message::Message::DeviceAuthorizedMessage(data) => {
                 if let Some(app_id) = data.app_id {
-                    Storage::set_value(Secret::APP_ID, &app_id).await?;
+                    Storage::set_value(Secret::AppId, &app_id).await?;
                 }
 
                 if let Some(app_secret) = data.app_secret {
-                    Storage::set_value(Secret::APP_SECRET, &app_secret).await?;
+                    Storage::set_value(Secret::AppSecret, &app_secret).await?;
                 }
 
                 return Ok(Verdict::Approved);

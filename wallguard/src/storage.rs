@@ -12,17 +12,17 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Secret {
-    ORG_ID,
-    APP_ID,
-    APP_SECRET,
+    OrgId,
+    AppId,
+    AppSecret,
 }
 
 impl Secret {
     fn as_str(&self) -> &'static str {
         match self {
-            Secret::ORG_ID => "ORG_ID",
-            Secret::APP_ID => "APP_ID",
-            Secret::APP_SECRET => "APP_SECRET",
+            Secret::OrgId => "OrgId",
+            Secret::AppId => "AppId",
+            Secret::AppSecret => "AppSecret",
         }
     }
 }

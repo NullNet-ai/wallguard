@@ -1,8 +1,10 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
-    HeartbeatCommand, OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
+    EnableNetworkMonitoringCommand, EnableTelemetryMonitoringCommand, HeartbeatCommand,
+    OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
 };
+use crate::control_channel::post_startup::post_startup;
 use crate::daemon::Daemon;
 use crate::storage::{Secret, Storage};
 use await_authorization::await_authorization;
@@ -17,6 +19,7 @@ use tonic::Streaming;
 mod await_authorization;
 mod command;
 mod commands;
+mod post_startup;
 mod send_authenticate;
 
 pub(crate) type InboundStream = Arc<Mutex<Streaming<ServerMessage>>>;
@@ -25,7 +28,6 @@ pub(crate) type OutboundStream = Arc<Mutex<mpsc::Sender<ClientMessage>>>;
 #[derive(Debug, Clone)]
 pub struct ControlChannel {
     context: Context,
-    uuid: String,
     org_id: String,
     terminate: broadcast::Sender<()>,
 }
@@ -36,21 +38,16 @@ impl ControlChannel {
 
         tokio::spawn(stream_wrapper(
             context.clone(),
-            uuid.clone(),
+            uuid,
             org_id.clone(),
             terminate.subscribe(),
         ));
 
         Self {
             context,
-            uuid,
             org_id,
             terminate,
         }
-    }
-
-    pub fn get_uuid(&self) -> String {
-        self.uuid.clone()
     }
 
     pub fn get_org_id(&self) -> String {
@@ -58,6 +55,11 @@ impl ControlChannel {
     }
 
     pub fn terminate(&self) {
+        let mut manager = self.context.transmission_manager.clone();
+
+        manager.terminate_packet_capture();
+        manager.terminate_resource_monitoring();
+
         let _ = self.terminate.send(());
     }
 }
@@ -99,6 +101,8 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
     // an error to the server, which closes the connection.
     send_authenticate(outbound.clone()).await?;
 
+    tokio::spawn(post_startup(context.clone()));
+
     while let Ok(message) = inbound.lock().await.message().await {
         let message = message
             .and_then(|message| message.message)
@@ -113,9 +117,27 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
                     log::error!("UpdateTokenCommand execution failed: {}", err.to_str());
                 }
             }
-            server_message::Message::EnableNetworkMonitoringCommand(_) => todo!(),
+            server_message::Message::EnableNetworkMonitoringCommand(value) => {
+                let cmd = EnableNetworkMonitoringCommand::new(context.clone(), value);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "EnableNetworkMonitoringCommand execution failed: {}",
+                        err.to_str()
+                    );
+                }
+            }
             server_message::Message::EnableConfigurationMonitoringCommand(_) => todo!(),
-            server_message::Message::EnableTelemetryMonitoringCommand(_) => todo!(),
+            server_message::Message::EnableTelemetryMonitoringCommand(value) => {
+                let cmd = EnableTelemetryMonitoringCommand::new(context.clone(), value);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "EnableTelemetryMonitoringCommand execution failed: {}",
+                        err.to_str()
+                    );
+                }
+            }
             server_message::Message::OpenSshSessionCommand(ssh_session_data) => {
                 let cmd = OpenSshSessionCommand::new(context.clone(), ssh_session_data);
 
@@ -145,8 +167,8 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
             }
             server_message::Message::DeviceDeauthorizedMessage(_) => {
                 // @TODO: Command
-                _ = Storage::delete_value(Secret::APP_ID).await;
-                _ = Storage::delete_value(Secret::APP_SECRET).await;
+                _ = Storage::delete_value(Secret::AppId).await;
+                _ = Storage::delete_value(Secret::AppSecret).await;
                 // Gracefuly transition to IDLE state
                 todo!();
             }

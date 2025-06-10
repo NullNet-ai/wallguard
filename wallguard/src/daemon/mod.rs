@@ -5,11 +5,10 @@ mod state;
 
 use crate::arguments::Arguments;
 use crate::context::Context;
-use crate::control_channel::{self, ControlChannel};
+use crate::control_channel::ControlChannel;
 use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
 use crate::storage::{Secret, Storage};
-use crate::utilities;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -32,7 +31,7 @@ impl Daemon {
             state: DaemonState::default(),
         }));
 
-        if let Some(org_id) = Storage::get_value(Secret::ORG_ID).await {
+        if let Some(org_id) = Storage::get_value(Secret::OrgId).await {
             log::info!("Found org id {org_id}, attempting to connect");
             let _ = Daemon::join_org(daemon.clone(), org_id).await;
         } else {
@@ -57,7 +56,7 @@ impl Daemon {
         let mut lock = this.lock().await;
         match &lock.state {
             DaemonState::Idle => {
-                Storage::set_value(Secret::ORG_ID, &org_id)
+                Storage::set_value(Secret::OrgId, &org_id)
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
@@ -83,7 +82,7 @@ impl Daemon {
 
         match &this.state {
             DaemonState::Connected(control_channel) => {
-                Storage::delete_value(Secret::ORG_ID)
+                Storage::delete_value(Secret::OrgId)
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
@@ -103,11 +102,11 @@ impl Daemon {
         }
     }
 
-    pub(crate) async fn get_uuid(this: Arc<Mutex<Daemon>>) -> String {
-        this.lock().await.uuid.clone()
-    }
-
     pub(crate) async fn on_error(this: Arc<Mutex<Daemon>>, reason: impl Into<String>) {
+        match this.lock().await.state.clone() {
+            DaemonState::Connected(control_channel) => control_channel.terminate(),
+            _ => {}
+        };
         this.lock().await.state = DaemonState::Error(reason.into());
     }
 }

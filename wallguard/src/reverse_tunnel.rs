@@ -1,6 +1,4 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use sha2::Digest;
-use sha2::Sha256;
 use std::net::SocketAddr;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
