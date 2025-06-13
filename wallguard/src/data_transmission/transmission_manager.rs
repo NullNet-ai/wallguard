@@ -1,22 +1,27 @@
 use crate::constants::SNAPLEN;
 use crate::data_transmission::packets::transmitter::transmit_packets;
 use crate::data_transmission::resources::transmitter::transmit_system_resources;
+use crate::data_transmission::sysconfig;
+use crate::platform::Platform;
 use crate::wg_server::WGServer;
 use crate::{data_transmission::dump_dir::DumpDir, token_provider::TokenProvider};
 use async_channel::Receiver;
 use nullnet_libresmon::SystemResources;
 use nullnet_traffic_monitor::PacketInfo;
+use tokio::sync::broadcast;
 
 #[derive(Debug, Clone)]
 pub(crate) struct TransmissionManager {
     packet_capture: Option<Receiver<PacketInfo>>,
     resource_monitoring: Option<Receiver<SystemResources>>,
+    sysconf_monitoring: Option<broadcast::Sender<()>>,
 
     interface: WGServer,
     dump_dir: DumpDir,
     token_provider: TokenProvider,
 
     server_addr: String,
+    platform: Platform,
 }
 
 impl TransmissionManager {
@@ -25,16 +30,19 @@ impl TransmissionManager {
         dump_dir: DumpDir,
         token_provider: TokenProvider,
         server_addr: String,
+        platform: Platform,
     ) -> Self {
         Self {
             packet_capture: None,
             resource_monitoring: None,
+            sysconf_monitoring: None,
 
             interface,
             dump_dir,
             token_provider,
 
             server_addr,
+            platform,
         }
     }
 
@@ -46,10 +54,20 @@ impl TransmissionManager {
         self.resource_monitoring.is_some()
     }
 
+    pub(crate) fn has_sysconf_monitoring(&self) -> bool {
+        self.sysconf_monitoring.is_some()
+    }
+
     pub(crate) fn start_packet_capture(&mut self) {
         if self.packet_capture.is_some() {
             return;
         }
+
+        if !self.platform.can_monitor_traffic() {
+            log::error!("Platform does not support traffic monitoring");
+            return;
+        }
+
         let monitor_config = nullnet_traffic_monitor::MonitorConfig {
             addr: self.server_addr.clone(),
             snaplen: SNAPLEN as i32,
@@ -69,6 +87,12 @@ impl TransmissionManager {
         if self.resource_monitoring.is_some() {
             return;
         }
+
+        if !self.platform.can_monitor_telemetry() {
+            log::error!("Platform does not support telemetry monitoring");
+            return;
+        }
+
         log::info!("Starting resource monitoring");
         let rx = nullnet_libresmon::poll_system_resources(1000);
         self.resource_monitoring = Some(rx.clone());
@@ -78,6 +102,24 @@ impl TransmissionManager {
         tokio::spawn(async move {
             transmit_system_resources(rx, token_provider, dump_dir, interface).await;
         });
+    }
+
+    pub(crate) fn start_sysconf_monitroing(&mut self) {
+        if self.has_sysconf_monitoring() {
+            return;
+        }
+
+        if !self.platform.can_monitor_config() {
+            log::error!("Platform does not support sysconfig monitoring");
+            return;
+        }
+
+        let (terminate, _) = broadcast::channel(1);
+
+        tokio::spawn(sysconfig::watch_sysconfig(
+            self.platform,
+            terminate.subscribe(),
+        ));
     }
 
     pub(crate) fn terminate_packet_capture(&mut self) {
@@ -96,5 +138,16 @@ impl TransmissionManager {
         log::info!("Terminating resource monitoring");
         rx.close();
         self.resource_monitoring = None;
+    }
+
+    pub(crate) fn terminate_sysconfig_monitoring(&mut self) {
+        let Some(terminate) = &self.sysconf_monitoring else {
+            return;
+        };
+
+        log::info!("Terminating sysconf monitoring");
+        terminate.send(());
+
+        self.sysconf_monitoring = None
     }
 }

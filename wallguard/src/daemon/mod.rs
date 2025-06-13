@@ -8,6 +8,7 @@ use crate::context::Context;
 use crate::control_channel::ControlChannel;
 use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
+use crate::platform::Platform;
 use crate::storage::{Secret, Storage};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
@@ -21,14 +22,20 @@ pub struct Daemon {
     uuid: String,
     arguments: Arguments,
     state: DaemonState,
+    platform: Platform,
 }
 
 impl Daemon {
-    pub async fn run(uuid: impl Into<String>, arguments: Arguments) -> Result<(), Error> {
+    pub async fn run(
+        uuid: impl Into<String>,
+        arguments: Arguments,
+        platform: Platform,
+    ) -> Result<(), Error> {
         let daemon = Arc::new(Mutex::new(Daemon {
             uuid: uuid.into(),
             arguments,
             state: DaemonState::default(),
+            platform,
         }));
 
         if let Some(org_id) = Storage::get_value(Secret::OrgId).await {
@@ -50,6 +57,10 @@ impl Daemon {
 
     pub(crate) fn get_status(&self) -> Status {
         self.state.clone().into()
+    }
+
+    pub(crate) fn get_platform(&self) -> Platform {
+        self.platform
     }
 
     pub(crate) async fn join_org(this: Arc<Mutex<Daemon>>, org_id: String) -> Result<(), String> {

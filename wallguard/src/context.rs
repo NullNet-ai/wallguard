@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::arguments::Arguments;
 use crate::constants::DISK_SIZE;
 use crate::daemon::Daemon;
@@ -9,6 +7,7 @@ use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
 use nullnet_liberror::Error;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Clone, Debug)]
@@ -34,6 +33,7 @@ impl Context {
             dump_dir,
             token_provider.clone(),
             arguments.addr.clone(),
+            daemon.lock().await.get_platform(),
         );
 
         Ok(Self {

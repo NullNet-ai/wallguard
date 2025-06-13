@@ -45,5 +45,5 @@ async fn main() {
         std::process::exit(-1);
     };
 
-    Daemon::run(device_uuid, arguments).await.unwrap()
+    Daemon::run(device_uuid, arguments, platform).await.unwrap()
 }

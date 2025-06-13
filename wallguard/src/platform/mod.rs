@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use target_os::TargetOs;
 
@@ -65,5 +67,12 @@ impl Platform {
 
     pub fn can_monitor_traffic(&self) -> bool {
         true
+    }
+
+    pub fn get_sysconf_files(&self) -> Vec<PathBuf> {
+        match self {
+            Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
+            Platform::Generic => vec![],
+        }
     }
 }

@@ -1,8 +1,9 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
-    EnableNetworkMonitoringCommand, EnableTelemetryMonitoringCommand, HeartbeatCommand,
-    OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
+    EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
+    EnableTelemetryMonitoringCommand, HeartbeatCommand, OpenTtySessionCommand,
+    OpenUiSessionCommand, UpdateTokenCommand,
 };
 use crate::control_channel::post_startup::post_startup;
 use crate::daemon::Daemon;
@@ -127,7 +128,16 @@ async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<()
                     );
                 }
             }
-            server_message::Message::EnableConfigurationMonitoringCommand(_) => todo!(),
+            server_message::Message::EnableConfigurationMonitoringCommand(value) => {
+                let cmd = EnableConfigurationMonitoringCommand::new(context.clone(), value);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "EnableConfigurationMonitoringCommand execution failed: {}",
+                        err.to_str()
+                    );
+                }
+            }
             server_message::Message::EnableTelemetryMonitoringCommand(value) => {
                 let cmd = EnableTelemetryMonitoringCommand::new(context.clone(), value);
 
