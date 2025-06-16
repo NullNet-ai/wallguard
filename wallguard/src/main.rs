@@ -1,19 +1,20 @@
-use crate::{arguments::Arguments, daemon::Daemon, storage::Storage};
+use crate::{arguments::Arguments, daemon::Daemon, platform::Platform, storage::Storage};
 use clap::Parser as _;
 
 mod arguments;
+mod constants;
 mod context;
 mod control_channel;
 mod daemon;
 mod data_transmission;
 mod device_uuid;
+mod platform;
 mod pty;
 mod reverse_tunnel;
 mod storage;
 mod timer;
 mod token_provider;
 mod utilities;
-mod constants;
 mod wg_server;
 
 #[tokio::main]
@@ -35,10 +36,14 @@ async fn main() {
         std::process::exit(-1);
     }
 
+    let Ok(platform) = Platform::try_from(arguments.platform.as_str()) else {
+        std::process::exit(-1);
+    };
+
     let Some(device_uuid) = device_uuid::retrieve_device_uuid() else {
         log::error!("Failed to retrieve device UUID, exiting ...");
         std::process::exit(-1);
     };
 
-    Daemon::run(device_uuid, arguments).await.unwrap()
+    Daemon::run(device_uuid, arguments, platform).await.unwrap()
 }
