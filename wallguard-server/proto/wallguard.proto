@@ -16,6 +16,9 @@ service WallGuard {
 
   rpc HandleSystemResourcesData(SystemResourcesData) 
     returns (google.protobuf.Empty);
+
+  rpc HandleConfigData(ConfigSnapshot) 
+    returns (google.protobuf.Empty);
 }
 
 message PacketsData {
@@ -59,4 +62,21 @@ message DeviceSettingsResponse {
   bool traffic_monitoring = 1;
   bool telemetry_monitoring = 2;
   bool config_monitoring = 3;
+}
+
+message FileSnapshot {
+  string filename = 1;
+  bytes contents = 2;
+}
+
+enum ConfigStatus {
+  CS_DRAFT = 0;
+  CS_APPLIED = 1;
+  CS_UNDEFINED = 2;
+}
+
+message ConfigSnapshot {
+  string token = 1;
+  repeated FileSnapshot files = 2;
+  ConfigStatus status = 3;
 }

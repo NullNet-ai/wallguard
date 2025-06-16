@@ -69,6 +69,51 @@ pub struct DeviceSettingsResponse {
     #[prost(bool, tag = "3")]
     pub config_monitoring: bool,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FileSnapshot {
+    #[prost(string, tag = "1")]
+    pub filename: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub contents: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConfigSnapshot {
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub files: ::prost::alloc::vec::Vec<FileSnapshot>,
+    #[prost(enumeration = "ConfigStatus", tag = "3")]
+    pub status: i32,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ConfigStatus {
+    CsDraft = 0,
+    CsApplied = 1,
+    CsUndefined = 2,
+}
+impl ConfigStatus {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::CsDraft => "CS_DRAFT",
+            Self::CsApplied => "CS_APPLIED",
+            Self::CsUndefined => "CS_UNDEFINED",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "CS_DRAFT" => Some(Self::CsDraft),
+            "CS_APPLIED" => Some(Self::CsApplied),
+            "CS_UNDEFINED" => Some(Self::CsUndefined),
+            _ => None,
+        }
+    }
+}
 /// Generated client implementations.
 pub mod wall_guard_client {
     #![allow(
@@ -265,6 +310,29 @@ pub mod wall_guard_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn handle_config_data(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ConfigSnapshot>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/wallguard_service.WallGuard/HandleConfigData",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("wallguard_service.WallGuard", "HandleConfigData"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -312,6 +380,10 @@ pub mod wall_guard_server {
         async fn handle_system_resources_data(
             &self,
             request: tonic::Request<super::SystemResourcesData>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status>;
+        async fn handle_config_data(
+            &self,
+            request: tonic::Request<super::ConfigSnapshot>,
         ) -> std::result::Result<tonic::Response<()>, tonic::Status>;
     }
     #[derive(Debug)]
@@ -563,6 +635,49 @@ pub mod wall_guard_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = HandleSystemResourcesDataSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/wallguard_service.WallGuard/HandleConfigData" => {
+                    #[allow(non_camel_case_types)]
+                    struct HandleConfigDataSvc<T: WallGuard>(pub Arc<T>);
+                    impl<T: WallGuard> tonic::server::UnaryService<super::ConfigSnapshot>
+                    for HandleConfigDataSvc<T> {
+                        type Response = ();
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ConfigSnapshot>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as WallGuard>::handle_config_data(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = HandleConfigDataSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

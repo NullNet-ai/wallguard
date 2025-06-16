@@ -50,6 +50,8 @@ chrono = "0.4.41"
 etherparse = "0.18.0"
 nullnet-libipinfo = "0.2.0"
 indexmap = "2.9.0"
+nullnet-libfireparse = "0.3.3"
+md5 = "0.7.0"
 
 
 [build-dependencies]

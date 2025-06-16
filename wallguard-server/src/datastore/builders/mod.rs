@@ -1,9 +1,16 @@
+#[allow(unused)]
 mod advanced_filter_builder;
+#[allow(unused)]
 mod batch_create_request_builder;
+#[allow(unused)]
 mod create_request_builder;
+#[allow(unused)]
 mod get_by_filer_request_builder;
+#[allow(unused)]
 mod get_by_id_request_builder;
+#[allow(unused)]
 mod login_request_builder;
+#[allow(unused)]
 mod update_request_builder;
 
 pub use advanced_filter_builder::AdvanceFilterBuilder;

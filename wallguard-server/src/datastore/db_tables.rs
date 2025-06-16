@@ -8,6 +8,11 @@ pub enum DBTable {
     IpInfos,
     Connections,
     SystemResources,
+    DeviceConfigurations,
+    DeviceRules,
+    DeviceAliases,
+    DeviceInterfaces,
+    DeviceInterfaceAddresses
 }
 
 impl Display for DBTable {
@@ -20,6 +25,11 @@ impl Display for DBTable {
             DBTable::IpInfos => "ip_infos",
             DBTable::Connections => "connections",
             DBTable::SystemResources => "system_resources",
+            DBTable::DeviceConfigurations => "device_configurations",
+            DBTable::DeviceRules => "device_rules",
+            DBTable::DeviceAliases => "device_aliases",
+            DBTable::DeviceInterfaces => "device_interfaces",
+            DBTable::DeviceInterfaceAddresses => "device_interface_addresses"
         };
         write!(f, "{}", table_name)
     }

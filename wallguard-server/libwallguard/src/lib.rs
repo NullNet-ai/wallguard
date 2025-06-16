@@ -85,4 +85,13 @@ impl WallGuardGrpcInterface {
             .handle_err(location!())
             .map(|response| response.into_inner())
     }
+
+    pub async fn handle_config_data(&self, request: ConfigSnapshot) -> Result<(), Error> {
+        self.client
+            .clone()
+            .handle_config_data(request)
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
 }
