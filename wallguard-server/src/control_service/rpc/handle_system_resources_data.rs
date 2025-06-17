@@ -1,4 +1,4 @@
-use nullnet_libtoken::Token;
+use crate::token_provider::Token;
 use tonic::{Request, Response, Status};
 
 use crate::{
@@ -17,7 +17,7 @@ impl WallGuardService {
 
         log::info!("Received {} system resources.", data.resources.len());
 
-        if data.resources.len() > 0 {
+        if !data.resources.is_empty() {
             self.context
                 .datastore
                 .create_system_resources(&token.jwt, data.resources)

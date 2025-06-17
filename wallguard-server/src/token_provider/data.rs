@@ -1,4 +1,4 @@
-use nullnet_libtoken::Token;
+use super::token::Token;
 use std::sync::Arc;
 
 /// Stores authentication credentials and an optional JWT token.

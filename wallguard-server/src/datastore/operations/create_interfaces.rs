@@ -36,7 +36,7 @@ impl Datastore {
         let result = InterfaceInsertionResult::from_response_data(response_data);
 
         let mut records: Vec<serde_json::Value> = vec![];
-        
+
         for interface in interfaces {
             for address in &interface.addresses {
                 if let Some(id) = result.get_id_by_device(&interface.device) {

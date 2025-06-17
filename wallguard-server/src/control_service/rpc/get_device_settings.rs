@@ -1,7 +1,7 @@
 use crate::control_service::service::WallGuardService;
 use crate::protocol::wallguard_service::DeviceSettingsRequest;
 use crate::protocol::wallguard_service::DeviceSettingsResponse;
-use nullnet_libtoken::Token;
+use crate::token_provider::Token;
 use tonic::{Request, Response, Status};
 
 impl WallGuardService {
@@ -15,11 +15,11 @@ impl WallGuardService {
         let device = self
             .context
             .datastore
-            .obtain_device_by_id(&token.jwt, &token.account.device.id)
+            .obtain_device_by_id(&token.jwt, &token.account.id)
             .await
             .map_err(|err| Status::internal(err.to_str()))?
             .ok_or("Device not found")
-            .map_err(|msg| Status::internal(msg))?;
+            .map_err(Status::internal)?;
 
         let response = DeviceSettingsResponse {
             config_monitoring: device.sysconf_monitoring,

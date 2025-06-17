@@ -18,7 +18,7 @@ impl Datastore {
             .build();
 
         let _ = self.inner.clone().update(request, token).await?;
-        
+
         Ok(())
     }
 }

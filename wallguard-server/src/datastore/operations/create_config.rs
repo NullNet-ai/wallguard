@@ -9,7 +9,7 @@ impl Datastore {
         token: &str,
         config: &DeviceConfiguration,
     ) -> Result<String, Error> {
-        let json = serde_json::to_value(&config).handle_err(location!())?;
+        let json = serde_json::to_value(config).handle_err(location!())?;
 
         let mut pluck_fields = DeviceConfiguration::pluck();
         pluck_fields.push("id".to_string());
@@ -33,9 +33,9 @@ impl Datastore {
                 .handle_err(location!())?
                 .to_string();
 
-            return Ok(id);
+             Ok(id)
         } else {
-            return Err("Failed to create device configuration").handle_err(location!());
+             Err("Failed to create device configuration").handle_err(location!())
         }
     }
 }

@@ -19,7 +19,7 @@ pub(crate) type InboundStream = Streaming<ClientMessage>;
 #[derive(Debug)]
 pub struct Client {
     uuid: String,
-    org_id: String,
+    _org_id: String,
     outbound: OutboundStream,
     authorized: bool,
 }
@@ -42,7 +42,7 @@ impl Client {
         Self {
             uuid,
             outbound,
-            org_id,
+            _org_id: org_id,
             authorized: false,
         }
     }
@@ -64,7 +64,7 @@ impl Client {
         Ok(())
     }
 
-    pub async fn deauthorize(&mut self) -> Result<(), Error> {
+    pub async fn _deauthorize(&mut self) -> Result<(), Error> {
         log::debug!("Deauthorizing device {}", self.uuid);
 
         self.authorized = false;

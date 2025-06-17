@@ -12,7 +12,7 @@ pub enum DBTable {
     DeviceRules,
     DeviceAliases,
     DeviceInterfaces,
-    DeviceInterfaceAddresses
+    DeviceInterfaceAddresses,
 }
 
 impl Display for DBTable {
@@ -29,14 +29,14 @@ impl Display for DBTable {
             DBTable::DeviceRules => "device_rules",
             DBTable::DeviceAliases => "device_aliases",
             DBTable::DeviceInterfaces => "device_interfaces",
-            DBTable::DeviceInterfaceAddresses => "device_interface_addresses"
+            DBTable::DeviceInterfaceAddresses => "device_interface_addresses",
         };
         write!(f, "{}", table_name)
     }
 }
 
-impl Into<String> for DBTable {
-    fn into(self) -> String {
-        self.to_string()
+impl From<DBTable> for String {
+    fn from(value: DBTable) -> Self {
+        value.to_string()
     }
 }

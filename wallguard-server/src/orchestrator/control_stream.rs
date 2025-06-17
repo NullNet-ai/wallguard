@@ -62,10 +62,10 @@ async fn authstream(
         .message()
         .await
         .handle_err(location!())?
-        .ok_or_else(|| "Client sent an empty message")
+        .ok_or("Client sent an empty message")
         .handle_err(location!())?
         .message
-        .ok_or_else(|| "Malformed message (missing payload)")
+        .ok_or("Malformed message (missing payload)")
         .handle_err(location!())?;
 
     let authentication = match message {

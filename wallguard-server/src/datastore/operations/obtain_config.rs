@@ -36,9 +36,9 @@ impl Datastore {
             let config =
                 serde_json::from_value::<DeviceConfiguration>(data).handle_err(location!())?;
 
-            return Ok(Some(config));
+            Ok(Some(config))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 }

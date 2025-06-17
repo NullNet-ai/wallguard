@@ -87,9 +87,11 @@ impl AuthReqHandler {
         };
 
         if device.is_none() {
-            let mut device = Device::default();
-            device.authorized = false;
-            device.uuid = auth.uuid.clone();
+            let device = Device {
+                authorized: false,
+                uuid: auth.uuid.clone(),
+                ..Default::default()
+            };
 
             if let Err(status) = self
                 .context

@@ -7,7 +7,7 @@ impl Datastore {
     pub async fn create_rules(
         &self,
         token: &str,
-        rules: &Vec<Rule>,
+        rules: &[Rule],
         config_id: &str,
     ) -> Result<(), Error> {
         if rules.is_empty() {

@@ -95,5 +95,5 @@ pub async fn authorize_device(
 fn generate_credentials() -> (String, String) {
     let app_id = utilities::random::generate_random_string(12);
     let app_secret = utilities::random::generate_random_string(32);
-    return (app_id, app_secret);
+    (app_id, app_secret)
 }

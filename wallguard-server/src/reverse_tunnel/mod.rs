@@ -109,7 +109,8 @@ async fn tunnel_task(config: ReverseTunnelConfig, listeners: ListenersMap) {
                         log::error!(
                             "Reverse tunnel failed to forward TCP stream: receiver dropped"
                         );
-                        return shutdown_stream(stream).await;
+
+                        shutdown_stream(stream).await
                     }
                 }
                 None => {
@@ -117,7 +118,8 @@ async fn tunnel_task(config: ReverseTunnelConfig, listeners: ListenersMap) {
                         "Received tunnel connection with unknown token hash: {:?}",
                         hash
                     );
-                    return shutdown_stream(stream).await;
+
+                    shutdown_stream(stream).await
                 }
             }
         });

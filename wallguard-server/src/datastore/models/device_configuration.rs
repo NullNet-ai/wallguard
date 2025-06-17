@@ -33,4 +33,3 @@ impl DeviceConfiguration {
         "CFG".into()
     }
 }
-

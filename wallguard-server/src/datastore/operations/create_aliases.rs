@@ -7,7 +7,7 @@ impl Datastore {
     pub async fn create_aliases(
         &self,
         token: &str,
-        aliases: &Vec<Alias>,
+        aliases: &[Alias],
         config_id: &str,
     ) -> Result<(), Error> {
         if aliases.is_empty() {

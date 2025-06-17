@@ -54,7 +54,7 @@ pub async fn request_session(
         )));
     }
 
-    return HttpResponse::Created().json(json!({"session_token": session.token}));
+    HttpResponse::Created().json(json!({"session_token": session.token}))
 }
 
 async fn handle_ssh_edgecase(

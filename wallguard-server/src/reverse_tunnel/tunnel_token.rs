@@ -57,14 +57,14 @@ impl TunnelToken {
     }
 }
 
-impl Into<TokenHash> for TunnelToken {
-    fn into(self) -> TokenHash {
-        sha256_digest_bytes(&self.token).into()
+impl From<TunnelToken> for String {
+    fn from(value: TunnelToken) -> Self {
+        value.token
     }
 }
 
-impl Into<String> for TunnelToken {
-    fn into(self) -> String {
-        self.token
+impl From<TunnelToken> for TokenHash {
+    fn from(value: TunnelToken) -> Self {
+        sha256_digest_bytes(&value.token).into()
     }
 }

@@ -1,10 +1,10 @@
 use crate::datastore::Datastore;
 use crate::protocol::wallguard_service::ConfigSnapshot;
+use crate::token_provider::Token;
 use crate::utilities;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
 use libfireparse::{Configuration, FileData, FireparseError, Parser, Platform};
 use nullnet_liberror::Error;
-use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 // @TODO
@@ -34,12 +34,12 @@ impl WallGuardService {
                 FireparseError::UnsupportedPlatform(message)
                 | FireparseError::ParserError(message) => message,
             })
-            .map_err(|err| Status::internal(err))?;
+            .map_err(Status::internal)?;
 
         let previous = self
             .context
             .datastore
-            .obtain_config(&token.jwt, &token.account.device.id)
+            .obtain_config(&token.jwt, &token.account.id)
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
@@ -47,7 +47,7 @@ impl WallGuardService {
             let digest = utilities::hash::md5_digest(&configuration.raw_content);
 
             if prev.digest == digest {
-                prev.version = prev.version + 1;
+                prev.version += 1;
 
                 self.context
                     .datastore
@@ -55,20 +55,20 @@ impl WallGuardService {
                     .await
                     .map_err(|err| Status::internal(err.to_str()))?;
 
-                return Ok(Response::new(()));
+                Ok(Response::new(()))
             } else {
                 insert_new_configuration(self.context.datastore.clone(), &token, &configuration)
                     .await
                     .map_err(|err| Status::internal(err.to_str()))?;
 
-                return Ok(Response::new(()));
+                Ok(Response::new(()))
             }
         } else {
             insert_new_configuration(self.context.datastore.clone(), &token, &configuration)
                 .await
                 .map_err(|err| Status::internal(err.to_str()))?;
 
-            return Ok(Response::new(()));
+            Ok(Response::new(()))
         }
     }
 }
@@ -78,13 +78,14 @@ async fn insert_new_configuration(
     token: &Token,
     conf: &Configuration,
 ) -> Result<(), Error> {
-    let mut devcfg = DeviceConfiguration::default();
-
-    devcfg.device_id = token.account.device.id.clone();
-    devcfg.digest = utilities::hash::md5_digest(&conf.raw_content);
-    devcfg.hostname = conf.hostname.clone();
-    devcfg.raw_content = conf.raw_content.clone();
-    devcfg.version = 0;
+    let devcfg = DeviceConfiguration {
+        device_id: token.account.id.clone(),
+        digest: utilities::hash::md5_digest(&conf.raw_content),
+        hostname: conf.hostname.clone(),
+        raw_content: conf.raw_content.clone(),
+        version: 0,
+        ..Default::default()
+    };
 
     let config_id = datastore.create_config(&token.jwt, &devcfg).await?;
 
