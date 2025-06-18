@@ -45,6 +45,8 @@ impl Daemon {
             log::info!("No org ID, entering idle state");
         }
 
+        log::info!("Starting CLI server");
+
         let addr: SocketAddr = "127.0.0.1:54056".parse().unwrap();
         let cli_server = WallguardCliServer::new(CliServer::from(daemon));
 
@@ -71,9 +73,10 @@ impl Daemon {
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
-                let context = Context::new(lock.arguments.clone(), this.clone())
-                    .await
-                    .map_err(|err| err.to_str().to_string())?;
+                let context =
+                    Context::new(lock.arguments.clone(), this.clone(), lock.get_platform())
+                        .await
+                        .map_err(|err| err.to_str().to_string())?;
 
                 let control_channel = ControlChannel::new(context, lock.uuid.clone(), org_id);
 

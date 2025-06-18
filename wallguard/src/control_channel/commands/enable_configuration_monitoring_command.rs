@@ -13,6 +13,11 @@ impl EnableConfigurationMonitoringCommand {
 
 impl ExecutableCommand for EnableConfigurationMonitoringCommand {
     async fn execute(mut self) -> Result<(), nullnet_liberror::Error> {
+        log::debug!(
+            "Executing EnableConfigurationMonitoringCommand command: {}",
+            self.value
+        );
+
         if self.value {
             self.context.transmission_manager.start_sysconf_monitroing();
         } else {

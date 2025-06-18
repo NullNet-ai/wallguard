@@ -13,6 +13,11 @@ impl EnableTelemetryMonitoringCommand {
 
 impl ExecutableCommand for EnableTelemetryMonitoringCommand {
     async fn execute(mut self) -> Result<(), nullnet_liberror::Error> {
+        log::debug!(
+            "Executing EnableTelemetryMonitoringCommand command: {}",
+            self.value
+        );
+
         if self.value {
             self.context
                 .transmission_manager

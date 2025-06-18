@@ -59,7 +59,7 @@ impl TransmissionManager {
     }
 
     pub(crate) fn start_packet_capture(&mut self) {
-        if self.packet_capture.is_some() {
+        if self.has_packet_capture() {
             return;
         }
 
@@ -84,7 +84,7 @@ impl TransmissionManager {
     }
 
     pub(crate) fn start_resource_monitoring(&mut self) {
-        if self.resource_monitoring.is_some() {
+        if self.has_resource_monitoring() {
             return;
         }
 
@@ -146,7 +146,7 @@ impl TransmissionManager {
         };
 
         log::info!("Terminating sysconf monitoring");
-        terminate.send(());
+        let _ = terminate.send(());
 
         self.sysconf_monitoring = None
     }
