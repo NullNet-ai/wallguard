@@ -18,7 +18,6 @@ impl Datastore {
             .pluck(pluck_fields)
             .table(DeviceConfiguration::table())
             .record(json.to_string())
-            .entity_prefix(DeviceConfiguration::entity_prefix())
             .build();
 
         let response = self.inner.clone().create(request, token).await?;
@@ -33,9 +32,9 @@ impl Datastore {
                 .handle_err(location!())?
                 .to_string();
 
-             Ok(id)
+            Ok(id)
         } else {
-             Err("Failed to create device configuration").handle_err(location!())
+            Err("Failed to create device configuration").handle_err(location!())
         }
     }
 }

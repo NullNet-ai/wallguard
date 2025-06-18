@@ -14,7 +14,6 @@ impl Datastore {
             .pluck(RemoteAccessSession::pluck())
             .table(RemoteAccessSession::table())
             .record(json!(session).to_string())
-            .entity_prefix(RemoteAccessSession::entity_prefix())
             .build();
 
         let _ = self.inner.clone().create(request, token).await?;

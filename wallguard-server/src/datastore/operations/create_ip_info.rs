@@ -31,7 +31,6 @@ impl Datastore {
             .pluck(vec!["id"])
             .table(DBTable::IpInfos)
             .record(json.to_string())
-            .entity_prefix("IP")
             .build();
 
         let _ = self.inner.clone().create(request, token).await?;

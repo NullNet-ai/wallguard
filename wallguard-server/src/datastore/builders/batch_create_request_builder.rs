@@ -1,5 +1,6 @@
 use nullnet_libdatastore::{BatchCreateBody, BatchCreateRequest, CreateParams, Query};
 
+#[derive(Debug, Default)]
 pub struct BatchCreateRequestBuilder {
     table: Option<String>,
     pluck: Option<String>,
@@ -10,13 +11,7 @@ pub struct BatchCreateRequestBuilder {
 
 impl BatchCreateRequestBuilder {
     pub fn new() -> Self {
-        Self {
-            table: None,
-            pluck: None,
-            durability: None,
-            records: None,
-            entity_prefix: None,
-        }
+        Self::default()
     }
 
     pub fn table(mut self, table: impl Into<String>) -> Self {
@@ -55,7 +50,6 @@ impl BatchCreateRequestBuilder {
             }),
             body: Some(BatchCreateBody {
                 records: self.records.unwrap_or_default(),
-                entity_prefix: self.entity_prefix.unwrap_or_else(|| "CN".into()),
             }),
         }
     }

@@ -29,8 +29,4 @@ impl Device {
     pub fn table() -> DBTable {
         DBTable::Devices
     }
-
-    pub fn entity_prefix() -> String {
-        "DV".into()
-    }
 }

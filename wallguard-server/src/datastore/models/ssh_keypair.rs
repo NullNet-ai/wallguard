@@ -47,8 +47,4 @@ impl SSHKeypair {
     pub fn table() -> DBTable {
         DBTable::SSHKeys
     }
-
-    pub fn entity_prefix() -> String {
-        "SSH".into()
-    }
 }

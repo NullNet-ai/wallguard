@@ -1,22 +1,18 @@
 use nullnet_libdatastore::{Params, Query, UpdateRequest};
 
+#[derive(Debug, Default)]
 pub struct UpdateRequestBuilder {
     id: Option<String>,
     table: Option<String>,
     pluck: Option<String>,
     durability: Option<String>,
     body: Option<String>,
+    is_root: bool,
 }
 
 impl UpdateRequestBuilder {
     pub fn new() -> Self {
-        Self {
-            id: None,
-            table: None,
-            pluck: None,
-            durability: None,
-            body: None,
-        }
+        Self::default()
     }
 
     pub fn id(mut self, id: impl Into<String>) -> Self {
@@ -40,11 +36,21 @@ impl UpdateRequestBuilder {
         self
     }
 
+    pub fn performed_by_root(mut self, value: bool) -> Self {
+        self.is_root = value;
+        self
+    }
+
     pub fn build(self) -> UpdateRequest {
         UpdateRequest {
             params: Some(Params {
                 id: self.id.expect("Missing 'id'"),
                 table: self.table.expect("Missing 'table'"),
+                r#type: if self.is_root {
+                    String::from("root")
+                } else {
+                    String::new()
+                },
             }),
             query: Some(Query {
                 pluck: self.pluck.unwrap_or_default(),

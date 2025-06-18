@@ -28,8 +28,4 @@ impl DeviceConfiguration {
     pub fn table() -> DBTable {
         DBTable::DeviceConfigurations
     }
-
-    pub fn entity_prefix() -> String {
-        "CFG".into()
-    }
 }

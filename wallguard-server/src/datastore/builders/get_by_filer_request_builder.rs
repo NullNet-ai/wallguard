@@ -21,6 +21,7 @@ pub struct GetByFilterRequestBuilder {
     multiple_sort: Vec<MultipleSort>,
     pluck_object: HashMap<String, String>,
     date_format: Option<String>,
+    is_root: bool,
 }
 
 impl GetByFilterRequestBuilder {
@@ -118,6 +119,11 @@ impl GetByFilterRequestBuilder {
         self
     }
 
+    pub fn performed_by_root(mut self, value: bool) -> Self {
+        self.is_root = value;
+        self
+    }
+
     pub fn build(self) -> GetByFilterRequest {
         GetByFilterRequest {
             body: Some(GetByFilterBody {
@@ -135,6 +141,11 @@ impl GetByFilterRequestBuilder {
             params: Some(Params {
                 id: self.id.unwrap_or_default(),
                 table: self.table.unwrap_or_default(),
+                r#type: if self.is_root {
+                    String::from("root")
+                } else {
+                    String::new()
+                },
             }),
         }
     }

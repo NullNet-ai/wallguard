@@ -1,11 +1,12 @@
 use nullnet_libdatastore::{GetByIdRequest, Params, Query};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct GetByIdRequestBuilder {
     id: Option<String>,
     table: Option<String>,
     pluck: Option<String>,
     durability: Option<String>,
+    is_root: bool,
 }
 
 impl GetByIdRequestBuilder {
@@ -43,11 +44,21 @@ impl GetByIdRequestBuilder {
         self
     }
 
+    pub fn performed_by_root(mut self, value: bool) -> Self {
+        self.is_root = value;
+        self
+    }
+
     pub fn build(self) -> GetByIdRequest {
         GetByIdRequest {
             params: Some(Params {
                 id: self.id.unwrap_or_default(),
                 table: self.table.unwrap_or_default(),
+                r#type: if self.is_root {
+                    String::from("root")
+                } else {
+                    String::new()
+                },
             }),
             query: Some(Query {
                 pluck: self.pluck.unwrap_or_default(),

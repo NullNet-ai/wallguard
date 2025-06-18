@@ -21,7 +21,6 @@ impl Datastore {
             .pluck(Device::pluck())
             .table(Device::table())
             .record(json.to_string())
-            .entity_prefix(Device::entity_prefix())
             .build();
 
         let _ = self.inner.clone().create(request, token).await?;

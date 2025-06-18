@@ -30,6 +30,7 @@ impl Datastore {
             .build();
 
         let response = self.inner.clone().get_by_filter(request, token).await?;
+
         if response.count == 0 {
             return Ok(None);
         }

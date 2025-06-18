@@ -10,7 +10,6 @@ impl Datastore {
             .pluck(SSHKeypair::pluck())
             .table(SSHKeypair::table())
             .record(json!(keypair).to_string())
-            .entity_prefix(SSHKeypair::entity_prefix())
             .build();
 
         let _ = self.inner.clone().create(request, token).await?;

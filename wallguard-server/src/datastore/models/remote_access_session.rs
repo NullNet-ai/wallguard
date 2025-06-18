@@ -57,8 +57,4 @@ impl RemoteAccessSession {
     pub fn table() -> DBTable {
         DBTable::RemoteAccessSessions
     }
-
-    pub fn entity_prefix() -> String {
-        "RA".into()
-    }
 }

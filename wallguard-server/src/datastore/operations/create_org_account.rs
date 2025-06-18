@@ -28,7 +28,6 @@ impl Datastore {
         let request = CreateRequestBuilder::new()
             .table(DBTable::OgranizationAccounts)
             .record(record.to_string())
-            .entity_prefix("QA")
             .build();
 
         let _ = self.inner.clone().create(request, &token.jwt).await?;

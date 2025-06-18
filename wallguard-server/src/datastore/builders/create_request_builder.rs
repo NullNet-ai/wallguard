@@ -1,12 +1,11 @@
 use nullnet_libdatastore::{CreateBody, CreateParams, CreateRequest, Query};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct CreateRequestBuilder {
     table: Option<String>,
     durability: Option<String>,
     pluck: Option<String>,
     record: Option<String>,
-    entity_prefix: Option<String>,
 }
 
 impl CreateRequestBuilder {
@@ -43,11 +42,6 @@ impl CreateRequestBuilder {
         self
     }
 
-    pub fn entity_prefix(mut self, prefix: impl Into<String>) -> Self {
-        self.entity_prefix = Some(prefix.into());
-        self
-    }
-
     pub fn build(self) -> CreateRequest {
         CreateRequest {
             params: Some(CreateParams {
@@ -59,7 +53,6 @@ impl CreateRequestBuilder {
             }),
             body: Some(CreateBody {
                 record: self.record.unwrap_or_default(),
-                entity_prefix: self.entity_prefix.unwrap_or_default(),
             }),
         }
     }
