@@ -26,7 +26,7 @@ nullnet-liberror = "0.1.1"
 nullnet-libdatastore = "0.4.5"
 nullnet-libipinfo = "0.2.0"
 nullnet-libfireparse = "0.3.3"
-nullnet-libtoken = "0.3.0"
+nullnet-libtoken = "0.3.1"
 tokio = { version = "1.45.0", features = ["full"] }
 tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
