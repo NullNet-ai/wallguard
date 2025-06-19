@@ -6,6 +6,7 @@ use std::sync::Arc;
 pub(crate) struct AuthData {
     pub app_id: String,
     pub app_secret: String,
+    pub is_root: bool,
     pub token: Option<Arc<Token>>,
 }
 
@@ -13,10 +14,11 @@ impl AuthData {
     /// Creates a new `AuthData` instance with the provided `app_id` and `app_secret`.
     ///
     /// The `token` field is initialized as `None`.
-    pub fn new(app_id: impl Into<String>, app_secret: impl Into<String>) -> Self {
+    pub fn new(app_id: impl Into<String>, app_secret: impl Into<String>, is_root: bool) -> Self {
         Self {
             app_id: app_id.into(),
             app_secret: app_secret.into(),
+            is_root,
             token: None,
         }
     }

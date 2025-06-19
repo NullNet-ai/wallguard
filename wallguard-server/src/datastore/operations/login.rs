@@ -10,15 +10,22 @@ impl Datastore {
     ///
     /// * `app_id` - The application/client identifier.
     /// * `app_secret` - The secret or password associated with the `app_id`.
+    /// * `is_root` - Whether the credentials belong to a ROOT account
     ///
     /// # Returns
     ///
     /// * `Ok(String)` containing the authentication token if successful.
     /// * `Err(Error)` if the request fails or the server returns an error.
-    pub async fn login(&self, app_id: &str, app_secret: &str) -> Result<String, Error> {
+    pub async fn login(
+        &self,
+        app_id: &str,
+        app_secret: &str,
+        is_root: bool,
+    ) -> Result<String, Error> {
         let request = LoginRequestBuilder::new()
             .account_id(app_id)
             .account_secret(app_secret)
+            .set_root(is_root)
             .build();
 
         let response = self.inner.clone().login(request).await?;

@@ -36,6 +36,7 @@ impl AppContext {
         let token_provider = TokenProvider::new(
             SYSTEM_APP_ID.to_string(),
             SYSTEM_APP_SECRET.to_string(),
+            true,
             datastore.clone(),
         );
 

@@ -76,6 +76,7 @@ async fn authstream(
     let token_provider = TokenProvider::new(
         authentication.app_id,
         authentication.app_secret,
+        false,
         context.datastore,
     );
 
