@@ -1,7 +1,7 @@
 use crate::control_service::service::WallGuardService;
 use crate::protocol::wallguard_service::PacketsData;
-use crate::token_provider::Token;
 use crate::traffic_handler::msg_parser::parse_message;
+use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 impl WallGuardService {

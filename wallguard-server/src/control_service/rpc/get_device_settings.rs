@@ -1,7 +1,7 @@
 use crate::control_service::service::WallGuardService;
 use crate::protocol::wallguard_service::DeviceSettingsRequest;
 use crate::protocol::wallguard_service::DeviceSettingsResponse;
-use crate::token_provider::Token;
+use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 impl WallGuardService {

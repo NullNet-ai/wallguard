@@ -4,11 +4,11 @@ use crate::datastore::RemoteAccessType;
 use crate::datastore::SSHKeypair;
 use crate::http_proxy::utilities::authorization;
 use crate::http_proxy::utilities::error_json::ErrorJson;
-use crate::token_provider::Token;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::web::Payload;
 use actix_ws::{MessageStream, Session as WSSession};
+use nullnet_libtoken::Token;
 use std::sync::Arc;
 
 pub fn extract_session_token(req: &HttpRequest) -> Result<String, HttpResponse> {

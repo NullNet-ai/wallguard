@@ -24,6 +24,9 @@ strip = true
 [dependencies]
 nullnet-liberror = "0.1.1"
 nullnet-libdatastore = "0.4.5"
+nullnet-libipinfo = "0.2.0"
+nullnet-libfireparse = "0.3.3"
+nullnet-libtoken = "0.3.0"
 tokio = { version = "1.45.0", features = ["full"] }
 tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
@@ -47,9 +50,7 @@ http-body-util = "0.1.3"
 argon2 = "0.5.3"
 chrono = "0.4.41"
 etherparse = "0.18.0"
-nullnet-libipinfo = "0.2.0"
 indexmap = "2.9.0"
-nullnet-libfireparse = "0.3.3"
 md5 = "0.7.0"
 base64 = "0.22.1"
 

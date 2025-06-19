@@ -1,13 +1,11 @@
 use crate::datastore::Datastore;
 use data::AuthData;
-use nullnet_liberror::Error;
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_libtoken::Token;
 use std::sync::Arc;
-pub use token::Token;
 use tokio::sync::Mutex;
 
 mod data;
-mod models;
-mod token;
 
 #[derive(Debug, Clone)]
 pub struct TokenProvider {
@@ -34,7 +32,7 @@ impl TokenProvider {
         if lock.needs_refresh() {
             let jwt = self.datastore.login(&lock.app_id, &lock.app_secret).await?;
 
-            let token = Token::from_jwt(&jwt)?;
+            let token = Token::from_jwt(&jwt).handle_err(location!())?;
 
             lock.token = Some(Arc::new(token));
         }

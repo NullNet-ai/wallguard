@@ -3,8 +3,8 @@ use crate::datastore::builders::CreateRequestBuilder;
 use crate::datastore::db_tables::DBTable;
 use crate::utilities;
 
-use crate::token_provider::Token;
-use nullnet_liberror::Error;
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_libtoken::Token;
 use serde_json::json;
 
 impl Datastore {
@@ -15,7 +15,7 @@ impl Datastore {
         app_id: &str,
         app_secret: &str,
     ) -> Result<(), Error> {
-        let token = Token::from_jwt(token)?;
+        let token = Token::from_jwt(token).handle_err(location!())?;
 
         let record: serde_json::Value = json!({
             "account_id": app_id,

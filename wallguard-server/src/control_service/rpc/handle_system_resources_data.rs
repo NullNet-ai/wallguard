@@ -1,4 +1,4 @@
-use crate::token_provider::Token;
+use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 
 use crate::{
