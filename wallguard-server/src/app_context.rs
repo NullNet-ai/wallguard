@@ -5,16 +5,34 @@ use crate::orchestrator::Orchestrator;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
 
-pub static SYSTEM_APP_ID: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-    std::env::var("SYSTEM_APP_ID").unwrap_or_else(|_| {
-        log::warn!("'SYSTEM_APP_ID' environment variable not set");
+// Unfortunately, we have to use both root and system device credentials because:
+// - The system device cannot fetch data outside its own organization; only the root account can do that.
+// - We cannot use the root account for everything because it cannot create records in the database.
+
+pub static ROOT_ACCOUNT_ID: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("ROOT_ACCOUNT_ID").unwrap_or_else(|_| {
+        log::warn!("'ROOT_ACCOUNT_ID' environment variable not set");
         String::new()
     })
 });
 
-pub static SYSTEM_APP_SECRET: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
-    std::env::var("SYSTEM_APP_SECRET").unwrap_or_else(|_| {
-        log::warn!("'SYSTEM_APP_SECRET' environment variable not set");
+pub static ROOT_ACCOUNT_SECRET: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("ROOT_ACCOUNT_SECRET").unwrap_or_else(|_| {
+        log::warn!("'ROOT_ACCOUNT_SECRET' environment variable not set");
+        String::new()
+    })
+});
+
+pub static SYSTEM_ACCOUNT_ID: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("SYSTEM_ACCOUNT_ID").unwrap_or_else(|_| {
+        log::warn!("'SYSTEM_ACCOUNT_ID' environment variable not set");
+        String::new()
+    })
+});
+
+pub static SYSTEM_ACCOUNT_SECRET: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("SYSTEM_ACCOUNT_SECRET").unwrap_or_else(|_| {
+        log::warn!("'SYSTEM_ACCOUNT_SECRET' environment variable not set");
         String::new()
     })
 });
@@ -24,7 +42,9 @@ pub struct AppContext {
     pub datastore: Datastore,
     pub orchestractor: Orchestrator,
     pub tunnel: ReverseTunnel,
-    pub token_provider: TokenProvider,
+
+    pub root_token_provider: TokenProvider,
+    pub sysdev_token_provider: TokenProvider,
 }
 
 impl AppContext {
@@ -33,9 +53,16 @@ impl AppContext {
         let orchestractor = Orchestrator::new();
         let tunnel = ReverseTunnel::new();
 
-        let token_provider = TokenProvider::new(
-            SYSTEM_APP_ID.to_string(),
-            SYSTEM_APP_SECRET.to_string(),
+        let sysdev_token_provider = TokenProvider::new(
+            SYSTEM_ACCOUNT_ID.to_string(),
+            SYSTEM_ACCOUNT_SECRET.to_string(),
+            false,
+            datastore.clone(),
+        );
+
+        let root_token_provider = TokenProvider::new(
+            ROOT_ACCOUNT_ID.to_string(),
+            ROOT_ACCOUNT_SECRET.to_string(),
             true,
             datastore.clone(),
         );
@@ -44,7 +71,8 @@ impl AppContext {
             datastore,
             orchestractor,
             tunnel,
-            token_provider,
+            sysdev_token_provider,
+            root_token_provider,
         })
     }
 }

@@ -67,15 +67,14 @@ pub async fn authorize_device(
 
     let (app_id, app_secret) = generate_credentials();
 
-    if context
+    let Ok(_) = context
         .datastore
-        .create_org_account(&jwt, &body.device_id, &app_id, &app_secret)
+        .create_dev_account(&jwt, &app_id, &app_secret)
         .await
-        .is_err()
-    {
+    else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to create credentials record"));
-    }
+    };
 
     if lock
         .authorize(AuthenticationData {

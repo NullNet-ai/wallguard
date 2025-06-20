@@ -58,14 +58,14 @@ impl AuthReqHandler {
 
         let token = match self
             .context
-            .token_provider
+            .root_token_provider
             .get()
             .await
             .map_err(|err| Status::internal(err.to_str()))
         {
             Ok(token) => token,
             Err(status) => {
-                log::error!("Failed to fetch system token: {}", status);
+                log::error!("Failed to fetch root token: {}", status);
                 let _ = outbound.send(Err(status)).await;
                 return;
             }
@@ -87,6 +87,21 @@ impl AuthReqHandler {
         };
 
         if device.is_none() {
+            let token = match self
+                .context
+                .sysdev_token_provider
+                .get()
+                .await
+                .map_err(|err| Status::internal(err.to_str()))
+            {
+                Ok(token) => token,
+                Err(status) => {
+                    log::error!("Failed to fetch sysdevice token: {}", status);
+                    let _ = outbound.send(Err(status)).await;
+                    return;
+                }
+            };
+
             let device = Device {
                 authorized: false,
                 uuid: auth.uuid.clone(),

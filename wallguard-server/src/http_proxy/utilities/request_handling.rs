@@ -18,9 +18,9 @@ pub fn extract_session_token(req: &HttpRequest) -> Result<String, HttpResponse> 
 }
 
 pub async fn fetch_token(ctx: &AppContext) -> Result<Arc<Token>, HttpResponse> {
-    ctx.token_provider.get().await.map_err(|_| {
+    ctx.root_token_provider.get().await.map_err(|_| {
         HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Server error, can't obtain a token"))
+            .json(ErrorJson::from("Server error, can't obtain root token"))
     })
 }
 

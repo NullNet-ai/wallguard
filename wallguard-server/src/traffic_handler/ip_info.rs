@@ -28,7 +28,7 @@ pub fn ip_info_handler(
 async fn get_and_store_ip_info(ip: IpAddr, context: AppContext) -> Result<(), Error> {
     let ip = ip.to_string();
 
-    let token = context.token_provider.get().await?;
+    let token = context.sysdev_token_provider.get().await?;
 
     let is_stored = context
         .datastore

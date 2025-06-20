@@ -8,13 +8,12 @@ use nullnet_libtoken::Token;
 use serde_json::json;
 
 impl Datastore {
-    pub async fn create_org_account(
+    pub async fn create_dev_account(
         &self,
         token: &str,
-        device_id: &str,
         app_id: &str,
         app_secret: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<String, Error> {
         let token = Token::from_jwt(token).handle_err(location!())?;
 
         let record: serde_json::Value = json!({
@@ -22,16 +21,29 @@ impl Datastore {
             "account_secret": utilities::hash::hash_secret(app_secret).unwrap(),
             "organization_id": &token.account.organization_id,
             "categories": vec!["Device"],
-            "device_id": device_id,
         });
 
         let request = CreateRequestBuilder::new()
-            .table(DBTable::OgranizationAccounts)
+            .table(DBTable::Accounts)
             .record(record.to_string())
+            .pluck(vec!["id"])
             .build();
 
-        let _ = self.inner.clone().create(request, &token.jwt).await?;
+        let response = self.inner.clone().create(request, &token.jwt).await?;
 
-        Ok(())
+        if response.count == 1 {
+            let json_data = utilities::json::parse_string(&response.data)?;
+            let data = utilities::json::first_element_from_array(&json_data)?;
+
+            let id = data["id"]
+                .as_str()
+                .ok_or("Missing or invalid 'id' field")
+                .handle_err(location!())?
+                .to_string();
+
+            Ok(id)
+        } else {
+            Err("Failed to create device account").handle_err(location!())
+        }
     }
 }
