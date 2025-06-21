@@ -5,7 +5,6 @@ pub enum DBTable {
     SSHKeys,
     RemoteAccessSessions,
     Accounts,
-    AccountOrganizations,
     IpInfos,
     Connections,
     SystemResources,
@@ -14,6 +13,7 @@ pub enum DBTable {
     DeviceAliases,
     DeviceInterfaces,
     DeviceInterfaceAddresses,
+    DeviceCredentials,
 }
 
 impl Display for DBTable {
@@ -23,7 +23,6 @@ impl Display for DBTable {
             DBTable::SSHKeys => "device_ssh_keys",
             DBTable::RemoteAccessSessions => "device_remote_access_sessions",
             DBTable::Accounts => "accounts",
-            DBTable::AccountOrganizations => "account_organizations",
             DBTable::IpInfos => "ip_infos",
             DBTable::Connections => "connections",
             DBTable::SystemResources => "system_resources",
@@ -32,6 +31,7 @@ impl Display for DBTable {
             DBTable::DeviceAliases => "device_aliases",
             DBTable::DeviceInterfaces => "device_interfaces",
             DBTable::DeviceInterfaceAddresses => "device_interface_addresses",
+            DBTable::DeviceCredentials => "device_credentials",
         };
         write!(f, "{}", table_name)
     }

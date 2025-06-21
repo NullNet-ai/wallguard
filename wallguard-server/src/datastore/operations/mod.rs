@@ -1,8 +1,6 @@
 mod create_aliases;
 mod create_config;
 mod create_connections;
-mod create_dev_account;
-mod create_device;
 mod create_interfaces;
 mod create_ip_info;
 mod create_rules;
@@ -15,5 +13,7 @@ mod obtain_config;
 mod obtain_device;
 mod obtain_session;
 mod obtain_ssh_keypair;
+mod register_device;
 mod update_config;
 mod update_device;
+mod device_credentials;

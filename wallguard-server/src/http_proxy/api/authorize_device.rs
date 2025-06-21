@@ -65,16 +65,24 @@ pub async fn authorize_device(
             .json(ErrorJson::from("Failed to update device record"));
     };
 
-    let (app_id, app_secret) = generate_credentials();
 
-    let Ok(_) = context
-        .datastore
-        .create_dev_account(&jwt, &app_id, &app_secret)
-        .await
-    else {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to create credentials record"));
-    };
+    // let Ok(root_token) = context.root_token_provider.get().await else {
+    //     return HttpResponse::InternalServerError()
+    //         .json(ErrorJson::from("Failed to obtain root token"));
+    // };
+
+    // @TODO: Remove this code. Changing app_id and app_secret breaks DB relations
+   
+   todo!("Fetch credentials and send to the client");
+
+    // let Ok(_) = context
+    //     .datastore
+    //     .patch_device_account(&root_token.jwt, &body.device_id, &app_id, &app_secret)
+    //     .await
+    // else {
+    //     return HttpResponse::InternalServerError()
+    //         .json(ErrorJson::from("Failed to update device account"));
+    // };
 
     if lock
         .authorize(AuthenticationData {
