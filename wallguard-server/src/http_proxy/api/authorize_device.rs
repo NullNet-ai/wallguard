@@ -2,7 +2,6 @@ use crate::app_context::AppContext;
 use crate::http_proxy::utilities::authorization;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 use crate::protocol::wallguard_commands::AuthenticationData;
-use crate::utilities;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -38,18 +37,7 @@ pub async fn authorize_device(
         return HttpResponse::BadRequest().json(ErrorJson::from("Device not found"));
     };
 
-    let Some(client) = context.orchestractor.get_client(&device.uuid).await else {
-        return HttpResponse::BadRequest().json(ErrorJson::from("Device not connected"));
-    };
-
-    let mut lock = client.lock().await;
-
-    if device.authorized != lock.is_authorized() {
-        return HttpResponse::InternalServerError().json(ErrorJson::from(
-            "Authorization state mismatch between server memory and database",
-        ));
-    }
-    if lock.is_authorized() {
+    if device.authorized {
         return HttpResponse::Ok().json(json!({}));
     }
 
@@ -65,42 +53,47 @@ pub async fn authorize_device(
             .json(ErrorJson::from("Failed to update device record"));
     };
 
+    if let Some(client) = context.orchestractor.get_client(&device.uuid).await {
+        let Ok(systoken) = context.sysdev_token_provider.get().await else {
+            return HttpResponse::InternalServerError()
+                .json(ErrorJson::from("Failed to obtain sysdev token"));
+        };
 
-    // let Ok(root_token) = context.root_token_provider.get().await else {
-    //     return HttpResponse::InternalServerError()
-    //         .json(ErrorJson::from("Failed to obtain root token"));
-    // };
+        let Ok(credentials) = context
+            .datastore
+            .obtain_device_credentials(&systoken.jwt, &device.uuid)
+            .await
+        else {
+            return HttpResponse::InternalServerError()
+                .json(ErrorJson::from("Failed to obtain device credentials"));
+        };
 
-    // @TODO: Remove this code. Changing app_id and app_secret breaks DB relations
-   
-   todo!("Fetch credentials and send to the client");
+        if let Some(credentials) = credentials {
+            let mut lock = client.lock().await;
 
-    // let Ok(_) = context
-    //     .datastore
-    //     .patch_device_account(&root_token.jwt, &body.device_id, &app_id, &app_secret)
-    //     .await
-    // else {
-    //     return HttpResponse::InternalServerError()
-    //         .json(ErrorJson::from("Failed to update device account"));
-    // };
+            if lock
+                .authorize(AuthenticationData {
+                    app_id: Some(credentials.account_id),
+                    app_secret: Some(credentials.account_secret),
+                })
+                .await
+                .is_err()
+            {
+                return HttpResponse::InternalServerError()
+                    .json(ErrorJson::from("Failed to send approval"));
+            }
 
-    if lock
-        .authorize(AuthenticationData {
-            app_id: Some(app_id),
-            app_secret: Some(app_secret),
-        })
-        .await
-        .is_err()
-    {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to send approval"));
-    }
+            if context
+                .datastore
+                .delete_device_credentials(&systoken.jwt, &credentials.id)
+                .await
+                .is_err()
+            {
+                return HttpResponse::InternalServerError()
+                    .json(ErrorJson::from("Failed to redeem credentials"));
+            }
+        }
+    };
 
     HttpResponse::Ok().json(json!({}))
-}
-
-fn generate_credentials() -> (String, String) {
-    let app_id = utilities::random::generate_random_string(12);
-    let app_secret = utilities::random::generate_random_string(32);
-    (app_id, app_secret)
 }
