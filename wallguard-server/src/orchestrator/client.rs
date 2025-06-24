@@ -21,7 +21,6 @@ pub struct Client {
     uuid: String,
     _org_id: String,
     outbound: OutboundStream,
-    authorized: bool,
 }
 
 impl Client {
@@ -43,14 +42,11 @@ impl Client {
             uuid,
             outbound,
             _org_id: org_id,
-            authorized: false,
         }
     }
 
     pub async fn authorize(&mut self, data: AuthenticationData) -> Result<(), Error> {
         log::debug!("Authorizing device {}", self.uuid);
-
-        self.authorized = true;
 
         let message = ServerMessage {
             message: Some(Message::DeviceAuthorizedMessage(data)),
@@ -67,8 +63,6 @@ impl Client {
     pub async fn _deauthorize(&mut self) -> Result<(), Error> {
         log::debug!("Deauthorizing device {}", self.uuid);
 
-        self.authorized = false;
-
         let message = ServerMessage {
             message: Some(Message::DeviceDeauthorizedMessage(())),
         };
@@ -81,15 +75,7 @@ impl Client {
         Ok(())
     }
 
-    pub fn is_authorized(&self) -> bool {
-        self.authorized
-    }
-
     pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
-        if !self.authorized {
-            return Err("Device is not authorized yet").handle_err(location!());
-        }
-
         log::info!(
             "Sending EnableNetworkMonitoringCommand to the client with device UUID {}",
             self.uuid
@@ -106,10 +92,6 @@ impl Client {
     }
 
     pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
-        if !self.authorized {
-            return Err("Device is not authorized yet").handle_err(location!());
-        }
-
         log::info!(
             "Sending EnableTelemetryMonitoringCommand to the client with device UUID {}",
             self.uuid
@@ -147,10 +129,6 @@ impl Client {
         tunnel_token: impl Into<String>,
         public_key: impl Into<String>,
     ) -> Result<(), Error> {
-        if !self.authorized {
-            return Err("Device is not authorized yet").handle_err(location!());
-        }
-
         log::info!(
             "Sending OpenSshSessionCommandto to the client with device UUID {}",
             self.uuid
@@ -172,10 +150,6 @@ impl Client {
     }
 
     pub async fn request_tty_session(&self, tunnel_token: impl Into<String>) -> Result<(), Error> {
-        if !self.authorized {
-            return Err("Device is not authorized yet").handle_err(location!());
-        }
-
         log::info!(
             "Sending OpenTtySessionCommand to the client with device UUID {}",
             self.uuid
@@ -196,10 +170,6 @@ impl Client {
         tunnel_token: impl Into<String>,
         protocol: impl Into<String>,
     ) -> Result<(), Error> {
-        if !self.authorized {
-            return Err("Device is not authorized yet").handle_err(location!());
-        }
-
         log::info!(
             "Sending OpenUiSessionCommand to the client with device UUID {}",
             self.uuid

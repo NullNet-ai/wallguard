@@ -53,6 +53,10 @@ pub(super) async fn open_ssh_session(
 
     let device = device.unwrap();
 
+    if !device.authorized {
+        return HttpResponse::NotFound().json(ErrorJson::from("Device is unauthorized"));
+    }
+
     let keypair =
         match request_handling::fetch_ssh_keypair(&context, &token.jwt, &session.device_id).await {
             Ok(kp) => kp,

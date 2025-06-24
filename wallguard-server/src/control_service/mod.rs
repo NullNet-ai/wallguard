@@ -1,6 +1,7 @@
 mod config;
 mod rpc;
 mod service;
+mod ensure_device_exists_and_authrorized;
 
 use crate::app_context::AppContext;
 use config::ControlServiceConfig;

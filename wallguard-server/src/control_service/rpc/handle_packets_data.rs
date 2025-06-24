@@ -14,6 +14,11 @@ impl WallGuardService {
         let token =
             Token::from_jwt(&data.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
+        let _ = self
+            .ensure_device_exists_and_authrorized(&token)
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?;
+
         let packets_number = data.packets.len();
 
         let parsed_message = parse_message(data, &token, &self.ip_info_tx);

@@ -56,6 +56,11 @@ pub async fn proxy_http_request(
     }
 
     let device = device.unwrap();
+
+    if !device.authorized {
+        return HttpResponse::NotFound().json(ErrorJson::from("Device is unauthorized"));
+    }
+
     let protocol = "http";
 
     let Ok(stream) = tunneling::establish_tunneled_ui(&context, &device.uuid, protocol).await

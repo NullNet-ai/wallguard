@@ -20,6 +20,11 @@ impl WallGuardService {
         let token =
             Token::from_jwt(&request.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
+        let _ = self
+            .ensure_device_exists_and_authrorized(&token)
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?;
+
         let snapshot = request
             .files
             .into_iter()

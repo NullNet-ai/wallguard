@@ -13,13 +13,9 @@ impl WallGuardService {
             .map_err(|_| Status::internal("Malformed JWT token"))?;
 
         let device = self
-            .context
-            .datastore
-            .obtain_device_by_id(&token.jwt, &token.account.id)
+            .ensure_device_exists_and_authrorized(&token)
             .await
-            .map_err(|err| Status::internal(err.to_str()))?
-            .ok_or("Device not found")
-            .map_err(Status::internal)?;
+            .map_err(|err| Status::internal(err.to_str()))?;
 
         let response = DeviceSettingsResponse {
             config_monitoring: device.sysconf_monitoring,

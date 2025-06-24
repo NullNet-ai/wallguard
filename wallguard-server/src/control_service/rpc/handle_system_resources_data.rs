@@ -15,6 +15,11 @@ impl WallGuardService {
         let token =
             Token::from_jwt(&data.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
+        let _ = self
+            .ensure_device_exists_and_authrorized(&token)
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?;
+
         log::info!("Received {} system resources.", data.resources.len());
 
         if !data.resources.is_empty() {

@@ -52,6 +52,10 @@ pub(super) async fn open_tty_session(
 
     let device = device.unwrap();
 
+    if !device.authorized {
+        return HttpResponse::NotFound().json(ErrorJson::from("Device is unauthorized"));
+    }
+
     let Ok(stream) = tunneling::establish_tunneled_tty(&context, &device.uuid).await else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));
