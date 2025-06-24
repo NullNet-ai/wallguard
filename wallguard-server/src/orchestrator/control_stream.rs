@@ -38,6 +38,19 @@ pub(crate) async fn control_stream(
         },
     };
 
+    if let Ok(token) = context.sysdev_token_provider.get().await {
+        if context
+            .datastore
+            .update_device_online_status(&token.jwt, &device_uuid, false)
+            .await
+            .is_err()
+        {
+            log::error!("Failed to update device record");
+        }
+    } else {
+        log::error!("Failed to obtain system device token");
+    }
+
     let _ = context.orchestractor.on_disconnected(&device_uuid).await;
 }
 

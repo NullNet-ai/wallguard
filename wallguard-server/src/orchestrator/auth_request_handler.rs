@@ -131,6 +131,10 @@ impl AuthReqHandler {
             let device = Device {
                 authorized: false,
                 uuid: auth.uuid.clone(),
+                category: auth.category,
+                model: auth.model,
+                os: auth.target_os,
+                online: true,
                 ..Default::default()
             };
 
@@ -169,6 +173,22 @@ impl AuthReqHandler {
             clients.insert(auth.uuid, Arc::new(Mutex::new(client)));
         } else {
             let device = device.unwrap();
+
+            // @TODO:
+            // Here we can check if device's data (`model`, `target_os` or `category`) has changed
+            // and act accordingly.
+
+            if let Err(status) = self
+                .context
+                .datastore
+                .update_device_online_status(&sys_token.jwt, &device.uuid, true)
+                .await
+                .map_err(|err| Status::internal(err.to_str()))
+            {
+                log::error!("Failed to udpate device record: {}", status);
+                let _ = outbound.send(Err(status)).await;
+                return;
+            }
 
             if !device.authorized {
                 let client = Client::new(
@@ -215,15 +235,13 @@ impl AuthReqHandler {
                     }
                 }
 
-                let client = Client::new(
+                let client = Arc::new(Mutex::new(Client::new(
                     auth.uuid.clone(),
                     auth.org_id,
                     inbound,
                     outbound,
                     self.context.clone(),
-                );
-
-                let client = Arc::new(Mutex::new(client));
+                )));
 
                 if client.lock().await.authorize(authentication).await.is_ok() {
                     clients.insert(auth.uuid, client.clone());

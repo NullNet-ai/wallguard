@@ -3,6 +3,8 @@ mod advanced_filter_builder;
 #[allow(unused)]
 mod batch_create_request_builder;
 #[allow(unused)]
+mod batch_update_request_builder;
+#[allow(unused)]
 mod create_request_builder;
 #[allow(unused)]
 mod delete_request_builder;
@@ -19,6 +21,7 @@ mod update_request_builder;
 
 pub use advanced_filter_builder::AdvanceFilterBuilder;
 pub use batch_create_request_builder::BatchCreateRequestBuilder;
+pub use batch_update_request_builder::BatchUpdateRequestBuilder;
 pub use create_request_builder::CreateRequestBuilder;
 pub use delete_request_builder::DeleteRequestBuilder;
 pub use get_by_filer_request_builder::GetByFilterRequestBuilder;
