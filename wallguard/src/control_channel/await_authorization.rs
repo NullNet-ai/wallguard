@@ -2,6 +2,7 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libwallguard::{client_message, server_message, AuthorizationRequest, ClientMessage};
 
 use crate::{
+    client_data::ClientData,
     control_channel::{InboundStream, OutboundStream},
     storage::{Secret, Storage},
 };
@@ -14,13 +15,16 @@ pub enum Verdict {
 pub async fn await_authorization(
     inbound: InboundStream,
     outbound: OutboundStream,
-    uuid: impl Into<String>,
+    client_data: ClientData,
     org_id: impl Into<String>,
 ) -> Result<Verdict, Error> {
     let message = ClientMessage {
         message: Some(client_message::Message::AuthorizationRequest(
             AuthorizationRequest {
-                uuid: uuid.into(),
+                uuid: client_data.uuid,
+                category: client_data.category,
+                model: client_data.platform.to_string(),
+                target_os: client_data.target_os.to_string(),
                 org_id: org_id.into(),
             },
         )),

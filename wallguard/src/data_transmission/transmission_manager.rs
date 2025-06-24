@@ -1,8 +1,8 @@
+use crate::client_data::Platform;
 use crate::constants::SNAPLEN;
 use crate::data_transmission::packets::transmitter::transmit_packets;
 use crate::data_transmission::resources::transmitter::transmit_system_resources;
 use crate::data_transmission::sysconfig;
-use crate::platform::Platform;
 use crate::wg_server::WGServer;
 use crate::{data_transmission::dump_dir::DumpDir, token_provider::TokenProvider};
 use async_channel::Receiver;

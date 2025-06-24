@@ -3,25 +3,20 @@ use nullnet_libwallguard::{
     ClientMessage, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, ServerMessage,
     SystemResourcesData, WallGuardGrpcInterface,
 };
-use std::{sync::Arc, time::Duration};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 use tokio::sync::{mpsc, Mutex};
 use tonic::Streaming;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct WGServer {
     interface: Arc<Mutex<Option<WallGuardGrpcInterface>>>,
-    addr: String,
-    port: u16,
+    addr: SocketAddr,
 }
 
 impl WGServer {
-    pub fn new(addr: String, port: u16) -> Self {
+    pub fn new(addr: SocketAddr) -> Self {
         let interface = Default::default();
-        Self {
-            interface,
-            addr,
-            port,
-        }
+        Self { interface, addr }
     }
 
     pub async fn is_connected(&self) -> bool {
@@ -32,7 +27,7 @@ impl WGServer {
         let mut lock = self.interface.lock().await;
 
         if lock.is_none() {
-            let interface = WallGuardGrpcInterface::new(&self.addr, self.port).await?;
+            let interface = WallGuardGrpcInterface::from_sockaddr(self.addr).await?;
             *lock = Some(interface);
         }
 

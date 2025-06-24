@@ -11,12 +11,8 @@ pub struct ReverseTunnel {
 }
 
 impl ReverseTunnel {
-    pub fn new(addr: &str, port: u16) -> Result<Self, Error> {
-        let addr = format!("{}:{}", addr, port)
-            .parse()
-            .handle_err(location!())?;
-
-        Ok(Self { addr })
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr }
     }
 
     pub async fn request_channel(&self, token: &str) -> Result<TcpStream, Error> {

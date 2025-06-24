@@ -1,10 +1,10 @@
-use crate::arguments::Arguments;
+use crate::client_data::ClientData;
 use crate::constants::DISK_SIZE;
 use crate::daemon::Daemon;
 use crate::data_transmission::dump_dir::DumpDir;
 use crate::data_transmission::transmission_manager::TransmissionManager;
-use crate::platform::Platform;
 use crate::reverse_tunnel::ReverseTunnel;
+use crate::server_data::ServerData;
 use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
 use nullnet_liberror::Error;
@@ -18,19 +18,20 @@ pub struct Context {
     pub tunnel: ReverseTunnel,
     pub daemon: Arc<Mutex<Daemon>>,
     pub transmission_manager: TransmissionManager,
+    pub client_data: ClientData,
 }
 
 impl Context {
     pub async fn new(
-        arguments: Arguments,
         daemon: Arc<Mutex<Daemon>>,
-        platform: Platform,
+        client_data: ClientData,
+        server_data: ServerData,
     ) -> Result<Self, Error> {
         let token_provider = TokenProvider::new();
 
-        let server = WGServer::new(arguments.addr.clone(), arguments.port);
+        let server = WGServer::new(server_data.grpc_addr);
 
-        let tunnel = ReverseTunnel::new(&arguments.tunnel_addr, arguments.tunnel_port).unwrap();
+        let tunnel = ReverseTunnel::new(server_data.tunn_addr);
 
         let dump_dir = DumpDir::new(*DISK_SIZE / 2).await;
 
@@ -38,8 +39,8 @@ impl Context {
             server.clone(),
             dump_dir,
             token_provider.clone(),
-            arguments.addr.clone(),
-            platform,
+            server_data.grpc_addr.ip().to_string(),
+            client_data.platform,
         );
 
         Ok(Self {
@@ -48,6 +49,7 @@ impl Context {
             tunnel,
             daemon,
             transmission_manager,
+            client_data,
         })
     }
 }

@@ -3,12 +3,12 @@ mod wallguard_cli;
 mod cli_server;
 mod state;
 
-use crate::arguments::Arguments;
+use crate::client_data::ClientData;
 use crate::context::Context;
 use crate::control_channel::ControlChannel;
 use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
-use crate::platform::Platform;
+use crate::server_data::ServerData;
 use crate::storage::{Secret, Storage};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
@@ -17,25 +17,19 @@ use tokio::sync::Mutex;
 use wallguard_cli::wallguard_cli_server::WallguardCliServer;
 use wallguard_cli::Status;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Daemon {
-    uuid: String,
-    arguments: Arguments,
+    client_data: ClientData,
+    server_data: ServerData,
     state: DaemonState,
-    platform: Platform,
 }
 
 impl Daemon {
-    pub async fn run(
-        uuid: impl Into<String>,
-        arguments: Arguments,
-        platform: Platform,
-    ) -> Result<(), Error> {
+    pub async fn run(client_data: ClientData, server_data: ServerData) -> Result<(), Error> {
         let daemon = Arc::new(Mutex::new(Daemon {
-            uuid: uuid.into(),
-            arguments,
+            client_data,
+            server_data,
             state: DaemonState::default(),
-            platform,
         }));
 
         if let Some(org_id) = Storage::get_value(Secret::OrgId).await {
@@ -61,10 +55,6 @@ impl Daemon {
         self.state.clone().into()
     }
 
-    pub(crate) fn get_platform(&self) -> Platform {
-        self.platform
-    }
-
     pub(crate) async fn join_org(this: Arc<Mutex<Daemon>>, org_id: String) -> Result<(), String> {
         let mut lock = this.lock().await;
         match &lock.state {
@@ -73,12 +63,15 @@ impl Daemon {
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
-                let context =
-                    Context::new(lock.arguments.clone(), this.clone(), lock.get_platform())
-                        .await
-                        .map_err(|err| err.to_str().to_string())?;
+                let context = Context::new(
+                    this.clone(),
+                    lock.client_data.clone(),
+                    lock.server_data.clone(),
+                )
+                .await
+                .map_err(|err| err.to_str().to_string())?;
 
-                let control_channel = ControlChannel::new(context, lock.uuid.clone(), org_id);
+                let control_channel = ControlChannel::new(context, org_id);
 
                 lock.state = DaemonState::Connected(control_channel);
 

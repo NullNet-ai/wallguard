@@ -1,4 +1,5 @@
-use crate::Platform;
+use crate::client_data::Platform;
+
 use std::ffi::OsStr;
 use std::path::Path;
 use tokio::fs;
@@ -24,7 +25,8 @@ impl Detector {
         match &self.platform {
             Platform::PfSense => Detector::check_pfsense().await,
             Platform::OpnSense => todo!("Not implemented"),
-            Platform::Generic => State::Undefined,
+            #[cfg(debug_assertions)]
+            Platform::DebugDevice => unreachable!(),
         }
     }
 

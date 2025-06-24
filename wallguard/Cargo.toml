@@ -5,7 +5,7 @@ edition = "2021"
 license = "AGPL-3.0-only"
 
 [dependencies]
-nullnet-libwallguard = { version="1.0.2", path="../../wallguard-server/libwallguard" }
+nullnet-libwallguard = { path="../../wallguard-server/libwallguard" }
 nullnet-liberror = "0.1.1"
 clap = { version = "4.5.26", features = ["derive"] }
 dirs = "6.0.0"

@@ -34,12 +34,11 @@ pub struct ControlChannel {
 }
 
 impl ControlChannel {
-    pub fn new(context: Context, uuid: String, org_id: String) -> Self {
+    pub fn new(context: Context, org_id: String) -> Self {
         let (terminate, _) = broadcast::channel(1);
 
         tokio::spawn(stream_wrapper(
             context.clone(),
-            uuid,
             org_id.clone(),
             terminate.subscribe(),
         ));
@@ -65,15 +64,10 @@ impl ControlChannel {
     }
 }
 
-async fn stream_wrapper(
-    context: Context,
-    uuid: String,
-    org_id: String,
-    mut terminate: broadcast::Receiver<()>,
-) {
+async fn stream_wrapper(context: Context, org_id: String, mut terminate: broadcast::Receiver<()>) {
     tokio::select! {
         _ = terminate.recv() => {}
-        result = control_stream(context.clone(), &uuid, &org_id) => {
+        result = control_stream(context.clone(), &org_id) => {
             if let Err(err) = result {
                 Daemon::on_error(context.daemon, err.to_str()).await;
             }
@@ -81,14 +75,21 @@ async fn stream_wrapper(
     };
 }
 
-async fn control_stream(context: Context, uuid: &str, org_id: &str) -> Result<(), Error> {
+async fn control_stream(context: Context, org_id: &str) -> Result<(), Error> {
     let (outbound, receiver) = mpsc::channel(64);
     let inbound = context.server.request_control_channel(receiver).await?;
 
     let inbound = Arc::new(Mutex::new(inbound));
     let outbound = Arc::new(Mutex::new(outbound));
 
-    match await_authorization(inbound.clone(), outbound.clone(), uuid, org_id).await? {
+    match await_authorization(
+        inbound.clone(),
+        outbound.clone(),
+        context.client_data.clone(),
+        org_id,
+    )
+    .await?
+    {
         await_authorization::Verdict::Approved => {}
         await_authorization::Verdict::Rejected => {
             Err("Auhtorization has been rejected").handle_err(location!())?;

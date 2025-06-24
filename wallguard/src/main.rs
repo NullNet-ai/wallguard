@@ -1,16 +1,21 @@
-use crate::{arguments::Arguments, daemon::Daemon, platform::Platform, storage::Storage};
+use crate::arguments::Arguments;
+use crate::client_data::ClientData;
+use crate::daemon::Daemon;
+use crate::server_data::ServerData;
+use crate::storage::Storage;
+
 use clap::Parser as _;
 
 mod arguments;
+mod client_data;
 mod constants;
 mod context;
 mod control_channel;
 mod daemon;
 mod data_transmission;
-mod device_uuid;
-mod platform;
 mod pty;
 mod reverse_tunnel;
+mod server_data;
 mod storage;
 mod timer;
 mod token_provider;
@@ -36,14 +41,15 @@ async fn main() {
         std::process::exit(-1);
     }
 
-    let Ok(platform) = Platform::try_from(arguments.platform.as_str()) else {
+    let Ok(server_data) = ServerData::try_from(&arguments) else {
+        log::error!("Failed to collect server information. Exiting ...");
         std::process::exit(-1);
     };
 
-    let Some(device_uuid) = device_uuid::retrieve_device_uuid() else {
-        log::error!("Failed to retrieve device UUID, exiting ...");
+    let Ok(client_data) = ClientData::try_from(arguments.platform) else {
+        log::error!("Failed to collect client information. Exiting ...");
         std::process::exit(-1);
     };
 
-    Daemon::run(device_uuid, arguments, platform).await.unwrap()
+    Daemon::run(client_data, server_data).await.unwrap()
 }

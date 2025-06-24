@@ -24,6 +24,6 @@ pub struct Arguments {
     pub tunnel_port: u16,
 
     /// Target platform
-    #[arg(long, default_value = "generic")]
+    #[arg(long, default_value = "dbgdevice")]
     pub platform: String,
 }

@@ -1,14 +1,10 @@
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::path::PathBuf;
 
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use target_os::TargetOs;
-
-mod target_os;
-
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub enum Platform {
-    #[default]
-    Generic,
+    #[cfg(debug_assertions)]
+    DebugDevice,
     PfSense,
     OpnSense,
 }
@@ -18,7 +14,8 @@ impl TryFrom<&str> for Platform {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_str() {
-            "generic" => Ok(Platform::Generic),
+            #[cfg(debug_assertions)]
+            "dbgdevice" => Ok(Platform::DebugDevice),
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
             _ => {
@@ -42,7 +39,8 @@ impl ToString for Platform {
         let value = match self {
             Platform::PfSense => "pfsense",
             Platform::OpnSense => "opnsense",
-            Platform::Generic => "generic",
+            #[cfg(debug_assertions)]
+            Platform::DebugDevice => "dbgdevice",
         };
 
         value.to_string()
@@ -50,13 +48,10 @@ impl ToString for Platform {
 }
 
 impl Platform {
-    pub fn get_target_os(&self) -> TargetOs {
-        TargetOs::new()
-    }
-
     pub fn can_monitor_config(&self) -> bool {
         match self {
-            Platform::Generic => false,
+            #[cfg(debug_assertions)]
+            Platform::DebugDevice => false,
             _ => true,
         }
     }
@@ -72,7 +67,8 @@ impl Platform {
     pub fn get_sysconf_files(&self) -> Vec<PathBuf> {
         match self {
             Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
-            Platform::Generic => vec![],
+            #[cfg(debug_assertions)]
+            Platform::DebugDevice => vec![],
         }
     }
 }

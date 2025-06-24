@@ -1,10 +1,11 @@
-use crate::platform::Platform;
 use detector::{Detector, State};
 use watcher::Watcher;
 
 use nullnet_liberror::Error;
 use std::time::Duration;
 use tokio::sync::broadcast;
+
+use crate::client_data::Platform;
 
 mod detector;
 mod types;
