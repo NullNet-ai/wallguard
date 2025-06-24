@@ -56,31 +56,22 @@ impl AuthReqHandler {
             return;
         }
 
-        let root_token = match self
-            .context
-            .root_token_provider
-            .get()
-            .await
-            .map_err(|err| Status::internal(err.to_str()))
-        {
+        let root_token = match self.context.root_token_provider.get().await {
             Ok(token) => token,
-            Err(status) => {
-                log::error!("Failed to fetch root token: {}", status);
+            Err(err) => {
+                log::error!("Failed to fetch root token: {}", err.to_str());
+                let status = Status::internal("Internal Server Error: wrong root credentials");
                 let _ = outbound.send(Err(status)).await;
                 return;
             }
         };
 
-        let sys_token = match self
-            .context
-            .sysdev_token_provider
-            .get()
-            .await
-            .map_err(|err| Status::internal(err.to_str()))
-        {
+        let sys_token = match self.context.sysdev_token_provider.get().await {
             Ok(token) => token,
-            Err(status) => {
-                log::error!("Failed to fetch sysdevice token: {}", status);
+            Err(err) => {
+                log::error!("Failed to fetch sysdevice token: {}", err.to_str());
+                let status =
+                    Status::internal("Internal Server Error: wrong system device credentials");
                 let _ = outbound.send(Err(status)).await;
                 return;
             }
@@ -91,11 +82,11 @@ impl AuthReqHandler {
             .datastore
             .obtain_device_by_uuid(&root_token.jwt, &auth.uuid)
             .await
-            .map_err(|err| Status::internal(err.to_str()))
         {
             Ok(device) => device,
-            Err(status) => {
-                log::error!("Failed to fetch device: {}", status);
+            Err(err) => {
+                log::error!("Failed to fetch device: {}", err.to_str());
+                let status = Status::internal("Internal Server Error: datastore operation failed");
                 let _ = outbound.send(Err(status)).await;
                 return;
             }
@@ -204,7 +195,7 @@ impl AuthReqHandler {
                 let credentials = match self
                     .context
                     .datastore
-                    .obtain_device_credentials(&sys_token.jwt, &auth.uuid)
+                    .obtain_device_credentials(&root_token.jwt, &auth.uuid)
                     .await
                     .map_err(|err| Status::internal(err.to_str()))
                 {
