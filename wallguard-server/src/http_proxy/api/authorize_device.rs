@@ -54,14 +54,14 @@ pub async fn authorize_device(
     };
 
     if let Some(client) = context.orchestractor.get_client(&device.uuid).await {
-        let Ok(systoken) = context.sysdev_token_provider.get().await else {
+        let Ok(roottoken) = context.root_token_provider.get().await else {
             return HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Failed to obtain sysdev token"));
+                .json(ErrorJson::from("Failed to obtain root token"));
         };
 
         let Ok(credentials) = context
             .datastore
-            .obtain_device_credentials(&systoken.jwt, &device.uuid)
+            .obtain_device_credentials(&roottoken.jwt, &device.uuid)
             .await
         else {
             return HttpResponse::InternalServerError()
@@ -85,7 +85,7 @@ pub async fn authorize_device(
 
             if context
                 .datastore
-                .delete_device_credentials(&systoken.jwt, &credentials.id)
+                .delete_device_credentials(&roottoken.jwt, &credentials.id)
                 .await
                 .is_err()
             {

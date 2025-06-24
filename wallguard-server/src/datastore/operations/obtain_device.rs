@@ -24,14 +24,13 @@ impl Datastore {
             .table(Device::table())
             .plucks(Device::pluck())
             .limit(1)
-            .advance_filter(filter)            
+            .advance_filter(filter)
             .order_by("timestamp")
             .order_direction("desc")
-
+            .case_sensitive_sorting(true)
             // `obtain_device_by_uuid` is done by `AuthReqHandler`
             // We assume that at this point the server performs this request
             // using root credentials.
-            
             .performed_by_root(true)
             .build();
 

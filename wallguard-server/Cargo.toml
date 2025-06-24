@@ -23,7 +23,7 @@ strip = true
 
 [dependencies]
 nullnet-liberror = "0.1.1"
-nullnet-libdatastore = "0.4.6"
+nullnet-libdatastore = "0.4.7"
 nullnet-libipinfo = "0.2.0"
 nullnet-libfireparse = "0.3.3"
 nullnet-libtoken = "0.3.2"

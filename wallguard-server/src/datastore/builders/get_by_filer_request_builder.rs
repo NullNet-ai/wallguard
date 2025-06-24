@@ -22,6 +22,7 @@ pub struct GetByFilterRequestBuilder {
     pluck_object: HashMap<String, String>,
     date_format: Option<String>,
     is_root: bool,
+    is_case_sensitive_sorting: bool,
 }
 
 impl GetByFilterRequestBuilder {
@@ -124,6 +125,11 @@ impl GetByFilterRequestBuilder {
         self
     }
 
+    pub fn case_sensitive_sorting(mut self, value: bool) -> Self {
+        self.is_case_sensitive_sorting = value;
+        self
+    }
+
     pub fn build(self) -> GetByFilterRequest {
         GetByFilterRequest {
             body: Some(GetByFilterBody {
@@ -137,6 +143,7 @@ impl GetByFilterRequestBuilder {
                 multiple_sort: self.multiple_sort,
                 pluck_object: self.pluck_object,
                 date_format: self.date_format.unwrap_or_default(),
+                is_case_sensitive_sorting: self.is_case_sensitive_sorting,
             }),
             params: Some(Params {
                 id: self.id.unwrap_or_default(),

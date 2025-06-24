@@ -216,7 +216,7 @@ impl AuthReqHandler {
                     if let Err(status) = self
                         .context
                         .datastore
-                        .delete_device_credentials(&sys_token.jwt, &credentials.id)
+                        .delete_device_credentials(&root_token.jwt, &credentials.id)
                         .await
                         .map_err(|err| Status::internal(err.to_str()))
                     {

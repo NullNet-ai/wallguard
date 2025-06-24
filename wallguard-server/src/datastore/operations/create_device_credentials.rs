@@ -16,6 +16,7 @@ impl Datastore {
 
         // ID will be automatically generated
         json.as_object_mut().unwrap().remove("id");
+        json["status"] = json!("Active");
 
         let request = CreateRequestBuilder::new()
             .pluck(DeviceCredentials::pluck())
@@ -33,9 +34,22 @@ impl Datastore {
         token: &str,
         device_uuid: &str,
     ) -> Result<Option<DeviceCredentials>, Error> {
-        let filter = AdvanceFilterBuilder::new()
+        let filter1 = AdvanceFilterBuilder::new()
             .field("device_uuid")
             .values(format!("[\"{device_uuid}\"]"))
+            .r#type("criteria")
+            .operator("equal")
+            .entity(DeviceCredentials::table())
+            .build();
+
+        let filter2 = AdvanceFilterBuilder::new()
+            .operator("and")
+            .r#type("operator")
+            .build();
+
+        let filter3 = AdvanceFilterBuilder::new()
+            .field("status")
+            .values("[\"Active\"]")
             .r#type("criteria")
             .operator("equal")
             .entity(DeviceCredentials::table())
@@ -45,7 +59,11 @@ impl Datastore {
             .table(DeviceCredentials::table())
             .plucks(DeviceCredentials::pluck())
             .limit(1)
-            .advance_filter(filter)
+            .advance_filter(filter1)
+            .advance_filter(filter2)
+            .advance_filter(filter3)
+            .case_sensitive_sorting(true)
+            .performed_by_root(true)
             .build();
 
         let response = self.inner.clone().get_by_filter(request, token).await?;
@@ -66,6 +84,7 @@ impl Datastore {
             .id(id)
             .table(DeviceCredentials::table())
             .permanent(true)
+            .performed_by_root(true)
             .build();
 
         let _ = self.inner.clone().delete(request, token).await?;
