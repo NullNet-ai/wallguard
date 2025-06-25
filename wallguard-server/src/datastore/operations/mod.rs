@@ -1,3 +1,4 @@
+mod activate_account_organization;
 mod create_aliases;
 mod create_config;
 mod create_connections;

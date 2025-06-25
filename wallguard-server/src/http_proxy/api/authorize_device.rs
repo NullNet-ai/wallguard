@@ -69,6 +69,15 @@ pub async fn authorize_device(
         };
 
         if let Some(credentials) = credentials {
+            if context
+                .datastore
+                .activate_account_organization(&roottoken.jwt, &credentials.account_id)
+                .await
+                .is_err()
+            {
+                return HttpResponse::InternalServerError()
+                    .json(ErrorJson::from("Failed to activate device organization"));
+            };
             let mut lock = client.lock().await;
 
             if lock
