@@ -37,6 +37,7 @@ pub(crate) async fn transmit_packets(
                 &token_provider,
             )
             .await;
+        
             if packet_queue.is_full() {
                 log::warn!(
                     "Queue is full. Dumping {} packets to file",

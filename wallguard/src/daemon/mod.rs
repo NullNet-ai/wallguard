@@ -93,7 +93,7 @@ impl Daemon {
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
-                control_channel.terminate();
+                control_channel.terminate().await;
 
                 this.state = DaemonState::Idle;
                 Ok(())
@@ -111,7 +111,7 @@ impl Daemon {
 
     pub(crate) async fn on_error(this: Arc<Mutex<Daemon>>, reason: impl Into<String>) {
         match this.lock().await.state.clone() {
-            DaemonState::Connected(control_channel) => control_channel.terminate(),
+            DaemonState::Connected(control_channel) => control_channel.terminate().await,
             _ => {}
         };
         this.lock().await.state = DaemonState::Error(reason.into());

@@ -1,12 +1,12 @@
 use std::path::Path;
 
 #[cfg(debug_assertions)]
-pub const BATCH_SIZE: usize = 100;
+pub const BATCH_SIZE: usize = 1000;
 #[cfg(not(debug_assertions))]
 pub const BATCH_SIZE: usize = 10_000;
 
 #[cfg(debug_assertions)]
-pub const QUEUE_SIZE: usize = 1_000;
+pub const QUEUE_SIZE: usize = 10_000;
 #[cfg(not(debug_assertions))]
 pub const QUEUE_SIZE: usize = 1_000_000;
 

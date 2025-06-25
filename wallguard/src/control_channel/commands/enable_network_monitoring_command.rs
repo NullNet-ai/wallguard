@@ -12,16 +12,24 @@ impl EnableNetworkMonitoringCommand {
 }
 
 impl ExecutableCommand for EnableNetworkMonitoringCommand {
-    async fn execute(mut self) -> Result<(), nullnet_liberror::Error> {
+    async fn execute(self) -> Result<(), nullnet_liberror::Error> {
         log::debug!(
             "Executing EnableNetworkMonitoringCommand command: {}",
             self.value
         );
 
         if self.value {
-            self.context.transmission_manager.start_packet_capture();
+            self.context
+                .transmission_manager
+                .lock()
+                .await
+                .start_packet_capture();
         } else {
-            self.context.transmission_manager.terminate_packet_capture();
+            self.context
+                .transmission_manager
+                .lock()
+                .await
+                .terminate_packet_capture();
         }
 
         Ok(())

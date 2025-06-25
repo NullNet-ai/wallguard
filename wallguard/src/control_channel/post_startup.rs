@@ -2,7 +2,7 @@ use crate::{context::Context, token_provider::RetrievalStrategy};
 use nullnet_libwallguard::DeviceSettingsRequest;
 use std::time::Duration;
 
-pub async fn post_startup(mut context: Context) {
+pub async fn post_startup(context: Context) {
     let timeout = Duration::from_secs(10);
 
     let token = context
@@ -27,14 +27,23 @@ pub async fn post_startup(mut context: Context) {
     };
 
     if response.config_monitoring {
-        // TODO
+        // TODO!!!!
+        log::warn!("config_monitoring not implemented");
     }
 
     if response.telemetry_monitoring {
-        context.transmission_manager.start_resource_monitoring();
+        context
+            .transmission_manager
+            .lock()
+            .await
+            .start_resource_monitoring();
     }
 
     if response.traffic_monitoring {
-        context.transmission_manager.start_packet_capture();
+        context
+            .transmission_manager
+            .lock()
+            .await
+            .start_packet_capture();
     }
 }

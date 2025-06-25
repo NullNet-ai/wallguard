@@ -54,11 +54,13 @@ impl ControlChannel {
         self.org_id.clone()
     }
 
-    pub fn terminate(&self) {
-        let mut manager = self.context.transmission_manager.clone();
+    pub async fn terminate(&self) {
+        let mut manager = self.context.transmission_manager.lock().await;
 
         manager.terminate_packet_capture();
         manager.terminate_resource_monitoring();
+
+        drop(manager);
 
         let _ = self.terminate.send(());
     }

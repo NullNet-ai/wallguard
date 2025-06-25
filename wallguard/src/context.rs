@@ -17,7 +17,7 @@ pub struct Context {
     pub server: WGServer,
     pub tunnel: ReverseTunnel,
     pub daemon: Arc<Mutex<Daemon>>,
-    pub transmission_manager: TransmissionManager,
+    pub transmission_manager: Arc<Mutex<TransmissionManager>>,
     pub client_data: ClientData,
 }
 
@@ -48,8 +48,8 @@ impl Context {
             server,
             tunnel,
             daemon,
-            transmission_manager,
             client_data,
+            transmission_manager: Arc::new(Mutex::new(transmission_manager)),
         })
     }
 }

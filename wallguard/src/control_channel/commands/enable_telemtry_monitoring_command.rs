@@ -12,7 +12,7 @@ impl EnableTelemetryMonitoringCommand {
 }
 
 impl ExecutableCommand for EnableTelemetryMonitoringCommand {
-    async fn execute(mut self) -> Result<(), nullnet_liberror::Error> {
+    async fn execute(self) -> Result<(), nullnet_liberror::Error> {
         log::debug!(
             "Executing EnableTelemetryMonitoringCommand command: {}",
             self.value
@@ -21,10 +21,14 @@ impl ExecutableCommand for EnableTelemetryMonitoringCommand {
         if self.value {
             self.context
                 .transmission_manager
+                .lock()
+                .await
                 .start_resource_monitoring();
         } else {
             self.context
                 .transmission_manager
+                .lock()
+                .await
                 .terminate_resource_monitoring();
         }
 
