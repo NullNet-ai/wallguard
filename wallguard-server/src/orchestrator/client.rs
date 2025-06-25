@@ -107,22 +107,21 @@ impl Client {
             .handle_err(location!())
     }
 
-    // pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
-    //     log::info!(
-    //         "Sending EnableConfigurationMonitoringCommand('{}') to the client with device UUID {}",
-    //         enable,
-    //         self.device_uuid
-    //     );
+    pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
+        log::info!(
+            "Sending EnableConfigurationMonitoringCommand to the client with device UUID {}",
+            self.uuid
+        );
 
-    //     let command = WallGuardCommand {
-    //         command: Some(Command::EnableConfigurationMonitoringCommand(enable)),
-    //     };
+        let message = ServerMessage {
+            message: Some(Message::EnableConfigurationMonitoringCommand(enable)),
+        };
 
-    //     self.control_stream
-    //         .send(Ok(command))
-    //         .await
-    //         .handle_err(location!())
-    // }
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
 
     pub async fn request_ssh_session(
         &self,
