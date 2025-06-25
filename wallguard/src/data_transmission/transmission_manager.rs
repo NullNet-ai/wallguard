@@ -116,10 +116,22 @@ impl TransmissionManager {
 
         let (terminate, _) = broadcast::channel(1);
 
-        tokio::spawn(sysconfig::watch_sysconfig(
-            self.platform,
-            terminate.subscribe(),
-        ));
+        let interface = self.interface.clone();
+        let platform = self.platform.clone();
+        let token_provider = self.token_provider.clone();
+        let receiver = terminate.subscribe();
+
+        self.sysconf_monitoring = Some(terminate);
+
+        tokio::spawn(async move {
+            sysconfig::watch_sysconfig(
+                interface.clone(),
+                platform,
+                token_provider.clone(),
+                receiver,
+            )
+            .await
+        });
     }
 
     pub(crate) fn terminate_packet_capture(&mut self) {

@@ -25,7 +25,7 @@ impl TryFrom<String> for ClientData {
             .ok_or("Failed to retrieve device UUID")
             .handle_err(location!())?;
 
-        let target_os = TargetOs::default();
+        let target_os = TargetOs::new();
 
         let category = String::from("Firewall");
 

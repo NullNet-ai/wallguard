@@ -1,7 +1,7 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use nullnet_libwallguard::{
-    ClientMessage, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, ServerMessage,
-    SystemResourcesData, WallGuardGrpcInterface,
+    ClientMessage, ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData,
+    ServerMessage, SystemResourcesData, WallGuardGrpcInterface,
 };
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 use tokio::sync::{mpsc, Mutex};
@@ -97,5 +97,9 @@ impl WGServer {
             .await?
             .get_device_settings(request)
             .await
+    }
+
+    pub async fn handle_config_data(&self, data: ConfigSnapshot) -> Result<(), Error> {
+        self.get_interface().await?.handle_config_data(data).await
     }
 }

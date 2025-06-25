@@ -5,8 +5,8 @@ use std::{path::PathBuf, time::Duration};
 
 #[derive(Debug)]
 pub struct Watcher {
-    files: Vec<FileInfo>,
-    poll_interval: Duration,
+    pub(super) files: Vec<FileInfo>,
+    pub(super) poll_interval: Duration,
 }
 
 impl Watcher {

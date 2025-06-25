@@ -68,7 +68,7 @@ impl Platform {
         match self {
             Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
             #[cfg(debug_assertions)]
-            Platform::DebugDevice => vec![],
+            Platform::DebugDevice => vec![PathBuf::from("/conf/config.xml")],
         }
     }
 }

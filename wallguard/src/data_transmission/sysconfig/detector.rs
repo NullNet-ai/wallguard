@@ -5,7 +5,7 @@ use std::path::Path;
 use tokio::fs;
 use tokio::fs::ReadDir;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum State {
     Draft,
     Applied,
