@@ -23,6 +23,8 @@ pub struct Device {
     pub os: String,
     #[serde(rename = "is_device_online")]
     pub online: bool,
+    #[serde(rename = "organization_id")]
+    pub organization: String,
 }
 
 impl Device {
@@ -37,7 +39,8 @@ impl Device {
             "device_category".into(),
             "device_model".into(),
             "device_os".into(),
-            "is_device_online".into()
+            "is_device_online".into(),
+            "organization_id".into(),
         ]
     }
 

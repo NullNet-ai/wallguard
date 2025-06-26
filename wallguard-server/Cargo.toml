@@ -23,10 +23,10 @@ strip = true
 
 [dependencies]
 nullnet-liberror = "0.1.1"
-nullnet-libdatastore = "0.4.7"
+nullnet-libdatastore = "0.4.8"
 nullnet-libipinfo = "0.2.0"
 nullnet-libfireparse = "0.3.3"
-nullnet-libtoken = "0.3.2"
+nullnet-libtoken = "0.3.3"
 tokio = { version = "1.45.0", features = ["full"] }
 tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"

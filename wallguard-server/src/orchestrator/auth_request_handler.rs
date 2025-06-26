@@ -10,7 +10,7 @@
 //! For rejected or failed authorization attempts, appropriate error messages are sent back via the outbound stream.
 
 use crate::app_context::AppContext;
-use crate::datastore::{Device, DeviceCredentials};
+use crate::datastore::Device;
 use crate::orchestrator::client::{Client, InboundStream, OutboundStream};
 use crate::protocol::wallguard_commands::server_message::Message;
 use crate::protocol::wallguard_commands::{
@@ -93,32 +93,6 @@ impl AuthReqHandler {
         };
 
         if device.is_none() {
-            // If there is no device with such UUID, we do
-            // - create new device & account
-            // - save credential into the temporary table
-
-            let credentials = DeviceCredentials::generate(auth.uuid.clone());
-
-            let response = match self
-                .context
-                .datastore
-                .register_device(
-                    &sys_token.jwt,
-                    &credentials.account_id,
-                    &credentials.account_secret,
-                    &auth.org_id,
-                )
-                .await
-                .map_err(|err| Status::internal(err.to_str()))
-            {
-                Ok(response) => response,
-                Err(status) => {
-                    log::error!("Failed to create device: {}", status);
-                    let _ = outbound.send(Err(status)).await;
-                    return;
-                }
-            };
-
             let device = Device {
                 authorized: false,
                 uuid: auth.uuid.clone(),
@@ -126,25 +100,14 @@ impl AuthReqHandler {
                 model: auth.model,
                 os: auth.target_os,
                 online: true,
+                organization: auth.org_id.clone(),
                 ..Default::default()
             };
 
             if let Err(status) = self
                 .context
                 .datastore
-                .update_device(&sys_token.jwt, &response.device_id, &device)
-                .await
-                .map_err(|err| Status::internal(err.to_str()))
-            {
-                log::error!("Failed to update device: {}", status);
-                let _ = outbound.send(Err(status)).await;
-                return;
-            };
-
-            if let Err(status) = self
-                .context
-                .datastore
-                .create_device_credentials(&sys_token.jwt, &credentials)
+                .create_device(&sys_token.jwt, &device)
                 .await
                 .map_err(|err| Status::internal(err.to_str()))
             {
@@ -192,39 +155,7 @@ impl AuthReqHandler {
 
                 clients.insert(auth.uuid, Arc::new(Mutex::new(client)));
             } else {
-                let credentials = match self
-                    .context
-                    .datastore
-                    .obtain_device_credentials(&root_token.jwt, &auth.uuid)
-                    .await
-                    .map_err(|err| Status::internal(err.to_str()))
-                {
-                    Ok(credentials) => credentials,
-                    Err(status) => {
-                        log::error!("Failed to obtain device credentials: {}", status);
-                        let _ = outbound.send(Err(status)).await;
-                        return;
-                    }
-                };
-
-                let mut authentication = AuthenticationData::default();
-
-                if let Some(credentials) = credentials {
-                    authentication.app_id = Some(credentials.account_id);
-                    authentication.app_secret = Some(credentials.account_secret);
-
-                    if let Err(status) = self
-                        .context
-                        .datastore
-                        .delete_device_credentials(&root_token.jwt, &credentials.id)
-                        .await
-                        .map_err(|err| Status::internal(err.to_str()))
-                    {
-                        log::error!("Failed to redeem device credentials");
-                        let _ = outbound.send(Err(status)).await;
-                        return;
-                    }
-                }
+                let authentication = AuthenticationData::default();
 
                 let client = Arc::new(Mutex::new(Client::new(
                     auth.uuid.clone(),

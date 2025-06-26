@@ -2,6 +2,7 @@ use crate::app_context::AppContext;
 use crate::http_proxy::utilities::authorization;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 use crate::protocol::wallguard_commands::AuthenticationData;
+use crate::utilities;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -37,11 +38,33 @@ pub async fn authorize_device(
         return HttpResponse::BadRequest().json(ErrorJson::from("Device not found"));
     };
 
+    let Some(client) = context.orchestractor.get_client(&device.uuid).await else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Device is not connected"));
+    };
+
+    if !device.online {
+        return HttpResponse::BadRequest().json(ErrorJson::from("Device is offline"));
+    }
+
     if device.authorized {
         return HttpResponse::Ok().json(json!({}));
     }
 
     device.authorized = true;
+
+    let account_id = utilities::random::generate_random_string(12);
+    let account_secret = utilities::random::generate_random_string(36);
+
+    if context
+        .datastore
+        .register_device(&jwt, &account_id, &account_secret, &device)
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to register device"));
+    }
 
     if context
         .datastore
@@ -53,56 +76,19 @@ pub async fn authorize_device(
             .json(ErrorJson::from("Failed to update device record"));
     };
 
-    if let Some(client) = context.orchestractor.get_client(&device.uuid).await {
-        let Ok(roottoken) = context.root_token_provider.get().await else {
-            return HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Failed to obtain root token"));
-        };
+    let mut lock = client.lock().await;
 
-        let Ok(credentials) = context
-            .datastore
-            .obtain_device_credentials(&roottoken.jwt, &device.uuid)
-            .await
-        else {
-            return HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Failed to obtain device credentials"));
-        };
-
-        if let Some(credentials) = credentials {
-            if context
-                .datastore
-                .activate_account_organization(&roottoken.jwt, &credentials.account_id)
-                .await
-                .is_err()
-            {
-                return HttpResponse::InternalServerError()
-                    .json(ErrorJson::from("Failed to activate device organization"));
-            };
-            let mut lock = client.lock().await;
-
-            if lock
-                .authorize(AuthenticationData {
-                    app_id: Some(credentials.account_id),
-                    app_secret: Some(credentials.account_secret),
-                })
-                .await
-                .is_err()
-            {
-                return HttpResponse::InternalServerError()
-                    .json(ErrorJson::from("Failed to send approval"));
-            }
-
-            if context
-                .datastore
-                .delete_device_credentials(&roottoken.jwt, &credentials.id)
-                .await
-                .is_err()
-            {
-                return HttpResponse::InternalServerError()
-                    .json(ErrorJson::from("Failed to redeem credentials"));
-            }
-        }
-    };
+    if lock
+        .authorize(AuthenticationData {
+            app_id: Some(account_id),
+            app_secret: Some(account_secret),
+        })
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to send approval"));
+    }
 
     HttpResponse::Ok().json(json!({}))
 }

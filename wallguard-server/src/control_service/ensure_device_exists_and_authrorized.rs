@@ -7,10 +7,12 @@ impl WallGuardService {
         &self,
         token: &Token,
     ) -> Result<Device, Error> {
+        let device = token.account.device.as_ref().ok_or("Wrong token type").handle_err(location!())?;
+        
         let device = self
             .context
             .datastore
-            .obtain_device_by_id(&token.jwt, &token.account.id)
+            .obtain_device_by_id(&token.jwt, &device.id)
             .await?
             .ok_or("Device does not exists")
             .handle_err(location!())?;

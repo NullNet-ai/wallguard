@@ -1,8 +1,7 @@
-mod activate_account_organization;
 mod create_aliases;
 mod create_config;
 mod create_connections;
-mod create_device_credentials;
+mod create_device;
 mod create_interfaces;
 mod create_ip_info;
 mod create_rules;
