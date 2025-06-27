@@ -27,8 +27,11 @@ pub async fn post_startup(context: Context) {
     };
 
     if response.config_monitoring {
-        // TODO!!!!
-        log::warn!("config_monitoring not implemented");
+        context
+            .transmission_manager
+            .lock()
+            .await
+            .start_sysconf_monitroing();
     }
 
     if response.telemetry_monitoring {
