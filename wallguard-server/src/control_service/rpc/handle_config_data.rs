@@ -44,7 +44,7 @@ impl WallGuardService {
         let previous = self
             .context
             .datastore
-            .obtain_config(&token.jwt, &token.account.id)
+            .obtain_config(&token.jwt, &token.account.device.as_ref().unwrap().id)
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
@@ -84,7 +84,7 @@ async fn insert_new_configuration(
     conf: &Configuration,
 ) -> Result<(), Error> {
     let devcfg = DeviceConfiguration {
-        device_id: token.account.id.clone(),
+        device_id: token.account.device.as_ref().unwrap().id.clone(),
         digest: utilities::hash::md5_digest(&conf.raw_content),
         hostname: conf.hostname.clone(),
         raw_content: conf.raw_content.clone(),

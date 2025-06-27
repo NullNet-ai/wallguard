@@ -23,7 +23,7 @@ pub fn parse_message(
             if let Some((ip_header, packet_length)) = IpHeader::from_etherparse(headers.net) {
                 if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
                 {
-                    let device_id = token.account.id.clone();
+                    let device_id = token.account.device.as_ref().unwrap().id.clone();
                     let interface_name = packet.interface;
                     let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
                     let total_byte = 14 * usize::from(has_eth) + usize::from(packet_length);

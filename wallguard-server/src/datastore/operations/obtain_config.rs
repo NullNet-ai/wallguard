@@ -25,6 +25,7 @@ impl Datastore {
             .limit(1)
             .advance_filter(filter)
             .table(DBTable::DeviceConfigurations)
+            .case_sensitive_sorting(true)
             .build();
 
         let response = self.inner.clone().get_by_filter(request, token).await?;

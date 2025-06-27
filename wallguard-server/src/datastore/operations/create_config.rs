@@ -9,13 +9,12 @@ impl Datastore {
         token: &str,
         config: &DeviceConfiguration,
     ) -> Result<String, Error> {
-        let json = serde_json::to_value(config).handle_err(location!())?;
+        let mut json = serde_json::to_value(config).handle_err(location!())?;
 
-        let mut pluck_fields = DeviceConfiguration::pluck();
-        pluck_fields.push("id".to_string());
+        json.as_object_mut().unwrap().remove("id");
 
         let request = CreateRequestBuilder::new()
-            .pluck(pluck_fields)
+            .pluck(DeviceConfiguration::pluck())
             .table(DeviceConfiguration::table())
             .record(json.to_string())
             .build();
