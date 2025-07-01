@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package wallguard_cli;
+
+service WallguardCli {
+    rpc GetStatus(google.protobuf.Empty) returns (Status);
+    rpc GetCapabilities(google.protobuf.Empty) returns (Caps);
+    rpc JoinOrg(JoinOrgReq) returns (JoinOrgRes);
+    rpc LeaveOrg(google.protobuf.Empty) returns (LeaveOrgRes);
+}
+
+message Status {
+    oneof state {
+        google.protobuf.Empty idle = 1;
+        Connected connected = 3;
+        Error error = 4;
+    }
+}
+
+message Connected {
+    string org_id = 2;
+}
+
+message Error {
+    string message = 2;
+}
+
+message Caps {
+    bool traffic = 1;
+    bool telemetry = 2;
+    bool sysconfig = 3;
+}
+
+message JoinOrgReq {
+    string org_id = 1;
+}
+
+message JoinOrgRes {
+    bool success = 1;
+    string message = 2;
+}
+
+message LeaveOrgRes {
+    bool success = 1;
+    string message = 2;
+}
