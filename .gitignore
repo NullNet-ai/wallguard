@@ -3,6 +3,7 @@
 .vs
 .DS_Store
 packet_dumps
+dumps
 *.pcap
 .cargo
 
