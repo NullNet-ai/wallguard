@@ -1,47 +1,78 @@
-use crate::{
-    client_stream::Manager,
-    datastore::{DatastoreWrapper, DatastoreWrapperExperimental},
-    tunnel::TunnelServer,
-};
 use nullnet_liberror::Error;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
-#[derive(Clone)]
+use crate::datastore::Datastore;
+use crate::orchestrator::Orchestrator;
+use crate::reverse_tunnel::ReverseTunnel;
+use crate::token_provider::TokenProvider;
+
+// Unfortunately, we have to use both root and system device credentials because:
+// - The system device cannot fetch data outside its own organization; only the root account can do that.
+// - We cannot use the root account for everything because it cannot create records in the database.
+
+pub static ROOT_ACCOUNT_ID: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("ROOT_ACCOUNT_ID").unwrap_or_else(|_| {
+        log::warn!("'ROOT_ACCOUNT_ID' environment variable not set");
+        String::new()
+    })
+});
+
+pub static ROOT_ACCOUNT_SECRET: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("ROOT_ACCOUNT_SECRET").unwrap_or_else(|_| {
+        log::warn!("'ROOT_ACCOUNT_SECRET' environment variable not set");
+        String::new()
+    })
+});
+
+pub static SYSTEM_ACCOUNT_ID: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("SYSTEM_ACCOUNT_ID").unwrap_or_else(|_| {
+        log::warn!("'SYSTEM_ACCOUNT_ID' environment variable not set");
+        String::new()
+    })
+});
+
+pub static SYSTEM_ACCOUNT_SECRET: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    std::env::var("SYSTEM_ACCOUNT_SECRET").unwrap_or_else(|_| {
+        log::warn!("'SYSTEM_ACCOUNT_SECRET' environment variable not set");
+        String::new()
+    })
+});
+
+#[derive(Debug, Clone)]
 pub struct AppContext {
-    pub datastore: DatastoreWrapper,
-    pub datastore_exp: Option<DatastoreWrapperExperimental>,
-    pub tunnel: Arc<Mutex<TunnelServer>>,
-    pub clients_manager: Arc<Mutex<Manager>>,
+    pub datastore: Datastore,
+    pub orchestractor: Orchestrator,
+    pub tunnel: ReverseTunnel,
+
+    pub root_token_provider: TokenProvider,
+    pub sysdev_token_provider: TokenProvider,
 }
 
 impl AppContext {
     pub async fn new() -> Result<Self, Error> {
-        let datastore = DatastoreWrapper::new().await?;
-        let clients_manager = Arc::new(Mutex::new(Manager::new()));
-        let tunnel = Arc::new(Mutex::new(TunnelServer::new()));
+        let datastore = Datastore::new().await?;
+        let orchestractor = Orchestrator::new();
+        let tunnel = ReverseTunnel::new();
 
-        let use_expr_datastore = match std::env::var("USE_EXPERIMENTAL_DATASTORE") {
-            Ok(value) => value.to_lowercase() == "true",
-            Err(err) => {
-                log::warn!(
-                    "Failed to read 'USE_EXPERIMENTAL_DATASTORE' env var: {err}. Using default value ..."
-                );
-                false
-            }
-        };
+        let sysdev_token_provider = TokenProvider::new(
+            SYSTEM_ACCOUNT_ID.to_string(),
+            SYSTEM_ACCOUNT_SECRET.to_string(),
+            false,
+            datastore.clone(),
+        );
 
-        let datastore_exp = if use_expr_datastore {
-            Some(DatastoreWrapperExperimental::new().await?)
-        } else {
-            None
-        };
+        let root_token_provider = TokenProvider::new(
+            ROOT_ACCOUNT_ID.to_string(),
+            ROOT_ACCOUNT_SECRET.to_string(),
+            true,
+            datastore.clone(),
+        );
 
         Ok(Self {
             datastore,
-            datastore_exp,
+            orchestractor,
             tunnel,
-            clients_manager,
+            sysdev_token_provider,
+            root_token_provider,
         })
     }
 }

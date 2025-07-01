@@ -2,31 +2,23 @@ const WALLGUARD_PROTOBUF_PATH: &str = "./proto/wallguard.proto";
 const PROTOBUF_DIR_PATH: &str = "./proto";
 
 fn main() {
-    for out_dir in ["./src/proto", "./libwallguard/src/proto"] {
+    for out_dir in ["./src/protocol", "./libwallguard/src/proto"] {
         tonic_build::configure()
             .out_dir(out_dir)
             .type_attribute(
-                "wallguard.Packets",
+                "wallguard_service.PacketsData",
                 "#[derive(serde::Serialize, serde::Deserialize)]",
             )
             .type_attribute(
-                "wallguard.Packet",
+                "wallguard_service.Packet",
                 "#[derive(serde::Serialize, serde::Deserialize)]",
             )
             .type_attribute(
-                "wallguard.SystemResources",
+                "wallguard_service.SystemResourcesData",
                 "#[derive(serde::Serialize, serde::Deserialize)]",
             )
             .type_attribute(
-                "wallguard.SystemResource",
-                "#[derive(serde::Serialize, serde::Deserialize)]",
-            )
-            .type_attribute(
-                "wallguard.Log",
-                "#[derive(serde::Serialize, serde::Deserialize)]",
-            )
-            .type_attribute(
-                "wallguard.Authentication",
+                "wallguard_service.SystemResource",
                 "#[derive(serde::Serialize, serde::Deserialize)]",
             )
             .compile_protos(&[WALLGUARD_PROTOBUF_PATH], &[PROTOBUF_DIR_PATH])

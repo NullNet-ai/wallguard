@@ -1,126 +1,115 @@
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+
+pub use proto::wallguard_commands::*;
+pub use proto::wallguard_service::*;
+
+use proto::wallguard_service::wall_guard_client::WallGuardClient;
+
+use std::net::SocketAddr;
 use std::time::Duration;
+use tokio::sync::mpsc;
 use tonic::Request;
 pub use tonic::Streaming;
+use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Channel;
-
-use crate::proto::wallguard::wall_guard_client::WallGuardClient;
-pub use crate::proto::wallguard::*;
 
 mod proto;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct WallGuardGrpcInterface {
     client: WallGuardClient<Channel>,
 }
 
-// static CA_CERT: std::sync::LazyLock<Certificate> = std::sync::LazyLock::new(|| {
-//     Certificate::from_pem(
-//         std::fs::read_to_string("tls/ca.pem").expect("Failed to read CA certificate"),
-//     )
-// });
-
 impl WallGuardGrpcInterface {
     #[allow(clippy::missing_panics_doc)]
-    pub async fn new(addr: &str, port: u16) -> Self {
-        // let tls = ClientTlsConfig::new().ca_certificate(CA_CERT.to_owned());
-        let s = format!("http://{addr}:{port}");
+    pub async fn new(addr: &str, port: u16) -> Result<Self, Error> {
+        let addr = format!("http://{addr}:{port}");
 
-        let Ok(channel) = Channel::from_shared(s)
+        let channel = Channel::from_shared(addr)
             .expect("Failed to parse address")
             .timeout(Duration::from_secs(10))
-            // .tls_config(tls)
-            // .expect("Failed to configure up TLS")
+            .keep_alive_timeout(Duration::from_secs(10))
             .connect()
             .await
-        else {
-            log::warn!("Failed to connect to the server. Retrying in 10 seconds...");
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-            return Box::pin(WallGuardGrpcInterface::new(addr, port)).await;
-        };
+            .handle_err(location!())?;
 
-        Self {
-            client: WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024),
-        }
+        let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
+
+        Ok(Self { client })
     }
 
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn heartbeat(
-        &mut self,
-        app_id: String,
-        app_secret: String,
-        device_version: String,
-        device_uuid: String,
-    ) -> Result<Streaming<HeartbeatResponse>, String> {
-        self.client
-            .heartbeat(Request::new(HeartbeatRequest {
-                app_id,
-                app_secret,
-                device_version,
-                device_uuid,
-            }))
+    #[allow(clippy::missing_panics_doc)]
+    pub async fn from_sockaddr(addr: SocketAddr) -> Result<Self, Error> {
+        let addr = format!("http://{addr}");
+
+        let channel = Channel::from_shared(addr)
+            .expect("Failed to parse address")
+            .timeout(Duration::from_secs(10))
+            .keep_alive_timeout(Duration::from_secs(10))
+            .connect()
             .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())
+            .handle_err(location!())?;
+
+        let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
+
+        Ok(Self { client })
     }
 
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_packets(&mut self, message: Packets) -> Result<CommonResponse, String> {
-        self.client
-            .handle_packets(Request::new(message))
-            .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_config(
-        &mut self,
-        message: ConfigSnapshot,
-    ) -> Result<CommonResponse, String> {
-        self.client
-            .handle_config(Request::new(message))
-            .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_logs(&mut self, message: Logs) -> Result<CommonResponse, String> {
-        self.client
-            .handle_logs(Request::new(message))
-            .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
-    pub async fn handle_system_resources(
-        &mut self,
-        message: SystemResources,
-    ) -> Result<CommonResponse, String> {
-        self.client
-            .handle_system_resources(Request::new(message))
-            .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())
-    }
-
-    #[allow(clippy::missing_errors_doc)]
     pub async fn request_control_channel(
-        &mut self,
-        token: String,
-        session_type: String,
-    ) -> Result<ControlChannelResponse, String> {
+        &self,
+        receiver: mpsc::Receiver<ClientMessage>,
+    ) -> Result<Streaming<ServerMessage>, Error> {
+        let receiver = ReceiverStream::new(receiver);
+
         let response = self
             .client
-            .request_control_channel(Request::new(ControlChannelRequest {
-                token,
-                session_type,
-            }))
+            .clone()
+            .control_channel(Request::new(receiver))
             .await
-            .map(tonic::Response::into_inner)
-            .map_err(|e| e.to_string())?;
+            .handle_err(location!())?;
 
-        Ok(response)
+        Ok(response.into_inner())
+    }
+
+    pub async fn handle_packets_data(&self, data: PacketsData) -> Result<(), Error> {
+        self.client
+            .clone()
+            .handle_packets_data(Request::new(data))
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
+
+    pub async fn handle_system_resources_data(
+        &self,
+        data: SystemResourcesData,
+    ) -> Result<(), Error> {
+        self.client
+            .clone()
+            .handle_system_resources_data(Request::new(data))
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
+
+    pub async fn get_device_settings(
+        &self,
+        request: DeviceSettingsRequest,
+    ) -> Result<DeviceSettingsResponse, Error> {
+        self.client
+            .clone()
+            .get_device_settings(request)
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
+
+    pub async fn handle_config_data(&self, request: ConfigSnapshot) -> Result<(), Error> {
+        self.client
+            .clone()
+            .handle_config_data(request)
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
     }
 }
