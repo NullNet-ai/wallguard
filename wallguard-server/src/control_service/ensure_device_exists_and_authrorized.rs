@@ -17,7 +17,7 @@ impl WallGuardService {
         let device = self
             .context
             .datastore
-            .obtain_device_by_id(&token.jwt, &device.id)
+            .obtain_device_by_id(&token.jwt, &device.id, false)
             .await?
             .ok_or("Device does not exists")
             .handle_err(location!())?;

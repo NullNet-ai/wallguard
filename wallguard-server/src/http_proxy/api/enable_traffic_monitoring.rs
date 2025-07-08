@@ -27,7 +27,7 @@ pub async fn enable_traffic_monitoring(
 
     let Ok(device) = context
         .datastore
-        .obtain_device_by_id(&jwt, &body.device_id)
+        .obtain_device_by_id(&jwt, &body.device_id, false)
         .await
     else {
         return HttpResponse::InternalServerError()

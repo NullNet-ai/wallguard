@@ -9,9 +9,7 @@ impl Datastore {
         code: &InstallationCode,
         token: &str,
     ) -> Result<(), Error> {
-        let update = json!({
-            "reedemed": true
-        });
+        let update = json!({"redeemed": true});
 
         let request = UpdateRequestBuilder::new()
             .performed_by_root(true)

@@ -97,23 +97,12 @@ impl AuthReqHandler {
             let mut device = match self
                 .context
                 .datastore
-                .obtain_device_by_id(&root_token.jwt, &installation_code.device_id)
+                .obtain_device_by_id(&root_token.jwt, &installation_code.device_id, true)
                 .await
             {
                 Ok(Some(device)) => device,
                 Ok(None) => {
-                    log::error!(
-                        "Device assosiated with installtion code {} doest not exist",
-                        auth.code
-                    );
-
-                    let status = Status::internal(format!(
-                        "Device assosiated with installtion code {} doest not exist",
-                        auth.code
-                    ));
-                    let _ = outbound.send(Err(status)).await;
-
-                    return;
+                    fail_with_status!(outbound, "Device assosiated with the device does not exist")
                 }
                 Err(_) => fail_with_status!(outbound, "Failed to fetch device"),
             };
@@ -121,6 +110,7 @@ impl AuthReqHandler {
             device.authorized = true;
             device.online = true;
             device.os = auth.target_os;
+            device.uuid = auth.uuid.clone();
 
             if self
                 .context
@@ -185,6 +175,8 @@ impl AuthReqHandler {
             };
 
             if device.is_some() {
+                let device = device.unwrap();
+
                 let client = Arc::new(Mutex::new(Client::new(
                     auth.uuid.clone(),
                     installation_code.organization_id,
@@ -193,12 +185,16 @@ impl AuthReqHandler {
                     self.context.clone(),
                 )));
 
-                let authentication = AuthenticationData::default();
+                if device.authorized {
+                    let authentication = AuthenticationData::default();
 
-                if client.lock().await.authorize(authentication).await.is_ok() {
-                    clients.insert(auth.uuid, client.clone());
+                    if client.lock().await.authorize(authentication).await.is_ok() {
+                        clients.insert(auth.uuid, client.clone());
+                    } else {
+                        log::error!("Failed to authorize a device")
+                    }
                 } else {
-                    log::error!("Failed to authorize a device")
+                    clients.insert(auth.uuid, client.clone());
                 }
             } else {
                 let device = Device {

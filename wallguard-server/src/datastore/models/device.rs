@@ -39,8 +39,9 @@ impl Device {
             "is_telemetry_monitoring_enabled".into(),
             "is_device_authorized".into(),
             "device_category".into(),
-            "device_model".into(),
+            "device_type".into(),
             "device_os".into(),
+            "device_name".into(),
             "is_device_online".into(),
             "organization_id".into(),
         ]
