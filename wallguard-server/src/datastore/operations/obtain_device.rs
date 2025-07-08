@@ -51,11 +51,13 @@ impl Datastore {
         &self,
         token: &str,
         device_id: &str,
+        performed_by_root: bool,
     ) -> Result<Option<Device>, Error> {
         let request = GetByIdRequestBuilder::new()
             .id(device_id)
             .pluck(Device::pluck())
             .table(DBTable::Devices)
+            .performed_by_root(performed_by_root)
             .build();
 
         let response = self.inner.clone().get_by_id(request, token).await?;

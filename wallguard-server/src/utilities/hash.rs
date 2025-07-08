@@ -1,7 +1,6 @@
 use sha2::Digest;
 use sha2::Sha256;
 
-
 /// Calculates the SHA-256 digest of the input string and returns it as a 32-byte array.
 ///
 /// # Arguments

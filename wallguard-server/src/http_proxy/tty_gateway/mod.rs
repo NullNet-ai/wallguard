@@ -39,7 +39,7 @@ pub(super) async fn open_tty_session(
 
     let Ok(device) = context
         .datastore
-        .obtain_device_by_id(&token.jwt, &session.device_id)
+        .obtain_device_by_id(&token.jwt, &session.device_id, false)
         .await
     else {
         return HttpResponse::InternalServerError()

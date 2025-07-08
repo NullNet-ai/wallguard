@@ -44,8 +44,8 @@ impl UpdateRequestBuilder {
     pub fn build(self) -> UpdateRequest {
         UpdateRequest {
             params: Some(Params {
-                id: self.id.expect("Missing 'id'"),
-                table: self.table.expect("Missing 'table'"),
+                id: self.id.unwrap_or_default(),
+                table: self.table.unwrap_or_default(),
                 r#type: if self.is_root {
                     String::from("root")
                 } else {

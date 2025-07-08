@@ -17,8 +17,10 @@ pub struct Device {
     pub authorized: bool,
     #[serde(rename = "device_category")]
     pub category: String,
-    #[serde(rename = "device_model")]
-    pub model: String,
+    #[serde(rename = "device_type")]
+    pub r#type: String,
+    #[serde(rename = "device_name")]
+    pub name: String,
     #[serde(rename = "device_os")]
     pub os: String,
     #[serde(rename = "is_device_online")]
@@ -37,8 +39,9 @@ impl Device {
             "is_telemetry_monitoring_enabled".into(),
             "is_device_authorized".into(),
             "device_category".into(),
-            "device_model".into(),
+            "device_type".into(),
             "device_os".into(),
+            "device_name".into(),
             "is_device_online".into(),
             "organization_id".into(),
         ]

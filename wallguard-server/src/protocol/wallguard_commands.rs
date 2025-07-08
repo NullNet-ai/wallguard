@@ -4,15 +4,15 @@ pub struct AuthorizationRequest {
     #[prost(string, tag = "1")]
     pub uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub org_id: ::prost::alloc::string::String,
+    pub code: ::prost::alloc::string::String,
     /// Client Data
     ///
     /// Client category: App, Load balancer, Firewall, etc.
     #[prost(string, tag = "3")]
     pub category: ::prost::alloc::string::String,
-    /// Model of client, e.g. OPNSence vs PfSense.
+    /// Type of client, e.g. OPNSence vs PfSense.
     #[prost(string, tag = "4")]
-    pub model: ::prost::alloc::string::String,
+    pub r#type: ::prost::alloc::string::String,
     /// Client's operating system
     #[prost(string, tag = "5")]
     pub target_os: ::prost::alloc::string::String,
