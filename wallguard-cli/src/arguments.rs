@@ -18,8 +18,8 @@ pub enum Command {
 
     /// Join an organization
     Join {
-        /// Organization ID
-        org_id: String,
+        /// Installation Code
+        installation_code: String,
     },
 
     /// Leave the current organization

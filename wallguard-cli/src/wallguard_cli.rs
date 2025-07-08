@@ -16,14 +16,11 @@ pub mod status {
         Error(super::Error),
     }
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Connected {
-    #[prost(string, tag = "2")]
-    pub org_id: ::prost::alloc::string::String,
-}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct Connected {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Error {
-    #[prost(string, tag = "2")]
+    #[prost(string, tag = "1")]
     pub message: ::prost::alloc::string::String,
 }
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
@@ -38,7 +35,7 @@ pub struct Caps {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct JoinOrgReq {
     #[prost(string, tag = "1")]
-    pub org_id: ::prost::alloc::string::String,
+    pub installation_code: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct JoinOrgRes {

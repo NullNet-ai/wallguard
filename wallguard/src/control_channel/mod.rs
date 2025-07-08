@@ -29,29 +29,20 @@ pub(crate) type OutboundStream = Arc<Mutex<mpsc::Sender<ClientMessage>>>;
 #[derive(Debug, Clone)]
 pub struct ControlChannel {
     context: Context,
-    org_id: String,
     terminate: broadcast::Sender<()>,
 }
 
 impl ControlChannel {
-    pub fn new(context: Context, org_id: String) -> Self {
+    pub fn new(context: Context, code: String) -> Self {
         let (terminate, _) = broadcast::channel(1);
 
         tokio::spawn(stream_wrapper(
             context.clone(),
-            org_id.clone(),
+            code.clone(),
             terminate.subscribe(),
         ));
 
-        Self {
-            context,
-            org_id,
-            terminate,
-        }
-    }
-
-    pub fn get_org_id(&self) -> String {
-        self.org_id.clone()
+        Self { context, terminate }
     }
 
     pub async fn terminate(&self) {
@@ -59,6 +50,7 @@ impl ControlChannel {
 
         manager.terminate_packet_capture();
         manager.terminate_resource_monitoring();
+        manager.terminate_sysconfig_monitoring();
 
         drop(manager);
 
@@ -66,10 +58,14 @@ impl ControlChannel {
     }
 }
 
-async fn stream_wrapper(context: Context, org_id: String, mut terminate: broadcast::Receiver<()>) {
+async fn stream_wrapper(
+    context: Context,
+    installation_code: String,
+    mut terminate: broadcast::Receiver<()>,
+) {
     tokio::select! {
         _ = terminate.recv() => {}
-        result = control_stream(context.clone(), &org_id) => {
+        result = control_stream(context.clone(), &installation_code) => {
             if let Err(err) = result {
                 Daemon::on_error(context.daemon, err.to_str()).await;
             }
@@ -77,7 +73,7 @@ async fn stream_wrapper(context: Context, org_id: String, mut terminate: broadca
     };
 }
 
-async fn control_stream(context: Context, org_id: &str) -> Result<(), Error> {
+async fn control_stream(context: Context, installation_code: &str) -> Result<(), Error> {
     let (outbound, receiver) = mpsc::channel(64);
     let inbound = context.server.request_control_channel(receiver).await?;
 
@@ -88,7 +84,7 @@ async fn control_stream(context: Context, org_id: &str) -> Result<(), Error> {
         inbound.clone(),
         outbound.clone(),
         context.client_data.clone(),
-        org_id,
+        installation_code,
     )
     .await?
     {

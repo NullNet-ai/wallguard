@@ -47,12 +47,11 @@ pub async fn main() -> AnyResult<()> {
             println!("WallGuard State:");
 
             match response.state.unwrap() {
-                State::Idle(idle) => {
+                State::Idle(_) => {
                     println!("  STATE    : IDLE");
                 }
-                State::Connected(connected) => {
+                State::Connected(_) => {
                     println!("  STATE    : CONNECTED");
-                    println!("  Org ID   : {}", connected.org_id);
                 }
                 State::Error(error) => {
                     println!("  STATE    : ERROR");
@@ -68,8 +67,11 @@ pub async fn main() -> AnyResult<()> {
             println!("  SysConf  : {}", response.sysconfig);
             println!("  Telemetry: {}", response.telemetry);
         }
-        arguments::Command::Join { org_id } => {
-            let response = client.join_org(JoinOrgReq { org_id }).await?.into_inner();
+        arguments::Command::Join { installation_code } => {
+            let response = client
+                .join_org(JoinOrgReq { installation_code })
+                .await?
+                .into_inner();
 
             match response.success {
                 true => println!("Successfully joined organization."),

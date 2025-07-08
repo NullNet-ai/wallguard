@@ -22,10 +22,8 @@ impl Into<Status> for DaemonState {
     fn into(self) -> Status {
         let state = match self {
             DaemonState::Idle => State::Idle(()),
-            DaemonState::Connected(contorol_stream) => {
-                let data = Connected {
-                    org_id: contorol_stream.get_org_id(),
-                };
+            DaemonState::Connected(_) => {
+                let data = Connected {};
                 State::Connected(data)
             }
             DaemonState::Error(message) => {

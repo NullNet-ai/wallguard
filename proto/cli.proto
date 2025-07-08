@@ -19,12 +19,10 @@ message Status {
     }
 }
 
-message Connected {
-    string org_id = 2;
-}
+message Connected {}
 
 message Error {
-    string message = 2;
+    string message = 1;
 }
 
 message Caps {
@@ -34,7 +32,7 @@ message Caps {
 }
 
 message JoinOrgReq {
-    string org_id = 1;
+    string installation_code = 1;
 }
 
 message JoinOrgRes {
