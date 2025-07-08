@@ -48,9 +48,9 @@ impl WallguardCli for CliServer {
         &self,
         request: tonic::Request<JoinOrgReq>,
     ) -> Result<tonic::Response<JoinOrgRes>, tonic::Status> {
-        let org_id = request.into_inner().org_id;
+        let installation_code = request.into_inner().installation_code;
 
-        let response = match Daemon::join_org(self.inner.clone(), org_id).await {
+        let response = match Daemon::join_org(self.inner.clone(), installation_code).await {
             Ok(_) => JoinOrgRes {
                 success: true,
                 message: String::from("OK"),

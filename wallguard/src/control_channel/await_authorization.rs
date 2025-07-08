@@ -16,16 +16,16 @@ pub async fn await_authorization(
     inbound: InboundStream,
     outbound: OutboundStream,
     client_data: ClientData,
-    org_id: impl Into<String>,
+    installation_code: impl Into<String>,
 ) -> Result<Verdict, Error> {
     let message = ClientMessage {
         message: Some(client_message::Message::AuthorizationRequest(
             AuthorizationRequest {
                 uuid: client_data.uuid,
+                code: installation_code.into(),
                 category: client_data.category,
-                model: client_data.platform.to_string(),
+                r#type: client_data.platform.to_string(),
                 target_os: client_data.target_os.to_string(),
-                org_id: org_id.into(),
             },
         )),
     };
