@@ -21,6 +21,14 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::Status;
 
+macro_rules! fail_with_status {
+    ($outbound:expr, $msg:expr) => {{
+        log::error!("{}", $msg);
+        let _ = $outbound.send(Err(tonic::Status::internal($msg))).await;
+        return;
+    }};
+}
+
 pub struct AuthReqHandler {
     context: AppContext,
 }
@@ -59,23 +67,12 @@ impl AuthReqHandler {
 
         let root_token = match self.context.root_token_provider.get().await {
             Ok(token) => token,
-            Err(err) => {
-                log::error!("Failed to fetch root token: {}", err.to_str());
-                let status = Status::internal("Internal Server Error: wrong root credentials");
-                let _ = outbound.send(Err(status)).await;
-                return;
-            }
+            Err(_) => fail_with_status!(outbound, "Failed to obtain root token"),
         };
 
         let sys_token = match self.context.sysdev_token_provider.get().await {
             Ok(token) => token,
-            Err(err) => {
-                log::error!("Failed to fetch sysdevice token: {}", err.to_str());
-                let status =
-                    Status::internal("Internal Server Error: wrong system device credentials");
-                let _ = outbound.send(Err(status)).await;
-                return;
-            }
+            Err(_) => fail_with_status!(outbound, "Failed to obtain system device token"),
         };
 
         let installation_code = match self
@@ -93,13 +90,7 @@ impl AuthReqHandler {
 
                 code.unwrap()
             }
-            Err(err) => {
-                log::error!("Failed to fetch installation code: {}", err.to_str());
-                let status =
-                    Status::internal("Internal Server Error: failed to fetch installation code");
-                let _ = outbound.send(Err(status)).await;
-                return;
-            }
+            Err(_) => fail_with_status!(outbound, "Failed to fetch installation code"),
         };
 
         if !installation_code.redeemed {
@@ -124,19 +115,12 @@ impl AuthReqHandler {
 
                     return;
                 }
-                Err(_) => {
-                    log::error!("Internal Server Error: failed to fetch device");
-
-                    let status =
-                        Status::internal(format!("Internal Server Error: failed to fetch device"));
-
-                    let _ = outbound.send(Err(status)).await;
-                    return;
-                }
+                Err(_) => fail_with_status!(outbound, "Failed to fetch device"),
             };
 
             device.authorized = true;
             device.online = true;
+            device.os = auth.target_os;
 
             if self
                 .context
@@ -145,10 +129,7 @@ impl AuthReqHandler {
                 .await
                 .is_err()
             {
-                log::error!("Failed to update device");
-                let status = Status::internal("Failed to update device");
-                let _ = outbound.send(Err(status)).await;
-                return;
+                fail_with_status!(outbound, "Failed to update device")
             }
 
             if self
@@ -158,10 +139,7 @@ impl AuthReqHandler {
                 .await
                 .is_err()
             {
-                log::error!("Failed to redeem code");
-                let status = Status::internal("Failed to redeem code");
-                let _ = outbound.send(Err(status)).await;
-                return;
+                fail_with_status!(outbound, "Failed to redeem installation code")
             }
 
             let account_id = utilities::random::generate_random_string(12);
@@ -174,10 +152,7 @@ impl AuthReqHandler {
                 .await
                 .is_err()
             {
-                log::error!("Failed to register device");
-                let status = Status::internal("Failed to register device");
-                let _ = outbound.send(Err(status)).await;
-                return;
+                fail_with_status!(outbound, "Failed to register device")
             }
 
             let client = Arc::new(Mutex::new(Client::new(
@@ -199,26 +174,64 @@ impl AuthReqHandler {
                 log::error!("Failed to authorize a device")
             }
         } else {
-            let device = Device {
-                authorized: false,
-                uuid: auth.uuid.clone(),
-                category: auth.category,
-                model: auth.model,
-                os: auth.target_os,
-                online: true,
-                organization: installation_code.organization_id.clone(),
-                ..Default::default()
+            let device = match self
+                .context
+                .datastore
+                .obtain_device_by_uuid(&root_token.jwt, &auth.uuid)
+                .await
+            {
+                Ok(device) => device,
+                Err(_) => fail_with_status!(outbound, "Failed to obtain device"),
             };
 
-            let client = Client::new(
-                auth.uuid.clone(),
-                installation_code.organization_id,
-                inbound,
-                outbound,
-                self.context.clone(),
-            );
+            if device.is_some() {
+                let client = Arc::new(Mutex::new(Client::new(
+                    auth.uuid.clone(),
+                    installation_code.organization_id,
+                    inbound,
+                    outbound,
+                    self.context.clone(),
+                )));
 
-            clients.insert(auth.uuid, Arc::new(Mutex::new(client)));
+                let authentication = AuthenticationData::default();
+
+                if client.lock().await.authorize(authentication).await.is_ok() {
+                    clients.insert(auth.uuid, client.clone());
+                } else {
+                    log::error!("Failed to authorize a device")
+                }
+            } else {
+                let device = Device {
+                    authorized: false,
+                    uuid: auth.uuid.clone(),
+                    category: auth.category,
+                    r#type: auth.r#type,
+                    os: auth.target_os,
+                    online: true,
+                    organization: installation_code.organization_id.clone(),
+                    ..Default::default()
+                };
+
+                if self
+                    .context
+                    .datastore
+                    .create_device(&sys_token.jwt, &device)
+                    .await
+                    .is_err()
+                {
+                    fail_with_status!(outbound, "Failed to create device")
+                }
+
+                let client = Arc::new(Mutex::new(Client::new(
+                    auth.uuid.clone(),
+                    installation_code.organization_id,
+                    inbound,
+                    outbound,
+                    self.context.clone(),
+                )));
+
+                clients.insert(auth.uuid, client.clone());
+            }
         }
     }
 }
