@@ -7,8 +7,13 @@ impl WallGuardService {
         &self,
         token: &Token,
     ) -> Result<Device, Error> {
-        let device = token.account.device.as_ref().ok_or("Wrong token type").handle_err(location!())?;
-        
+        let device = token
+            .account
+            .device
+            .as_ref()
+            .ok_or("Wrong token type")
+            .handle_err(location!())?;
+
         let device = self
             .context
             .datastore

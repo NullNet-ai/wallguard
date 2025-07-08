@@ -6,7 +6,7 @@ import "google/protobuf/empty.proto";
 
 message AuthorizationRequest {
     string uuid = 1;
-    string org_id = 2;
+    string code = 2;
     
     // Client Data
     string category = 3;  // Client category: App, Load balancer, Firewall, etc.

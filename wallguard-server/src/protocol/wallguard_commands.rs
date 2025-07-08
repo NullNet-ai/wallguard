@@ -4,7 +4,7 @@ pub struct AuthorizationRequest {
     #[prost(string, tag = "1")]
     pub uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub org_id: ::prost::alloc::string::String,
+    pub code: ::prost::alloc::string::String,
     /// Client Data
     ///
     /// Client category: App, Load balancer, Firewall, etc.
