@@ -1,4 +1,4 @@
-name: Rust
+name: Mirror to GitLab
 
 on:
   push:
