@@ -1,9 +1,7 @@
+use crate::control_service::service::WallGuardService;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
-
-use crate::{
-    control_service::service::WallGuardService, protocol::wallguard_service::SystemResourcesData,
-};
+use wallguard_common::protobuf::wallguard_service::SystemResourcesData;
 
 impl WallGuardService {
     pub(crate) async fn handle_system_resources_data_impl(

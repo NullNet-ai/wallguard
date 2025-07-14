@@ -1,5 +1,5 @@
 use crate::{context::Context, token_provider::RetrievalStrategy};
-use nullnet_libwallguard::DeviceSettingsRequest;
+use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
 use std::time::Duration;
 
 pub async fn post_startup(context: Context) {

@@ -25,4 +25,6 @@ COPY --from=builder /wallguard-server/target/release/wallguard-server .
 COPY --from=builder /wallguard-server/tls ./tls/
 
 EXPOSE 50051
+EXPOSE 4444
+
 CMD ["./wallguard-server"]

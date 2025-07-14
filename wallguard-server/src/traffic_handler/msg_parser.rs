@@ -1,5 +1,4 @@
 use super::{ip_header::IpHeader, parsed_message::ParsedMessage};
-use crate::protocol::wallguard_service::PacketsData;
 use crate::traffic_handler::connections_map::{ConnectionKey, ConnectionValue, ConnectionsMap};
 use crate::traffic_handler::transport_header::TransportHeader;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
@@ -10,6 +9,7 @@ use nullnet_libipinfo::get_ip_to_lookup;
 use nullnet_libtoken::Token;
 use std::net::IpAddr;
 use std::sync::mpsc::Sender;
+use wallguard_common::protobuf::wallguard_service::PacketsData;
 
 pub fn parse_message(
     message: PacketsData,

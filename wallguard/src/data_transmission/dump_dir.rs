@@ -1,9 +1,9 @@
 use crate::constants::DUMP_DIR;
-use nullnet_libwallguard::{PacketsData, SystemResourcesData};
 use std::ops::RangeTo;
 use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use tokio::fs;
+use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResourcesData};
 
 #[derive(Clone, Debug)]
 pub(crate) struct DumpDir {

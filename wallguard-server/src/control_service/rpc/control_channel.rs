@@ -1,6 +1,6 @@
 use crate::control_service::service::WallGuardService;
-use crate::protocol::wallguard_commands::ClientMessage;
-use crate::protocol::wallguard_service::wall_guard_server::WallGuard;
+use wallguard_common::protobuf::wallguard_commands::ClientMessage;
+use wallguard_common::protobuf::wallguard_service::wall_guard_server::WallGuard;
 
 use tokio::sync::mpsc;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;

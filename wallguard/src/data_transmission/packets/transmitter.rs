@@ -5,9 +5,9 @@ use crate::timer::Timer;
 use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
 use async_channel::Receiver;
-use nullnet_libwallguard::{Packet, PacketsData};
 use nullnet_traffic_monitor::PacketInfo;
 use std::cmp::min;
+use wallguard_common::protobuf::wallguard_service::{Packet, PacketsData};
 
 pub(crate) async fn transmit_packets(
     rx: Receiver<PacketInfo>,

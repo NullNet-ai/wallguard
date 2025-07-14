@@ -6,12 +6,12 @@ use tonic::Streaming;
 
 use crate::app_context::AppContext;
 use crate::orchestrator::control_stream::control_stream;
-use crate::protocol::wallguard_commands::AuthenticationData;
-use crate::protocol::wallguard_commands::ClientMessage;
-use crate::protocol::wallguard_commands::ServerMessage;
-use crate::protocol::wallguard_commands::SshSessionData;
-use crate::protocol::wallguard_commands::UiSessionData;
-use crate::protocol::wallguard_commands::server_message::Message;
+use wallguard_common::protobuf::wallguard_commands::AuthenticationData;
+use wallguard_common::protobuf::wallguard_commands::ClientMessage;
+use wallguard_common::protobuf::wallguard_commands::ServerMessage;
+use wallguard_common::protobuf::wallguard_commands::SshSessionData;
+use wallguard_common::protobuf::wallguard_commands::UiSessionData;
+use wallguard_common::protobuf::wallguard_commands::server_message::Message;
 
 pub(crate) type OutboundStream = mpsc::Sender<Result<ServerMessage, Status>>;
 pub(crate) type InboundStream = Streaming<ClientMessage>;

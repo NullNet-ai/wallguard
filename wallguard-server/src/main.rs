@@ -7,7 +7,6 @@ mod control_service;
 mod datastore;
 mod http_proxy;
 mod orchestrator;
-mod protocol;
 mod reverse_tunnel;
 mod token_provider;
 mod traffic_handler;

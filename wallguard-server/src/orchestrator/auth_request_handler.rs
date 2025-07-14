@@ -12,14 +12,14 @@
 use crate::app_context::AppContext;
 use crate::datastore::Device;
 use crate::orchestrator::client::{Client, InboundStream, OutboundStream};
-use crate::protocol::wallguard_commands::server_message::Message;
-use crate::protocol::wallguard_commands::{
-    AuthenticationData, AuthorizationRequest, ServerMessage,
-};
 use crate::utilities;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::Status;
+use wallguard_common::protobuf::wallguard_commands::server_message::Message;
+use wallguard_common::protobuf::wallguard_commands::{
+    AuthenticationData, AuthorizationRequest, ServerMessage,
+};
 
 macro_rules! fail_with_status {
     ($outbound:expr, $msg:expr) => {{

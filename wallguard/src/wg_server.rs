@@ -1,11 +1,12 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libwallguard::{
-    ClientMessage, ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData,
-    ServerMessage, SystemResourcesData, WallGuardGrpcInterface,
-};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 use tokio::sync::{mpsc, Mutex};
 use tonic::Streaming;
+use wallguard_common::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
+use wallguard_common::protobuf::wallguard_service::{
+    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+};
+use wallguard_common::wallguard_interface::WallGuardGrpcInterface;
 
 #[derive(Debug, Clone)]
 pub struct WGServer {

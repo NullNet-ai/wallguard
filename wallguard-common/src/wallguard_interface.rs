@@ -1,19 +1,18 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
-pub use proto::wallguard_commands::*;
-pub use proto::wallguard_service::*;
-
-use proto::wallguard_service::wall_guard_client::WallGuardClient;
-
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tonic::Request;
-pub use tonic::Streaming;
+use tonic::Streaming;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Channel;
 
-mod proto;
+use crate::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
+use crate::protobuf::wallguard_service::wall_guard_client::WallGuardClient;
+use crate::protobuf::wallguard_service::{
+    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+};
 
 #[derive(Clone, Debug)]
 pub struct WallGuardGrpcInterface {

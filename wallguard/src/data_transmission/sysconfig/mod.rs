@@ -9,9 +9,9 @@ use crate::{
 };
 use detector::{Detector, State};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libwallguard::{ConfigSnapshot, ConfigStatus, FileSnapshot};
 use std::time::Duration;
 use tokio::sync::broadcast;
+use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus, FileSnapshot};
 use watcher::Watcher;
 
 mod detector;

@@ -1,0 +1,21 @@
+[package]
+name = "wallguard-common"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+prost.workspace = true
+tonic.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+nullnet-liberror.workspace = true
+
+[build-dependencies]
+tonic-build = "0.13.1"
+
+[features]
+cli = []
+client = []
+server = []
+default = ["client", "server", "cli"]

@@ -2,8 +2,13 @@
 
 #[allow(clippy::enum_variant_names)]
 #[rustfmt::skip]
-pub mod wallguard_service;
+#[cfg(feature = "cli")]
+pub mod wallguard_cli;
 
 #[allow(clippy::enum_variant_names)]
 #[rustfmt::skip]
 pub mod wallguard_commands;
+
+#[allow(clippy::enum_variant_names)]
+#[rustfmt::skip]
+pub mod wallguard_service;

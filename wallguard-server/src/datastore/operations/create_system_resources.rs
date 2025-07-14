@@ -1,7 +1,7 @@
 use crate::datastore::db_tables::DBTable;
 use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder};
-use crate::protocol::wallguard_service::SystemResource;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use wallguard_common::protobuf::wallguard_service::SystemResource;
 
 impl Datastore {
     pub async fn create_system_resources(

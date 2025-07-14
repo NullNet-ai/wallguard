@@ -1,16 +1,16 @@
-use crate::protocol::wallguard_commands::{ClientMessage, ServerMessage};
-use crate::protocol::wallguard_service::wall_guard_server::WallGuardServer;
-use crate::protocol::wallguard_service::{
-    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
-};
+use crate::app_context::AppContext;
 use crate::traffic_handler::ip_info::ip_info_handler;
-use crate::{app_context::AppContext, protocol::wallguard_service::wall_guard_server::WallGuard};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::net::{IpAddr, SocketAddr};
 use std::sync::mpsc;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status, Streaming};
+use wallguard_common::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
+use wallguard_common::protobuf::wallguard_service::wall_guard_server::{WallGuard, WallGuardServer};
+use wallguard_common::protobuf::wallguard_service::{
+    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+};
 
 // @TODO: Configure through ENV
 const IP_INFO_CACHE_SIZE: usize = 10_000;

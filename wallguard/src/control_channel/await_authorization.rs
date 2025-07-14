@@ -1,5 +1,7 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libwallguard::{client_message, server_message, AuthorizationRequest, ClientMessage};
+use wallguard_common::protobuf::wallguard_commands::{
+    client_message, server_message, AuthorizationRequest, ClientMessage,
+};
 
 use crate::{
     client_data::ClientData,

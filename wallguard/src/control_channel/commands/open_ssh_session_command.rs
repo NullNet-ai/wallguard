@@ -2,7 +2,7 @@ use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::utilities;
 use nullnet_liberror::{location, ErrorHandler, Location};
-use nullnet_libwallguard::SshSessionData;
+use wallguard_common::protobuf::wallguard_commands::SshSessionData;
 use tokio::io::copy_bidirectional;
 use tokio::io::AsyncWriteExt as _;
 use tokio::net::TcpStream;

@@ -1,11 +1,11 @@
 use crate::datastore::Datastore;
-use crate::protocol::wallguard_service::ConfigSnapshot;
 use crate::utilities;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
 use libfireparse::{Configuration, FileData, FireparseError, Parser, Platform};
 use nullnet_liberror::Error;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
+use wallguard_common::protobuf::wallguard_service::ConfigSnapshot;
 
 // @TODO
 // Save & Update records "status": Active, Draft

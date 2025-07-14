@@ -1,8 +1,8 @@
 use crate::control_service::service::WallGuardService;
-use crate::protocol::wallguard_service::DeviceSettingsRequest;
-use crate::protocol::wallguard_service::DeviceSettingsResponse;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
+use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
+use wallguard_common::protobuf::wallguard_service::DeviceSettingsResponse;
 
 impl WallGuardService {
     pub(crate) async fn get_device_settings_impl(

@@ -5,7 +5,7 @@ use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
 use async_channel::Receiver;
 use chrono::Utc;
-use nullnet_libwallguard::{SystemResource, SystemResourcesData};
+use wallguard_common::protobuf::wallguard_service::{SystemResource, SystemResourcesData};
 
 pub(crate) async fn transmit_system_resources(
     rx: Receiver<nullnet_libresmon::SystemResources>,

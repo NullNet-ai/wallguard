@@ -13,8 +13,8 @@
 use crate::app_context::AppContext;
 use crate::orchestrator::auth_request_handler::AuthReqHandler;
 use crate::orchestrator::client::{InboundStream, OutboundStream};
-use crate::protocol::wallguard_commands::client_message::Message;
 use std::time::Duration;
+use wallguard_common::protobuf::wallguard_commands::client_message::Message;
 
 const AUTH_TIMEOUT: Duration = Duration::from_millis(1_000);
 

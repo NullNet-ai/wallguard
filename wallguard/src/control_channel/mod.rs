@@ -11,11 +11,13 @@ use crate::storage::{Secret, Storage};
 use await_authorization::await_authorization;
 use commands::OpenSshSessionCommand;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use nullnet_libwallguard::{server_message, ClientMessage, ServerMessage};
 use send_authenticate::send_authenticate;
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, Mutex};
 use tonic::Streaming;
+use wallguard_common::protobuf::wallguard_commands::{
+    server_message, ClientMessage, ServerMessage,
+};
 
 mod await_authorization;
 mod command;

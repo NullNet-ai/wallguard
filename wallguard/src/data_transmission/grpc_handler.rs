@@ -2,10 +2,10 @@ use crate::constants::BATCH_SIZE;
 use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
 use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
-use nullnet_libwallguard::{PacketsData, SystemResourcesData};
 use std::cmp::min;
 use std::time::Duration;
 use tokio::fs;
+use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResourcesData};
 
 /**
  * TODO: Handle reconnections & retransmissions

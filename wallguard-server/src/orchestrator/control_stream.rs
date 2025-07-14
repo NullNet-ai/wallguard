@@ -3,8 +3,10 @@ use std::time::Duration;
 
 use crate::app_context::AppContext;
 use crate::orchestrator::client::{InboundStream, OutboundStream};
-use crate::protocol::wallguard_commands::{ServerMessage, client_message, server_message};
 use crate::token_provider::TokenProvider;
+use wallguard_common::protobuf::wallguard_commands::{
+    ServerMessage, client_message, server_message,
+};
 
 const HEARTBEAT_TIME: Duration = Duration::from_secs(20);
 const TOKEN_UPDATE_TIME: Duration = Duration::from_secs(60);
