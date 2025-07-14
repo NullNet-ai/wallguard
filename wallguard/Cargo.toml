@@ -25,13 +25,10 @@ nullnet-libresmon = "0.1.2"
 bincode = "1.3.3"
 get_if_addrs = "0.5.3"
 pnet = "0.35.0"
-wallguard-common = { path = "../wallguard-common", features = ["client"] }
+wallguard-common = { path = "../wallguard-common" }
 prost.workspace = true
 tonic.workspace = true
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 nullnet-liberror.workspace = true
-
-[build-dependencies]
-tonic-build = "0.13.1"

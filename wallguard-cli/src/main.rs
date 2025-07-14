@@ -3,10 +3,10 @@ use arguments::Arguments;
 use clap::Parser;
 use std::time::Duration;
 use tonic::transport::{Channel, Error};
-use wallguard_cli::{status::State, wallguard_cli_client::WallguardCliClient, JoinOrgReq};
+use wallguard_common::protobuf::wallguard_cli::{
+    status::State, wallguard_cli_client::WallguardCliClient, JoinOrgReq,
+};
 
-#[rustfmt::skip]
-mod wallguard_cli;
 mod arguments;
 
 type Client = WallguardCliClient<Channel>;

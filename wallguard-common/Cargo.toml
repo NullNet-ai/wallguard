@@ -13,9 +13,3 @@ nullnet-liberror.workspace = true
 
 [build-dependencies]
 tonic-build = "0.13.1"
-
-[features]
-cli = []
-client = []
-server = []
-default = ["client", "server", "cli"]

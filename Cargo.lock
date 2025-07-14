@@ -3722,7 +3722,6 @@ dependencies = [
  "sysinfo",
  "tokio",
  "tonic 0.13.1",
- "tonic-build 0.13.1",
  "wallguard-common",
 ]
 
@@ -3735,7 +3734,7 @@ dependencies = [
  "prost",
  "tokio",
  "tonic 0.13.1",
- "tonic-build 0.13.1",
+ "wallguard-common",
 ]
 
 [[package]]
@@ -3784,7 +3783,6 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tonic 0.13.1",
- "tonic-build 0.13.1",
  "wallguard-common",
  "webpki-roots",
 ]

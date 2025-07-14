@@ -10,6 +10,4 @@ tonic.workspace = true
 tokio.workspace = true
 clap = {version = "4.5.39", features = ["derive"]}
 anyhow = "1.0.98"
-
-[build-dependencies]
-tonic-build = "0.13.1"
+wallguard-common = { path = "../wallguard-common" }
