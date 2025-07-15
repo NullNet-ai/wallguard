@@ -1,6 +1,6 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use std::path::PathBuf;
 use std::fmt;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
