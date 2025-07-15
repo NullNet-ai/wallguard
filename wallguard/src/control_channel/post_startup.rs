@@ -1,6 +1,6 @@
 use crate::{context::Context, token_provider::RetrievalStrategy};
-use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
 use std::time::Duration;
+use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
 
 pub async fn post_startup(context: Context) {
     let timeout = Duration::from_secs(10);

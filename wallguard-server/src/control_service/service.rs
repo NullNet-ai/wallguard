@@ -7,7 +7,9 @@ use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Server;
 use tonic::{Request, Response, Status, Streaming};
 use wallguard_common::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
-use wallguard_common::protobuf::wallguard_service::wall_guard_server::{WallGuard, WallGuardServer};
+use wallguard_common::protobuf::wallguard_service::wall_guard_server::{
+    WallGuard, WallGuardServer,
+};
 use wallguard_common::protobuf::wallguard_service::{
     ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
 };

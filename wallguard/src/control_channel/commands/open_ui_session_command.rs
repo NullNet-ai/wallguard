@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use wallguard_common::protobuf::wallguard_commands::UiSessionData;
 use tokio::{io::AsyncWriteExt, net::TcpStream};
+use wallguard_common::protobuf::wallguard_commands::UiSessionData;
 
 use crate::{context::Context, control_channel::command::ExecutableCommand};
 

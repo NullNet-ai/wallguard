@@ -1,7 +1,6 @@
 use crate::app_context::AppContext;
 use crate::http_proxy::utilities::authorization;
 use crate::http_proxy::utilities::error_json::ErrorJson;
-use wallguard_common::protobuf::wallguard_commands::AuthenticationData;
 use crate::utilities;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
@@ -10,6 +9,7 @@ use actix_web::web::Data;
 use actix_web::web::Json;
 use serde::Deserialize;
 use serde_json::json;
+use wallguard_common::protobuf::wallguard_commands::AuthenticationData;
 
 #[derive(Deserialize)]
 pub struct RequestPayload {

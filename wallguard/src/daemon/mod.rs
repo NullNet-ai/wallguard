@@ -55,7 +55,10 @@ impl Daemon {
         self.state.clone().into()
     }
 
-    pub(crate) async fn join_org(this: Arc<Mutex<Daemon>>, installation_code: String) -> Result<(), String> {
+    pub(crate) async fn join_org(
+        this: Arc<Mutex<Daemon>>,
+        installation_code: String,
+    ) -> Result<(), String> {
         let mut lock = this.lock().await;
         match &lock.state {
             DaemonState::Idle => {
