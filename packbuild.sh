@@ -3,7 +3,7 @@ set -e
 
 case "$1" in
     deb)
-        cargo build --release
+        cargo build --release -p wallguard -p wallguard-cli
 
         mkdir -p packages/debian/usr/local/bin
         cp target/release/wallguard packages/debian/usr/local/bin/
@@ -15,7 +15,6 @@ case "$1" in
 
         ;;
     *)
-        echo "Usage: $0 deb"
         echo "Unsupported or missing parameter."
         exit 1
         ;;

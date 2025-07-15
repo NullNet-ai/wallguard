@@ -1,11 +1,9 @@
-# TODO: FIX
-
 FROM rust:latest AS builder
 
 WORKDIR /wallguard-server
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends cmake protobuf-compiler && \
+    apt-get install -y --no-install-recommends cmake protobuf-compiler libprotobuf-dev && \
     apt-get clean && \ 
     rm -rf /var/lib/apt/lists/*
 
@@ -13,7 +11,7 @@ COPY Cargo.toml ./
 
 COPY . .
 
-RUN cargo build --release
+RUN cargo build --release -p wallguard-server
 
 FROM debian:bookworm-slim
 
@@ -24,7 +22,6 @@ RUN apt-get update && \
 
 WORKDIR /app
 COPY --from=builder /wallguard-server/target/release/wallguard-server .
-COPY --from=builder /wallguard-server/tls ./tls/
 
 EXPOSE 50051
 EXPOSE 4444

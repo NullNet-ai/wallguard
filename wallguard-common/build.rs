@@ -1,6 +1,6 @@
-const OUTPUT_DIR: &'static str = "./src/protobuf";
-const INCLUDE_PATH: &'static str = "../proto";
-const PROTO_FILES: [&'static str; 3] = [
+const OUTPUT_DIR: &str = "./src/protobuf";
+const INCLUDE_PATHS: [&str; 2] = ["../proto", "/usr/include"];
+const PROTO_FILES: [&str; 3] = [
     "../proto/cli.proto",
     "../proto/commands.proto",
     "../proto/service.proto",
@@ -25,6 +25,6 @@ fn main() {
             "wallguard_service.SystemResource",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
-        .compile_protos(&PROTO_FILES, &[INCLUDE_PATH])
+        .compile_protos(&PROTO_FILES, &INCLUDE_PATHS)
         .expect("Protobuf files generation failed");
 }
