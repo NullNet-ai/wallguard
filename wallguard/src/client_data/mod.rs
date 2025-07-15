@@ -32,7 +32,7 @@ impl TryFrom<String> for ClientData {
         Ok(Self {
             target_os,
             platform,
-            uuid: uuid,
+            uuid,
             category,
         })
     }

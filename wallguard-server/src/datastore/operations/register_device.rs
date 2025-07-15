@@ -14,7 +14,7 @@ impl Datastore {
             .account_id(account_id)
             .account_secret(account_secret)
             .account_organization_status("Active")
-            .is_new_user(true)
+            .set_is_new_user(true)
             .add_account_organization_category("Device")
             .add_device_category("Device")
             .organization_id(&device.organization)

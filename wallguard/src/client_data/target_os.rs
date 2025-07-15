@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TargetOs {
@@ -47,8 +49,8 @@ impl Default for TargetOs {
     }
 }
 
-impl ToString for TargetOs {
-    fn to_string(&self) -> String {
+impl fmt::Display for TargetOs {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let value = match self {
             TargetOs::Linux => "linux",
             TargetOs::MacOS => "macos",
@@ -59,7 +61,7 @@ impl ToString for TargetOs {
             TargetOs::Unknown => "unknown",
         };
 
-        String::from(value)
+        write!(f, "{}", value)
     }
 }
 

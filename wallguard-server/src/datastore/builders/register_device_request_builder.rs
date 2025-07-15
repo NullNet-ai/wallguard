@@ -45,12 +45,12 @@ impl RegisterDeviceRequestBuilder {
         self
     }
 
-    pub fn is_new_user(mut self, flag: bool) -> Self {
+    pub fn set_is_new_user(mut self, flag: bool) -> Self {
         self.is_new_user = flag;
         self
     }
 
-    pub fn is_invited(mut self, flag: bool) -> Self {
+    pub fn set_is_invited(mut self, flag: bool) -> Self {
         self.is_invited = flag;
         self
     }

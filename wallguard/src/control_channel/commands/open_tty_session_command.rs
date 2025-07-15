@@ -56,7 +56,7 @@ async fn stream_to_pty(mut reader: ReadHalf<TcpStream>, writer: PtyWriter) {
                 if let Err(err) =
                     tokio::task::spawn_blocking(move || writer.lock().unwrap().write_all(&chunk))
                         .await
-                        .unwrap_or_else(|e| Err(std::io::Error::new(std::io::ErrorKind::Other, e)))
+                        .unwrap_or_else(|e| Err(std::io::Error::other(e)))
                 {
                     log::error!("Error writing to PTY: {}", err);
                     break;
@@ -82,7 +82,7 @@ async fn pty_to_stream(mut writer: WriteHalf<TcpStream>, reader: PtyReader) {
             }
         })
         .await
-        .unwrap_or_else(|e| Err(std::io::Error::new(std::io::ErrorKind::Other, e)));
+        .unwrap_or_else(|e| Err(std::io::Error::other(e)));
 
         match result {
             Ok(data) if data.is_empty() => {

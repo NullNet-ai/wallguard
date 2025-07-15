@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Secret {
     InstallationCode,

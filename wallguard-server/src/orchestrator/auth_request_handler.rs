@@ -153,10 +153,10 @@ impl AuthReqHandler {
                 self.context.clone(),
             )));
 
-            let mut authentication = AuthenticationData::default();
-
-            authentication.app_id = Some(account_id);
-            authentication.app_secret = Some(account_secret);
+            let authentication = AuthenticationData {
+                app_id: Some(account_id),
+                app_secret: Some(account_secret),
+            };
 
             if client.lock().await.authorize(authentication).await.is_ok() {
                 clients.insert(auth.uuid, client.clone());

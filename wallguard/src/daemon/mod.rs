@@ -113,10 +113,9 @@ impl Daemon {
     }
 
     pub(crate) async fn on_error(this: Arc<Mutex<Daemon>>, reason: impl Into<String>) {
-        match this.lock().await.state.clone() {
-            DaemonState::Connected(control_channel) => control_channel.terminate().await,
-            _ => {}
-        };
+        if let DaemonState::Connected(control_channel) = this.lock().await.state.clone() {
+            control_channel.terminate().await
+        }
         this.lock().await.state = DaemonState::Error(reason.into());
     }
 }

@@ -10,8 +10,7 @@ use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResources
 /**
  * TODO: Handle reconnections & retransmissions
  */
-
-pub(crate) async fn handle_connection_and_retransmission(
+pub(crate) async fn _handle_connection_and_retransmission(
     interface: WGServer,
     dump_dir: DumpDir,
     token_provider: TokenProvider,
@@ -56,7 +55,7 @@ pub(crate) async fn handle_connection_and_retransmission(
         let token = token_provider.get().await.unwrap();
 
         // send packets accumulated in dump files
-        'file_loop: for file in dump_dir.get_files_sorted().await {
+        'file_loop: for file in dump_dir._get_files_sorted().await {
             let Ok(string) = fs::read_to_string(file.path()).await else {
                 continue;
             };
@@ -64,10 +63,10 @@ pub(crate) async fn handle_connection_and_retransmission(
                 continue;
             };
             // update auth token of items retrieved from disk
-            dump.set_token(token.clone());
+            dump._set_token(token.clone());
 
-            while dump.size() != 0 {
-                let range = ..min(dump.size(), BATCH_SIZE);
+            while dump._size() != 0 {
+                let range = ..min(dump._size(), BATCH_SIZE);
                 let send_res = match &dump {
                     DumpItem::Packets(p) => {
                         let msg = PacketsData {
@@ -93,11 +92,11 @@ pub(crate) async fn handle_connection_and_retransmission(
                     // *interface.lock().await = None;
                     log::error!("Failed to send dump. Reconnecting...",);
                     // update dump file with unsent items
-                    dump_dir.update_items_dump_file(file.path(), dump).await;
+                    dump_dir._update_items_dump_file(file.path(), dump).await;
                     break 'file_loop;
                 }
                 // remove sent items from dump
-                dump.drain(range);
+                dump._drain(range);
             }
 
             log::info!("Dump file '{:?}' sent successfully", file.file_name());

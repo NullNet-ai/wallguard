@@ -39,13 +39,10 @@ pub async fn get_sshd_ports_from_sshd_t() -> io::Result<Vec<u16>> {
     let output = Command::new("sshd").arg("-T").output().await?;
 
     if !output.status.success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!(
-                "sshd -T failed: {}",
-                String::from_utf8_lossy(&output.stderr)
-            ),
-        ));
+        return Err(io::Error::other(format!(
+            "sshd -T failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -53,8 +50,8 @@ pub async fn get_sshd_ports_from_sshd_t() -> io::Result<Vec<u16>> {
 
     for line in stdout.lines() {
         let line = line.trim();
-        if line.starts_with("port ") {
-            let values = line["port ".len()..].split_whitespace();
+        if let Some(stripped) = line.strip_prefix("port ") {
+            let values = stripped.split_whitespace();
             for value in values {
                 if let Ok(port) = value.parse::<u16>() {
                     ports.push(port);

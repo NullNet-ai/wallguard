@@ -1,5 +1,6 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::path::PathBuf;
+use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
@@ -34,8 +35,8 @@ impl TryFrom<String> for Platform {
     }
 }
 
-impl ToString for Platform {
-    fn to_string(&self) -> String {
+impl fmt::Display for Platform {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let value = match self {
             Platform::PfSense => "pfsense",
             Platform::OpnSense => "opnsense",
@@ -43,7 +44,7 @@ impl ToString for Platform {
             Platform::DebugDevice => "dbgdevice",
         };
 
-        value.to_string()
+        write!(f, "{}", value)
     }
 }
 

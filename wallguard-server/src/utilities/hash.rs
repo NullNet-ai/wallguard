@@ -15,27 +15,6 @@ pub fn sha256_digest_bytes(input: &str) -> [u8; 32] {
     result.as_slice().try_into().unwrap()
 }
 
-/// Hashes the given secret using the Argon2 algorithm with a randomly generated salt.
-///
-/// # Arguments
-/// * `secret` - The plaintext secret to be hashed (e.g., a password).
-///
-/// # Returns
-/// * `Ok(String)` - The resulting Argon2 hash as a string in PHC format, including parameters and salt.
-/// * `Err(String)` - An error message if hashing fails (e.g., due to internal errors or resource limits).
-// use argon2::password_hash::{SaltString, rand_core::OsRng};
-// use argon2::{Argon2, PasswordHasher};
-//
-// pub fn hash_secret(secret: &str) -> Result<String, String> {
-//     let salt = SaltString::generate(&mut OsRng);
-//     let argon2 = Argon2::default();
-
-//     match argon2.hash_password(secret.as_bytes(), &salt) {
-//         Ok(hash) => Ok(hash.to_string()),
-//         Err(err) => Err(format!("Hashing failed: {}", err)),
-//     }
-// }
-
 /// Computes the MD5 hash of a given string.
 ///
 /// # Arguments

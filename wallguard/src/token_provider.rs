@@ -5,7 +5,7 @@ use tokio::time::Instant;
 
 #[derive(Debug)]
 pub enum RetrievalStrategy {
-    Immediate,
+    // Immediate,
     Await(Duration),
 }
 
@@ -30,7 +30,7 @@ impl TokenProvider {
 
     pub async fn obtain(&self, strategy: RetrievalStrategy) -> Option<String> {
         match strategy {
-            RetrievalStrategy::Immediate => self.get().await,
+            // RetrievalStrategy::Immediate => self.get().await,
             RetrievalStrategy::Await(timeout) => {
                 let deadline = Instant::now() + timeout;
                 loop {

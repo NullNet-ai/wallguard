@@ -16,13 +16,13 @@ impl ReverseTunnel {
     }
 
     pub async fn request_channel(&self, token: &str) -> Result<TcpStream, Error> {
-        let mut hash = utilities::hash::sha256_digest_bytes(token);
+        let hash = utilities::hash::sha256_digest_bytes(token);
 
         let mut stream = TcpStream::connect(self.addr)
             .await
             .handle_err(location!())?;
 
-        stream.write_all(&mut hash).await.handle_err(location!())?;
+        stream.write_all(&hash).await.handle_err(location!())?;
 
         // @TODO: Confirmation message ?
 

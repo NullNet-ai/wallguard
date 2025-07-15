@@ -18,9 +18,9 @@ impl Default for DaemonState {
     }
 }
 
-impl Into<Status> for DaemonState {
-    fn into(self) -> Status {
-        let state = match self {
+impl From<DaemonState> for Status {
+    fn from(state: DaemonState) -> Status {
+        let state = match state {
             DaemonState::Idle => State::Idle(()),
             DaemonState::Connected(_) => {
                 let data = Connected {};

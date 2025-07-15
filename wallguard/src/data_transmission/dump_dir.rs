@@ -20,7 +20,7 @@ impl DumpDir {
         }
     }
 
-    pub(crate) async fn get_files_sorted(&self) -> Vec<fs::DirEntry> {
+    pub(crate) async fn _get_files_sorted(&self) -> Vec<fs::DirEntry> {
         let mut dir = fs::read_dir(self.path)
             .await
             .expect("Failed to read packets and resources dumps directory");
@@ -64,8 +64,8 @@ impl DumpDir {
         .expect("Failed to write dump file");
     }
 
-    pub(crate) async fn update_items_dump_file(&self, file_path: PathBuf, mut dump: DumpItem) {
-        dump.set_token(String::new());
+    pub(crate) async fn _update_items_dump_file(&self, file_path: PathBuf, mut dump: DumpItem) {
+        dump._set_token(String::new());
         tokio::fs::write(
             file_path,
             serde_json::to_string(&dump).expect("Failed to serialize items"),
@@ -85,7 +85,7 @@ pub(crate) enum DumpItem {
 }
 
 impl DumpItem {
-    pub(crate) fn set_token(&mut self, token: String) {
+    pub(crate) fn _set_token(&mut self, token: String) {
         match self {
             DumpItem::Packets(packets) => packets.token = token,
             DumpItem::Resources(resources) => resources.token = token,
@@ -93,7 +93,7 @@ impl DumpItem {
         }
     }
 
-    pub(crate) fn size(&self) -> usize {
+    pub(crate) fn _size(&self) -> usize {
         match self {
             DumpItem::Packets(packets) => packets.packets.len(),
             DumpItem::Resources(resources) => resources.resources.len(),
@@ -101,7 +101,7 @@ impl DumpItem {
         }
     }
 
-    pub(crate) fn drain(&mut self, range: RangeTo<usize>) {
+    pub(crate) fn _drain(&mut self, range: RangeTo<usize>) {
         match self {
             DumpItem::Packets(packets) => {
                 packets.packets.drain(range);

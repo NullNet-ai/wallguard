@@ -117,7 +117,7 @@ impl TransmissionManager {
         let (terminate, _) = broadcast::channel(1);
 
         let interface = self.interface.clone();
-        let platform = self.platform.clone();
+        let platform = self.platform;
         let token_provider = self.token_provider.clone();
         let receiver = terminate.subscribe();
 
