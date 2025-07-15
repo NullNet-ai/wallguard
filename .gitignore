@@ -6,3 +6,4 @@ packet_dumps
 dumps
 *.pcap
 .cargo
+*.deb
