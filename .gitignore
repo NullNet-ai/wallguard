@@ -6,5 +6,3 @@ packet_dumps
 dumps
 *.pcap
 .cargo
-
-dev.exec.sh

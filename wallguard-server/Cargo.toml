@@ -16,11 +16,6 @@ keywords = ["firewall", "network", "manager", "centralized", "monitor", "agent"]
 categories = ["network-programming"]
 publish = false
 
-[profile.release]
-opt-level = 3
-lto = true
-strip = true
-
 [dependencies]
 
 nullnet-libdatastore = "0.4.8"

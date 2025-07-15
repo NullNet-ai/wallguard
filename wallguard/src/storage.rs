@@ -12,7 +12,7 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Secret {
-    OrgId,
+    InstallationCode,
     AppId,
     AppSecret,
 }
@@ -20,7 +20,7 @@ pub enum Secret {
 impl Secret {
     fn as_str(&self) -> &'static str {
         match self {
-            Secret::OrgId => "OrgId",
+            Secret::InstallationCode => "InstallationCode",
             Secret::AppId => "AppId",
             Secret::AppSecret => "AppSecret",
         }

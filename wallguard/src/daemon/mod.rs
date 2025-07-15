@@ -32,9 +32,9 @@ impl Daemon {
             state: DaemonState::default(),
         }));
 
-        if let Some(org_id) = Storage::get_value(Secret::OrgId).await {
-            log::info!("Found org id {org_id}, attempting to connect");
-            let _ = Daemon::join_org(daemon.clone(), org_id).await;
+        if let Some(code) = Storage::get_value(Secret::InstallationCode).await {
+            log::info!("Found installation code {code}, attempting to connect");
+            let _ = Daemon::join_org(daemon.clone(), code).await;
         } else {
             log::info!("No org ID, entering idle state");
         }
@@ -55,11 +55,11 @@ impl Daemon {
         self.state.clone().into()
     }
 
-    pub(crate) async fn join_org(this: Arc<Mutex<Daemon>>, org_id: String) -> Result<(), String> {
+    pub(crate) async fn join_org(this: Arc<Mutex<Daemon>>, installation_code: String) -> Result<(), String> {
         let mut lock = this.lock().await;
         match &lock.state {
             DaemonState::Idle => {
-                Storage::set_value(Secret::OrgId, &org_id)
+                Storage::set_value(Secret::InstallationCode, &installation_code)
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
@@ -71,7 +71,7 @@ impl Daemon {
                 .await
                 .map_err(|err| err.to_str().to_string())?;
 
-                let control_channel = ControlChannel::new(context, org_id);
+                let control_channel = ControlChannel::new(context, installation_code);
 
                 lock.state = DaemonState::Connected(control_channel);
 
@@ -89,7 +89,7 @@ impl Daemon {
 
         match &this.state {
             DaemonState::Connected(control_channel) => {
-                Storage::delete_value(Secret::OrgId)
+                Storage::delete_value(Secret::InstallationCode)
                     .await
                     .map_err(|err| err.to_str().to_string())?;
 
