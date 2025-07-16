@@ -14,7 +14,6 @@ impl TryFrom<&str> for Platform {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_str() {
-            #[cfg(debug_assertions)]
             "generic" => Ok(Platform::Generic),
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
@@ -39,7 +38,6 @@ impl fmt::Display for Platform {
         let value = match self {
             Platform::PfSense => "pfsense",
             Platform::OpnSense => "opnsense",
-            #[cfg(debug_assertions)]
             Platform::Generic => "generic",
         };
 
