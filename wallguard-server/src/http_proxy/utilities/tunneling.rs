@@ -71,7 +71,7 @@ async fn establish_tunneled_channel(
         .orchestractor
         .get_client(device_uuid)
         .await
-        .ok_or_else(|| format!("Client with device UUID '{}' is not connected", device_uuid))
+        .ok_or_else(|| format!("Client with device UUID '{device_uuid}' is not connected"))
         .handle_err(location!())?;
 
     let client = client.lock().await;

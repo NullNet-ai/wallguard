@@ -61,7 +61,7 @@ impl fmt::Display for TargetOs {
             TargetOs::Unknown => "unknown",
         };
 
-        write!(f, "{}", value)
+        write!(f, "{value}")
     }
 }
 

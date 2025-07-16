@@ -29,7 +29,7 @@ async fn main() {
     let arguments = match Arguments::try_parse() {
         Ok(args) => args,
         Err(err) => {
-            log::error!("Failed to parse CLI arguments: {}", err);
+            log::error!("Failed to parse CLI arguments: {err}");
             std::process::exit(1);
         }
     };

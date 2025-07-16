@@ -18,7 +18,7 @@ impl TryFrom<&str> for Platform {
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
             _ => {
-                let errmsg = format!("Unsupported platform {}", value);
+                let errmsg = format!("Unsupported platform {value}");
                 Err(errmsg).handle_err(location!())
             }
         }
@@ -41,7 +41,7 @@ impl fmt::Display for Platform {
             Platform::Generic => "generic",
         };
 
-        write!(f, "{}", value)
+        write!(f, "{value}")
     }
 }
 

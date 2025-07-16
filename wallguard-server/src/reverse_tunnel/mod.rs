@@ -81,11 +81,11 @@ async fn tunnel_task(config: ReverseTunnelConfig, listeners: ListenersMap) {
     loop {
         let (mut stream, _) = match listener.accept().await {
             Ok((stream, addr)) => {
-                log::debug!("Incoming connection from {}", addr);
+                log::debug!("Incoming connection from {addr}");
                 (stream, addr)
             }
             Err(err) => {
-                log::error!("Reverse tunnel failed to accept connection: {}", err);
+                log::error!("Reverse tunnel failed to accept connection: {err}");
                 continue;
             }
         };
@@ -114,11 +114,7 @@ async fn tunnel_task(config: ReverseTunnelConfig, listeners: ListenersMap) {
                     }
                 }
                 None => {
-                    log::warn!(
-                        "Received tunnel connection with unknown token hash: {:?}",
-                        hash
-                    );
-
+                    log::warn!("Received tunnel connection with unknown token hash: {hash:?}");
                     shutdown_stream(stream).await
                 }
             }
@@ -132,6 +128,6 @@ async fn shutdown_stream(mut stream: TcpStream) {
     use tokio::io::AsyncWriteExt;
 
     if let Err(e) = stream.shutdown().await {
-        log::warn!("Failed to shutdown stream: {}", e);
+        log::warn!("Failed to shutdown stream: {e}");
     }
 }

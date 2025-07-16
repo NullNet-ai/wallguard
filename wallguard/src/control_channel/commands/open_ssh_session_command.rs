@@ -17,7 +17,7 @@ impl ExecutableCommand for OpenSshSessionCommand {
         log::debug!("Received OpenSshSessionCommand");
 
         if let Err(err) = utilities::ssh::add_ssh_key_if_missing(&self.data.public_key).await {
-            log::error!("Failed to authorize public key: {}", err);
+            log::error!("Failed to authorize public key: {err}");
             return Err(err).handle_err(location!());
         }
 
@@ -28,7 +28,7 @@ impl ExecutableCommand for OpenSshSessionCommand {
                 return Err("No ports found").handle_err(location!());
             }
             Err(err) => {
-                log::error!("Failed to get sshd port: {}", err);
+                log::error!("Failed to get sshd port: {err}");
                 return Err(err).handle_err(location!());
             }
         };

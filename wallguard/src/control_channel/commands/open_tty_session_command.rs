@@ -58,12 +58,12 @@ async fn stream_to_pty(mut reader: ReadHalf<TcpStream>, writer: PtyWriter) {
                         .await
                         .unwrap_or_else(|e| Err(std::io::Error::other(e)))
                 {
-                    log::error!("Error writing to PTY: {}", err);
+                    log::error!("Error writing to PTY: {err}");
                     break;
                 }
             }
             Err(err) => {
-                log::error!("Error reading from stream: {}", err);
+                log::error!("Error reading from stream: {err}");
                 break;
             }
         }
@@ -91,12 +91,12 @@ async fn pty_to_stream(mut writer: WriteHalf<TcpStream>, reader: PtyReader) {
             }
             Ok(data) => {
                 if let Err(err) = writer.write_all(&data).await {
-                    log::error!("Failed to write to stream: {}", err);
+                    log::error!("Failed to write to stream: {err}");
                     break;
                 }
             }
             Err(err) => {
-                log::error!("Failed to read from PTY: {}", err);
+                log::error!("Failed to read from PTY: {err}");
                 break;
             }
         }

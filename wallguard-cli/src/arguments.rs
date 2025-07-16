@@ -23,7 +23,7 @@ impl fmt::Display for Platform {
             Platform::Opnsense => "opnsense",
             Platform::Generic => "generic",
         };
-        write!(f, "{}", name)
+        write!(f, "{name}")
     }
 }
 

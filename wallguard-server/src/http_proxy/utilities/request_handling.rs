@@ -32,8 +32,7 @@ pub async fn fetch_session(
     match ctx.datastore.obtain_session(jwt, session_token).await {
         Ok(Some(sess)) => Ok(sess),
         Ok(None) => Err(HttpResponse::NotFound().json(ErrorJson::from(format!(
-            "No session with token {}",
-            session_token
+            "No session with token {session_token}"
         )))),
         Err(_) => {
             Err(HttpResponse::InternalServerError()

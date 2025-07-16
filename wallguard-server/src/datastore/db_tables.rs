@@ -35,7 +35,7 @@ impl Display for DBTable {
             DBTable::DeviceCredentials => "device_credentials",
             DBTable::InstallationCodes => "installation_codes",
         };
-        write!(f, "{}", table_name)
+        write!(f, "{table_name}")
     }
 }
 
