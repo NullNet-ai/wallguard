@@ -1,4 +1,5 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+use std::fmt;
 
 #[derive(Debug, Parser)]
 #[command(name = "wallguard-cli")]
@@ -6,6 +7,24 @@ use clap::{Parser, Subcommand};
 pub struct Arguments {
     #[command(subcommand)]
     pub command: Command,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Platform {
+    Pfsense,
+    Opnsense,
+    Generic,
+}
+
+impl fmt::Display for Platform {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
+            Platform::Pfsense => "pfsense",
+            Platform::Opnsense => "opnsense",
+            Platform::Generic => "generic",
+        };
+        write!(f, "{name}")
+    }
 }
 
 #[derive(Debug, Subcommand)]
@@ -24,4 +43,30 @@ pub enum Command {
 
     /// Leave the current organization
     Leave,
+
+    /// Start the service with optional configuration
+    Start {
+        /// Host address for the control channel
+        #[arg(long)]
+        control_channel_host: Option<String>,
+
+        /// Port for the control channel
+        #[arg(long)]
+        control_channel_port: Option<u16>,
+
+        /// Host address for the tunnel
+        #[arg(long)]
+        tunnel_host: Option<String>,
+
+        /// Port for the tunnel
+        #[arg(long)]
+        tunnel_port: Option<u16>,
+
+        /// Target platform
+        #[arg(long = "as", value_enum, default_value_t = Platform::Generic)]
+        platform: Platform,
+    },
+
+    /// Stop the running service
+    Stop,
 }

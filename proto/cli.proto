@@ -7,8 +7,13 @@ package wallguard_cli;
 service WallguardCli {
     rpc GetStatus(google.protobuf.Empty) returns (Status);
     rpc GetCapabilities(google.protobuf.Empty) returns (Caps);
-    rpc JoinOrg(JoinOrgReq) returns (JoinOrgRes);
-    rpc LeaveOrg(google.protobuf.Empty) returns (LeaveOrgRes);
+    rpc JoinOrg(JoinOrgReq) returns (CommonResponse);
+    rpc LeaveOrg(google.protobuf.Empty) returns (CommonResponse);
+}
+
+message CommonResponse {
+    bool success = 1;
+    string message = 2;
 }
 
 message Status {
@@ -33,14 +38,4 @@ message Caps {
 
 message JoinOrgReq {
     string installation_code = 1;
-}
-
-message JoinOrgRes {
-    bool success = 1;
-    string message = 2;
-}
-
-message LeaveOrgRes {
-    bool success = 1;
-    string message = 2;
 }

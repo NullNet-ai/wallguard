@@ -18,10 +18,7 @@ impl TryFrom<&str> for RemoteAccessType {
             "ssh" => Ok(RemoteAccessType::Ssh),
             "tty" => Ok(RemoteAccessType::Tty),
             "ui" => Ok(RemoteAccessType::Ui),
-            _ => Err(format!(
-                "Remote access of type {} is not suppored",
-                lc_value
-            )),
+            _ => Err(format!("Remote access of type {lc_value} is not suppored")),
         }
     }
 }

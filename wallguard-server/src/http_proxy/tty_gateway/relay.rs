@@ -37,7 +37,7 @@ async fn relay_messages_from_user_to_client(
         match msg {
             Ok(AggregatedMessage::Text(text)) => {
                 if let Err(err) = tty_writer.write_all(text.as_bytes()).await {
-                    log::error!("WS → TTY: Failed to write text: {}", err);
+                    log::error!("WS → TTY: Failed to write text: {err}");
                     return;
                 } else {
                     log::debug!("WS → TTY: Sent text ({} bytes)", text.len());
@@ -46,7 +46,7 @@ async fn relay_messages_from_user_to_client(
 
             Ok(AggregatedMessage::Binary(bin)) => {
                 if let Err(err) = tty_writer.write_all(&bin).await {
-                    log::error!("WS → TTY: Failed to write binary: {}", err);
+                    log::error!("WS → TTY: Failed to write binary: {err}");
                     return;
                 } else {
                     log::debug!("WS → TTY: Sent binary ({} bytes)", bin.len());
@@ -55,7 +55,7 @@ async fn relay_messages_from_user_to_client(
 
             Ok(AggregatedMessage::Ping(msg)) => {
                 if let Err(err) = ws_session.pong(&msg).await {
-                    log::error!("WS → WS: Failed to respond to ping: {}", err);
+                    log::error!("WS → WS: Failed to respond to ping: {err}");
                     return;
                 } else {
                     log::debug!("WS → WS: Responded to ping");
@@ -67,7 +67,7 @@ async fn relay_messages_from_user_to_client(
             }
 
             Err(err) => {
-                log::error!("WS → TTY: Error reading WebSocket message: {}", err);
+                log::error!("WS → TTY: Error reading WebSocket message: {err}");
                 return;
             }
         }
@@ -90,18 +90,14 @@ async fn relay_messages_from_ssh_to_client(
             Ok(n) => {
                 let binmsg = Bytes::copy_from_slice(&buf[..n]);
                 if let Err(err) = ws_session.binary(binmsg).await {
-                    log::error!(
-                        "TTY → WS: Failed to send binary message ({} bytes): {}",
-                        n,
-                        err
-                    );
+                    log::error!("TTY → WS: Failed to send binary message ({n} bytes): {err}");
                     break;
                 } else {
-                    log::debug!("TTY → WS: Sent binary ({} bytes)", n);
+                    log::debug!("TTY → WS: Sent binary ({n} bytes)");
                 }
             }
             Err(err) => {
-                log::error!("TTY → WS: Failed to read from TTY session: {}", err);
+                log::error!("TTY → WS: Failed to read from TTY session: {err}");
                 break;
             }
         }

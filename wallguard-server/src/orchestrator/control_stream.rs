@@ -17,7 +17,7 @@ pub(crate) async fn control_stream(
     outbound: OutboundStream,
     context: AppContext,
 ) {
-    log::info!("Starting a control stream for device UUID {}", device_uuid);
+    log::info!("Starting a control stream for device UUID {device_uuid}");
 
     tokio::select! {
         hres = healthcheck(outbound.clone()) => {
@@ -126,7 +126,7 @@ async fn authstream(
                         return Err("Inbound stream closed by client").handle_err(location!());
                     }
                     Err(e) => {
-                        return Err(format!("Inbound stream error: {}", e)).handle_err(location!());
+                        return Err(format!("Inbound stream error: {e}")).handle_err(location!());
                     }
                 }
             }

@@ -8,22 +8,22 @@ use clap::Parser;
 )]
 pub struct Arguments {
     /// IP address of the gRPC server
-    #[arg(long, default_value = "127.0.0.1")]
-    pub addr: String,
+    #[arg(long)]
+    pub control_channel_host: String,
 
     /// Port of the gRPC server
-    #[arg(long, default_value_t = 50051)]
-    pub port: u16,
+    #[arg(long)]
+    pub control_channel_port: u16,
 
     /// IP address of the tunnel server
-    #[arg(long, default_value = "127.0.0.1")]
-    pub tunnel_addr: String,
+    #[arg(long)]
+    pub tunnel_host: String,
 
     /// Port of the tunnel server
-    #[arg(long, default_value_t = 7777)]
+    #[arg(long)]
     pub tunnel_port: u16,
 
     /// Target platform
-    #[arg(long, default_value = "dbgdevice")]
+    #[arg(long)]
     pub platform: String,
 }

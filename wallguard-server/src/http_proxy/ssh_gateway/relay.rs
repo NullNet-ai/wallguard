@@ -59,7 +59,7 @@ async fn relay_messages_from_user_to_client(
                     .write_all(text.as_bytes())
                     .await
                 {
-                    log::error!("WS → SSH: Failed to write text: {}", err);
+                    log::error!("WS → SSH: Failed to write text: {err}");
                     return;
                 } else {
                     log::debug!("WS → SSH: Sent text ({} bytes)", text.len());
@@ -68,7 +68,7 @@ async fn relay_messages_from_user_to_client(
 
             Ok(AggregatedMessage::Binary(bin)) => {
                 if let Err(err) = ssh_session.writer.lock().await.write_all(&bin).await {
-                    log::error!("WS → SSH: Failed to write binary: {}", err);
+                    log::error!("WS → SSH: Failed to write binary: {err}");
                     return;
                 } else {
                     log::debug!("WS → SSH: Sent binary ({} bytes)", bin.len());
@@ -77,7 +77,7 @@ async fn relay_messages_from_user_to_client(
 
             Ok(AggregatedMessage::Ping(msg)) => {
                 if let Err(err) = ws_session.pong(&msg).await {
-                    log::error!("WS → WS: Failed to respond to ping: {}", err);
+                    log::error!("WS → WS: Failed to respond to ping: {err}");
                     return;
                 } else {
                     log::debug!("WS → WS: Responded to ping");
@@ -89,7 +89,7 @@ async fn relay_messages_from_user_to_client(
             }
 
             Err(err) => {
-                log::error!("WS → SSH: Error reading WebSocket message: {}", err);
+                log::error!("WS → SSH: Error reading WebSocket message: {err}");
                 return;
             }
         }
@@ -117,18 +117,14 @@ async fn relay_messages_from_ssh_to_client(mut ws_session: WSSession, ssh_sessio
             Ok(n) => {
                 let binmsg = Bytes::copy_from_slice(&buf[..n]);
                 if let Err(err) = ws_session.binary(binmsg).await {
-                    log::error!(
-                        "SSH → WS: Failed to send binary message ({} bytes): {}",
-                        n,
-                        err
-                    );
+                    log::error!("SSH → WS: Failed to send binary message ({n} bytes): {err}");
                     break;
                 } else {
-                    log::debug!("SSH → WS: Sent binary ({} bytes)", n);
+                    log::debug!("SSH → WS: Sent binary ({n} bytes)");
                 }
             }
             Err(err) => {
-                log::error!("SSH → WS: Failed to read from SSH session: {}", err);
+                log::error!("SSH → WS: Failed to read from SSH session: {err}");
                 break;
             }
         }

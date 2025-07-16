@@ -12,8 +12,11 @@ impl TryFrom<&Arguments> for ServerData {
     type Error = nullnet_liberror::Error;
 
     fn try_from(arguments: &Arguments) -> Result<Self, Self::Error> {
-        let grpc_addr = format!("{}:{}", arguments.addr, arguments.port);
-        let tunn_addr = format!("{}:{}", arguments.tunnel_addr, arguments.tunnel_port);
+        let grpc_addr = format!(
+            "{}:{}",
+            arguments.control_channel_host, arguments.control_channel_port
+        );
+        let tunn_addr = format!("{}:{}", arguments.tunnel_host, arguments.tunnel_port);
 
         let grpc_addr = grpc_addr.parse().handle_err(location!())?;
         let tunn_addr = tunn_addr.parse().handle_err(location!())?;
