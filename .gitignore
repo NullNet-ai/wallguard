@@ -7,3 +7,4 @@ dumps
 *.pcap
 .cargo
 *.deb
+*.pkg

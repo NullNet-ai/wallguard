@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 set -e
 
 case "$1" in
@@ -25,6 +26,7 @@ case "$1" in
 
         rm packages/freebsd/usr/local/bin/wallguard
         rm packages/freebsd/usr/local/bin/wallguard-cli
+	;;
     *)
         echo "Unsupported or missing parameter."
         exit 1

@@ -11,7 +11,7 @@
 	"prefix": "/usr/local",
 	"files": {
 		"/usr/local/bin/wallguard": "auto",
-		"/usr/local/bin/wallguard-cli": "auto
+		"/usr/local/bin/wallguard-cli": "auto"
 	},
 	"deps": {
 		"libpcap": {
