@@ -4,8 +4,7 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
-    #[cfg(debug_assertions)]
-    DebugDevice,
+    Generic,
     PfSense,
     OpnSense,
 }
@@ -16,7 +15,7 @@ impl TryFrom<&str> for Platform {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_str() {
             #[cfg(debug_assertions)]
-            "dbgdevice" => Ok(Platform::DebugDevice),
+            "generic" => Ok(Platform::Generic),
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
             _ => {
@@ -41,7 +40,7 @@ impl fmt::Display for Platform {
             Platform::PfSense => "pfsense",
             Platform::OpnSense => "opnsense",
             #[cfg(debug_assertions)]
-            Platform::DebugDevice => "dbgdevice",
+            Platform::Generic => "generic",
         };
 
         write!(f, "{}", value)
@@ -50,11 +49,7 @@ impl fmt::Display for Platform {
 
 impl Platform {
     pub fn can_monitor_config(&self) -> bool {
-        match self {
-            #[cfg(debug_assertions)]
-            Platform::DebugDevice => false,
-            _ => true,
-        }
+        !matches!(self, Platform::Generic)
     }
 
     pub fn can_monitor_telemetry(&self) -> bool {
@@ -68,8 +63,7 @@ impl Platform {
     pub fn get_sysconf_files(&self) -> Vec<PathBuf> {
         match self {
             Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
-            #[cfg(debug_assertions)]
-            Platform::DebugDevice => vec![],
+            Platform::Generic => vec![],
         }
     }
 }

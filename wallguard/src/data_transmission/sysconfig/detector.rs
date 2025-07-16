@@ -25,8 +25,7 @@ impl Detector {
         match &self.platform {
             Platform::PfSense => Detector::check_pfsense().await,
             Platform::OpnSense => todo!("Not implemented"),
-            #[cfg(debug_assertions)]
-            Platform::DebugDevice => unreachable!(),
+            Platform::Generic => unreachable!(),
         }
     }
 
