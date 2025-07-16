@@ -5,6 +5,7 @@ use http_proxy::run_http_proxy;
 mod app_context;
 mod control_service;
 mod datastore;
+mod fireparse;
 mod http_proxy;
 mod orchestrator;
 mod reverse_tunnel;

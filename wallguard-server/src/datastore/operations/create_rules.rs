@@ -1,5 +1,5 @@
 use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
-use libfireparse::Rule;
+use crate::fireparse::Rule;
 use nullnet_liberror::Error;
 use serde_json::json;
 

@@ -20,7 +20,6 @@ publish = false
 
 nullnet-libdatastore = "0.4.8"
 nullnet-libipinfo = "0.2.0"
-nullnet-libfireparse = "0.3.3"
 nullnet-libtoken = "0.3.3"
 log = "0.4.27"
 env_logger = "0.11.8"
@@ -43,6 +42,7 @@ etherparse = "0.18.0"
 indexmap = "2.9.0"
 md5 = "0.7.0"
 base64 = "0.22.1"
+roxmltree = "0.20.0"
 wallguard-common = { path = "../wallguard-common" }
 prost.workspace = true
 tonic.workspace = true
