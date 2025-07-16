@@ -16,7 +16,7 @@
 	"deps": {
 		"libpcap": {
 			"origin": "net/libpcap",
-			"version: ">=1.10"
+			"version": ">=1.10"
 		}
 	}
 }
