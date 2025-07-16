@@ -1,0 +1,22 @@
+{
+	"name": "wallguard",
+	"version": "1.0.0",
+	"origin": "custom/wallguard",
+	"comment": "WallGuard agent and CLI",
+	"maintainer": "anton.liashkevich.eng@gmail.com",
+	"www": "https://github.com/NullNet-ai/wallguard",
+	"abi": "*",
+	"arch": "*",
+	"desc": "WallGuard: agent-connector to the NullNet system",
+	"prefix": "/usr/local",
+	"files": {
+		"/usr/local/bin/wallguard": "auto",
+		"/usr/local/bin/wallguard-cli": "auto
+	},
+	"deps": {
+		"libpcap": {
+			"origin": "net/libpcap",
+			"version: ">=1.10"
+		}
+	}
+}
