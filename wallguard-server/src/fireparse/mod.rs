@@ -1,4 +1,5 @@
 mod models;
+mod nftables;
 mod pfsense;
 mod utils;
 
