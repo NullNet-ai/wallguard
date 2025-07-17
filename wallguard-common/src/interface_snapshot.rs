@@ -1,6 +1,6 @@
-use super::serde_ext::*;
-use bincode::{serialize, Error};
-use get_if_addrs::{get_if_addrs, IfAddr};
+use super::serde_extentions::*;
+use bincode::{Error, deserialize, serialize};
+use get_if_addrs::{IfAddr, get_if_addrs};
 use pnet::datalink;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -28,9 +28,9 @@ impl InterfaceSnapshot {
         serialize(snapshot)
     }
 
-    // pub fn deserialize_snapshot(data: &[u8]) -> Result<Vec<InterfaceSnapshot>, Error> {
-    //     deserialize(data)
-    // }
+    pub fn deserialize_snapshot(data: &[u8]) -> Result<Vec<InterfaceSnapshot>, Error> {
+        deserialize(data)
+    }
 
     pub fn take_all() -> Vec<InterfaceSnapshot> {
         let interfaces = datalink::interfaces();

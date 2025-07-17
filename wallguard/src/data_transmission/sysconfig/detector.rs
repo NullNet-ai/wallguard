@@ -26,6 +26,7 @@ impl Detector {
             Platform::PfSense => Detector::check_pfsense().await,
             Platform::OpnSense => todo!("Not implemented"),
             Platform::Generic => unreachable!(),
+            Platform::NfTables => State::Applied,
         }
     }
 

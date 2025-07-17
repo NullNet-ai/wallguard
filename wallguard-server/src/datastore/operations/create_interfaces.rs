@@ -1,5 +1,5 @@
 use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
-use libfireparse::NetworkInterface;
+use crate::fireparse::NetworkInterface;
 use nullnet_libdatastore::ResponseData;
 use nullnet_liberror::Error;
 use serde_json::json;

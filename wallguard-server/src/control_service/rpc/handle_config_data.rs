@@ -1,11 +1,12 @@
 use crate::datastore::Datastore;
+use crate::fireparse::{Configuration, FireparseError, Parser};
 use crate::utilities;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
-use libfireparse::{Configuration, FileData, FireparseError, Parser, Platform};
 use nullnet_liberror::Error;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_service::ConfigSnapshot;
+use wallguard_common::wallguard_platform::Platform;
 
 // @TODO
 // Save & Update records "status": Active, Draft
@@ -20,21 +21,15 @@ impl WallGuardService {
         let token =
             Token::from_jwt(&request.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
-        let _ = self
+        let device = self
             .ensure_device_exists_and_authrorized(&token)
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
-        let snapshot = request
-            .files
-            .into_iter()
-            .map(|sf| FileData {
-                filename: sf.filename,
-                content: sf.contents,
-            })
-            .collect();
+        let platform = Platform::try_from(device.r#type.as_str())
+            .map_err(|err| Status::internal(err.to_str()))?;
 
-        let configuration = Parser::parse(Platform::PfSense, snapshot)
+        let configuration = Parser::parse(platform, request.files)
             .map_err(|e| match e {
                 FireparseError::UnsupportedPlatform(message)
                 | FireparseError::ParserError(message) => message,

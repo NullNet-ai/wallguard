@@ -1,10 +1,9 @@
 use device_uuid::retrieve_device_uuid;
 use nullnet_liberror::{location, ErrorHandler, Location};
-pub use platform::Platform;
 pub use target_os::TargetOs;
+pub use wallguard_common::wallguard_platform::Platform;
 
 mod device_uuid;
-mod platform;
 mod target_os;
 
 #[derive(Debug, Clone)]

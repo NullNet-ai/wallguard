@@ -1,9 +1,6 @@
 use crate::{
     client_data::Platform,
-    data_transmission::sysconfig::{
-        interfaces::InterfaceSnapshot,
-        types::{FileData, Snapshot},
-    },
+    data_transmission::sysconfig::types::{FileData, Snapshot},
     token_provider::TokenProvider,
     wg_server::WGServer,
 };
@@ -11,12 +8,13 @@ use detector::{Detector, State};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::time::Duration;
 use tokio::sync::broadcast;
-use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus, FileSnapshot};
+use wallguard_common::{
+    interface_snapshot::InterfaceSnapshot,
+    protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus, FileSnapshot},
+};
 use watcher::Watcher;
 
 mod detector;
-mod interfaces;
-mod serde_ext;
 mod types;
 mod utils;
 mod watcher;
