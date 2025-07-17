@@ -7,6 +7,8 @@ pub use models::*;
 use pfsense::PfSenseParser;
 use wallguard_common::{protobuf::wallguard_service::FileSnapshot, wallguard_platform::Platform};
 
+use crate::fireparse::nftables::NfTablesParser;
+
 /// Represents possible errors that can occur while parsing firewall configurations.
 pub enum FireparseError {
     UnsupportedPlatform(String),
@@ -38,6 +40,7 @@ impl Parser {
             Platform::Generic => Err(FireparseError::UnsupportedPlatform(
                 "Generic platforms do not support configuration monitoring".into(),
             )),
+            Platform::NfTables => NfTablesParser::parse(snapshot),
         }
     }
 }

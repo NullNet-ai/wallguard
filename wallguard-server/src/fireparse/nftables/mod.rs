@@ -1,4 +1,6 @@
-use crate::fireparse::{nftables::token_stream::TokenStream, utils::find_in_snapshot, Configuration, FireparseError};
+use crate::fireparse::{
+    Configuration, FireparseError, nftables::token_stream::TokenStream, utils::find_in_snapshot,
+};
 use wallguard_common::protobuf::wallguard_service::FileSnapshot;
 
 mod nft;
@@ -18,7 +20,7 @@ impl NfTablesParser {
                 "PfSenseParser: Failed to parse 'config.xml' blob as UTF-8: {e}"
             ))
         })?;
-        let token_stream = TokenStream::from(ruleset_content);
+        let _ = TokenStream::from(ruleset_content);
 
         todo!()
     }
