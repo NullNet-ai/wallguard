@@ -21,6 +21,18 @@ async fn main() {
         std::process::exit(1);
     });
 
+    app_context
+        .root_token_provider
+        .get()
+        .await
+        .expect("Failed to acquire ROOT token, check the credentials");
+
+    app_context
+        .sysdev_token_provider
+        .get()
+        .await
+        .expect("Faield to acquire SYSDEV token, check the credentials");
+
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {},
         _ = run_control_service(app_context.clone()) => {},
