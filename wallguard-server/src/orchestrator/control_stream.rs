@@ -19,6 +19,19 @@ pub(crate) async fn control_stream(
 ) {
     log::info!("Starting a control stream for device UUID {device_uuid}");
 
+    if let Ok(token) = context.sysdev_token_provider.get().await {
+        if context
+            .datastore
+            .update_device_online_status(&token.jwt, &device_uuid, true)
+            .await
+            .is_err()
+        {
+            log::error!("Failed to update device record");
+        }
+    } else {
+        log::error!("Failed to obtain system device token");
+    }
+
     tokio::select! {
         hres = healthcheck(outbound.clone()) => {
             if let Err(err) = hres {
