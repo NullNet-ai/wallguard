@@ -2116,9 +2116,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libdatastore"
-version = "0.4.8"
+version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72dfdbcd1e5221f8b33f12bd6340268ffdb686f5e5c3343a533e92d809bcf06f"
+checksum = "bd053d151ab5ed00156ab93f3f833b5ab20e6e6a9a1d135a0efc62c05c5339a2"
 dependencies = [
  "log",
  "nullnet-liberror",
@@ -2139,9 +2139,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-libfireparse"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ce64ba07c42a1a3456d750541b65307ed20e6476cd1efce1dcedadbfe1457c7"
+checksum = "fef6952815779fc2b3d32707e573d1627651ec0fc8df30a3abb33bb833e09adb"
 dependencies = [
  "base64",
  "nullnet-libconfmon",

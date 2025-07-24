@@ -18,9 +18,9 @@ publish = false
 
 [dependencies]
 
-nullnet-libdatastore = "0.4.8"
+nullnet-libdatastore = "0.4.9"
 nullnet-libipinfo = "0.2.0"
-nullnet-libfireparse = "0.3.3"
+nullnet-libfireparse = "0.3.4"
 nullnet-libtoken = "0.3.3"
 log = "0.4.27"
 env_logger = "0.11.8"

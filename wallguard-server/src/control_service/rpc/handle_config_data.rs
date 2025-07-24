@@ -20,7 +20,7 @@ impl WallGuardService {
         let token =
             Token::from_jwt(&request.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
-        let _ = self
+        let device = self
             .ensure_device_exists_and_authrorized(&token)
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
@@ -34,7 +34,10 @@ impl WallGuardService {
             })
             .collect();
 
-        let configuration = Parser::parse(Platform::PfSense, snapshot)
+        let platform =
+            Platform::from_string(&device.r#type).map_err(|e| Status::internal(e.message))?;
+
+        let configuration = Parser::parse(platform, snapshot)
             .map_err(|e| match e {
                 FireparseError::UnsupportedPlatform(message)
                 | FireparseError::ParserError(message) => message,

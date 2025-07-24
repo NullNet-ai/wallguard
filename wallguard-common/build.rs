@@ -9,6 +9,7 @@ const PROTO_FILES: [&str; 3] = [
 fn main() {
     tonic_build::configure()
         .out_dir(OUTPUT_DIR)
+        .protoc_arg("--experimental_allow_proto3_optional")
         .type_attribute(
             "wallguard_service.PacketsData",
             "#[derive(serde::Serialize, serde::Deserialize)]",
