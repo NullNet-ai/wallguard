@@ -24,13 +24,33 @@ impl Detector {
     pub async fn check(&self) -> State {
         match &self.platform {
             Platform::PfSense => Detector::check_pfsense().await,
-            Platform::OpnSense => todo!("Not implemented"),
+            Platform::OpnSense => Detector::check_opnsense().await,
             Platform::Generic => unreachable!(),
         }
     }
 
     async fn check_pfsense() -> State {
         let mut entries: ReadDir = match fs::read_dir("/var/run/").await {
+            Ok(entries) => entries,
+            Err(_) => return State::Undefined,
+        };
+
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            if let Some(ext) = Path::new(&entry.file_name())
+                .extension()
+                .and_then(OsStr::to_str)
+            {
+                if ext == "dirty" {
+                    return State::Draft;
+                }
+            }
+        }
+
+        State::Applied
+    }
+
+    async fn check_opnsense() -> State {
+        let mut entries: ReadDir = match fs::read_dir("/var/tmp/").await {
             Ok(entries) => entries,
             Err(_) => return State::Undefined,
         };
