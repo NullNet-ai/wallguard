@@ -177,6 +177,10 @@ impl AuthReqHandler {
             if device.is_some() {
                 let device = device.unwrap();
 
+                if !Self::validate_device_properties(&auth, &device) {
+                    fail_with_status!(outbound, "Failed to validate device properties")
+                }
+
                 let client = Arc::new(Mutex::new(Client::new(
                     auth.uuid.clone(),
                     installation_code.organization_id,
@@ -229,5 +233,21 @@ impl AuthReqHandler {
                 clients.insert(auth.uuid, client.clone());
             }
         }
+    }
+
+    fn validate_device_properties(request: &AuthorizationRequest, device: &Device) -> bool {
+        if request.r#type != device.r#type {
+            return false;
+        }
+
+        if request.category != device.category {
+            return false;
+        }
+
+        if request.target_os != device.os {
+            return false;
+        }
+
+        true
     }
 }
