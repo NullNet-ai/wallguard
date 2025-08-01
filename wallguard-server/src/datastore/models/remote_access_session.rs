@@ -26,6 +26,7 @@ impl TryFrom<&str> for RemoteAccessType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemoteAccessSession {
     pub device_id: String,
+    pub instance_id: String,
     #[serde(rename = "remote_access_session")]
     pub token: String,
     #[serde(rename = "remote_access_type")]
@@ -33,11 +34,16 @@ pub struct RemoteAccessSession {
 }
 
 impl RemoteAccessSession {
-    pub fn new(device_id: impl Into<String>, r#type: RemoteAccessType) -> Self {
+    pub fn new(
+        device_id: impl Into<String>,
+        instance_id: impl Into<String>,
+        r#type: RemoteAccessType,
+    ) -> Self {
         let token = generate_random_string(32).to_ascii_lowercase();
 
         Self {
             device_id: device_id.into(),
+            instance_id: instance_id.into(),
             token,
             r#type,
         }

@@ -63,8 +63,13 @@ pub(super) async fn open_ssh_session(
             Err(resp) => return resp,
         };
 
-    let Ok(stream) =
-        tunneling::establish_tunneled_ssh(&context, &device.uuid, &keypair.public_key).await
+    let Ok(stream) = tunneling::establish_tunneled_ssh(
+        &context,
+        &device.uuid,
+        &session.instance_id,
+        &keypair.public_key,
+    )
+    .await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));

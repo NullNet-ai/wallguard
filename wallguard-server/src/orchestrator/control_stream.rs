@@ -59,12 +59,17 @@ pub(crate) async fn control_stream(
         .on_disconnected(&device_uuid, &instance_id)
         .await;
 
-    let is_online = context
-        .orchestractor
-        .does_client_have_connected_instances(&device_uuid)
-        .await;
-
     if let Ok(token) = context.sysdev_token_provider.get().await {
+        let _ = context
+            .datastore
+            .delete_device_instance(&token.jwt, &instance_id)
+            .await;
+
+        let is_online = context
+            .orchestractor
+            .does_client_have_connected_instances(&device_uuid)
+            .await;
+
         if context
             .datastore
             .update_device_online_status(&token.jwt, &device_uuid, is_online)

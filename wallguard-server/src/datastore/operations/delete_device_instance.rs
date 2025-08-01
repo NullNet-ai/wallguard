@@ -6,10 +6,10 @@ impl Datastore {
     pub async fn delete_device_instance(
         &self,
         token: &str,
-        instance: &DeviceInstance,
+        instance_id: &str,
     ) -> Result<(), Error> {
         let request = DeleteRequestBuilder::new()
-            .id(instance.id.clone())
+            .id(instance_id)
             .table(DeviceInstance::table())
             .build();
 

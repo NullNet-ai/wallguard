@@ -17,6 +17,7 @@ use crate::http_proxy::utilities::error_json::ErrorJson;
 #[derive(Deserialize)]
 pub struct RequestPayload {
     device_id: String,
+    instance_id: String,
     session_type: String,
 }
 
@@ -45,7 +46,7 @@ pub async fn request_session(
         )));
     }
 
-    let session = RemoteAccessSession::new(&body.device_id, session_type);
+    let session = RemoteAccessSession::new(&body.device_id, &body.instance_id, session_type);
 
     if let Err(error) = context.datastore.create_session(&jwt, &session).await {
         return HttpResponse::InternalServerError().json(ErrorJson::from(format!(
