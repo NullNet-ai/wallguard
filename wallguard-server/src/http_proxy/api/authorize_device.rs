@@ -38,11 +38,6 @@ pub async fn authorize_device(
         return HttpResponse::BadRequest().json(ErrorJson::from("Device not found"));
     };
 
-    let Some(client) = context.orchestractor.get_client(&device.uuid).await else {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Device is not connected"));
-    };
-
     if !device.online {
         return HttpResponse::BadRequest().json(ErrorJson::from("Device is offline"));
     }
@@ -76,18 +71,51 @@ pub async fn authorize_device(
             .json(ErrorJson::from("Failed to update device record"));
     };
 
-    let mut lock = client.lock().await;
-
-    if lock
-        .authorize(AuthenticationData {
-            app_id: Some(account_id),
-            app_secret: Some(account_secret),
-        })
+    let Some(instances) = context
+        .orchestractor
+        .get_client_instances(&device.uuid)
         .await
-        .is_err()
-    {
+    else {
         return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to send approval"));
+            .json(ErrorJson::from("Device is not connected"));
+    };
+
+    if instances.lock().await.is_empty() {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Device is not connected"));
+    }
+
+    let instances_ids: Vec<String> = {
+        let instances_guard = instances.lock().await;
+        let mut ids = Vec::new();
+        for inst in instances_guard.iter() {
+            let id = inst.lock().await.instance_id.clone();
+            ids.push(id);
+        }
+        ids
+    };
+
+    for id in instances_ids {
+        let Some(instance) = context.orchestractor.get_client(&device.uuid, &id).await else {
+            return HttpResponse::InternalServerError().json(format!(
+                "Failed to find an instance {} of device {}",
+                id, device.uuid
+            ));
+        };
+
+        let mut lock = instance.lock().await;
+
+        if lock
+            .authorize(AuthenticationData {
+                app_id: Some(account_id.clone()),
+                app_secret: Some(account_secret.clone()),
+            })
+            .await
+            .is_err()
+        {
+            return HttpResponse::InternalServerError()
+                .json(ErrorJson::from("Failed to send approval"));
+        }
     }
 
     HttpResponse::Ok().json(json!({}))

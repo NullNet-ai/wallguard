@@ -17,36 +17,41 @@ pub(crate) type OutboundStream = mpsc::Sender<Result<ServerMessage, Status>>;
 pub(crate) type InboundStream = Streaming<ClientMessage>;
 
 #[derive(Debug)]
-pub struct Client {
-    uuid: String,
-    _org_id: String,
-    outbound: OutboundStream,
+pub struct Instance {
+    pub(crate) device_uuid: String,
+    pub(crate) instance_id: String,
+    pub(crate) outbound: OutboundStream,
 }
 
-impl Client {
+impl Instance {
     pub fn new(
-        uuid: String,
-        org_id: String,
+        device_uuid: String,
+        instance_id: String,
         inbound: InboundStream,
         outbound: OutboundStream,
         context: AppContext,
     ) -> Self {
         tokio::spawn(control_stream(
-            uuid.clone(),
+            device_uuid.clone(),
+            instance_id.clone(),
             inbound,
             outbound.clone(),
             context,
         ));
 
         Self {
-            uuid,
+            device_uuid,
+            instance_id,
             outbound,
-            _org_id: org_id,
         }
     }
 
     pub async fn authorize(&mut self, data: AuthenticationData) -> Result<(), Error> {
-        log::debug!("Authorizing device {}", self.uuid);
+        log::debug!(
+            "Authorizing Device {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
 
         let message = ServerMessage {
             message: Some(Message::DeviceAuthorizedMessage(data)),
@@ -61,7 +66,11 @@ impl Client {
     }
 
     pub async fn _deauthorize(&mut self) -> Result<(), Error> {
-        log::debug!("Deauthorizing device {}", self.uuid);
+        log::debug!(
+            "Deauthorizing Device {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
 
         let message = ServerMessage {
             message: Some(Message::DeviceDeauthorizedMessage(())),
@@ -77,8 +86,9 @@ impl Client {
 
     pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableNetworkMonitoringCommand to the client with device UUID {}",
-            self.uuid
+            "Sending EnableNetworkMonitoringCommand to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
         );
 
         let message = ServerMessage {
@@ -93,8 +103,9 @@ impl Client {
 
     pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableTelemetryMonitoringCommand to the client with device UUID {}",
-            self.uuid
+            "Sending EnableTelemetryMonitoringCommand to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
         );
 
         let message = ServerMessage {
@@ -109,8 +120,9 @@ impl Client {
 
     pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableConfigurationMonitoringCommand to the client with device UUID {}",
-            self.uuid
+            "Sending EnableConfigurationMonitoringCommand to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
         );
 
         let message = ServerMessage {
@@ -129,8 +141,9 @@ impl Client {
         public_key: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenSshSessionCommandto to the client with device UUID {}",
-            self.uuid
+            "Sending OpenSshSessionCommandto to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
         );
 
         let ssh_session_data = SshSessionData {
@@ -150,8 +163,9 @@ impl Client {
 
     pub async fn request_tty_session(&self, tunnel_token: impl Into<String>) -> Result<(), Error> {
         log::info!(
-            "Sending OpenTtySessionCommand to the client with device UUID {}",
-            self.uuid
+            "Sending OpenTtySessionCommand to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
         );
 
         let message = ServerMessage {
@@ -170,8 +184,9 @@ impl Client {
         protocol: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenUiSessionCommand to the client with device UUID {}",
-            self.uuid
+            "Sending OpenUiSessionCommand to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
         );
 
         let ui_session_data = UiSessionData {

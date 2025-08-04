@@ -2,19 +2,22 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde_json::json;
 
 use crate::{
-    datastore::{Datastore, Device, builders::CreateRequestBuilder},
+    datastore::{Datastore, DeviceInstance, builders::CreateRequestBuilder},
     utilities,
 };
 
 impl Datastore {
-    pub async fn create_device(&self, token: &str, device: &Device) -> Result<String, Error> {
-        let mut json = json!(device);
-
+    pub async fn create_device_instance(
+        &self,
+        token: &str,
+        instance: &DeviceInstance,
+    ) -> Result<String, Error> {
+        let mut json = json!(instance);
         json.as_object_mut().unwrap().remove("id");
 
         let request = CreateRequestBuilder::new()
-            .pluck(Device::pluck())
-            .table(Device::table())
+            .pluck(DeviceInstance::pluck())
+            .table(DeviceInstance::table())
             .record(json.to_string())
             .build();
 
@@ -22,8 +25,8 @@ impl Datastore {
 
         let json_data = utilities::json::parse_string(&response.data)?;
         let value = utilities::json::first_element_from_array(&json_data)?;
-        let retval = serde_json::from_value::<Device>(value).handle_err(location!())?;
+        let retval = serde_json::from_value::<DeviceInstance>(value).handle_err(location!())?;
 
-        Ok(retval.id)
+        Ok(retval.id.clone())
     }
 }

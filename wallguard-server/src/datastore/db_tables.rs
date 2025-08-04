@@ -15,6 +15,7 @@ pub enum DBTable {
     DeviceInterfaceAddresses,
     DeviceCredentials,
     InstallationCodes,
+    DeviceInstances,
 }
 
 impl Display for DBTable {
@@ -34,6 +35,7 @@ impl Display for DBTable {
             DBTable::DeviceInterfaceAddresses => "device_interface_addresses",
             DBTable::DeviceCredentials => "device_credentials",
             DBTable::InstallationCodes => "installation_codes",
+            DBTable::DeviceInstances => "device_instances",
         };
         write!(f, "{table_name}")
     }

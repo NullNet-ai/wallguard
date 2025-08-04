@@ -63,7 +63,9 @@ pub async fn proxy_http_request(
 
     let protocol = "http";
 
-    let Ok(stream) = tunneling::establish_tunneled_ui(&context, &device.uuid, protocol).await
+    let Ok(stream) =
+        tunneling::establish_tunneled_ui(&context, &device.uuid, &session.instance_id, protocol)
+            .await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));

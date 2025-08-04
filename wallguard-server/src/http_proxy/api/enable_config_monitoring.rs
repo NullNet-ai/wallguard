@@ -13,6 +13,7 @@ use serde_json::json;
 #[derive(Deserialize)]
 pub struct RequestPayload {
     device_id: String,
+    instance_id: String,
     enable: bool,
 }
 
@@ -56,7 +57,11 @@ pub async fn enable_config_monitoring(
             .json(ErrorJson::from("Failed to update device"));
     }
 
-    let Some(client) = context.orchestractor.get_client(&device.uuid).await else {
+    let Some(client) = context
+        .orchestractor
+        .get_client(&device.uuid, &body.instance_id)
+        .await
+    else {
         return HttpResponse::NotFound().json(ErrorJson::from("Device is not online"));
     };
 
