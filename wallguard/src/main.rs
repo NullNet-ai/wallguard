@@ -13,6 +13,7 @@ mod context;
 mod control_channel;
 mod daemon;
 mod data_transmission;
+mod fireparse;
 mod pty;
 mod reverse_tunnel;
 mod server_data;
@@ -21,7 +22,6 @@ mod timer;
 mod token_provider;
 mod utilities;
 mod wg_server;
-mod fireparse;
 
 #[tokio::main]
 async fn main() {
