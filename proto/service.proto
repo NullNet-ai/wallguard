@@ -3,6 +3,7 @@ package wallguard_service;
 
 import "google/protobuf/empty.proto";
 import "commands.proto";
+import "models.proto";
 
 service WallGuard {
   rpc ControlChannel(stream wallguard_commands.ClientMessage)
@@ -64,11 +65,6 @@ message DeviceSettingsResponse {
   bool config_monitoring = 3;
 }
 
-message FileSnapshot {
-  string filename = 1;
-  bytes contents = 2;
-}
-
 enum ConfigStatus {
   CS_DRAFT = 0;
   CS_APPLIED = 1;
@@ -77,6 +73,6 @@ enum ConfigStatus {
 
 message ConfigSnapshot {
   string token = 1;
-  repeated FileSnapshot files = 2;
+  wallguard_models.Configuration configuration = 2;
   ConfigStatus status = 3;
 }

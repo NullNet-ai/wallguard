@@ -1,7 +1,8 @@
 const OUTPUT_DIR: &str = "./src/protobuf";
 const INCLUDE_PATHS: [&str; 2] = ["../proto", "/usr/include"];
-const PROTO_FILES: [&str; 3] = [
+const PROTO_FILES: [&str; 4] = [
     "../proto/cli.proto",
+    "../proto/models.proto",
     "../proto/commands.proto",
     "../proto/service.proto",
 ];
@@ -24,6 +25,34 @@ fn main() {
         )
         .type_attribute(
             "wallguard_service.SystemResource",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.FilterRule",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.NatRule",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.NetworkInterface",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.Alias",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.IpAddress",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.SSHConfig",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_models.Configuration",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .compile_protos(&PROTO_FILES, &INCLUDE_PATHS)

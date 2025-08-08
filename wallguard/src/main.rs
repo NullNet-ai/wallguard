@@ -21,6 +21,7 @@ mod timer;
 mod token_provider;
 mod utilities;
 mod wg_server;
+mod fireparse;
 
 #[tokio::main]
 async fn main() {

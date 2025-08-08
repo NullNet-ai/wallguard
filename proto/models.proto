@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package wallguard_models;
+
+// @TODO: Links between Filter and Nat
+message FilterRule {
+    bool disabled = 1;
+
+    string policy = 2;
+    string protocol = 3;
+
+    bool source_inversed = 4;
+    string source_port = 5;
+    string source_addr = 6;
+    string source_type = 7;
+
+    bool destination_inversed = 8;
+    string destination_port = 9;
+    string destination_addr = 10;
+    string destination_type = 11;
+
+    string description = 12;
+    string interface = 13;
+
+    uint32 id = 14;
+    uint32 order = 15;
+}
+
+message NatRule {
+    bool disabled = 1;
+    string policy = 2;
+    string protocol = 3;
+
+    bool source_inversed = 4;
+    string source_port = 5;
+    string source_addr = 6;
+    string source_type = 7;
+
+    bool destination_inversed = 8;
+    string destination_port = 9;
+    string destination_addr = 10;
+    string destination_type = 11;
+
+    string description = 12;
+    string interface = 13;
+
+    string redirect_ip = 14;
+    uint32 redirect_port = 15; 
+
+    uint32 order = 16;
+}
+
+message IpAddress {
+    string address = 1;
+    uint32 version = 2;
+}
+
+message NetworkInterface {
+    string name = 1;
+    string device = 2;
+    repeated IpAddress addresses = 3;
+}
+
+message SSHConfig {
+    bool enabled = 1;
+    uint32 port = 2;
+}
+
+message Alias {
+    string type = 1;
+    string name = 2;
+    string value = 3;
+    string description = 4;
+}
+
+message Configuration {
+    string digest = 1;
+    repeated Alias aliases = 2;
+    repeated FilterRule filter_rules = 3; 
+    repeated NatRule nat_rules = 4;
+    repeated NetworkInterface interfaces = 5;
+    string hostname = 6;
+    string gui_protocol = 7;
+    SSHConfig ssh_config = 8;
+}

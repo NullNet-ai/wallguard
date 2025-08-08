@@ -1,14 +1,36 @@
 use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
-use libfireparse::Rule;
 use nullnet_liberror::Error;
+use serde::Serialize;
 use serde_json::json;
+use wallguard_common::protobuf::wallguard_models::{FilterRule, NatRule};
 
 impl Datastore {
-    pub async fn create_rules(
+    pub async fn create_filter_rules(
         &self,
         token: &str,
-        rules: &[Rule],
+        rules: &[FilterRule],
         config_id: &str,
+    ) -> Result<(), Error> {
+        self.create_rules(token, rules, config_id, DBTable::DeviceFilterRules)
+            .await
+    }
+
+    pub async fn create_nat_rules(
+        &self,
+        token: &str,
+        rules: &[NatRule],
+        config_id: &str,
+    ) -> Result<(), Error> {
+        self.create_rules(token, rules, config_id, DBTable::DeviceNatRules)
+            .await
+    }
+
+    async fn create_rules<T: Serialize>(
+        &self,
+        token: &str,
+        rules: &[T],
+        config_id: &str,
+        table: DBTable,
     ) -> Result<(), Error> {
         if rules.is_empty() {
             return Ok(());
@@ -24,13 +46,13 @@ impl Datastore {
             .collect();
 
         let request = BatchCreateRequestBuilder::new()
-            .table(DBTable::DeviceRules)
+            .table(table)
             .durability("hard")
             .entity_prefix("RL")
             .records(serde_json::to_string(&serde_json::Value::Array(records)).unwrap())
             .build();
 
-        let _ = self.inner.clone().batch_create(request, token).await?;
+        self.inner.clone().batch_create(request, token).await?;
 
         Ok(())
     }

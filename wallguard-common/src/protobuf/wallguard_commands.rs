@@ -59,7 +59,7 @@ pub struct UiSessionData {
 pub struct ServerMessage {
     #[prost(
         oneof = "server_message::Message",
-        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
     )]
     pub message: ::core::option::Option<server_message::Message>,
 }
@@ -89,5 +89,7 @@ pub mod server_message {
         DeviceDeauthorizedMessage(()),
         #[prost(message, tag = "11")]
         AuthorizationRejectedMessage(()),
+        #[prost(message, tag = "12")]
+        CreateFirewallRule(super::super::wallguard_models::FilterRule),
     }
 }

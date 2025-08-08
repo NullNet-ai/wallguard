@@ -1,9 +1,9 @@
 use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
-use libfireparse::NetworkInterface;
 use nullnet_libdatastore::ResponseData;
 use nullnet_liberror::Error;
 use serde_json::json;
 use std::collections::HashMap;
+use wallguard_common::protobuf::wallguard_models::NetworkInterface;
 
 impl Datastore {
     pub async fn create_interfaces(

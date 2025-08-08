@@ -1,7 +1,7 @@
 use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
-use libfireparse::Alias;
 use nullnet_liberror::Error;
 use serde_json::json;
+use wallguard_common::protobuf::wallguard_models::Alias;
 
 impl Datastore {
     pub async fn create_aliases(

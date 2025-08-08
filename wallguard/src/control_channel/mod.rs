@@ -1,9 +1,9 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
-    EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
-    EnableTelemetryMonitoringCommand, HeartbeatCommand, OpenTtySessionCommand,
-    OpenUiSessionCommand, UpdateTokenCommand,
+    CreateFirewallRuleCommand, EnableConfigurationMonitoringCommand,
+    EnableNetworkMonitoringCommand, EnableTelemetryMonitoringCommand, HeartbeatCommand,
+    OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
 };
 use crate::control_channel::post_startup::post_startup;
 use crate::daemon::Daemon;
@@ -167,6 +167,16 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
 
                 if let Err(err) = cmd.execute().await {
                     log::error!("OpenUiSessionCommand execution failed: {}", err.to_str());
+                }
+            }
+            server_message::Message::CreateFirewallRule(rule) => {
+                let cmd = CreateFirewallRuleCommand::new(rule, context.clone());
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "CreateFirewallRuleCommand execution failed: {}",
+                        err.to_str()
+                    );
                 }
             }
             server_message::Message::HeartbeatMessage(_) => {

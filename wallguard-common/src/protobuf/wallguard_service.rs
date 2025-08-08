@@ -70,18 +70,11 @@ pub struct DeviceSettingsResponse {
     pub config_monitoring: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FileSnapshot {
-    #[prost(string, tag = "1")]
-    pub filename: ::prost::alloc::string::String,
-    #[prost(bytes = "vec", tag = "2")]
-    pub contents: ::prost::alloc::vec::Vec<u8>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConfigSnapshot {
     #[prost(string, tag = "1")]
     pub token: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "2")]
-    pub files: ::prost::alloc::vec::Vec<FileSnapshot>,
+    #[prost(message, optional, tag = "2")]
+    pub configuration: ::core::option::Option<super::wallguard_models::Configuration>,
     #[prost(enumeration = "ConfigStatus", tag = "3")]
     pub status: i32,
 }

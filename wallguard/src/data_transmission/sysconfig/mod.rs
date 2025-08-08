@@ -1,9 +1,7 @@
 use crate::{
     client_data::Platform,
-    data_transmission::sysconfig::{
-        interfaces::InterfaceSnapshot,
-        types::{FileData, Snapshot},
-    },
+    data_transmission::sysconfig::types::{FileData, Snapshot},
+    fireparse::Fireparse,
     token_provider::TokenProvider,
     wg_server::WGServer,
 };
@@ -11,13 +9,11 @@ use detector::{Detector, State};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::time::Duration;
 use tokio::sync::broadcast;
-use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus, FileSnapshot};
+use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus};
 use watcher::Watcher;
 
 mod detector;
-mod interfaces;
-mod serde_ext;
-mod types;
+pub mod types;
 mod utils;
 mod watcher;
 
@@ -57,6 +53,7 @@ async fn watch_config_files(
         &watcher,
         last_state,
         token_provider.clone(),
+        platform.clone(),
     )
     .await?;
 
@@ -77,6 +74,7 @@ async fn watch_config_files(
                 &watcher,
                 current_state,
                 token_provider.clone(),
+                platform.clone(),
             )
             .await?;
         }
@@ -89,6 +87,7 @@ async fn watch_config_files(
         watcher: &Watcher,
         state: State,
         token_provider: TokenProvider,
+        platform: Platform,
     ) -> Result<(), Error> {
         let mut snapshot = Snapshot::new();
 
@@ -105,22 +104,8 @@ async fn watch_config_files(
             snapshot.push(FileData { filename, content });
         }
 
-        let ifaces_data = InterfaceSnapshot::take_all();
-        let blob = InterfaceSnapshot::serialize_snapshot(&ifaces_data).handle_err(location!())?;
-
-        snapshot.push(FileData {
-            filename: "#NetworkInterfaces".to_string(),
-            content: blob,
-        });
-
         let data = ConfigSnapshot {
-            files: snapshot
-                .iter()
-                .map(|fs| FileSnapshot {
-                    filename: fs.filename.clone(),
-                    contents: fs.content.clone(),
-                })
-                .collect(),
+            configuration: Some(Fireparse::parse(snapshot, platform)?),
             token: token_provider
                 .get()
                 .await
