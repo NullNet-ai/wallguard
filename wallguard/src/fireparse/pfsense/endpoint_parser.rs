@@ -1,4 +1,4 @@
-use xmltree::Element;
+use xmltree::{Element, XMLNode};
 
 const ANY_ADDR_VALUE: &str = "*";
 const ANY_PORT_VALUE: &str = "*";
@@ -8,6 +8,41 @@ const DEFAULT_INVERSED: bool = false;
 pub struct EndpointParser {}
 
 impl EndpointParser {
+    pub fn to_element(
+        tag_name: &str,
+        addr: &str,
+        port: &str,
+        r#type: &str,
+        inversed: bool,
+    ) -> Element {
+        let mut element = Element::new(tag_name);
+
+        if inversed {
+            element.children.push(XMLNode::Element(Element::new("not")));
+        }
+
+        if addr == "*" && port == "*" {
+            element.children.push(XMLNode::Element(Element::new("any")));
+        } else {
+            if addr != "*" {
+                let mut addr_elem = Element::new(match r#type {
+                    "network" => "network",
+                    _ => "address",
+                });
+                addr_elem.children.push(XMLNode::Text(addr.to_string()));
+                element.children.push(XMLNode::Element(addr_elem));
+            }
+
+            if port != "*" {
+                let mut port_elem = Element::new("port");
+                port_elem.children.push(XMLNode::Text(port.to_string()));
+                element.children.push(XMLNode::Element(port_elem));
+            }
+        }
+
+        element
+    }
+
     pub fn parse(element: Option<&Element>) -> (String, String, String, bool) {
         if let Some(element_value) = element {
             let addr = Self::parse_addr(&element_value);
@@ -66,6 +101,13 @@ impl EndpointParser {
 mod tests {
     use super::EndpointParser;
     use xmltree::Element;
+
+    fn get_child_text(element: &Element, tag: &str) -> Option<String> {
+        element
+            .get_child(tag)
+            .and_then(|e| e.get_text())
+            .map(|s| s.to_string())
+    }
 
     fn get_destination(xml: &str) -> Option<Element> {
         let root = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
@@ -154,5 +196,43 @@ mod tests {
         assert_eq!(port, "*");
         assert_eq!(r#type, "address");
         assert_eq!(inversed, false);
+    }
+
+    #[test]
+    fn test_to_element_emits_any_only_if_both_are_wildcard() {
+        let elem = EndpointParser::to_element("source", "*", "*", "address", false);
+        assert!(elem.get_child("any").is_some());
+        assert!(elem.get_child("address").is_none());
+        assert!(elem.get_child("port").is_none());
+    }
+
+    #[test]
+    fn test_to_element_with_specific_address_only() {
+        let elem = EndpointParser::to_element("source", "1.2.3.4", "*", "address", false);
+        assert_eq!(get_child_text(&elem, "address").unwrap(), "1.2.3.4");
+        assert!(elem.get_child("port").is_none());
+        assert!(elem.get_child("any").is_none());
+    }
+
+    #[test]
+    fn test_to_element_with_specific_port_only() {
+        let elem = EndpointParser::to_element("destination", "*", "443", "address", false);
+        assert_eq!(get_child_text(&elem, "port").unwrap(), "443");
+        assert!(elem.get_child("address").is_none());
+        assert!(elem.get_child("any").is_none());
+    }
+
+    #[test]
+    fn test_to_element_with_network_type() {
+        let elem = EndpointParser::to_element("destination", "wanip", "*", "network", false);
+        assert_eq!(get_child_text(&elem, "network").unwrap(), "wanip");
+        assert!(elem.get_child("any").is_none());
+    }
+
+    #[test]
+    fn test_to_element_with_inversed_true() {
+        let elem = EndpointParser::to_element("source", "*", "*", "address", true);
+        assert!(elem.get_child("not").is_some());
+        assert!(elem.get_child("any").is_some());
     }
 }

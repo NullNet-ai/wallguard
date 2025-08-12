@@ -1,4 +1,4 @@
-use xmltree::Element;
+use xmltree::{Element, XMLNode};
 
 const ANY_ADDR_VALUE: &str = "*";
 const ANY_PORT_VALUE: &str = "*";
@@ -8,6 +8,41 @@ const DEFAULT_INVERSED: bool = false;
 pub struct EndpointParser {}
 
 impl EndpointParser {
+    pub fn to_element(
+        tag_name: &str,
+        addr: &str,
+        port: &str,
+        r#type: &str,
+        inversed: bool,
+    ) -> Element {
+        let mut element = Element::new(tag_name);
+
+        if inversed {
+            element.children.push(XMLNode::Element(Element::new("not")));
+        }
+
+        if addr == "*" && port == "*" {
+            element.children.push(XMLNode::Element(Element::new("any")));
+        } else {
+            if addr != "*" {
+                let mut addr_elem = Element::new(match r#type {
+                    "network" => "network",
+                    _ => "address",
+                });
+                addr_elem.children.push(XMLNode::Text(addr.to_string()));
+                element.children.push(XMLNode::Element(addr_elem));
+            }
+
+            if port != "*" {
+                let mut port_elem = Element::new("port");
+                port_elem.children.push(XMLNode::Text(port.to_string()));
+                element.children.push(XMLNode::Element(port_elem));
+            }
+        }
+
+        element
+    }
+
     pub fn parse(element: Option<&Element>) -> (String, String, String, bool) {
         if let Some(element_value) = element {
             let addr = Self::parse_addr(&element_value);

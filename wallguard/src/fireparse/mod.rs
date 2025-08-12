@@ -1,5 +1,6 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use wallguard_common::protobuf::wallguard_models::Configuration;
+use wallguard_common::protobuf::wallguard_models::{Configuration, FilterRule, NatRule};
+use xmltree::Element;
 
 use crate::data_transmission::sysconfig::types::FileData;
 use crate::fireparse::opnsense::OpnSenseParser;
@@ -37,5 +38,17 @@ impl Fireparse {
             }
             Platform::Generic => Err("Unsupported platform").handle_err(location!()),
         }
+    }
+
+    pub fn convert_filter_rule(rule: FilterRule, platform: Platform) -> Result<Element, Error> {
+        match platform {
+            Platform::PfSense => Ok(PfSenseParser::convert_filter_rule(rule)),
+            Platform::OpnSense => Ok(OpnSenseParser::convert_filter_rule(rule)),
+            Platform::Generic => Err("Not supported").handle_err(location!()),
+        }
+    }
+
+    pub fn convert_nat_rules(rule: NatRule, platform: Platform) -> Element {
+        todo!()
     }
 }

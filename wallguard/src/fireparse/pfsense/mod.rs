@@ -4,7 +4,10 @@ use interfaces_parser::PfSenseInterfacesParser;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use rules_parser::PfSenseRulesParser;
 use ssh_parser::PfSenseSSHParser;
-use wallguard_common::{os_if::InterfaceSnapshot, protobuf::wallguard_models::Configuration};
+use wallguard_common::{
+    os_if::InterfaceSnapshot,
+    protobuf::wallguard_models::{Configuration, FilterRule},
+};
 use webgui_parser::PfSenseWebGuiParser;
 use xmltree::Element;
 
@@ -34,5 +37,9 @@ impl PfSenseParser {
             filter_rules,
             nat_rules,
         })
+    }
+
+    pub fn convert_filter_rule(rule: FilterRule) -> Element {
+        PfSenseRulesParser::filter_rule_to_element(rule)
     }
 }

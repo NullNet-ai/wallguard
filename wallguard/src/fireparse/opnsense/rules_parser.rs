@@ -6,6 +6,74 @@ use crate::fireparse::opnsense::endpoint_parser::EndpointParser;
 pub struct OpnSenseRulesParser {}
 
 impl OpnSenseRulesParser {
+    pub fn filter_rule_to_element(rule: FilterRule) -> Element {
+        let mut rule_elem = Element::new("rule");
+
+        if rule.disabled {
+            rule_elem
+                .children
+                .push(XMLNode::Element(Element::new("disabled")));
+        }
+
+        let mut type_elem = Element::new("type");
+        type_elem.children.push(XMLNode::Text(rule.policy));
+        rule_elem.children.push(XMLNode::Element(type_elem));
+
+        let mut parts = rule.protocol.splitn(2, '/');
+        let ipprotocol = parts.next().unwrap_or("inet46");
+        let protocol = parts.next().unwrap_or("any");
+
+        let mut ipproto_elem = Element::new("ipprotocol");
+        ipproto_elem
+            .children
+            .push(XMLNode::Text(ipprotocol.to_string()));
+        rule_elem.children.push(XMLNode::Element(ipproto_elem));
+
+        if protocol != "any" {
+            let mut proto_elem = Element::new("protocol");
+            proto_elem
+                .children
+                .push(XMLNode::Text(protocol.to_string()));
+            rule_elem.children.push(XMLNode::Element(proto_elem));
+        }
+
+        if !rule.description.is_empty() {
+            let mut descr_elem = Element::new("descr");
+            descr_elem.children.push(XMLNode::CData(rule.description));
+            rule_elem.children.push(XMLNode::Element(descr_elem));
+        }
+
+        let mut iface_elem = Element::new("interface");
+        iface_elem.children.push(XMLNode::Text(rule.interface));
+        rule_elem.children.push(XMLNode::Element(iface_elem));
+
+        let source_elem = EndpointParser::to_element(
+            "source",
+            &rule.source_addr,
+            &rule.source_port,
+            &rule.source_type,
+            rule.source_inversed,
+        );
+        rule_elem.children.push(XMLNode::Element(source_elem));
+
+        let destination_elem = EndpointParser::to_element(
+            "destination",
+            &rule.destination_addr,
+            &rule.destination_port,
+            &rule.destination_type,
+            rule.destination_inversed,
+        );
+        rule_elem.children.push(XMLNode::Element(destination_elem));
+
+        let mut tracker_elem = Element::new("tracker");
+        tracker_elem
+            .children
+            .push(XMLNode::Text(rule.id.to_string()));
+        rule_elem.children.push(XMLNode::Element(tracker_elem));
+
+        rule_elem
+    }
+
     pub fn parse(root: &Element) -> (Vec<FilterRule>, Vec<NatRule>) {
         let mut filter_rules = vec![];
         let mut nat_rules = vec![];

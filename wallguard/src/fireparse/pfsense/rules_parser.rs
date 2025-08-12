@@ -5,6 +5,74 @@ use xmltree::{Element, XMLNode};
 pub struct PfSenseRulesParser;
 
 impl PfSenseRulesParser {
+    pub fn filter_rule_to_element(rule: FilterRule) -> Element {
+        let mut rule_elem = Element::new("rule");
+
+        if rule.disabled {
+            rule_elem
+                .children
+                .push(XMLNode::Element(Element::new("disabled")));
+        }
+
+        let mut type_elem = Element::new("type");
+        type_elem.children.push(XMLNode::Text(rule.policy));
+        rule_elem.children.push(XMLNode::Element(type_elem));
+
+        let mut parts = rule.protocol.splitn(2, '/');
+        let ipprotocol = parts.next().unwrap_or("inet46");
+        let protocol = parts.next().unwrap_or("any");
+
+        let mut ipproto_elem = Element::new("ipprotocol");
+        ipproto_elem
+            .children
+            .push(XMLNode::Text(ipprotocol.to_string()));
+        rule_elem.children.push(XMLNode::Element(ipproto_elem));
+
+        if protocol != "any" {
+            let mut proto_elem = Element::new("protocol");
+            proto_elem
+                .children
+                .push(XMLNode::Text(protocol.to_string()));
+            rule_elem.children.push(XMLNode::Element(proto_elem));
+        }
+
+        if !rule.description.is_empty() {
+            let mut descr_elem = Element::new("descr");
+            descr_elem.children.push(XMLNode::CData(rule.description));
+            rule_elem.children.push(XMLNode::Element(descr_elem));
+        }
+
+        let mut iface_elem = Element::new("interface");
+        iface_elem.children.push(XMLNode::Text(rule.interface));
+        rule_elem.children.push(XMLNode::Element(iface_elem));
+
+        let source_elem = EndpointParser::to_element(
+            "source",
+            &rule.source_addr,
+            &rule.source_port,
+            &rule.source_type,
+            rule.source_inversed,
+        );
+        rule_elem.children.push(XMLNode::Element(source_elem));
+
+        let destination_elem = EndpointParser::to_element(
+            "destination",
+            &rule.destination_addr,
+            &rule.destination_port,
+            &rule.destination_type,
+            rule.destination_inversed,
+        );
+        rule_elem.children.push(XMLNode::Element(destination_elem));
+
+        let mut tracker_elem = Element::new("tracker");
+        tracker_elem
+            .children
+            .push(XMLNode::Text(rule.id.to_string()));
+        rule_elem.children.push(XMLNode::Element(tracker_elem));
+
+        rule_elem
+    }
+
     pub fn parse(document: &Element) -> (Vec<FilterRule>, Vec<NatRule>) {
         let mut filter_rules = Vec::new();
         let mut nat_rules = Vec::new();
@@ -181,7 +249,19 @@ impl PfSenseRulesParser {
 #[cfg(test)]
 mod tests {
     use super::PfSenseRulesParser;
-    use xmltree::Element;
+    use wallguard_common::protobuf::wallguard_models::FilterRule;
+    use xmltree::{Element, XMLNode};
+
+    fn find_child_text(element: &Element, name: &str) -> Option<String> {
+        element
+            .get_child(name)
+            .and_then(|e| e.get_text())
+            .map(|s| s.to_string())
+    }
+
+    fn has_child(element: &Element, name: &str) -> bool {
+        element.get_child(name).is_some()
+    }
 
     #[test]
     fn test_parse_filter_rules() {
@@ -417,5 +497,103 @@ mod tests {
         assert_eq!(rules[0].order, 0);
         assert_eq!(rules[1].order, 1);
         assert_eq!(rules[2].order, 2);
+    }
+
+    #[test]
+    fn test_filter_rule_to_element_full() {
+        let rule = FilterRule {
+            disabled: true,
+            policy: "block".to_string(),
+            protocol: "inet/tcp".to_string(),
+            description: "Block SSH".to_string(),
+            source_addr: "*".to_string(),
+            source_port: "*".to_string(),
+            source_type: "address".to_string(),
+            source_inversed: false,
+            destination_addr: "192.168.1.100".to_string(),
+            destination_port: "22".to_string(),
+            destination_type: "address".to_string(),
+            destination_inversed: false,
+            interface: "lan".to_string(),
+            order: 0,
+            id: 42,
+        };
+
+        let elem = PfSenseRulesParser::filter_rule_to_element(rule);
+
+        assert_eq!(elem.name, "rule");
+        assert!(has_child(&elem, "disabled"));
+        assert_eq!(find_child_text(&elem, "type").unwrap(), "block");
+        assert_eq!(find_child_text(&elem, "ipprotocol").unwrap(), "inet");
+        assert_eq!(find_child_text(&elem, "protocol").unwrap(), "tcp");
+        assert_eq!(find_child_text(&elem, "interface").unwrap(), "lan");
+        assert_eq!(find_child_text(&elem, "tracker").unwrap(), "42");
+
+        let destination = elem.get_child("destination").unwrap();
+        assert_eq!(
+            find_child_text(destination, "address").unwrap(),
+            "192.168.1.100"
+        );
+        assert_eq!(find_child_text(destination, "port").unwrap(), "22");
+    }
+
+    #[test]
+    fn test_filter_rule_to_element_omits_any_protocol() {
+        let rule = FilterRule {
+            disabled: false,
+            policy: "pass".to_string(),
+            protocol: "inet/any".to_string(),
+            description: "".to_string(),
+            source_addr: "*".to_string(),
+            source_port: "*".to_string(),
+            source_type: "address".to_string(),
+            source_inversed: false,
+            destination_addr: "*".to_string(),
+            destination_port: "*".to_string(),
+            destination_type: "address".to_string(),
+            destination_inversed: false,
+            interface: "wan".to_string(),
+            order: 1,
+            id: 100,
+        };
+
+        let elem = PfSenseRulesParser::filter_rule_to_element(rule);
+
+        assert_eq!(find_child_text(&elem, "ipprotocol").unwrap(), "inet");
+        assert!(
+            elem.get_child("protocol").is_none(),
+            "protocol should be omitted"
+        );
+    }
+
+    #[test]
+    fn test_filter_rule_to_element_includes_description_cdata() {
+        let rule = FilterRule {
+            disabled: false,
+            policy: "pass".to_string(),
+            protocol: "inet/tcp".to_string(),
+            description: "Allow HTTP traffic".to_string(),
+            source_addr: "*".to_string(),
+            source_port: "*".to_string(),
+            source_type: "address".to_string(),
+            source_inversed: false,
+            destination_addr: "10.0.0.1".to_string(),
+            destination_port: "80".to_string(),
+            destination_type: "address".to_string(),
+            destination_inversed: false,
+            interface: "wan".to_string(),
+            order: 2,
+            id: 55,
+        };
+
+        let elem = PfSenseRulesParser::filter_rule_to_element(rule);
+        let descr_elem = elem.get_child("descr").unwrap();
+
+        // Check for CDATA content
+        if let Some(XMLNode::CData(cdata)) = descr_elem.children.first() {
+            assert_eq!(cdata, "Allow HTTP traffic");
+        } else {
+            panic!("Description should be wrapped in CDATA");
+        }
     }
 }
