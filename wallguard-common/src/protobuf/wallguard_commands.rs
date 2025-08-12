@@ -90,6 +90,6 @@ pub mod server_message {
         #[prost(message, tag = "11")]
         AuthorizationRejectedMessage(()),
         #[prost(message, tag = "12")]
-        CreateFirewallRule(super::super::wallguard_models::FilterRule),
+        CreateFilterRule(super::super::wallguard_models::FilterRule),
     }
 }

@@ -1,4 +1,4 @@
-mod create_firewall_rule;
+mod create_filter_rule;
 mod enable_configuration_monitoring_command;
 mod enable_network_monitoring_command;
 mod enable_telemtry_monitoring_command;
@@ -8,7 +8,7 @@ mod open_tty_session_command;
 mod open_ui_session_command;
 mod update_token_command;
 
-pub use create_firewall_rule::*;
+pub use create_filter_rule::*;
 pub use enable_configuration_monitoring_command::*;
 pub use enable_network_monitoring_command::*;
 pub use enable_telemtry_monitoring_command::*;

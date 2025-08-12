@@ -6,14 +6,13 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use tokio::process::Command;
 use wallguard_common::protobuf::wallguard_models::FilterRule;
 use xmltree::Element;
-// use xmltree::{Element, XMLNode};
 
-pub struct CreateFirewallRuleCommand {
+pub struct CreateFilterRuleCommand {
     rule: FilterRule,
     context: Context,
 }
 
-impl CreateFirewallRuleCommand {
+impl CreateFilterRuleCommand {
     pub fn new(rule: FilterRule, context: Context) -> Self {
         Self { rule, context }
     }
@@ -35,7 +34,7 @@ impl CreateFirewallRuleCommand {
     }
 }
 
-impl ExecutableCommand for CreateFirewallRuleCommand {
+impl ExecutableCommand for CreateFilterRuleCommand {
     async fn execute(self) -> Result<(), Error> {
         let rule = match self.context.client_data.platform {
             Platform::PfSense | Platform::OpnSense => {
