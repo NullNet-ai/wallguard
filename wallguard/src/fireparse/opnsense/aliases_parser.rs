@@ -1,47 +1,49 @@
-use crate::Alias;
-use xmltree::Document;
+use wallguard_common::protobuf::wallguard_models::Alias;
+use xmltree::{Element, XMLNode};
 
 pub struct OpnSenseAliasesParser;
 
 impl OpnSenseAliasesParser {
-    pub fn parse(document: &Document) -> Vec<Alias> {
+    pub fn parse(document: &Element) -> Vec<Alias> {
         let mut aliases = vec![];
 
-        if let Some(aliases_node) = document
-            .descendants()
-            .find(|e| e.has_tag_name("opnsense"))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("OPNsense")))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("Firewall")))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("Alias")))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("aliases")))
+        if let Some(node) = document
+            .get_child("OPNsense")
+            .and_then(|el| el.get_child("Firewall"))
+            .and_then(|el| el.get_child("Alias"))
+            .and_then(|el| el.get_child("aliases"))
         {
-            for alias in aliases_node.children().filter(|e| e.has_tag_name("alias")) {
+            for (_, alias) in node
+                .children
+                .iter()
+                .filter_map(|anode| match anode {
+                    XMLNode::Element(e) if e.name == "alias" => Some(e),
+                    _ => None,
+                })
+                .enumerate()
+            {
                 let name = alias
-                    .children()
-                    .find(|e| e.has_tag_name("name"))
-                    .and_then(|e| e.text())
-                    .unwrap_or("none")
+                    .get_child("name")
+                    .and_then(|el| el.get_text())
+                    .unwrap_or("none".into())
                     .to_string();
 
                 let r#type = alias
-                    .children()
-                    .find(|e| e.has_tag_name("type"))
-                    .and_then(|e| e.text())
-                    .unwrap_or("none")
+                    .get_child("type")
+                    .and_then(|el| el.get_text())
+                    .unwrap_or("none".into())
                     .to_string();
 
-                let content = alias
-                    .children()
-                    .find(|e| e.has_tag_name("content"))
-                    .and_then(|e| e.text());
-
-                let value = content.unwrap_or("None").to_string();
+                let value = alias
+                    .get_child("content")
+                    .and_then(|el| el.get_text())
+                    .unwrap_or("none".into())
+                    .to_string();
 
                 let description = alias
-                    .children()
-                    .find(|e| e.has_tag_name("description"))
-                    .and_then(|e| e.text())
-                    .unwrap_or("")
+                    .get_child("content")
+                    .and_then(|el| el.get_text())
+                    .unwrap_or("none".into())
                     .to_string();
 
                 aliases.push(Alias {
@@ -60,7 +62,7 @@ impl OpnSenseAliasesParser {
 #[cfg(test)]
 mod tests {
     use super::OpnSenseAliasesParser;
-    use xmltree::Document;
+    use xmltree::Element;
 
     #[test]
     fn test_parse_aliase() {
@@ -93,7 +95,7 @@ mod tests {
         </opnsense>
         "#;
 
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let aliases = OpnSenseAliasesParser::parse(&doc);
 
         assert_eq!(aliases.len(), 1);
@@ -118,7 +120,7 @@ mod tests {
         </opnsense>
         "#;
 
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let aliases = OpnSenseAliasesParser::parse(&doc);
 
         assert_eq!(aliases.len(), 0);

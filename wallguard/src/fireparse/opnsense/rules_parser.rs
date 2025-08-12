@@ -1,79 +1,78 @@
-use crate::{opnsense::enpoint_parser::EndpointParser, Rule};
-use roxmltree::{Document, Node};
+use wallguard_common::protobuf::wallguard_models::{FilterRule, NatRule};
+use xmltree::{Element, XMLNode};
+
+use crate::fireparse::opnsense::endpoint_parser::EndpointParser;
 
 pub struct OpnSenseRulesParser {}
 
 impl OpnSenseRulesParser {
-    pub fn parse(document: &Document) -> Vec<Rule> {
-        let mut rules = vec![];
+    pub fn parse(root: &Element) -> (Vec<FilterRule>, Vec<NatRule>) {
+        let mut filter_rules = vec![];
+        let mut nat_rules = vec![];
 
-        if let Some(filter) = document
-            .descendants()
-            .find(|e| e.has_tag_name("opnsense"))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("filter")))
-        {
-            rules.append(&mut OpnSenseRulesParser::parse_rules(filter, "filter"));
+        if let Some(filter) = root.get_child("filter") {
+            filter_rules.append(&mut OpnSenseRulesParser::parse_filter_rules(filter));
         }
 
-        if let Some(nat) = document
-            .descendants()
-            .find(|e| e.has_tag_name("opnsense"))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("nat")))
-        {
-            rules.append(&mut OpnSenseRulesParser::parse_rules(nat, "nat"));
+        if let Some(nat) = root.get_child("nat") {
+            nat_rules.append(&mut OpnSenseRulesParser::parse_nat_rules(nat));
         }
 
-        rules
+        (filter_rules, nat_rules)
     }
 
-    fn parse_rules(node: Node<'_, '_>, rule_type: &str) -> Vec<Rule> {
-        let mut rules = Vec::new();
+    fn parse_filter_rules(parent: &Element) -> Vec<FilterRule> {
+        let mut rules = vec![];
 
-        for (index, rule) in (0_u64..).zip(node.children().filter(|e| e.has_tag_name("rule"))) {
-            let disabled = rule.children().any(|e| e.has_tag_name("disabled"));
+        for (index, rule_node) in parent
+            .children
+            .iter()
+            .filter_map(|node| match node {
+                XMLNode::Element(e) if e.name == "rule" => Some(e),
+                _ => None,
+            })
+            .enumerate()
+        {
+            let disabled = rule_node.get_child("disabled").is_some();
 
-            let policy = rule
-                .children()
-                .find(|e| e.has_tag_name("type"))
-                .and_then(|e| e.text())
-                .unwrap_or("pass")
+            let policy = rule_node
+                .get_child("type")
+                .and_then(|e| e.get_text())
+                .unwrap_or("pass".into())
                 .to_string();
 
-            let ipprotocol = rule
-                .children()
-                .find(|e| e.has_tag_name("ipprotocol"))
-                .and_then(|e| e.text())
-                .unwrap_or("*");
-
-            let protocol = rule
-                .children()
-                .find(|e| e.has_tag_name("protocol"))
-                .and_then(|e| e.text())
-                .unwrap_or("any");
-
-            let description = rule
-                .children()
-                .find(|e| e.has_tag_name("descr"))
-                .and_then(|e| e.text())
-                .unwrap_or("")
+            let ipprotocol = rule_node
+                .get_child("ipprotocol")
+                .and_then(|e| e.get_text())
+                .unwrap_or("*".into())
                 .to_string();
 
-            let interface = rule
-                .children()
-                .find(|e| e.has_tag_name("interface"))
-                .and_then(|e| e.text())
-                .unwrap_or("none")
+            let protocol = rule_node
+                .get_child("protocol")
+                .and_then(|e| e.get_text())
+                .unwrap_or("any".into())
+                .to_string();
+
+            let description = rule_node
+                .get_child("descr")
+                .and_then(|e| e.get_text())
+                .unwrap_or("".into())
+                .to_string();
+
+            let interface = rule_node
+                .get_child("interface")
+                .and_then(|e| e.get_text())
+                .unwrap_or("none".into())
                 .to_string();
 
             let (source_addr, source_port, source_type, source_inversed) =
-                EndpointParser::parse(rule.children().find(|e| e.has_tag_name("source")));
+                EndpointParser::parse(rule_node.get_child("source"));
 
             let (destination_addr, destination_port, destination_type, destination_inversed) =
-                EndpointParser::parse(rule.children().find(|e| e.has_tag_name("destination")));
+                EndpointParser::parse(rule_node.get_child("destination"));
 
-            rules.push(Rule {
+            rules.push(FilterRule {
                 disabled,
-                r#type: rule_type.to_string(),
                 protocol: format!("{}/{}", ipprotocol, protocol),
                 policy,
                 description,
@@ -86,7 +85,92 @@ impl OpnSenseRulesParser {
                 destination_type,
                 destination_inversed,
                 interface,
-                order: index,
+                order: index as u32,
+                // @TODO:
+                id: index as u32,
+            });
+        }
+
+        rules
+    }
+
+    fn parse_nat_rules(node: &Element) -> Vec<NatRule> {
+        let mut rules = Vec::new();
+
+        for (index, child) in node
+            .children
+            .iter()
+            .filter_map(|c| match c {
+                XMLNode::Element(e) if e.name == "rule" => Some(e),
+                _ => None,
+            })
+            .enumerate()
+        {
+            let disabled = child.get_child("disabled").is_some();
+
+            let policy = child
+                .get_child("type")
+                .and_then(|e| e.get_text())
+                .unwrap_or("pass".into())
+                .to_string();
+
+            let ipprotocol = child
+                .get_child("ipprotocol")
+                .and_then(|e| e.get_text())
+                .unwrap_or("*".into());
+
+            let protocol = child
+                .get_child("protocol")
+                .and_then(|e| e.get_text())
+                .unwrap_or("any".into());
+
+            let description = child
+                .get_child("descr")
+                .and_then(|e| e.get_text())
+                .unwrap_or("".into())
+                .to_string();
+
+            let interface = child
+                .get_child("interface")
+                .and_then(|e| e.get_text())
+                .unwrap_or("none".into())
+                .to_string();
+
+            let (source_addr, source_port, source_type, source_inversed) =
+                EndpointParser::parse(child.get_child("source"));
+
+            let (destination_addr, destination_port, destination_type, destination_inversed) =
+                EndpointParser::parse(child.get_child("destination"));
+
+            let redirect_ip = child
+                .get_child("target")
+                .and_then(|e| e.get_text())
+                .unwrap_or("none".into())
+                .to_string();
+
+            let redirect_port = child
+                .get_child("local-port")
+                .and_then(|e| e.get_text())
+                .and_then(|text| text.parse::<u32>().ok())
+                .unwrap_or(0);
+
+            rules.push(NatRule {
+                disabled,
+                protocol: format!("{}/{}", ipprotocol, protocol),
+                policy,
+                description,
+                source_port,
+                source_addr,
+                source_type,
+                source_inversed,
+                destination_addr,
+                destination_port,
+                destination_type,
+                destination_inversed,
+                interface,
+                order: index as u32,
+                redirect_ip,
+                redirect_port,
             });
         }
 

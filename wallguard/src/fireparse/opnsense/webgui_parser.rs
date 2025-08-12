@@ -1,25 +1,22 @@
-use roxmltree::Document;
+use xmltree::Element;
 
 pub struct OpnSenseWebGuiParser {}
 
 impl OpnSenseWebGuiParser {
-    pub fn parse(document: &Document, default: &str) -> String {
-        document
-            .descendants()
-            .find(|e| e.has_tag_name("opnsense"))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("system")))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("webgui")))
-            .and_then(|wn| wn.children().find(|ch| ch.has_tag_name("protocol")))
-            .and_then(|pn| pn.text())
-            .unwrap_or(default)
-            .to_string()
+    pub fn parse(root: &Element, default: &str) -> String {
+        root.get_child("system")
+            .and_then(|e| e.get_child("webgui"))
+            .and_then(|e| e.get_child("protocol"))
+            .and_then(|e| e.get_text())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| default.to_string())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use roxmltree::Document;
+    use xmltree::Element;
 
     #[test]
     fn test_parse_gui_protocol() {
@@ -35,7 +32,7 @@ mod tests {
             </system>
         </opnsense>"#;
 
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let protocol = OpnSenseWebGuiParser::parse(&doc, "http");
         assert_eq!(protocol, "https");
     }
@@ -48,7 +45,7 @@ mod tests {
             </webgui>
         </opnsense>"#;
 
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let protocol = OpnSenseWebGuiParser::parse(&doc, "http");
         assert_eq!(protocol, "http");
     }

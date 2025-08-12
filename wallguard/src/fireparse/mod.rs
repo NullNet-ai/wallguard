@@ -2,9 +2,10 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use wallguard_common::protobuf::wallguard_models::Configuration;
 
 use crate::data_transmission::sysconfig::types::FileData;
+use crate::fireparse::opnsense::OpnSenseParser;
 use crate::{client_data::Platform, fireparse::pfsense::PfSenseParser};
 
-// mod opnsense;
+mod opnsense;
 mod pfsense;
 
 pub struct Fireparse {}
@@ -23,7 +24,17 @@ impl Fireparse {
 
                 PfSenseParser::parse(&data)
             }
-            Platform::OpnSense => todo!(),
+            Platform::OpnSense => {
+                let config_file = files
+                    .into_iter()
+                    .find(|file| file.filename == "config.xml")
+                    .ok_or("'Config.xml' not found")
+                    .handle_err(location!())?;
+
+                let data = String::from_utf8(config_file.content).handle_err(location!())?;
+
+                OpnSenseParser::parse(&data)
+            }
             Platform::Generic => Err("Unsupported platform").handle_err(location!()),
         }
     }

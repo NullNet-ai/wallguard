@@ -1,72 +1,67 @@
-use roxmltree::Document;
-
-use crate::{IpAddress, NetworkInterface};
+use wallguard_common::os_if::InterfaceSnapshot;
+use wallguard_common::protobuf::wallguard_models::{IpAddress, NetworkInterface};
+use xmltree::{Element, XMLNode};
 
 pub struct OpnSenseInterfacesParser {}
 
 impl OpnSenseInterfacesParser {
     pub fn parse(
-        document: &Document,
+        document: &Element,
         os_interfaces: Vec<InterfaceSnapshot>,
     ) -> Vec<NetworkInterface> {
         let mut interfaces = vec![];
 
-        if let Some(interfaces_node) = document
-            .descendants()
-            .find(|e| e.has_tag_name("opnsense"))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("interfaces")))
-        {
-            for interface in interfaces_node.children().filter(|e| e.is_element()) {
-                let name = interface.tag_name().name().to_string();
+        if let Some(interfaces_node) = document.get_child("interfaces") {
+            for interface in &interfaces_node.children {
+                if let XMLNode::Element(ref interface_element) = interface {
+                    let name = interface_element.name.clone();
 
-                let device = interface
-                    .children()
-                    .find(|c| c.has_tag_name("if"))
-                    .and_then(|v| v.text())
-                    .unwrap_or("none")
-                    .to_string();
+                    let device = interface_element
+                        .get_child("if")
+                        .and_then(|e| e.get_text())
+                        .unwrap_or("none".into())
+                        .to_string();
 
-                let mut addresses = vec![];
-                if let Some(data) = os_interfaces.iter().find(|iface| iface.name == device) {
-                    addresses = data
-                        .ip_addresses
-                        .iter()
-                        .map(|addr| IpAddress {
-                            address: addr.to_string(),
-                            version: if addr.is_ipv4() { 4 } else { 5 },
-                        })
-                        .collect();
-                }
-
-                if addresses.is_empty() {
-                    if let Some(address_v4) = interface
-                        .children()
-                        .find(|c| c.has_tag_name("ipaddr"))
-                        .and_then(|c| c.text())
-                    {
-                        addresses.push(IpAddress {
-                            address: String::from(address_v4),
-                            version: 4,
-                        });
+                    let mut addresses = vec![];
+                    if let Some(data) = os_interfaces.iter().find(|iface| iface.name == device) {
+                        addresses = data
+                            .ip_addresses
+                            .iter()
+                            .map(|addr| IpAddress {
+                                address: addr.to_string(),
+                                version: if addr.is_ipv4() { 4 } else { 6 },
+                            })
+                            .collect();
                     }
 
-                    if let Some(address_v6) = interface
-                        .children()
-                        .find(|c| c.has_tag_name("ipaddrv6"))
-                        .and_then(|c| c.text())
-                    {
-                        addresses.push(IpAddress {
-                            address: String::from(address_v6),
-                            version: 6,
-                        });
-                    }
-                }
+                    if addresses.is_empty() {
+                        if let Some(address_v4) = interface_element
+                            .get_child("ipaddr")
+                            .and_then(|e| e.get_text())
+                        {
+                            addresses.push(IpAddress {
+                                address: address_v4.to_string(),
+                                version: 4,
+                            });
+                        }
 
-                interfaces.push(NetworkInterface {
-                    name,
-                    device,
-                    addresses,
-                });
+                        if let Some(address_v6) = interface_element
+                            .get_child("ipaddrv6")
+                            .and_then(|e| e.get_text())
+                        {
+                            addresses.push(IpAddress {
+                                address: address_v6.to_string(),
+                                version: 6,
+                            });
+                        }
+                    }
+
+                    interfaces.push(NetworkInterface {
+                        name,
+                        device,
+                        addresses,
+                    });
+                }
             }
         }
 
@@ -77,7 +72,7 @@ impl OpnSenseInterfacesParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use roxmltree::Document;
+    use xmltree::Element;
 
     #[test]
     fn test_parse_valid_xml() {
@@ -93,7 +88,7 @@ mod tests {
                             </lan>
                         </interfaces>
                     </opnsense>"#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let interfaces = OpnSenseInterfacesParser::parse(&doc, vec![]);
 
         assert_eq!(interfaces.len(), 2);
@@ -118,7 +113,7 @@ mod tests {
                             <wan></wan>
                         </interfaces>
                     </opnsense>"#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let interfaces = OpnSenseInterfacesParser::parse(&doc, vec![]);
 
         assert_eq!(interfaces.len(), 1);
@@ -130,7 +125,7 @@ mod tests {
     #[test]
     fn test_parse_empty_xml() {
         let xml = "<opnsense></opnsense>";
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let interfaces = OpnSenseInterfacesParser::parse(&doc, vec![]);
 
         assert_eq!(interfaces.len(), 0);
@@ -148,7 +143,7 @@ mod tests {
             </interfaces>
         </opnsense>"#;
 
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
 
         let iface_data = InterfaceSnapshot {
             name: String::from("igb0"),

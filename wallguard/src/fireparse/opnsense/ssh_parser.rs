@@ -1,53 +1,50 @@
-use crate::SSHConfig;
-use roxmltree::Document;
+use wallguard_common::protobuf::wallguard_models::SshConfig;
+use xmltree::{Element, XMLNode};
 
-const DEFAULT_PORT: u16 = 22;
-const DEFAUKT_ENABLE: bool = false;
+const DEFAULT_PORT: u32 = 22;
+const DEFAULT_ENABLE: bool = false;
 pub struct OpnSenseSSHParser {}
 
 impl OpnSenseSSHParser {
-    pub fn parse(document: &Document) -> SSHConfig {
-        let ssh_node = document
-            .descendants()
-            .find(|e| e.has_tag_name("opnsense"))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("system")))
-            .and_then(|e| e.children().find(|ce| ce.has_tag_name("ssh")));
+    pub fn parse(root: &Element) -> SshConfig {
+        let ssh_node = root.get_child("system").and_then(|e| e.get_child("ssh"));
 
-        if let Some(ssh_node) = ssh_node {
-            let enabled = ssh_node.children().any(|e| e.has_tag_name("enable"));
+        if let Some(ssh) = ssh_node {
+            let enabled = ssh
+                .children
+                .iter()
+                .any(|node| matches!(node, XMLNode::Element(e) if e.name == "enable"));
 
-            let port = ssh_node
-                .children()
-                .find(|e| e.has_tag_name("port"))
-                .and_then(|e| e.text())
-                .and_then(|t| t.parse::<u16>().ok())
+            let port = ssh
+                .get_child("port")
+                .and_then(|e| e.get_text())
+                .and_then(|t| t.parse::<u32>().ok())
                 .unwrap_or(DEFAULT_PORT);
 
-            SSHConfig { enabled, port }
+            SshConfig { enabled, port }
         } else {
-            SSHConfig {
-                enabled: DEFAUKT_ENABLE,
+            SshConfig {
+                enabled: DEFAULT_ENABLE,
                 port: DEFAULT_PORT,
             }
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use roxmltree::Document;
+    use xmltree::Element;
 
-    const DEFAULT_PORT: u16 = 22;
+    const DEFAULT_PORT: u32 = 22;
 
     #[test]
     fn test_missing_all_nodes() {
         let xml = r#"<config></config>"#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let config = OpnSenseSSHParser::parse(&doc);
         assert_eq!(
             config,
-            SSHConfig {
+            SshConfig {
                 enabled: false,
                 port: DEFAULT_PORT
             }
@@ -63,11 +60,11 @@ mod tests {
                 </system>
             </opnsense>
         "#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let config = OpnSenseSSHParser::parse(&doc);
         assert_eq!(
             config,
-            SSHConfig {
+            SshConfig {
                 enabled: false,
                 port: DEFAULT_PORT
             }
@@ -85,11 +82,11 @@ mod tests {
                 </system>
             </opnsense>
         "#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let config = OpnSenseSSHParser::parse(&doc);
         assert_eq!(
             config,
-            SSHConfig {
+            SshConfig {
                 enabled: true,
                 port: DEFAULT_PORT
             }
@@ -108,11 +105,11 @@ mod tests {
                 </system>
             </opnsense>
         "#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let config = OpnSenseSSHParser::parse(&doc);
         assert_eq!(
             config,
-            SSHConfig {
+            SshConfig {
                 enabled: true,
                 port: 2222
             }
@@ -131,11 +128,11 @@ mod tests {
                 </system>
             </opnsense>
         "#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let config = OpnSenseSSHParser::parse(&doc);
         assert_eq!(
             config,
-            SSHConfig {
+            SshConfig {
                 enabled: true,
                 port: DEFAULT_PORT
             }
@@ -153,11 +150,11 @@ mod tests {
                 </system>
             </opnsense>
         "#;
-        let doc = Document::parse(xml).expect("Failed to parse XML");
+        let doc = Element::parse(xml.as_bytes()).expect("Failed to parse XML");
         let config = OpnSenseSSHParser::parse(&doc);
         assert_eq!(
             config,
-            SSHConfig {
+            SshConfig {
                 enabled: false,
                 port: 2222
             }
