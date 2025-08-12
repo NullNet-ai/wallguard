@@ -39,8 +39,6 @@ pub struct FilterRule {
 pub struct NatRule {
     #[prost(bool, tag = "1")]
     pub disabled: bool,
-    #[prost(string, tag = "2")]
-    pub policy: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub protocol: ::prost::alloc::string::String,
     #[prost(bool, tag = "4")]

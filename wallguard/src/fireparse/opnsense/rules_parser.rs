@@ -176,12 +176,6 @@ impl OpnSenseRulesParser {
         {
             let disabled = child.get_child("disabled").is_some();
 
-            let policy = child
-                .get_child("type")
-                .and_then(|e| e.get_text())
-                .unwrap_or("pass".into())
-                .to_string();
-
             let ipprotocol = child
                 .get_child("ipprotocol")
                 .and_then(|e| e.get_text())
@@ -225,7 +219,6 @@ impl OpnSenseRulesParser {
             rules.push(NatRule {
                 disabled,
                 protocol: format!("{}/{}", ipprotocol, protocol),
-                policy,
                 description,
                 source_port,
                 source_addr,

@@ -28,7 +28,6 @@ message FilterRule {
 
 message NatRule {
     bool disabled = 1;
-    string policy = 2;
     string protocol = 3;
 
     bool source_inversed = 4;

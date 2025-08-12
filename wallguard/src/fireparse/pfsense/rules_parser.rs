@@ -177,12 +177,6 @@ impl PfSenseRulesParser {
         {
             let disabled = child.get_child("disabled").is_some();
 
-            let policy = child
-                .get_child("type")
-                .and_then(|e| e.get_text())
-                .unwrap_or("pass".into())
-                .to_string();
-
             let ipprotocol = child
                 .get_child("ipprotocol")
                 .and_then(|e| e.get_text())
@@ -226,7 +220,6 @@ impl PfSenseRulesParser {
             rules.push(NatRule {
                 disabled,
                 protocol: format!("{}/{}", ipprotocol, protocol),
-                policy,
                 description,
                 source_port,
                 source_addr,
@@ -333,7 +326,6 @@ mod tests {
 
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0].disabled, false);
-        assert_eq!(rules[0].policy, "pass");
         assert_eq!(rules[0].protocol, "inet6/tcp");
         assert_eq!(rules[0].description, "NAT Rule");
         assert_eq!(rules[0].source_addr, "*");
@@ -413,7 +405,6 @@ mod tests {
 
         // Verify the second rule (NAT)
         assert_eq!(nrules[0].disabled, true);
-        assert_eq!(nrules[0].policy, "pass");
         assert_eq!(nrules[0].protocol, "inet/tcp");
         assert_eq!(nrules[0].description, "NAT Rule");
         assert_eq!(nrules[0].source_addr, "*");
