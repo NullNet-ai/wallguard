@@ -18,9 +18,9 @@ impl CreateFilterRuleCommand {
     }
 
     async fn reload_configuraion() -> Result<(), Error> {
-        let status = Command::new("configctl")
-            .arg("system")
-            .arg("reload")
+        let status = Command::new("php")
+            .arg("-f")
+            .arg("/etc/rc.filter_configure")
             .status()
             .await
             .handle_err(location!())?;
