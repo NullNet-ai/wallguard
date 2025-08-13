@@ -4,7 +4,8 @@ use serde_json::json;
 use wallguard_common::protobuf::wallguard_models::Alias;
 
 impl Datastore {
-    pub async fn create_aliases(
+    // @TODO
+    pub async fn _create_aliases(
         &self,
         token: &str,
         aliases: &[Alias],

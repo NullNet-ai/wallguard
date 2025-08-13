@@ -13,14 +13,13 @@ impl OpnSenseAliasesParser {
             .and_then(|el| el.get_child("Alias"))
             .and_then(|el| el.get_child("aliases"))
         {
-            for (_, alias) in node
+            for alias in node
                 .children
                 .iter()
                 .filter_map(|anode| match anode {
                     XMLNode::Element(e) if e.name == "alias" => Some(e),
                     _ => None,
                 })
-                .enumerate()
             {
                 let name = alias
                     .get_child("name")

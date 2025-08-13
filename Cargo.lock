@@ -2102,19 +2102,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nullnet-libconfmon"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "201ba274158cfa4d2a455a68e17381169921908d336e39d3c61ea855ae83505b"
-dependencies = [
- "bincode",
- "get_if_addrs",
- "pnet",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "nullnet-libdatastore"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2135,18 +2122,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7770b13c8488366e2a7fd4680dde340b79d23f10576aa3c4031fc4aa2ae03b4"
 dependencies = [
  "log",
-]
-
-[[package]]
-name = "nullnet-libfireparse"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fef6952815779fc2b3d32707e573d1627651ec0fc8df30a3abb33bb833e09adb"
-dependencies = [
- "base64",
- "nullnet-libconfmon",
- "roxmltree",
- "serde",
 ]
 
 [[package]]
@@ -2823,12 +2798,6 @@ dependencies = [
  "untrusted",
  "windows-sys 0.52.0",
 ]
-
-[[package]]
-name = "roxmltree"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
 name = "rustc-demangle"
@@ -3699,20 +3668,18 @@ name = "wallguard"
 version = "0.1.3"
 dependencies = [
  "async-channel",
- "bincode",
  "chrono",
  "clap",
  "dirs",
  "env_logger",
- "get_if_addrs",
  "libc",
  "log",
+ "md5",
  "nix 0.30.1",
  "nullnet-liberror",
  "nullnet-libresmon",
  "nullnet-traffic-monitor",
  "once_cell",
- "pnet",
  "portable-pty",
  "prost",
  "serde",
@@ -3723,6 +3690,7 @@ dependencies = [
  "tokio",
  "tonic 0.13.1",
  "wallguard-common",
+ "xmltree",
 ]
 
 [[package]]
@@ -3743,7 +3711,10 @@ dependencies = [
 name = "wallguard-common"
 version = "0.1.0"
 dependencies = [
+ "bincode",
+ "get_if_addrs",
  "nullnet-liberror",
+ "pnet",
  "prost",
  "serde",
  "serde_json",
@@ -3770,10 +3741,8 @@ dependencies = [
  "hyper-util",
  "indexmap 2.10.0",
  "log",
- "md5",
  "nullnet-libdatastore",
  "nullnet-liberror",
- "nullnet-libfireparse",
  "nullnet-libipinfo",
  "nullnet-libtoken",
  "prost",
@@ -4352,6 +4321,21 @@ name = "writeable"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea2f10b9bb0928dfb1b42b65e1f9e36f7f54dbdf08457afefb38afcdec4fa2bb"
+
+[[package]]
+name = "xml-rs"
+version = "0.8.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fd8403733700263c6eb89f192880191f1b83e332f7a20371ddcf421c4a337c7"
+
+[[package]]
+name = "xmltree"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b619f8c85654798007fb10afa5125590b43b088c225a25fc2fec100a9fad0fc6"
+dependencies = [
+ "xml-rs",
+]
 
 [[package]]
 name = "yoke"

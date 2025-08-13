@@ -26,7 +26,7 @@ impl CreateFilterRuleCommand {
             .handle_err(location!())?;
 
         if !status.success() {
-            Err(format!("configctl failed with status: {}", status)).handle_err(location!())
+            Err(format!("configctl failed with status: {status}")).handle_err(location!())
         } else {
             println!("pfSense config successfully reloaded.");
             Ok(())

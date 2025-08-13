@@ -45,10 +45,10 @@ impl EndpointParser {
 
     pub fn parse(element: Option<&Element>) -> (String, String, String, bool) {
         if let Some(element_value) = element {
-            let addr = Self::parse_addr(&element_value);
-            let port = Self::parse_port(&element_value);
-            let r#type = Self::parse_addr_type(&element_value);
-            let inversed = Self::parse_inversed(&element_value);
+            let addr = Self::parse_addr(element_value);
+            let port = Self::parse_port(element_value);
+            let r#type = Self::parse_addr_type(element_value);
+            let inversed = Self::parse_inversed(element_value);
 
             (addr, port, r#type, inversed)
         } else {

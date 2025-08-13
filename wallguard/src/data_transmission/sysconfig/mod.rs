@@ -53,7 +53,7 @@ async fn watch_config_files(
         &watcher,
         last_state,
         token_provider.clone(),
-        platform.clone(),
+        platform,
     )
     .await?;
 
@@ -74,7 +74,7 @@ async fn watch_config_files(
                 &watcher,
                 current_state,
                 token_provider.clone(),
-                platform.clone(),
+                platform,
             )
             .await?;
         }

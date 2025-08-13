@@ -143,7 +143,7 @@ impl PfSenseRulesParser {
 
             rules.push(FilterRule {
                 disabled,
-                protocol: format!("{}/{}", ipprotocol, protocol),
+                protocol: format!("{ipprotocol}/{protocol}"),
                 policy,
                 description,
                 source_port,
@@ -219,7 +219,7 @@ impl PfSenseRulesParser {
 
             rules.push(NatRule {
                 disabled,
-                protocol: format!("{}/{}", ipprotocol, protocol),
+                protocol: format!("{ipprotocol}/{protocol}",),
                 description,
                 source_port,
                 source_addr,

@@ -48,7 +48,7 @@ impl Fireparse {
         }
     }
 
-    pub fn convert_nat_rules(rule: NatRule, platform: Platform) -> Element {
+    pub fn _convert_nat_rules(_rule: NatRule, _platform: Platform) -> Element {
         todo!()
     }
 }
