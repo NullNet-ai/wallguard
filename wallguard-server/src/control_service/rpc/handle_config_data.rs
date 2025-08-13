@@ -81,7 +81,7 @@ async fn insert_new_configuration(
     let result = tokio::join!(
         datastore.create_filter_rules(&token.jwt, &conf.filter_rules, &config_id),
         datastore.create_nat_rules(&token.jwt, &conf.nat_rules, &config_id),
-        datastore.create_aliases(&token.jwt, &conf.aliases, &config_id),
+        // datastore.create_aliases(&token.jwt, &conf.aliases, &config_id),
         datastore.create_interfaces(&token.jwt, &conf.interfaces, &config_id)
     );
 

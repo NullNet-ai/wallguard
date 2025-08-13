@@ -54,7 +54,7 @@ impl ExecutableCommand for CreateFilterRuleCommand {
         let mut document = Element::parse(content.as_slice()).handle_err(location!())?;
 
         let rules_node = document
-            .get_mut_child("rules")
+            .get_mut_child("filter")
             .ok_or("Malformed config.xml file")
             .handle_err(location!())?;
 
