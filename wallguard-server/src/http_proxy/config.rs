@@ -16,10 +16,10 @@ impl HttpProxyConfig {
             .ok()
             .and_then(|p| p.parse::<u16>().ok());
 
-        if let (Some(host), Some(port)) = (host, port) {
-            if let Ok(addr) = format!("{host}:{port}").parse::<SocketAddr>() {
-                return Self { addr };
-            }
+        if let (Some(host), Some(port)) = (host, port)
+            && let Ok(addr) = format!("{host}:{port}").parse::<SocketAddr>()
+        {
+            return Self { addr };
         }
 
         Self::default()

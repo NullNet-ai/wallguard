@@ -19,39 +19,36 @@ pub fn parse_message(
     let mut map = ConnectionsMap::new();
     for packet in message.packets {
         let link_type = packet.link_type;
-        if let Some(headers) = get_packet_headers(&packet.data, link_type) {
-            if let Some((ip_header, packet_length)) = IpHeader::from_etherparse(headers.net) {
-                if let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
-                {
-                    let device_id = token.account.device.as_ref().unwrap().id.clone();
-                    let interface_name = packet.interface;
-                    let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
-                    let total_byte = 14 * usize::from(has_eth) + usize::from(packet_length);
-                    let source_ip = ip_header.source_ip;
-                    let destination_ip = ip_header.destination_ip;
+        if let Some(headers) = get_packet_headers(&packet.data, link_type)
+            && let Some((ip_header, packet_length)) = IpHeader::from_etherparse(headers.net)
+            && let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
+        {
+            let device_id = token.account.device.as_ref().unwrap().id.clone();
+            let interface_name = packet.interface;
+            let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
+            let total_byte = 14 * usize::from(has_eth) + usize::from(packet_length);
+            let source_ip = ip_header.source_ip;
+            let destination_ip = ip_header.destination_ip;
 
-                    let key =
-                        ConnectionKey::new(device_id, interface_name, ip_header, transport_header);
+            let key = ConnectionKey::new(device_id, interface_name, ip_header, transport_header);
 
-                    map.connections
-                        .entry(key)
-                        .and_modify(|v| {
-                            v.update(total_byte);
-                        })
-                        .or_insert_with(|| {
-                            let timestamp = packet.timestamp;
-                            let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
-                            let _ = ip_info_tx.send(remote_ip);
-                            ConnectionValue::new(timestamp, total_byte, remote_ip)
-                        });
-                }
-            }
+            map.connections
+                .entry(key)
+                .and_modify(|v| {
+                    v.update(total_byte);
+                })
+                .or_insert_with(|| {
+                    let timestamp = packet.timestamp;
+                    let remote_ip = get_ip_to_lookup(source_ip, destination_ip);
+                    let _ = ip_info_tx.send(remote_ip);
+                    ConnectionValue::new(timestamp, total_byte, remote_ip)
+                });
         }
     }
     map.into_parsed_message()
 }
 
-fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders> {
+fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders<'_>> {
     match link_type {
         // Raw IP, IPv4, IPv6
         12 | 228 | 229 => LaxPacketHeaders::from_ip(packet),
@@ -63,7 +60,7 @@ fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders>
     .ok()
 }
 
-fn from_null(packet: &[u8]) -> Result<LaxPacketHeaders, LaxHeaderSliceError> {
+fn from_null(packet: &[u8]) -> Result<LaxPacketHeaders<'_>, LaxHeaderSliceError> {
     if packet.len() <= 4 {
         return Err(LaxHeaderSliceError::Len(LenError {
             required_len: 4,
