@@ -4,7 +4,7 @@ use actix_web::{
 };
 use serde::Deserialize;
 use serde_json::json;
-use wallguard_common::protobuf::wallguard_models::FilterRule;
+use wallguard_common::protobuf::wallguard_models::Alias;
 
 use crate::{
     app_context::AppContext,
@@ -15,10 +15,10 @@ use crate::{
 pub struct RequestPayload {
     device_id: String,
     instance_id: String,
-    rule: FilterRule,
+    alias: Alias,
 }
 
-pub async fn create_filter_rule(
+pub async fn create_alias(
     request: HttpRequest,
     context: Data<AppContext>,
     body: Json<RequestPayload>,
@@ -54,12 +54,7 @@ pub async fn create_filter_rule(
         return HttpResponse::NotFound().json(ErrorJson::from("Device is not online"));
     };
 
-    if let Err(err) = client
-        .lock()
-        .await
-        .create_filter_rule(body.rule.clone())
-        .await
-    {
+    if let Err(err) = client.lock().await.create_alias(body.alias.clone()).await {
         return HttpResponse::InternalServerError().json(ErrorJson::from(err));
     }
 
