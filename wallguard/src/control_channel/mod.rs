@@ -1,7 +1,8 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
-    CreateFilterRuleCommand, EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
+    CreateAliasCommand, CreateFilterRuleCommand, CreateNatRuleCommand,
+    EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
     EnableTelemetryMonitoringCommand, HeartbeatCommand, OpenTtySessionCommand,
     OpenUiSessionCommand, UpdateTokenCommand,
 };
@@ -174,6 +175,20 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
 
                 if let Err(err) = cmd.execute().await {
                     log::error!("CreateFilterRuleCommand execution failed: {}", err.to_str());
+                }
+            }
+            server_message::Message::CreateNatRule(rule) => {
+                let cmd = CreateNatRuleCommand::new(rule, context.clone());
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!("CreateNatRuleCommand execution failed: {}", err.to_str());
+                }
+            }
+            server_message::Message::CreateAlias(alias) => {
+                let cmd = CreateAliasCommand::new(alias, context.clone());
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!("CreateAliasCommand execution failed: {}", err.to_str());
                 }
             }
             server_message::Message::HeartbeatMessage(_) => {

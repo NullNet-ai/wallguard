@@ -6,7 +6,7 @@ use rules_parser::PfSenseRulesParser;
 use ssh_parser::PfSenseSSHParser;
 use wallguard_common::{
     os_if::InterfaceSnapshot,
-    protobuf::wallguard_models::{Configuration, FilterRule},
+    protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule},
 };
 use webgui_parser::PfSenseWebGuiParser;
 use xmltree::Element;
@@ -41,5 +41,13 @@ impl PfSenseParser {
 
     pub fn convert_filter_rule(rule: FilterRule) -> Element {
         PfSenseRulesParser::filter_rule_to_element(rule)
+    }
+
+    pub fn convert_nat_rule(rule: NatRule) -> Element {
+        PfSenseRulesParser::nat_rule_to_element(rule)
+    }
+
+    pub fn convert_alias(alias: Alias) -> Element {
+        PfSenseAliasesParser::to_element(alias)
     }
 }

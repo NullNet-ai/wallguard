@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package wallguard_models;
 
-// @TODO: Links between Filter and Nat
 message FilterRule {
     bool disabled = 1;
 

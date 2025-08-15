@@ -81,6 +81,82 @@ impl PfSenseRulesParser {
         rule_elem
     }
 
+    pub fn nat_rule_to_element(rule: NatRule) -> Element {
+        let mut rule_elem = Element::new("rule");
+
+        if rule.disabled {
+            rule_elem
+                .children
+                .push(XMLNode::Element(Element::new("disabled")));
+        }
+
+        let mut parts = rule.protocol.splitn(2, '/');
+        let ipprotocol = parts.next().unwrap_or("inet46");
+        let protocol = parts.next().unwrap_or("any");
+
+        let mut ipproto_elem = Element::new("ipprotocol");
+        ipproto_elem
+            .children
+            .push(XMLNode::Text(ipprotocol.to_string()));
+        rule_elem.children.push(XMLNode::Element(ipproto_elem));
+
+        if protocol != "any" {
+            let mut proto_elem = Element::new("protocol");
+            proto_elem
+                .children
+                .push(XMLNode::Text(protocol.to_string()));
+            rule_elem.children.push(XMLNode::Element(proto_elem));
+        }
+
+        if !rule.description.is_empty() {
+            let mut descr_elem = Element::new("descr");
+            descr_elem.children.push(XMLNode::CData(rule.description));
+            rule_elem.children.push(XMLNode::Element(descr_elem));
+        }
+
+        let mut iface_elem = Element::new("interface");
+        iface_elem.children.push(XMLNode::Text(rule.interface));
+        rule_elem.children.push(XMLNode::Element(iface_elem));
+
+        let source_elem = EndpointParser::to_element(
+            "source",
+            &rule.source_addr,
+            &rule.source_port,
+            &rule.source_type,
+            rule.source_inversed,
+        );
+        rule_elem.children.push(XMLNode::Element(source_elem));
+
+        let destination_elem = EndpointParser::to_element(
+            "destination",
+            &rule.destination_addr,
+            &rule.destination_port,
+            &rule.destination_type,
+            rule.destination_inversed,
+        );
+        rule_elem.children.push(XMLNode::Element(destination_elem));
+
+        let mut associated_rule_id_elem = Element::new("associated-rule-id");
+        associated_rule_id_elem
+            .children
+            .push(XMLNode::Text(rule.associated_rule_id));
+        rule_elem
+            .children
+            .push(XMLNode::Element(associated_rule_id_elem));
+
+        let mut target_elem = Element::new("target");
+        target_elem.children.push(XMLNode::Text(rule.redirect_ip));
+        rule_elem.children.push(XMLNode::Element(target_elem));
+
+        let mut port_elem = Element::new("local-port");
+        port_elem
+            .children
+            .push(XMLNode::Text(rule.redirect_port.to_string()));
+        rule_elem.children.push(XMLNode::Element(port_elem));
+
+        rule_elem
+    }
+
     pub fn parse(document: &Element) -> (Vec<FilterRule>, Vec<NatRule>) {
         let mut filter_rules = Vec::new();
         let mut nat_rules = Vec::new();

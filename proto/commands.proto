@@ -59,5 +59,7 @@ message ServerMessage {
         google.protobuf.Empty authorization_rejected_message = 11;
 
         wallguard_models.FilterRule create_filter_rule = 12;
+        wallguard_models.NatRule create_nat_rule = 13;
+        wallguard_models.Alias create_alias = 14;
     }
 }

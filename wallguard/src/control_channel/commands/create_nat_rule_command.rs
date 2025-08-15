@@ -1,44 +1,27 @@
 use crate::{
     client_data::Platform, context::Context, control_channel::command::ExecutableCommand,
-    fireparse::Fireparse,
+    fireparse::Fireparse, utilities::system,
 };
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use tokio::process::Command;
-use wallguard_common::protobuf::wallguard_models::FilterRule;
+use wallguard_common::protobuf::wallguard_models::NatRule;
 use xmltree::Element;
 
-pub struct CreateFilterRuleCommand {
-    rule: FilterRule,
+pub struct CreateNatRuleCommand {
+    rule: NatRule,
     context: Context,
 }
 
-impl CreateFilterRuleCommand {
-    pub fn new(rule: FilterRule, context: Context) -> Self {
+impl CreateNatRuleCommand {
+    pub fn new(rule: NatRule, context: Context) -> Self {
         Self { rule, context }
-    }
-
-    async fn reload_configuraion() -> Result<(), Error> {
-        let status = Command::new("php")
-            .arg("-f")
-            .arg("/etc/rc.filter_configure")
-            .status()
-            .await
-            .handle_err(location!())?;
-
-        if !status.success() {
-            Err(format!("configctl failed with status: {status}")).handle_err(location!())
-        } else {
-            println!("pfSense config successfully reloaded.");
-            Ok(())
-        }
     }
 }
 
-impl ExecutableCommand for CreateFilterRuleCommand {
+impl ExecutableCommand for CreateNatRuleCommand {
     async fn execute(self) -> Result<(), Error> {
         let rule = match self.context.client_data.platform {
             Platform::PfSense | Platform::OpnSense => {
-                Fireparse::convert_filter_rule(self.rule, self.context.client_data.platform)?
+                Fireparse::convert_nat_rules(self.rule, self.context.client_data.platform)?
             }
             _ => Err(format!(
                 "Current platform {} does not support rules creation",
@@ -54,7 +37,7 @@ impl ExecutableCommand for CreateFilterRuleCommand {
         let mut document = Element::parse(content.as_slice()).handle_err(location!())?;
 
         let rules_node = document
-            .get_mut_child("filter")
+            .get_mut_child("nat")
             .ok_or("Malformed config.xml file")
             .handle_err(location!())?;
 
@@ -66,6 +49,6 @@ impl ExecutableCommand for CreateFilterRuleCommand {
             .await
             .handle_err(location!())?;
 
-        Self::reload_configuraion().await
+        system::reload_configuraion().await
     }
 }

@@ -1,5 +1,5 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use wallguard_common::protobuf::wallguard_models::{Configuration, FilterRule, NatRule};
+use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
 use xmltree::Element;
 
 use crate::data_transmission::sysconfig::types::FileData;
@@ -48,7 +48,19 @@ impl Fireparse {
         }
     }
 
-    pub fn _convert_nat_rules(_rule: NatRule, _platform: Platform) -> Element {
-        todo!()
+    pub fn convert_nat_rules(rule: NatRule, platform: Platform) -> Result<Element, Error> {
+        match platform {
+            Platform::PfSense => Ok(PfSenseParser::convert_nat_rule(rule)),
+            Platform::OpnSense => Ok(OpnSenseParser::convert_nat_rule(rule)),
+            Platform::Generic => Err("Not supported").handle_err(location!()),
+        }
+    }
+
+    pub fn convert_alias(alias: Alias, platform: Platform) -> Result<Element, Error> {
+        match platform {
+            Platform::PfSense => Ok(PfSenseParser::convert_alias(alias)),
+            Platform::OpnSense => Ok(OpnSenseParser::convert_alias(alias)),
+            Platform::Generic => Err("Not supported").handle_err(location!()),
+        }
     }
 }

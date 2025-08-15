@@ -52,6 +52,30 @@ impl OpnSenseAliasesParser {
 
         aliases
     }
+
+    pub fn to_element(alias: Alias) -> Element {
+        let mut alias_elem = Element::new("alias");
+
+        let mut name_elem = Element::new("name");
+        name_elem.children.push(XMLNode::Text(alias.name));
+        alias_elem.children.push(XMLNode::Element(name_elem));
+
+        let mut type_elem = Element::new("type");
+        type_elem.children.push(XMLNode::Text(alias.r#type));
+        alias_elem.children.push(XMLNode::Element(type_elem));
+
+        let mut content_elem = Element::new("content");
+        content_elem.children.push(XMLNode::Text(alias.value));
+        alias_elem.children.push(XMLNode::Element(content_elem));
+
+        let mut description_elem = Element::new("description");
+        description_elem
+            .children
+            .push(XMLNode::Text(alias.description));
+        alias_elem.children.push(XMLNode::Element(description_elem));
+
+        alias_elem
+    }
 }
 
 #[cfg(test)]

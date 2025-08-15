@@ -1,7 +1,7 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use wallguard_common::{
     os_if::InterfaceSnapshot,
-    protobuf::wallguard_models::{Configuration, FilterRule},
+    protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule},
 };
 use xmltree::Element;
 
@@ -41,5 +41,13 @@ impl OpnSenseParser {
 
     pub fn convert_filter_rule(rule: FilterRule) -> Element {
         OpnSenseRulesParser::filter_rule_to_element(rule)
+    }
+
+    pub fn convert_nat_rule(rule: NatRule) -> Element {
+        OpnSenseRulesParser::nat_rule_to_element(rule)
+    }
+
+    pub fn convert_alias(alias: Alias) -> Element {
+        OpnSenseAliasesParser::to_element(alias)
     }
 }
