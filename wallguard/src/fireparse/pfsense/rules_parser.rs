@@ -70,6 +70,14 @@ impl PfSenseRulesParser {
             .push(XMLNode::Text(rule.id.to_string()));
         rule_elem.children.push(XMLNode::Element(tracker_elem));
 
+        let mut associated_rule_id_elem = Element::new("associated-rule-id");
+        associated_rule_id_elem
+            .children
+            .push(XMLNode::Text(rule.associated_rule_id));
+        rule_elem
+            .children
+            .push(XMLNode::Element(associated_rule_id_elem));
+
         rule_elem
     }
 
@@ -141,6 +149,12 @@ impl PfSenseRulesParser {
                 .and_then(|text| text.parse::<u32>().ok())
                 .unwrap_or(0);
 
+            let associated_rule_id = child
+                .get_child("associated-rule-id")
+                .and_then(|e| e.get_text())
+                .unwrap_or("".into())
+                .to_string();
+
             rules.push(FilterRule {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}"),
@@ -157,6 +171,7 @@ impl PfSenseRulesParser {
                 interface,
                 order: index as u32,
                 id,
+                associated_rule_id,
             });
         }
 
@@ -217,6 +232,12 @@ impl PfSenseRulesParser {
                 .and_then(|text| text.parse::<u32>().ok())
                 .unwrap_or(0);
 
+            let associated_rule_id = child
+                .get_child("associated-rule-id")
+                .and_then(|e| e.get_text())
+                .unwrap_or("".into())
+                .to_string();
+
             rules.push(NatRule {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}",),
@@ -233,6 +254,7 @@ impl PfSenseRulesParser {
                 order: index as u32,
                 redirect_ip,
                 redirect_port,
+                associated_rule_id,
             });
         }
 
@@ -508,6 +530,7 @@ mod tests {
             interface: "lan".to_string(),
             order: 0,
             id: 42,
+            associated_rule_id: "qwerty".to_string(),
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
@@ -519,6 +542,10 @@ mod tests {
         assert_eq!(find_child_text(&elem, "protocol").unwrap(), "tcp");
         assert_eq!(find_child_text(&elem, "interface").unwrap(), "lan");
         assert_eq!(find_child_text(&elem, "tracker").unwrap(), "42");
+        assert_eq!(
+            find_child_text(&elem, "associated-rule-id").unwrap(),
+            "qwerty"
+        );
 
         let destination = elem.get_child("destination").unwrap();
         assert_eq!(
@@ -546,6 +573,7 @@ mod tests {
             interface: "wan".to_string(),
             order: 1,
             id: 100,
+            associated_rule_id: "qwerty".to_string(),
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
@@ -575,6 +603,7 @@ mod tests {
             interface: "wan".to_string(),
             order: 2,
             id: 55,
+            associated_rule_id: "qwerty".to_string(),
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);

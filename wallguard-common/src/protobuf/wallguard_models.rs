@@ -33,6 +33,8 @@ pub struct FilterRule {
     pub id: u32,
     #[prost(uint32, tag = "15")]
     pub order: u32,
+    #[prost(string, tag = "16")]
+    pub associated_rule_id: ::prost::alloc::string::String,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -67,6 +69,8 @@ pub struct NatRule {
     pub redirect_port: u32,
     #[prost(uint32, tag = "16")]
     pub order: u32,
+    #[prost(string, tag = "17")]
+    pub associated_rule_id: ::prost::alloc::string::String,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

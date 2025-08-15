@@ -71,6 +71,14 @@ impl OpnSenseRulesParser {
             .push(XMLNode::Text(rule.id.to_string()));
         rule_elem.children.push(XMLNode::Element(tracker_elem));
 
+        let mut associated_rule_id_elem = Element::new("associated-rule-id");
+        associated_rule_id_elem
+            .children
+            .push(XMLNode::Text(rule.associated_rule_id));
+        rule_elem
+            .children
+            .push(XMLNode::Element(associated_rule_id_elem));
+
         rule_elem
     }
 
@@ -139,6 +147,12 @@ impl OpnSenseRulesParser {
             let (destination_addr, destination_port, destination_type, destination_inversed) =
                 EndpointParser::parse(rule_node.get_child("destination"));
 
+            let associated_rule_id = rule_node
+                .get_child("associated-rule-id")
+                .and_then(|e| e.get_text())
+                .unwrap_or("".into())
+                .to_string();
+
             rules.push(FilterRule {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}"),
@@ -156,6 +170,7 @@ impl OpnSenseRulesParser {
                 order: index as u32,
                 // @TODO:
                 id: index as u32,
+                associated_rule_id,
             });
         }
 
@@ -216,6 +231,12 @@ impl OpnSenseRulesParser {
                 .and_then(|text| text.parse::<u32>().ok())
                 .unwrap_or(0);
 
+            let associated_rule_id = child
+                .get_child("associated-rule-id")
+                .and_then(|e| e.get_text())
+                .unwrap_or("".into())
+                .to_string();
+
             rules.push(NatRule {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}"),
@@ -232,6 +253,7 @@ impl OpnSenseRulesParser {
                 order: index as u32,
                 redirect_ip,
                 redirect_port,
+                associated_rule_id,
             });
         }
 

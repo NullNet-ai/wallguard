@@ -1,9 +1,10 @@
 use crate::datastore::Datastore;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
+use futures_util::future::try_join_all;
 use nullnet_liberror::Error;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
-use wallguard_common::protobuf::wallguard_models::Configuration;
+use wallguard_common::protobuf::wallguard_models::{Alias, Configuration};
 use wallguard_common::protobuf::wallguard_service::ConfigSnapshot;
 
 // @TODO
@@ -81,13 +82,28 @@ async fn insert_new_configuration(
     let result = tokio::join!(
         datastore.create_filter_rules(&token.jwt, &conf.filter_rules, &config_id),
         datastore.create_nat_rules(&token.jwt, &conf.nat_rules, &config_id),
-        // datastore.create_aliases(&token.jwt, &conf.aliases, &config_id),
+        create_aliases_inner(datastore.clone(), &token.jwt, &conf.aliases, &config_id),
         datastore.create_interfaces(&token.jwt, &conf.interfaces, &config_id)
     );
 
     result.0?;
     result.1?;
     result.2?;
+    result.3?;
 
+    Ok(())
+}
+
+async fn create_aliases_inner(
+    datastore: Datastore,
+    token: &str,
+    aliases: &[Alias],
+    config_id: &str,
+) -> Result<(), Error> {
+    let futures = aliases
+        .iter()
+        .map(|alias| datastore.create_alias(token, alias, config_id));
+
+    try_join_all(futures).await?;
     Ok(())
 }
