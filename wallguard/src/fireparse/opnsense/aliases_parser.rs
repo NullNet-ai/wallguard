@@ -29,14 +29,20 @@ impl OpnSenseAliasesParser {
                     .unwrap_or("none".into())
                     .to_string();
 
+                let url = alias.get_child("url").and_then(|e| e.get_text());
+
                 let value = alias
                     .get_child("content")
-                    .and_then(|el| el.get_text())
-                    .unwrap_or("none".into())
-                    .to_string();
+                    .and_then(|e| e.get_text())
+                    .or(url)
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "None".to_string())
+                    .split("\n")
+                    .collect::<Vec<&str>>()
+                    .join(",");
 
                 let description = alias
-                    .get_child("content")
+                    .get_child("description")
                     .and_then(|el| el.get_text())
                     .unwrap_or("none".into())
                     .to_string();
@@ -65,7 +71,8 @@ impl OpnSenseAliasesParser {
         alias_elem.children.push(XMLNode::Element(type_elem));
 
         let mut content_elem = Element::new("content");
-        content_elem.children.push(XMLNode::Text(alias.value));
+        let value = alias.value.split(",").collect::<Vec<&str>>().join("\n");
+        content_elem.children.push(XMLNode::Text(value));
         alias_elem.children.push(XMLNode::Element(content_elem));
 
         let mut description_elem = Element::new("description");
@@ -100,7 +107,8 @@ mod tests {
                                 <interface/>
                                 <counters/>
                                 <updatefreq/>
-                                <content>@@aliascontent@@</content>
+                                <content>1.1.1.1
+2.2.2.2</content>
                                 <password/>
                                 <username/>
                                 <authtype/>
@@ -120,7 +128,7 @@ mod tests {
         assert_eq!(aliases.len(), 1);
         assert_eq!(aliases[0].name, "NoProxy");
         assert_eq!(aliases[0].r#type, "host");
-        assert_eq!(aliases[0].value, "@@aliascontent@@");
+        assert_eq!(aliases[0].value, "1.1.1.1,2.2.2.2");
         assert_eq!(aliases[0].description, "NoProxy group");
     }
 

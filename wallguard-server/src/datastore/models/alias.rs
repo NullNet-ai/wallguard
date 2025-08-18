@@ -27,11 +27,7 @@ pub struct PortAliasModel {
 // @TODO: Move to client's parser ??
 impl AliasModel {
     pub fn extract_ip_aliases(&self, alias_from: &Alias, alias_id: &str) -> Vec<IpAliasModel> {
-        let values: Vec<String> = alias_from
-            .value
-            .split_whitespace()
-            .map(str::to_string)
-            .collect();
+        let values: Vec<String> = alias_from.value.split(",").map(str::to_string).collect();
 
         if self.r#type == "host" {
             values
@@ -68,11 +64,7 @@ impl AliasModel {
     }
 
     pub fn extract_port_aliases(&self, alias_from: &Alias, alias_id: &str) -> Vec<PortAliasModel> {
-        let values: Vec<String> = alias_from
-            .value
-            .split_whitespace()
-            .map(str::to_string)
-            .collect();
+        let values: Vec<String> = alias_from.value.split(",").map(str::to_string).collect();
 
         if self.r#type == "port" {
             values
