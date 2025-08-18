@@ -14,14 +14,3 @@ pub fn sha256_digest_bytes(input: &str) -> [u8; 32] {
     let result = hasher.finalize();
     result.as_slice().try_into().unwrap()
 }
-
-/// Computes the MD5 hash of a given string.
-///
-/// # Arguments
-/// * `input` - A string slice (`&str`) to be hashed.
-///
-/// # Returns
-/// A `String` representing the MD5 hash in hexadecimal format.
-pub fn md5_digest(input: &str) -> String {
-    format!("{:x}", md5::compute(input))
-}

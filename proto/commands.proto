@@ -1,7 +1,9 @@
 syntax = "proto3";
+
 package wallguard_commands;
 
 import "google/protobuf/empty.proto";
+import "models.proto";
 
 message AuthorizationRequest {
     string uuid = 1;
@@ -38,7 +40,6 @@ message UISessionData {
     string protocol = 2;
 }
 
-
 message ServerMessage {
     oneof message {
         string update_token_command = 1;
@@ -56,5 +57,9 @@ message ServerMessage {
         AuthenticationData device_authorized_message = 9;
         google.protobuf.Empty device_deauthorized_message = 10;
         google.protobuf.Empty authorization_rejected_message = 11;
+
+        wallguard_models.FilterRule create_filter_rule = 12;
+        wallguard_models.NatRule create_nat_rule = 13;
+        wallguard_models.Alias create_alias = 14;
     }
 }

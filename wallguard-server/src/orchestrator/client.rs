@@ -3,6 +3,9 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::sync::mpsc;
 use tonic::Status;
 use tonic::Streaming;
+use wallguard_common::protobuf::wallguard_models::Alias;
+use wallguard_common::protobuf::wallguard_models::FilterRule;
+use wallguard_common::protobuf::wallguard_models::NatRule;
 
 use crate::app_context::AppContext;
 use crate::orchestrator::control_stream::control_stream;
@@ -196,6 +199,57 @@ impl Instance {
 
         let message = ServerMessage {
             message: Some(Message::OpenUiSessionCommand(ui_session_data)),
+        };
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
+
+    pub async fn create_filter_rule(&self, rule: FilterRule) -> Result<(), Error> {
+        log::info!(
+            "Sending CreateFilterRule to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
+
+        let message = ServerMessage {
+            message: Some(Message::CreateFilterRule(rule)),
+        };
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
+
+    pub async fn create_nat_rule(&self, rule: NatRule) -> Result<(), Error> {
+        log::info!(
+            "Sending CreateNatRule to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
+
+        let message = ServerMessage {
+            message: Some(Message::CreateNatRule(rule)),
+        };
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
+
+    pub async fn create_alias(&self, alias: Alias) -> Result<(), Error> {
+        log::info!(
+            "Sending CreateAlias to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
+
+        let message = ServerMessage {
+            message: Some(Message::CreateAlias(alias)),
         };
 
         self.outbound

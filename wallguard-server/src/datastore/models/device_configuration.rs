@@ -8,7 +8,6 @@ pub struct DeviceConfiguration {
     pub digest: String,
     pub hostname: String,
     pub device_id: String,
-    pub raw_content: String,
     #[serde(rename = "config_version")]
     pub version: i32,
 }
@@ -20,7 +19,6 @@ impl DeviceConfiguration {
             "digest".into(),
             "hostname".into(),
             "device_id".into(),
-            "raw_content".into(),
             "config_version".into(),
         ]
     }

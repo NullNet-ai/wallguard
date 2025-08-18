@@ -157,9 +157,7 @@ impl AuthReqHandler {
                 Err(_) => fail_with_status!(outbound, "Failed to obtain device"),
             };
 
-            if device.is_some() {
-                let device = device.unwrap();
-
+            if let Some(device) = device {
                 Self::add_device_instance(
                     &mut clients,
                     &device,
@@ -235,7 +233,7 @@ impl AuthReqHandler {
 
         let instance = Arc::new(Mutex::new(Instance::new(
             device.uuid.clone(),
-            instance_id.into(),
+            instance_id,
             inbound,
             outbound,
             context,

@@ -1,10 +1,10 @@
 use crate::datastore::Datastore;
-use crate::utilities;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
-use libfireparse::{Configuration, FileData, FireparseError, Parser, Platform};
+use futures_util::future::try_join_all;
 use nullnet_liberror::Error;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
+use wallguard_common::protobuf::wallguard_models::{Alias, Configuration};
 use wallguard_common::protobuf::wallguard_service::ConfigSnapshot;
 
 // @TODO
@@ -17,32 +17,17 @@ impl WallGuardService {
     ) -> Result<Response<()>, Status> {
         let request = request.into_inner();
 
+        let Some(configuration) = request.configuration else {
+            return Err(Status::internal("No configuration has been provided"));
+        };
+
         let token =
             Token::from_jwt(&request.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
-        let device = self
+        let _ = self
             .ensure_device_exists_and_authrorized(&token)
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
-
-        let snapshot = request
-            .files
-            .into_iter()
-            .map(|sf| FileData {
-                filename: sf.filename,
-                content: sf.contents,
-            })
-            .collect();
-
-        let platform =
-            Platform::from_string(&device.r#type).map_err(|e| Status::internal(e.message))?;
-
-        let configuration = Parser::parse(platform, snapshot)
-            .map_err(|e| match e {
-                FireparseError::UnsupportedPlatform(message)
-                | FireparseError::ParserError(message) => message,
-            })
-            .map_err(Status::internal)?;
 
         let previous = self
             .context
@@ -52,9 +37,7 @@ impl WallGuardService {
             .map_err(|err| Status::internal(err.to_str()))?;
 
         if let Some(mut prev) = previous {
-            let digest = utilities::hash::md5_digest(&configuration.raw_content);
-
-            if prev.digest == digest {
+            if prev.digest == configuration.digest {
                 prev.version += 1;
 
                 self.context
@@ -88,9 +71,8 @@ async fn insert_new_configuration(
 ) -> Result<(), Error> {
     let devcfg = DeviceConfiguration {
         device_id: token.account.device.as_ref().unwrap().id.clone(),
-        digest: utilities::hash::md5_digest(&conf.raw_content),
+        digest: conf.digest.clone(),
         hostname: conf.hostname.clone(),
-        raw_content: conf.raw_content.clone(),
         version: 0,
         ..Default::default()
     };
@@ -98,14 +80,30 @@ async fn insert_new_configuration(
     let config_id = datastore.create_config(&token.jwt, &devcfg).await?;
 
     let result = tokio::join!(
-        datastore.create_rules(&token.jwt, &conf.rules, &config_id),
-        datastore.create_aliases(&token.jwt, &conf.aliases, &config_id),
+        datastore.create_filter_rules(&token.jwt, &conf.filter_rules, &config_id),
+        datastore.create_nat_rules(&token.jwt, &conf.nat_rules, &config_id),
+        create_aliases_inner(datastore.clone(), &token.jwt, &conf.aliases, &config_id),
         datastore.create_interfaces(&token.jwt, &conf.interfaces, &config_id)
     );
 
     result.0?;
     result.1?;
     result.2?;
+    result.3?;
 
+    Ok(())
+}
+
+async fn create_aliases_inner(
+    datastore: Datastore,
+    token: &str,
+    aliases: &[Alias],
+    config_id: &str,
+) -> Result<(), Error> {
+    let futures = aliases
+        .iter()
+        .map(|alias| datastore.create_alias(token, alias, config_id));
+
+    try_join_all(futures).await?;
     Ok(())
 }

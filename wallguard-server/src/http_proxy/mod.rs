@@ -1,4 +1,7 @@
 use crate::app_context::AppContext;
+use crate::http_proxy::api::create_alias;
+use crate::http_proxy::api::create_filter_rule;
+use crate::http_proxy::api::create_nat_rule;
 use crate::http_proxy::api::enable_config_monitoring;
 use crate::http_proxy::api::enable_telemetry_monitoring;
 use crate::http_proxy::api::enable_traffic_monitoring;
@@ -62,6 +65,9 @@ pub async fn run_http_proxy(context: AppContext) {
                 "/wallguard/gateway/tty",
                 web::to(tty_gateway::open_tty_session),
             )
+            .route("/wallguard/rule/filter", web::to(create_filter_rule))
+            .route("/wallguard/rule/nat", web::to(create_nat_rule))
+            .route("/wallguard/alias", web::to(create_alias))
             .default_service(web::to(proxy::proxy_http_request))
     })
     .bind(config.addr)
