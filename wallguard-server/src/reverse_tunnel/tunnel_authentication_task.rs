@@ -36,7 +36,20 @@ impl TunnelAuthenticationTask {
 
         match self.listeners.lock().await.remove(&token_hash) {
             Some(channel) => {
+                if self
+                    .tunnel
+                    .write(ServerFrame {
+                        message: Some(ServerMessage::Verdict(VerdictFrame { allowed: true })),
+                    })
+                    .await
+                    .is_err()
+                {
+                    log::error!("TunnelAuthenticationTask: Failed to send the verdict");
+                    return;
+                };
+
                 self.tunnel.authenticated = true;
+
                 if channel.send(self.tunnel).is_err() {
                     log::error!(
                         "TunnelAuthenticationTask: Failed to send tunnel instance to listener"

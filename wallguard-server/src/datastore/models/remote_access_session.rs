@@ -54,6 +54,7 @@ impl RemoteAccessSession {
             "device_id".into(),
             "remote_access_session".into(),
             "remote_access_type".into(),
+            "instance_id".into()
         ]
     }
 
