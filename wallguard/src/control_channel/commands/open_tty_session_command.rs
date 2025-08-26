@@ -70,7 +70,7 @@ async fn pty_to_stream(writer: TunnelWriter, reader: PtyReader) -> Result<(), Er
     loop {
         let reader = Arc::clone(&reader);
 
-        let result = tokio::task::spawn_blocking(move || {
+        let data = tokio::task::spawn_blocking(move || {
             let mut buf = [0u8; 8196];
             match reader.lock().unwrap().read(&mut buf) {
                 Ok(0) => Ok(Vec::new()), // EOF
@@ -86,7 +86,7 @@ async fn pty_to_stream(writer: TunnelWriter, reader: PtyReader) -> Result<(), Er
             .lock()
             .await
             .send(ClientFrame {
-                message: Some(ClientMessage::Data(DataFrame { data: result })),
+                message: Some(ClientMessage::Data(DataFrame { data })),
             })
             .await
             .handle_err(location!())?;

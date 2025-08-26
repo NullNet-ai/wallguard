@@ -99,15 +99,13 @@ impl AsyncRead for TunnelAdapter {
                     self.read_task = None;
 
                     let Some(message) = frame.message else {
-                        return Poll::Ready(Err(std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        return Poll::Ready(Err(std::io::Error::other(
                             "TunnelAdapter: Client send an empty message",
                         )));
                     };
 
                     let ClientMessage::Data(data_frame) = message else {
-                        return Poll::Ready(Err(std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        return Poll::Ready(Err(std::io::Error::other(
                             "TunnelAdapter: Client send an unepected message",
                         )));
                     };
@@ -125,17 +123,17 @@ impl AsyncRead for TunnelAdapter {
                 }
                 Poll::Ready(Ok(Err(err))) => {
                     self.read_task = None;
-                    Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("TunnelAdapter: Tunnel read error: {}", err.to_str()),
-                    )))
+                    Poll::Ready(Err(std::io::Error::other(format!(
+                        "TunnelAdapter: Tunnel read error: {}",
+                        err.to_str()
+                    ))))
                 }
                 Poll::Ready(Err(join_error)) => {
                     self.read_task = None;
-                    Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("TunnelAdapter: Read task error: {}", join_error),
-                    )))
+                    Poll::Ready(Err(std::io::Error::other(format!(
+                        "TunnelAdapter: Read task error: {}",
+                        join_error
+                    ))))
                 }
                 Poll::Pending => Poll::Pending,
             }
@@ -172,7 +170,7 @@ impl AsyncWrite for TunnelAdapter {
             let bytes_to_write = buf.len();
 
             let server_frame = ServerFrame {
-                message: Some(ServerMessage::Data(DataFrame { data: data })),
+                message: Some(ServerMessage::Data(DataFrame { data })),
             };
 
             self.write_task = Some(tokio::spawn(async move {
@@ -188,17 +186,17 @@ impl AsyncWrite for TunnelAdapter {
                 }
                 Poll::Ready(Ok(Err(err))) => {
                     self.write_task = None;
-                    Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("TunnelAdapter: Tunnel write error: {}", err.to_str()),
-                    )))
+                    Poll::Ready(Err(std::io::Error::other(format!(
+                        "TunnelAdapter: Tunnel write error: {}",
+                        err.to_str()
+                    ))))
                 }
                 Poll::Ready(Err(join_error)) => {
                     self.write_task = None;
-                    Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("TunnelAdapter: Write task error: {}", join_error),
-                    )))
+                    Poll::Ready(Err(std::io::Error::other(format!(
+                        "TunnelAdapter: Write task error: {}",
+                        join_error
+                    ))))
                 }
                 Poll::Pending => Poll::Pending,
             }
@@ -231,17 +229,19 @@ impl AsyncWrite for TunnelAdapter {
                 }
                 Poll::Ready(Ok(Err(err))) => {
                     self.write_task = None;
-                    Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("TunnelAdapter: Flush error: {}", err.to_str()),
-                    )))
+
+                    Poll::Ready(Err(std::io::Error::other(format!(
+                        "TunnelAdapter: Flush error: {}",
+                        err.to_str()
+                    ))))
                 }
                 Poll::Ready(Err(join_error)) => {
                     self.write_task = None;
-                    Poll::Ready(Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("TunnelAdapter: Flush task error: {}", join_error),
-                    )))
+
+                    Poll::Ready(Err(std::io::Error::other(format!(
+                        "TunnelAdapter: Flush task error: {}",
+                        join_error
+                    ))))
                 }
                 Poll::Pending => Poll::Pending,
             }
