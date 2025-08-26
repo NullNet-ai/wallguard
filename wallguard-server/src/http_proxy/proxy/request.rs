@@ -21,17 +21,17 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use rustls::pki_types::ServerName;
 use rustls::{ClientConfig, RootCertStore};
 use std::sync::Arc;
-use tokio::net::TcpStream;
 use tokio_rustls::TlsConnector;
 use tokio_rustls::client::TlsStream;
 use webpki_roots::TLS_SERVER_ROOTS;
 
 use crate::http_proxy::utilities::error_json::ErrorJson;
+use crate::reverse_tunnel::TunnelAdapter;
 
 async fn handshake(
-    tcp_stream: TcpStream,
+    tunnel: TunnelAdapter,
     server_name: impl Into<String>,
-) -> Result<TlsStream<TcpStream>, Error> {
+) -> Result<TlsStream<TunnelAdapter>, Error> {
     let mut root_store = RootCertStore::empty();
     root_store.extend(TLS_SERVER_ROOTS.iter().map(|ta| ta.to_owned()));
 
@@ -44,7 +44,7 @@ async fn handshake(
     let domain = ServerName::try_from(server_name.into()).handle_err(location!())?;
 
     let tls_stream = connector
-        .connect(domain, tcp_stream)
+        .connect(domain, tunnel)
         .await
         .handle_err(location!())?;
 
@@ -133,7 +133,7 @@ pub async fn proxy_request(
     body: ActixBody,
     domain: &str,
     is_https: bool,
-    stream: TcpStream,
+    tunnel: TunnelAdapter,
 ) -> ActixResponse {
     let Ok(request) = convert_request(request, body, domain).await else {
         return ActixResponse::InternalServerError().into();
@@ -143,12 +143,12 @@ pub async fn proxy_request(
     impl<T: Read + Write> ReadWrite for T {}
 
     let io: Box<dyn ReadWrite + Send + Unpin> = if is_https {
-        let Ok(tls_stream) = handshake(stream, domain).await else {
+        let Ok(tls_stream) = handshake(tunnel, domain).await else {
             return ActixResponse::ServiceUnavailable().json(ErrorJson::from("Handshake failed"));
         };
         Box::new(TokioIo::new(tls_stream))
     } else {
-        Box::new(TokioIo::new(stream))
+        Box::new(TokioIo::new(tunnel))
     };
 
     let Ok((mut sender, conn)) = hyper::client::conn::http1::handshake(io).await else {

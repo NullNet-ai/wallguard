@@ -12,6 +12,7 @@ use crate::datastore::RemoteAccessType;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 use crate::http_proxy::utilities::request_handling;
 use crate::http_proxy::utilities::tunneling;
+use crate::reverse_tunnel::TunnelAdapter;
 
 mod request;
 
@@ -63,7 +64,7 @@ pub async fn proxy_http_request(
 
     let protocol = "http";
 
-    let Ok(stream) =
+    let Ok(tunnel) =
         tunneling::establish_tunneled_ui(&context, &device.uuid, &session.instance_id, protocol)
             .await
     else {
@@ -71,5 +72,12 @@ pub async fn proxy_http_request(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    request::proxy_request(request, body, "domain.com", false, stream).await
+    request::proxy_request(
+        request,
+        body,
+        "domain.com",
+        false,
+        TunnelAdapter::from(tunnel),
+    )
+    .await
 }
