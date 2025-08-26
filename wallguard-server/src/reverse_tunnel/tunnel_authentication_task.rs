@@ -13,7 +13,7 @@ impl TunnelAuthenticationTask {
         Self { tunnel, listeners }
     }
 
-    pub async fn authenticate(self) {
+    pub async fn authenticate(mut self) {
         let Ok(message) = self.tunnel.read().await else {
             log::error!("TunnelAuthenticationTask: Failed to read authentication message");
             return;
@@ -25,7 +25,7 @@ impl TunnelAuthenticationTask {
         };
 
         let ClientMessage::Authentication(auth_frame) = message else {
-            log::error!("TunnelAuthenticationTask: Receivec unexpected message, aboring");
+            log::error!("TunnelAuthenticationTask: Received unexpected message, aboring");
             return;
         };
 
@@ -36,6 +36,7 @@ impl TunnelAuthenticationTask {
 
         match self.listeners.lock().await.remove(&token_hash) {
             Some(channel) => {
+                self.tunnel.authenticated = true;
                 if channel.send(self.tunnel).is_err() {
                     log::error!(
                         "TunnelAuthenticationTask: Failed to send tunnel instance to listener"

@@ -1,7 +1,7 @@
 use std::{pin::Pin, task::Poll};
 
 use crate::reverse_tunnel::TunnelInstance;
-use nullnet_liberror::Error;
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::io::{AsyncRead, AsyncWrite};
 use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
 use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
@@ -28,16 +28,22 @@ pub struct TunnelAdapter {
     buffer_offset: usize,
 }
 
-impl From<TunnelInstance> for TunnelAdapter {
-    fn from(tunnel: TunnelInstance) -> Self {
-        Self {
-            tunnel,
-            read_task: None,
-            write_task: None,
-            frame_buffer: None,
-            buffer_offset: 0,
+impl TryFrom<TunnelInstance> for TunnelAdapter {
+    fn try_from(tunnel: TunnelInstance) -> Result<Self, Error> {
+        if tunnel.authenticated {
+            Ok(Self {
+                tunnel,
+                read_task: None,
+                write_task: None,
+                frame_buffer: None,
+                buffer_offset: 0,
+            })
+        } else {
+            Err("TunnelAdapter: Expected an authenticated client").handle_err(location!())
         }
     }
+
+    type Error = Error;
 }
 
 impl AsyncRead for TunnelAdapter {

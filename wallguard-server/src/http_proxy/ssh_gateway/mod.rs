@@ -77,14 +77,18 @@ pub(super) async fn open_ssh_session(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    let ssh_session =
-        match ssh_session::SSHSession::new(TunnelAdapter::from(tunnel), &keypair).await {
-            Ok(sess) => sess,
-            Err(_) => {
-                return HttpResponse::InternalServerError()
-                    .json(ErrorJson::from("Failed to establish SSH session"));
-            }
-        };
+    let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to adapt tunnel transport"));
+    };
+
+    let ssh_session = match ssh_session::SSHSession::new(tunnel_adapter, &keypair).await {
+        Ok(sess) => sess,
+        Err(_) => {
+            return HttpResponse::InternalServerError()
+                .json(ErrorJson::from("Failed to establish SSH session"));
+        }
+    };
 
     let (response, ws_session, stream) = match request_handling::upgrade_to_websocket(request, body)
     {

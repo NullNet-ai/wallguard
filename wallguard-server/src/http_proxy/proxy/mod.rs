@@ -72,12 +72,10 @@ pub async fn proxy_http_request(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    request::proxy_request(
-        request,
-        body,
-        "domain.com",
-        false,
-        TunnelAdapter::from(tunnel),
-    )
-    .await
+    let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to adapt tunnel transport"));
+    };
+
+    request::proxy_request(request, body, "domain.com", false, tunnel_adapter).await
 }
