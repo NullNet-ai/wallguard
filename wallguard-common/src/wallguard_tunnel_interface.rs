@@ -1,4 +1,5 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tonic::Request;
@@ -18,6 +19,23 @@ impl WallGuardTunnelGrpcInterface {
     #[allow(clippy::missing_panics_doc)]
     pub async fn new(addr: &str, port: u16) -> Result<Self, Error> {
         let addr = format!("http://{addr}:{port}");
+
+        let channel = Channel::from_shared(addr)
+            .expect("Failed to parse address")
+            .timeout(Duration::from_secs(10))
+            .keep_alive_timeout(Duration::from_secs(10))
+            .connect()
+            .await
+            .handle_err(location!())?;
+
+        let client = ReverseTunnelClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
+
+        Ok(Self { client })
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub async fn from_sockaddr(addr: SocketAddr) -> Result<Self, Error> {
+        let addr = format!("http://{addr}");
 
         let channel = Channel::from_shared(addr)
             .expect("Failed to parse address")

@@ -2,8 +2,6 @@ use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::utilities;
 use nullnet_liberror::{location, ErrorHandler, Location};
-use tokio::io::copy_bidirectional;
-use tokio::io::AsyncWriteExt as _;
 use tokio::net::TcpStream;
 use wallguard_common::protobuf::wallguard_commands::SshSessionData;
 
@@ -47,13 +45,7 @@ impl ExecutableCommand for OpenSshSessionCommand {
         };
 
         tokio::spawn(async move {
-            let mut s1 = tunnel_stream;
-            let mut s2 = sshd_stream;
-
-            let _ = copy_bidirectional(&mut s1, &mut s2).await;
-
-            let _ = s1.shutdown().await;
-            let _ = s2.shutdown().await;
+            let _ = utilities::io::copy_bidirectional_for_tunnel(tunnel_stream, sshd_stream).await;
         });
 
         Ok(())

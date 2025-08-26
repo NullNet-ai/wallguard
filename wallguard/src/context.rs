@@ -31,7 +31,7 @@ impl Context {
 
         let server = WGServer::new(server_data.grpc_addr);
 
-        let tunnel = ReverseTunnel::new(server_data.tunn_addr);
+        let tunnel = ReverseTunnel::new(server_data.grpc_addr);
 
         let dump_dir = DumpDir::new(*DISK_SIZE / 2).await;
 

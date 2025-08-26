@@ -54,16 +54,8 @@ pub enum Command {
         #[arg(long)]
         control_channel_port: Option<u16>,
 
-        /// Host address for the tunnel
-        #[arg(long)]
-        tunnel_host: Option<String>,
-
-        /// Port for the tunnel
-        #[arg(long)]
-        tunnel_port: Option<u16>,
-
         /// Target platform
-        #[arg(long = "as", value_enum, default_value_t = Platform::Generic)]
+        #[arg(long, value_enum, default_value_t = Platform::Generic)]
         platform: Platform,
     },
 

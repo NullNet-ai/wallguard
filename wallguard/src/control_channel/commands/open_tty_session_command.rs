@@ -1,10 +1,12 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::pty::{Pty, PtyReader, PtyWriter};
-use nullnet_liberror::{location, ErrorHandler, Location};
+use crate::reverse_tunnel::{TunnelReader, TunnelWriter};
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
-use tokio::net::TcpStream;
+use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
+use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
+use wallguard_common::protobuf::wallguard_tunnel::{ClientFrame, DataFrame};
 
 pub struct OpenTtySessionCommand {
     context: Context,
@@ -23,56 +25,51 @@ impl ExecutableCommand for OpenTtySessionCommand {
 
         let pty = Pty::new("/bin/sh")?;
 
-        let Ok(stream) = self.context.tunnel.request_channel(&self.token).await else {
+        let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());
         };
 
-        let (reader, writer) = tokio::io::split(stream);
-
         tokio::spawn(async move {
             tokio::select! {
-                _ = stream_to_pty(reader, pty.writer) => {},
-                _ = pty_to_stream(writer, pty.reader) => {},
+                _ = stream_to_pty(tunnel.reader, pty.writer) => {},
+                _ = pty_to_stream(tunnel.writer, pty.reader) => {},
             }
-            // @todo reunite the stream and call ::shutdown just in case ?
         });
 
         Ok(())
     }
 }
 
-async fn stream_to_pty(mut reader: ReadHalf<TcpStream>, writer: PtyWriter) {
-    let mut buf = [0u8; 8196];
-
+async fn stream_to_pty(reader: TunnelReader, writer: PtyWriter) -> Result<(), Error> {
     loop {
-        match reader.read(&mut buf).await {
-            Ok(0) => {
-                log::debug!("Stream EOF");
-                break;
-            }
-            Ok(n) => {
-                let chunk = buf[..n].to_vec();
-                let writer = Arc::clone(&writer);
-                if let Err(err) =
-                    tokio::task::spawn_blocking(move || writer.lock().unwrap().write_all(&chunk))
-                        .await
-                        .unwrap_or_else(|e| Err(std::io::Error::other(e)))
-                {
-                    log::error!("Error writing to PTY: {err}");
-                    break;
-                }
-            }
-            Err(err) => {
-                log::error!("Error reading from stream: {err}");
-                break;
-            }
-        }
+        let message = reader
+            .lock()
+            .await
+            .message()
+            .await
+            .handle_err(location!())?
+            .ok_or("End of stream")
+            .handle_err(location!())?
+            .message
+            .ok_or("Unexpected empty message")
+            .handle_err(location!())?;
+
+        let ServerMessage::Data(data_frame) = message else {
+            return Err("Unexpected message type").handle_err(location!())?;
+        };
+
+        let writer = Arc::clone(&writer);
+        tokio::task::spawn_blocking(move || writer.lock().unwrap().write_all(&data_frame.data))
+            .await
+            .handle_err(location!())?
+            .handle_err(location!())?;
     }
 }
 
-async fn pty_to_stream(mut writer: WriteHalf<TcpStream>, reader: PtyReader) {
+async fn pty_to_stream(writer: TunnelWriter, reader: PtyReader) -> Result<(), Error> {
     loop {
         let reader = Arc::clone(&reader);
+
         let result = tokio::task::spawn_blocking(move || {
             let mut buf = [0u8; 8196];
             match reader.lock().unwrap().read(&mut buf) {
@@ -82,23 +79,16 @@ async fn pty_to_stream(mut writer: WriteHalf<TcpStream>, reader: PtyReader) {
             }
         })
         .await
-        .unwrap_or_else(|e| Err(std::io::Error::other(e)));
+        .handle_err(location!())?
+        .handle_err(location!())?;
 
-        match result {
-            Ok(data) if data.is_empty() => {
-                log::info!("PTY EOF");
-                break;
-            }
-            Ok(data) => {
-                if let Err(err) = writer.write_all(&data).await {
-                    log::error!("Failed to write to stream: {err}");
-                    break;
-                }
-            }
-            Err(err) => {
-                log::error!("Failed to read from PTY: {err}");
-                break;
-            }
-        }
+        writer
+            .lock()
+            .await
+            .send(ClientFrame {
+                message: Some(ClientMessage::Data(DataFrame { data: result })),
+            })
+            .await
+            .handle_err(location!())?;
     }
 }
