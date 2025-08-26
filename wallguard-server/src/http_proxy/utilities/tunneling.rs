@@ -1,7 +1,6 @@
-use crate::app_context::AppContext;
+use crate::{app_context::AppContext, reverse_tunnel::TunnelInstance};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::time::Duration;
-use tokio::net::TcpStream;
 
 /// Timeout for awaiting the reverse tunnel connection
 const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
@@ -27,7 +26,7 @@ pub async fn establish_tunneled_ssh(
     device_uuid: &str,
     instance_id: &str,
     public_key: &str,
-) -> Result<TcpStream, Error> {
+) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(
         context,
         device_uuid,
@@ -47,7 +46,7 @@ pub async fn establish_tunneled_tty(
     context: &AppContext,
     device_uuid: &str,
     instance_id: &str,
-) -> Result<TcpStream, Error> {
+) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(context, device_uuid, instance_id, TunnelType::Tty).await
 }
 
@@ -63,7 +62,7 @@ pub async fn establish_tunneled_ui(
     device_uuid: &str,
     instance_id: &str,
     protocol: &str,
-) -> Result<TcpStream, Error> {
+) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(
         context,
         device_uuid,
@@ -85,7 +84,7 @@ async fn establish_tunneled_channel(
     device_uuid: &str,
     instance_id: &str,
     r#type: TunnelType,
-) -> Result<TcpStream, Error> {
+) -> Result<TunnelInstance, Error> {
     let client = context
         .orchestractor
         .get_client(device_uuid, instance_id)

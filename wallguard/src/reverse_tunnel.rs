@@ -1,7 +1,13 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
-use tokio::io::AsyncWriteExt;
-use tokio::net::TcpStream;
+use std::sync::Arc;
+use tokio::sync::mpsc::Sender;
+use tokio::sync::{mpsc, Mutex};
+use tonic::Streaming;
+use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
+use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
+use wallguard_common::protobuf::wallguard_tunnel::{AuthFrame, ClientFrame, ServerFrame};
+use wallguard_common::wallguard_tunnel_interface::WallGuardTunnelGrpcInterface;
 
 use crate::utilities;
 
@@ -10,22 +16,56 @@ pub struct ReverseTunnel {
     addr: SocketAddr,
 }
 
+pub(crate) type TunnelReader = Arc<Mutex<Streaming<ServerFrame>>>;
+pub(crate) type TunnelWriter = Arc<Mutex<Sender<ClientFrame>>>;
+
+pub struct TunnelInstance {
+    pub(crate) reader: TunnelReader,
+    pub(crate) writer: TunnelWriter,
+}
+
 impl ReverseTunnel {
     pub fn new(addr: SocketAddr) -> Self {
         Self { addr }
     }
 
-    pub async fn request_channel(&self, token: &str) -> Result<TcpStream, Error> {
-        let hash = utilities::hash::sha256_digest_bytes(token);
+    pub async fn request_channel(&self, token: &str) -> Result<TunnelInstance, Error> {
+        let interface = WallGuardTunnelGrpcInterface::from_sockaddr(self.addr).await?;
 
-        let mut stream = TcpStream::connect(self.addr)
+        let (sender, receiver) = mpsc::channel(1024);
+
+        let mut stream = interface.request_control_channel(receiver).await?;
+
+        sender
+            .send(ClientFrame {
+                message: Some(ClientMessage::Authentication(AuthFrame {
+                    token: utilities::hash::sha256_digest_bytes(token).into(),
+                })),
+            })
             .await
             .handle_err(location!())?;
 
-        stream.write_all(&hash).await.handle_err(location!())?;
+        let message = stream
+            .message()
+            .await
+            .handle_err(location!())?
+            .ok_or("Unexpected end of stream")
+            .handle_err(location!())?
+            .message
+            .ok_or("Received an empty message instead of a verdict")
+            .handle_err(location!())?;
 
-        // @TODO: Confirmation message ?
+        let ServerMessage::Verdict(verdict) = message else {
+            return Err("Unexpected message: expected a verdict").handle_err(location!());
+        };
 
-        Ok(stream)
+        if !verdict.allowed {
+            return Err("The server rejected the tunnel request").handle_err(location!());
+        }
+
+        Ok(TunnelInstance {
+            reader: Arc::new(Mutex::new(stream)),
+            writer: Arc::new(Mutex::new(sender)),
+        })
     }
 }

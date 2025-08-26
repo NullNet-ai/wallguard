@@ -15,14 +15,6 @@ pub struct Arguments {
     #[arg(long)]
     pub control_channel_port: u16,
 
-    /// IP address of the tunnel server
-    #[arg(long)]
-    pub tunnel_host: String,
-
-    /// Port of the tunnel server
-    #[arg(long)]
-    pub tunnel_port: u16,
-
     /// Target platform
     #[arg(long)]
     pub platform: String,

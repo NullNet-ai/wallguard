@@ -1,7 +1,7 @@
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+
 use crate::utilities::hash::sha256_digest_bytes;
 use crate::utilities::random::generate_random_string;
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use tokio::{io::AsyncReadExt, net::TcpStream};
 
 /// The expected size (in bytes) of a SHA-256 token hash.
 pub const TOKEN_HASH_SIZE: usize = 32;
@@ -12,23 +12,15 @@ pub struct TokenHash {
     digest: [u8; TOKEN_HASH_SIZE],
 }
 
-impl TokenHash {
-    /// Reads a 32-byte token hash from the beginning of a TCP stream.
-    ///
-    /// This function assumes that the first message received on the stream
-    /// is a fixed-size SHA-256 hash that can be used to identify the reverse tunnel.
-    ///
-    /// # Errors
-    /// Returns an error if reading from the stream fails or fewer than 32 bytes are received.
-    pub async fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
-        let mut hash = TokenHash::default();
+impl TryFrom<Vec<u8>> for TokenHash {
+    type Error = Error;
 
-        stream
-            .read_exact(&mut hash.digest)
-            .await
+    fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
+        let digest: [u8; TOKEN_HASH_SIZE] = vec
+            .try_into()
+            .map_err(|_| "Expected a token hash of exact length 32 bytes")
             .handle_err(location!())?;
-
-        Ok(hash)
+        Ok(TokenHash { digest })
     }
 }
 

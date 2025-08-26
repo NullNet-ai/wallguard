@@ -24,6 +24,7 @@ impl Datastore {
             .advance_filter(filter)
             .order_by("timestamp")
             .order_direction("desc")
+            .case_sensitive_sorting(true)
             .build();
 
         let response = self.inner.clone().get_by_filter(request, token).await?;

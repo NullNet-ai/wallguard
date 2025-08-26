@@ -18,9 +18,10 @@ pub fn extract_session_token(req: &HttpRequest) -> Result<String, HttpResponse> 
 }
 
 pub async fn fetch_token(ctx: &AppContext) -> Result<Arc<Token>, HttpResponse> {
-    ctx.root_token_provider.get().await.map_err(|_| {
-        HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Server error, can't obtain root token"))
+    ctx.sysdev_token_provider.get().await.map_err(|_| {
+        HttpResponse::InternalServerError().json(ErrorJson::from(
+            "Server error, can't obtain sysdevice token",
+        ))
     })
 }
 

@@ -56,7 +56,7 @@ pub(super) async fn open_tty_session(
         return HttpResponse::NotFound().json(ErrorJson::from("Device is unauthorized"));
     }
 
-    let Ok(stream) =
+    let Ok(tunnel) =
         tunneling::establish_tunneled_tty(&context, &device.uuid, &session.instance_id).await
     else {
         return HttpResponse::InternalServerError()
@@ -69,7 +69,12 @@ pub(super) async fn open_tty_session(
             Err(resp) => return resp,
         };
 
-    rt::spawn(relay(ws_stream, ws_session, stream));
+    if !tunnel.is_authenticated() {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Tunnel is not authenticated"));
+    }
+
+    rt::spawn(relay(ws_stream, ws_session, tunnel));
 
     response
 }

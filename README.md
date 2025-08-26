@@ -69,8 +69,6 @@ The server requires the following environment variables to be set:
 | `CONTROL_SERVICE_PORT`  | Port where the control server listens            | `50051`       | No            |
 | `HTTP_PROXY_HOST`       | Address for the HTTP proxy server                | `127.0.0.1`   | No            |
 | `HTTP_PROXY_PORT`       | Port for the HTTP proxy server                   | `4444`        | No            |
-| `REVERSE_TUNNEL_HOST`   | Address where the reverse tunnel service listens | `127.0.0.1`   | No            |
-| `REVERSE_TUNNEL_PORT`   | Port for the reverse tunnel service              | `7777`        | No            |
 | `IP_INFO_API_KEY`       | API key for IP address resolution                | _(empty)_     | No (optional) |
 
 ## Contributing

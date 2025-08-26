@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package wallguard_tunnel;
+
+service ReverseTunnel {
+    rpc RequestTunnel(stream ClientFrame)
+        returns (stream ServerFrame);
+}
+
+message DataFrame {
+    bytes data = 1;
+}
+
+message AuthFrame {
+    bytes token = 1;
+}
+
+message VerdictFrame {
+    bool allowed = 2;
+}
+
+message ClientFrame {
+    oneof message {
+        AuthFrame authentication = 1;
+        DataFrame data = 2;
+    }
+}
+
+message ServerFrame {
+    oneof message {
+        VerdictFrame verdict = 1;
+        DataFrame data = 2;
+    }
+}

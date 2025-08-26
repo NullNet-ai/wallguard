@@ -3,6 +3,7 @@ use super::utilities::request_handling;
 use super::utilities::tunneling;
 use crate::app_context::AppContext;
 use crate::datastore::RemoteAccessType;
+use crate::reverse_tunnel::TunnelAdapter;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -11,6 +12,7 @@ use actix_web::web::{Data, Payload};
 use relay::relay;
 
 mod relay;
+mod ssh_handler;
 mod ssh_session;
 
 pub(super) async fn open_ssh_session(
@@ -63,7 +65,7 @@ pub(super) async fn open_ssh_session(
             Err(resp) => return resp,
         };
 
-    let Ok(stream) = tunneling::establish_tunneled_ssh(
+    let Ok(tunnel) = tunneling::establish_tunneled_ssh(
         &context,
         &device.uuid,
         &session.instance_id,
@@ -75,7 +77,12 @@ pub(super) async fn open_ssh_session(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    let ssh_session = match ssh_session::SSHSession::new(stream, &keypair).await {
+    let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to adapt tunnel transport"));
+    };
+
+    let ssh_session = match ssh_session::SSHSession::new(tunnel_adapter, &keypair).await {
         Ok(sess) => sess,
         Err(_) => {
             return HttpResponse::InternalServerError()

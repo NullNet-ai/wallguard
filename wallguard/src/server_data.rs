@@ -5,7 +5,6 @@ use std::net::SocketAddr;
 #[derive(Debug, Clone)]
 pub struct ServerData {
     pub(crate) grpc_addr: SocketAddr,
-    pub(crate) tunn_addr: SocketAddr,
 }
 
 impl TryFrom<&Arguments> for ServerData {
@@ -16,14 +15,9 @@ impl TryFrom<&Arguments> for ServerData {
             "{}:{}",
             arguments.control_channel_host, arguments.control_channel_port
         );
-        let tunn_addr = format!("{}:{}", arguments.tunnel_host, arguments.tunnel_port);
 
         let grpc_addr = grpc_addr.parse().handle_err(location!())?;
-        let tunn_addr = tunn_addr.parse().handle_err(location!())?;
 
-        Ok(Self {
-            grpc_addr,
-            tunn_addr,
-        })
+        Ok(Self { grpc_addr })
     }
 }

@@ -115,8 +115,6 @@ pub async fn main() -> AnyResult<()> {
         arguments::Command::Start {
             control_channel_host,
             control_channel_port,
-            tunnel_host,
-            tunnel_port,
             platform,
         } => {
             if is_agent_running() {
@@ -129,18 +127,11 @@ pub async fn main() -> AnyResult<()> {
             let control_channel_host = control_channel_host.unwrap_or(DEFAULT_SERVER_HOST.into());
             let control_channel_port = control_channel_port.unwrap_or(50051);
 
-            let tunnel_host = tunnel_host.unwrap_or(DEFAULT_SERVER_HOST.into());
-            let tunnel_port = tunnel_port.unwrap_or(7777);
-
             if Command::new("wallguard")
                 .arg("--control-channel-host")
                 .arg(&control_channel_host)
                 .arg("--control-channel-port")
                 .arg(control_channel_port.to_string())
-                .arg("--tunnel-host")
-                .arg(&tunnel_host)
-                .arg("--tunnel-port")
-                .arg(tunnel_port.to_string())
                 .arg("--platform")
                 .arg(platform.to_string())
                 .stdout(Stdio::null())
