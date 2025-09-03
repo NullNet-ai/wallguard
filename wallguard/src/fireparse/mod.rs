@@ -36,6 +36,9 @@ impl Fireparse {
 
                 OpnSenseParser::parse(&data)
             }
+            Platform::NfTables => {
+                todo!()
+            }
             Platform::Generic => Err("Unsupported platform").handle_err(location!()),
         }
     }
@@ -44,7 +47,7 @@ impl Fireparse {
         match platform {
             Platform::PfSense => Ok(PfSenseParser::convert_filter_rule(rule)),
             Platform::OpnSense => Ok(OpnSenseParser::convert_filter_rule(rule)),
-            Platform::Generic => Err("Not supported").handle_err(location!()),
+            Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
         }
     }
 
@@ -52,7 +55,7 @@ impl Fireparse {
         match platform {
             Platform::PfSense => Ok(PfSenseParser::convert_nat_rule(rule)),
             Platform::OpnSense => Ok(OpnSenseParser::convert_nat_rule(rule)),
-            Platform::Generic => Err("Not supported").handle_err(location!()),
+            Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
         }
     }
 
@@ -60,7 +63,7 @@ impl Fireparse {
         match platform {
             Platform::PfSense => Ok(PfSenseParser::convert_alias(alias)),
             Platform::OpnSense => Ok(OpnSenseParser::convert_alias(alias)),
-            Platform::Generic => Err("Not supported").handle_err(location!()),
+            Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
         }
     }
 }
