@@ -13,6 +13,7 @@ use crate::storage::{Secret, Storage};
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 use wallguard_cli::wallguard_cli_server::WallguardCliServer;
 use wallguard_cli::Status;
@@ -117,5 +118,13 @@ impl Daemon {
             control_channel.terminate().await
         }
         this.lock().await.state = DaemonState::Error(reason.into());
+
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+
+            if let Some(code) = Storage::get_value(Secret::InstallationCode).await {
+                let _ = Daemon::join_org(this, code).await;
+            }
+        });
     }
 }
