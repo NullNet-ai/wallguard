@@ -1,11 +1,14 @@
+use nftables::schema::Nftables;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
 use xmltree::Element;
 
 use crate::data_transmission::sysconfig::types::FileData;
+use crate::fireparse::nft::NftablesParser;
 use crate::fireparse::opnsense::OpnSenseParser;
 use crate::{client_data::Platform, fireparse::pfsense::PfSenseParser};
 
+mod nft;
 mod opnsense;
 mod pfsense;
 
@@ -37,7 +40,16 @@ impl Fireparse {
                 OpnSenseParser::parse(&data)
             }
             Platform::NfTables => {
-                todo!()
+                let ruleset = files
+                    .into_iter()
+                    .find(|file| file.filename == "#NFRuleset")
+                    .ok_or("'#NFRuleset' not found")
+                    .handle_err(location!())?;
+
+                let tables: Nftables<'_> =
+                    serde_json::from_slice(&ruleset.content).handle_err(location!())?;
+
+                NftablesParser::parse(tables)
             }
             Platform::Generic => Err("Unsupported platform").handle_err(location!()),
         }
@@ -67,3 +79,6 @@ impl Fireparse {
         }
     }
 }
+
+// @TODO:
+// Instead of "convert_rule" and other method, simply add "Add Rule", etc ...

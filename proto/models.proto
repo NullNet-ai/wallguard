@@ -2,6 +2,17 @@ syntax = "proto3";
 
 package wallguard_models;
 
+message AddrInfo {
+    int32 version = 1;
+    string value = 2;
+    string operator = 3;
+}
+
+message PortInfo {
+    string value = 1;
+    string operator = 2;
+}
+
 message FilterRule {
     bool disabled = 1;
 
