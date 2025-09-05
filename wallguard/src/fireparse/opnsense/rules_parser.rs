@@ -1,4 +1,4 @@
-use wallguard_common::protobuf::wallguard_models::{FilterRule, NatRule};
+use wallguard_common::protobuf::wallguard_models::{AddrInfo, FilterRule, NatRule, PortInfo};
 use xmltree::{Element, XMLNode};
 
 use crate::fireparse::opnsense::endpoint_parser::EndpointParser;
@@ -49,8 +49,14 @@ impl OpnSenseRulesParser {
 
         let source_elem = EndpointParser::to_element(
             "source",
-            &rule.source_addr,
-            &rule.source_port,
+            &rule
+                .source_addr
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
+            &rule
+                .source_port
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
             &rule.source_type,
             rule.source_inversed,
         );
@@ -58,8 +64,14 @@ impl OpnSenseRulesParser {
 
         let destination_elem = EndpointParser::to_element(
             "destination",
-            &rule.destination_addr,
-            &rule.destination_port,
+            &rule
+                .destination_addr
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
+            &rule
+                .destination_port
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
             &rule.destination_type,
             rule.destination_inversed,
         );
@@ -121,8 +133,14 @@ impl OpnSenseRulesParser {
 
         let source_elem = EndpointParser::to_element(
             "source",
-            &rule.source_addr,
-            &rule.source_port,
+            &rule
+                .source_addr
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
+            &rule
+                .source_port
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
             &rule.source_type,
             rule.source_inversed,
         );
@@ -130,8 +148,14 @@ impl OpnSenseRulesParser {
 
         let destination_elem = EndpointParser::to_element(
             "destination",
-            &rule.destination_addr,
-            &rule.destination_port,
+            &rule
+                .destination_addr
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
+            &rule
+                .destination_port
+                .and_then(|v| Some(v.value))
+                .unwrap_or("*".into()),
             &rule.destination_type,
             rule.destination_inversed,
         );
@@ -234,12 +258,26 @@ impl OpnSenseRulesParser {
                 protocol: format!("{ipprotocol}/{protocol}"),
                 policy,
                 description,
-                source_port,
-                source_addr,
+                source_port: Some(PortInfo {
+                    value: source_port,
+                    operator: String::default(),
+                }),
+                source_addr: Some(AddrInfo {
+                    version: 0,
+                    value: source_addr,
+                    operator: String::default(),
+                }),
                 source_type,
                 source_inversed,
-                destination_addr,
-                destination_port,
+                destination_addr: Some(AddrInfo {
+                    version: 0,
+                    value: destination_addr,
+                    operator: String::default(),
+                }),
+                destination_port: Some(PortInfo {
+                    value: destination_port,
+                    operator: String::default(),
+                }),
                 destination_type,
                 destination_inversed,
                 interface,
@@ -317,12 +355,26 @@ impl OpnSenseRulesParser {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}"),
                 description,
-                source_port,
-                source_addr,
+                source_port: Some(PortInfo {
+                    value: source_port,
+                    operator: String::default(),
+                }),
+                source_addr: Some(AddrInfo {
+                    version: 0,
+                    value: source_addr,
+                    operator: String::default(),
+                }),
                 source_type,
                 source_inversed,
-                destination_addr,
-                destination_port,
+                destination_addr: Some(AddrInfo {
+                    version: 0,
+                    value: destination_addr,
+                    operator: String::default(),
+                }),
+                destination_port: Some(PortInfo {
+                    value: destination_port,
+                    operator: String::default(),
+                }),
                 destination_type,
                 destination_inversed,
                 interface,
