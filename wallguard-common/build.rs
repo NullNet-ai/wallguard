@@ -29,14 +29,6 @@ fn main() {
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
-            "wallguard_models.FilterRule",
-            "#[derive(serde::Serialize, serde::Deserialize)]",
-        )
-        .type_attribute(
-            "wallguard_models.NatRule",
-            "#[derive(serde::Serialize, serde::Deserialize)]",
-        )
-        .type_attribute(
             "wallguard_models.AddrInfo",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )

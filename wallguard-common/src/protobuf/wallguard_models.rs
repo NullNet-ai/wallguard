@@ -17,7 +17,6 @@ pub struct PortInfo {
     #[prost(string, tag = "2")]
     pub operator: ::prost::alloc::string::String,
 }
-#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FilterRule {
     #[prost(bool, tag = "1")]
@@ -53,7 +52,6 @@ pub struct FilterRule {
     #[prost(string, tag = "16")]
     pub associated_rule_id: ::prost::alloc::string::String,
 }
-#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NatRule {
     #[prost(bool, tag = "1")]
