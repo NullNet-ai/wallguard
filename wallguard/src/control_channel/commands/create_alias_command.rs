@@ -47,7 +47,9 @@ impl ExecutableCommand for CreateAliasCommand {
                 .and_then(|el| el.get_mut_child("aliases"))
                 .ok_or("Malformed config.xml")
                 .handle_err(location!())?,
-            Platform::Generic => Err("Unexpected value").handle_err(location!())?,
+            Platform::Generic | Platform::NfTables => {
+                Err("Unexpected value").handle_err(location!())?
+            }
         };
 
         aliases_node.children.push(XMLNode::Element(alias));

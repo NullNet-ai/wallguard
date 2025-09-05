@@ -13,6 +13,7 @@ pub struct Arguments {
 pub enum Platform {
     Pfsense,
     Opnsense,
+    NfTables,
     Generic,
 }
 
@@ -22,6 +23,7 @@ impl fmt::Display for Platform {
             Platform::Pfsense => "pfsense",
             Platform::Opnsense => "opnsense",
             Platform::Generic => "generic",
+            Platform::NfTables => "nftables",
         };
         write!(f, "{name}")
     }

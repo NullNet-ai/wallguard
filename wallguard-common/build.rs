@@ -29,11 +29,11 @@ fn main() {
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
-            "wallguard_models.FilterRule",
+            "wallguard_models.AddrInfo",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
-            "wallguard_models.NatRule",
+            "wallguard_models.PortInfo",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(

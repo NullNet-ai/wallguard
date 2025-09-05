@@ -7,6 +7,7 @@ pub enum Platform {
     Generic,
     PfSense,
     OpnSense,
+    NfTables,
 }
 
 impl TryFrom<&str> for Platform {
@@ -17,6 +18,7 @@ impl TryFrom<&str> for Platform {
             "generic" => Ok(Platform::Generic),
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
+            "nftables" => Ok(Platform::NfTables),
             _ => {
                 let errmsg = format!("Unsupported platform {value}");
                 Err(errmsg).handle_err(location!())
@@ -39,6 +41,7 @@ impl fmt::Display for Platform {
             Platform::PfSense => "pfsense",
             Platform::OpnSense => "opnsense",
             Platform::Generic => "generic",
+            Platform::NfTables => "nftables",
         };
 
         write!(f, "{value}")
@@ -47,7 +50,7 @@ impl fmt::Display for Platform {
 
 impl Platform {
     pub fn can_monitor_config(&self) -> bool {
-        !matches!(self, Platform::Generic)
+        !matches!(self, Platform::Generic | Platform::NfTables)
     }
 
     pub fn can_monitor_telemetry(&self) -> bool {
@@ -61,7 +64,7 @@ impl Platform {
     pub fn get_sysconf_files(&self) -> Vec<PathBuf> {
         match self {
             Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
-            Platform::Generic => vec![],
+            Platform::Generic | Platform::NfTables => vec![],
         }
     }
 }
