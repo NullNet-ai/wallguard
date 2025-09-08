@@ -4,6 +4,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 use tokio::fs;
 use tokio::fs::ReadDir;
+use wallguard_common::protobuf::wallguard_service::ConfigStatus;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum State {
@@ -68,5 +69,15 @@ impl Detector {
         }
 
         State::Applied
+    }
+}
+
+impl Into<i32> for State {
+    fn into(self) -> i32 {
+        match self {
+            State::Draft => ConfigStatus::CsDraft.into(),
+            State::Applied => ConfigStatus::CsApplied.into(),
+            State::Undefined => ConfigStatus::CsUndefined.into(),
+        }
     }
 }

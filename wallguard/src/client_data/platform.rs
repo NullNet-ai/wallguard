@@ -1,6 +1,9 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::fmt;
-use std::path::PathBuf;
+
+use crate::data_transmission::sysconfig::data::{
+    ConfigXml, NftablesRuleset, SystemConfigurationFile,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
@@ -50,7 +53,7 @@ impl fmt::Display for Platform {
 
 impl Platform {
     pub fn can_monitor_config(&self) -> bool {
-        !matches!(self, Platform::Generic | Platform::NfTables)
+        !matches!(self, Platform::Generic)
     }
 
     pub fn can_monitor_telemetry(&self) -> bool {
@@ -61,10 +64,17 @@ impl Platform {
         true
     }
 
-    pub fn get_sysconf_files(&self) -> Vec<PathBuf> {
+    pub fn get_sysconf_files(&self) -> Vec<SystemConfigurationFile> {
         match self {
-            Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
-            Platform::Generic | Platform::NfTables => vec![],
+            Platform::PfSense | Platform::OpnSense => {
+                let file = ConfigXml::default();
+                vec![SystemConfigurationFile::ConfigXml(file)]
+            }
+            Platform::NfTables => {
+                let file = NftablesRuleset::default();
+                vec![SystemConfigurationFile::NftablesRuleset(file)]
+            }
+            Platform::Generic => vec![],
         }
     }
 }
