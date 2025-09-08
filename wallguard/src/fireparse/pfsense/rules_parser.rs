@@ -48,14 +48,8 @@ impl PfSenseRulesParser {
 
         let source_elem = EndpointParser::to_element(
             "source",
-            &rule
-                .source_addr
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
-            &rule
-                .source_port
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
+            &rule.source_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.source_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.source_type,
             rule.source_inversed,
         );
@@ -63,14 +57,8 @@ impl PfSenseRulesParser {
 
         let destination_elem = EndpointParser::to_element(
             "destination",
-            &rule
-                .destination_addr
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
-            &rule
-                .destination_port
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
+            &rule.destination_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.destination_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.destination_type,
             rule.destination_inversed,
         );
@@ -132,14 +120,8 @@ impl PfSenseRulesParser {
 
         let source_elem = EndpointParser::to_element(
             "source",
-            &rule
-                .source_addr
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
-            &rule
-                .source_port
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
+            &rule.source_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.source_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.source_type,
             rule.source_inversed,
         );
@@ -147,14 +129,8 @@ impl PfSenseRulesParser {
 
         let destination_elem = EndpointParser::to_element(
             "destination",
-            &rule
-                .destination_addr
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
-            &rule
-                .destination_port
-                .and_then(|v| Some(v.value))
-                .unwrap_or("*".into()),
+            &rule.destination_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.destination_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.destination_type,
             rule.destination_inversed,
         );

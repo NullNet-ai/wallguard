@@ -88,7 +88,7 @@ async fn upload_all(
     platform: Platform,
     state: State,
     token_provider: TokenProvider,
-    files: &mut Vec<SystemConfigurationFile>,
+    files: &mut [SystemConfigurationFile],
 ) -> Result<(), Error> {
     let mut snapshot = Snapshot::new();
 
@@ -111,7 +111,7 @@ async fn upload_all(
     Ok(())
 }
 
-async fn update_all(files: &mut Vec<SystemConfigurationFile>) -> Result<bool, Error> {
+async fn update_all(files: &mut [SystemConfigurationFile]) -> Result<bool, Error> {
     let mut retval = false;
 
     for file in files.iter_mut() {

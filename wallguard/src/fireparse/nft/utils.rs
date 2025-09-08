@@ -61,28 +61,25 @@ pub fn extract_addr_info(rule: &Rule, dir: NftDirection) -> Option<AddrInfo> {
 
         let value = match &match_stmt.right {
             Expression::String(value) => value.to_string(),
-            Expression::Named(named_expression) => match named_expression {
-                NamedExpression::Set(set_items) => {
-                    let mut values: Vec<String> = vec![];
+            Expression::Named(NamedExpression::Set(set_items)) => {
+                let mut values: Vec<String> = vec![];
 
-                    for item in set_items.iter() {
-                        if let SetItem::Element(Expression::String(value)) = item {
-                            values.push(value.to_string());
-                        };
+                for item in set_items.iter() {
+                    if let SetItem::Element(Expression::String(value)) = item {
+                        values.push(value.to_string());
+                    };
 
-                        if let SetItem::Element(Expression::Range(range)) = item {
-                            if let Expression::String(from) = &range.range[0] {
-                                if let Expression::String(to) = &range.range[1] {
-                                    values.push(format!("{}-{}", from, to));
-                                }
+                    if let SetItem::Element(Expression::Range(range)) = item {
+                        if let Expression::String(from) = &range.range[0] {
+                            if let Expression::String(to) = &range.range[1] {
+                                values.push(format!("{}-{}", from, to));
                             }
                         }
                     }
-
-                    values.join(",")
                 }
-                _ => continue,
-            },
+
+                values.join(",")
+            }
             Expression::Range(range) => {
                 let Expression::String(from) = &range.range[0] else {
                     continue;
@@ -140,28 +137,25 @@ pub fn extract_port_info(rule: &Rule, dir: NftDirection) -> Option<PortInfo> {
 
         let value = match &match_stmt.right {
             Expression::Number(value) => value.to_string(),
-            Expression::Named(named_expression) => match named_expression {
-                NamedExpression::Set(set_items) => {
-                    let mut values: Vec<String> = vec![];
+            Expression::Named(NamedExpression::Set(set_items)) => {
+                let mut values: Vec<String> = vec![];
 
-                    for item in set_items.iter() {
-                        if let SetItem::Element(Expression::Number(value)) = item {
-                            values.push(value.to_string());
-                        };
+                for item in set_items.iter() {
+                    if let SetItem::Element(Expression::Number(value)) = item {
+                        values.push(value.to_string());
+                    };
 
-                        if let SetItem::Element(Expression::Range(range)) = item {
-                            if let Expression::Number(from) = &range.range[0] {
-                                if let Expression::Number(to) = &range.range[1] {
-                                    values.push(format!("{}-{}", from, to));
-                                }
+                    if let SetItem::Element(Expression::Range(range)) = item {
+                        if let Expression::Number(from) = &range.range[0] {
+                            if let Expression::Number(to) = &range.range[1] {
+                                values.push(format!("{}-{}", from, to));
                             }
                         }
                     }
-
-                    values.join(",")
                 }
-                _ => continue,
-            },
+
+                values.join(",")
+            }
             Expression::Range(range) => {
                 let Expression::Number(from) = &range.range[0] else {
                     continue;

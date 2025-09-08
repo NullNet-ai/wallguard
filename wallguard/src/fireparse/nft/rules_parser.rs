@@ -49,7 +49,7 @@ impl NftablesRulesParser {
                                 description: rule
                                     .comment
                                     .as_ref()
-                                    .and_then(|v| Some(v.to_string()))
+                                    .map(|v| v.to_string())
                                     .unwrap_or_default(),
                                 interface: interface.unwrap_or("*".into()),
                                 order: index as u32,
@@ -77,7 +77,7 @@ impl NftablesRulesParser {
                                 description: rule
                                     .comment
                                     .as_ref()
-                                    .and_then(|v| Some(v.to_string()))
+                                    .map(|v| v.to_string())
                                     .unwrap_or_default(),
                                 interface: interface.unwrap_or("*".into()),
                                 id: index as u32,

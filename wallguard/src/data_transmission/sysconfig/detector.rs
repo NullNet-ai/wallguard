@@ -72,6 +72,7 @@ impl Detector {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<i32> for State {
     fn into(self) -> i32 {
         match self {
