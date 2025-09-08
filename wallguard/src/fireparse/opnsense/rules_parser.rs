@@ -261,6 +261,7 @@ impl OpnSenseRulesParser {
                 // @TODO:
                 id: index as u32,
                 associated_rule_id,
+                ..Default::default()
             });
         }
 
@@ -358,6 +359,7 @@ impl OpnSenseRulesParser {
                 redirect_ip,
                 redirect_port,
                 associated_rule_id,
+                ..Default::default()
             });
         }
 

@@ -36,6 +36,9 @@ message FilterRule {
     uint32 order = 15;
 
     string associated_rule_id = 16;
+
+    string table = 17;
+    string chain = 18;
 }
 
 message NatRule {
@@ -61,6 +64,9 @@ message NatRule {
     uint32 order = 16;
 
     string associated_rule_id = 17;
+
+    string table = 18;
+    string chain = 19;
 }
 
 message IpAddress {

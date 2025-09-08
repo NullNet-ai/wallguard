@@ -49,7 +49,10 @@ impl Fireparse {
                 let tables: Nftables<'_> =
                     serde_json::from_slice(&ruleset.content).handle_err(location!())?;
 
-                NftablesParser::parse(tables, format!("{:x}", md5::compute(ruleset.content.as_slice())))
+                NftablesParser::parse(
+                    tables,
+                    format!("{:x}", md5::compute(ruleset.content.as_slice())),
+                )
             }
             Platform::Generic => Err("Unsupported platform").handle_err(location!()),
         }

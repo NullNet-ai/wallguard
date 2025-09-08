@@ -260,6 +260,7 @@ impl PfSenseRulesParser {
                 order: index as u32,
                 id,
                 associated_rule_id,
+                ..Default::default()
             });
         }
 
@@ -357,6 +358,7 @@ impl PfSenseRulesParser {
                 redirect_ip,
                 redirect_port,
                 associated_rule_id,
+                ..Default::default()
             });
         }
 
@@ -648,6 +650,7 @@ mod tests {
             order: 0,
             id: 42,
             associated_rule_id: "qwerty".to_string(),
+            ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
@@ -703,6 +706,7 @@ mod tests {
             order: 1,
             id: 100,
             associated_rule_id: "qwerty".to_string(),
+            ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
@@ -745,6 +749,7 @@ mod tests {
             order: 2,
             id: 55,
             associated_rule_id: "qwerty".to_string(),
+            ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);

@@ -37,7 +37,7 @@ impl PfSenseParser {
             filter_rules,
             nat_rules,
             tables: vec![],
-            chains: vec![]
+            chains: vec![],
         })
     }
 

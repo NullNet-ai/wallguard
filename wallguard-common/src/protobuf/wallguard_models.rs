@@ -51,6 +51,10 @@ pub struct FilterRule {
     pub order: u32,
     #[prost(string, tag = "16")]
     pub associated_rule_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "17")]
+    pub table: ::prost::alloc::string::String,
+    #[prost(string, tag = "18")]
+    pub chain: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NatRule {
@@ -86,6 +90,10 @@ pub struct NatRule {
     pub order: u32,
     #[prost(string, tag = "17")]
     pub associated_rule_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "18")]
+    pub table: ::prost::alloc::string::String,
+    #[prost(string, tag = "19")]
+    pub chain: ::prost::alloc::string::String,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

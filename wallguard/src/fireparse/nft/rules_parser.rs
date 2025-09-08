@@ -16,8 +16,6 @@ impl NftablesRulesParser {
             match object {
                 nftables::schema::NfObject::ListObject(nf_list_object) => match nf_list_object {
                     nftables::schema::NfListObject::Rule(rule) => {
-                        println!("{:?}", rule);
-
                         let source_addr = extract_addr_info(rule, NftDirection::Source);
                         let source_port = extract_port_info(rule, NftDirection::Source);
 
@@ -56,6 +54,8 @@ impl NftablesRulesParser {
                                 associated_rule_id: String::default(),
                                 redirect_ip: addr.unwrap_or_default(),
                                 redirect_port: port.unwrap_or_default(),
+                                table: rule.table.to_string(),
+                                chain: rule.chain.to_string(),
                             });
                         } else {
                             filter_rules.push(FilterRule {
@@ -83,6 +83,8 @@ impl NftablesRulesParser {
                                 id: index as u32,
                                 order: index as u32,
                                 associated_rule_id: String::default(),
+                                table: rule.table.to_string(),
+                                chain: rule.chain.to_string(),
                             });
                         }
                     }

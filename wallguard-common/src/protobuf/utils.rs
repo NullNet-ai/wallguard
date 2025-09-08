@@ -7,7 +7,7 @@ impl Serialize for FilterRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("FilterRule", 20)?;
+        let mut state = serializer.serialize_struct("FilterRule", 22)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("policy", &self.policy)?;
@@ -46,6 +46,9 @@ impl Serialize for FilterRule {
         state.serialize_field("order", &self.order)?;
         state.serialize_field("associated_rule_id", &self.associated_rule_id)?;
 
+        state.serialize_field("table", &self.table)?;
+        state.serialize_field("chain", &self.chain)?;
+
         state.end()
     }
 }
@@ -79,6 +82,8 @@ impl<'de> Deserialize<'de> for FilterRule {
             id: u32,
             order: u32,
             associated_rule_id: String,
+            table: Option<String>,
+            chain: Option<String>,
         }
 
         let raw = RawFilterRule::deserialize(deserializer)?;
@@ -136,6 +141,8 @@ impl<'de> Deserialize<'de> for FilterRule {
             id: raw.id,
             order: raw.order,
             associated_rule_id: raw.associated_rule_id,
+            table: raw.table.unwrap_or_default(),
+            chain: raw.chain.unwrap_or_default(),
         })
     }
 }
@@ -145,7 +152,7 @@ impl Serialize for NatRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("NatRule", 20)?;
+        let mut state = serializer.serialize_struct("NatRule", 22)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("protocol", &self.protocol)?;
@@ -184,6 +191,9 @@ impl Serialize for NatRule {
         state.serialize_field("order", &self.order)?;
         state.serialize_field("associated_rule_id", &self.associated_rule_id)?;
 
+        state.serialize_field("table", &self.table)?;
+        state.serialize_field("chain", &self.chain)?;
+
         state.end()
     }
 }
@@ -217,6 +227,8 @@ impl<'de> Deserialize<'de> for NatRule {
             redirect_port: u32,
             order: u32,
             associated_rule_id: String,
+            table: Option<String>,
+            chain: Option<String>,
         }
 
         let raw = RawNatRule::deserialize(deserializer)?;
@@ -274,6 +286,8 @@ impl<'de> Deserialize<'de> for NatRule {
             redirect_port: raw.redirect_port,
             order: raw.order,
             associated_rule_id: raw.associated_rule_id,
+            table: raw.table.unwrap_or_default(),
+            chain: raw.chain.unwrap_or_default(),
         })
     }
 }
