@@ -36,6 +36,8 @@ impl OpnSenseParser {
             ssh_config: Some(OpnSenseSSHParser::parse(&document)),
             filter_rules,
             nat_rules,
+            tables: vec![],
+            chains: vec![],
         })
     }
 

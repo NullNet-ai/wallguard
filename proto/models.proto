@@ -95,4 +95,6 @@ message Configuration {
     string hostname = 6;
     string gui_protocol = 7;
     SSHConfig ssh_config = 8;
+    repeated string tables = 9;
+    repeated string chains = 10;
 }

@@ -36,6 +36,8 @@ impl PfSenseParser {
             ssh_config: Some(PfSenseSSHParser::parse(&document)),
             filter_rules,
             nat_rules,
+            tables: vec![],
+            chains: vec![]
         })
     }
 

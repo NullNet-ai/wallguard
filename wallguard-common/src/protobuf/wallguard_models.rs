@@ -144,4 +144,8 @@ pub struct Configuration {
     pub gui_protocol: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "8")]
     pub ssh_config: ::core::option::Option<SshConfig>,
+    #[prost(string, repeated, tag = "9")]
+    pub tables: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(string, repeated, tag = "10")]
+    pub chains: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
