@@ -10,6 +10,14 @@ mod hostmane_parser;
 mod rules_parser;
 mod utils;
 
+mod addr_helper;
+mod interface_helper;
+mod ip_protocol_helper;
+mod l4_protocol_helper;
+mod nat_helper;
+mod policy_helper;
+mod port_helper;
+
 pub struct NftablesParser;
 
 impl NftablesParser {

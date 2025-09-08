@@ -1,6 +1,8 @@
-use crate::fireparse::nft::utils::{
-    extract_addr_info, extract_interface, extract_ip_protocol, extract_l4_protocol, extract_nat,
-    extract_policy, extract_port_info, NftDirection,
+use crate::fireparse::nft::{
+    addr_helper::AddrHelper, interface_helper::InterfaceHelper,
+    ip_protocol_helper::IpProtocolHelper, l4_protocol_helper::L4ProtocolHelper,
+    nat_helper::NatHelper, policy_helper::PolicyHelper, port_helper::PortHelper,
+    utils::NftDirection,
 };
 use nftables::schema::Nftables;
 use wallguard_common::protobuf::wallguard_models::{FilterRule, NatRule};
@@ -16,19 +18,19 @@ impl NftablesRulesParser {
             match object {
                 nftables::schema::NfObject::ListObject(nf_list_object) => match nf_list_object {
                     nftables::schema::NfListObject::Rule(rule) => {
-                        let source_addr = extract_addr_info(rule, NftDirection::Source);
-                        let source_port = extract_port_info(rule, NftDirection::Source);
+                        let source_addr = AddrHelper::extract(rule, NftDirection::Source);
+                        let source_port = PortHelper::extract(rule, NftDirection::Source);
 
-                        let destination_addr = extract_addr_info(rule, NftDirection::Destination);
-                        let destination_port = extract_port_info(rule, NftDirection::Destination);
+                        let destination_addr = AddrHelper::extract(rule, NftDirection::Destination);
+                        let destination_port = PortHelper::extract(rule, NftDirection::Destination);
 
-                        let policy = extract_policy(rule).unwrap_or(String::from("accept"));
+                        let policy = PolicyHelper::extract(rule).unwrap_or(String::from("accept"));
 
-                        let ip_protocol = extract_ip_protocol(rule);
-                        let l4_proto = extract_l4_protocol(rule);
-                        let interface = extract_interface(rule);
+                        let ip_protocol = IpProtocolHelper::extract(rule);
+                        let l4_proto = L4ProtocolHelper::extract(rule);
+                        let interface = InterfaceHelper::extract(rule);
 
-                        if let Some((addr, port)) = extract_nat(rule) {
+                        if let Some((addr, port)) = NatHelper::extract(rule) {
                             nat_rules.push(NatRule {
                                 disabled: false,
                                 protocol: format!(
