@@ -84,7 +84,7 @@ impl AddrHelper {
         None
     }
 
-    pub fn build(info: &AddrInfo, dir: NftDirection) -> Option<Statement<'_>> {
+    pub fn build(info: &AddrInfo, dir: NftDirection) -> Option<Statement<'static>> {
         let field_name = match dir {
             NftDirection::Source => "saddr",
             NftDirection::Destination => "daddr",

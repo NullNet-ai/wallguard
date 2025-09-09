@@ -58,29 +58,56 @@ impl Fireparse {
         }
     }
 
-    pub fn convert_filter_rule(rule: FilterRule, platform: Platform) -> Result<Element, Error> {
+    pub async fn create_filter_rule(rule: FilterRule, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::PfSense => Ok(PfSenseParser::convert_filter_rule(rule)),
-            Platform::OpnSense => Ok(OpnSenseParser::convert_filter_rule(rule)),
-            Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
+            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::PfSense => PfSenseParser::create_filter_rule(rule).await,
+            Platform::OpnSense => OpnSenseParser::create_filter_rule(rule).await,
+            Platform::NfTables => todo!(),
         }
     }
 
-    pub fn convert_nat_rules(rule: NatRule, platform: Platform) -> Result<Element, Error> {
+    pub async fn create_nat_rule(rule: NatRule, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::PfSense => Ok(PfSenseParser::convert_nat_rule(rule)),
-            Platform::OpnSense => Ok(OpnSenseParser::convert_nat_rule(rule)),
-            Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
+            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::PfSense => PfSenseParser::create_nat_rule(rule).await,
+            Platform::OpnSense => OpnSenseParser::create_nat_rule(rule).await,
+            Platform::NfTables => todo!(),
         }
     }
 
-    pub fn convert_alias(alias: Alias, platform: Platform) -> Result<Element, Error> {
+    pub async fn create_alias(alias: Alias, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::PfSense => Ok(PfSenseParser::convert_alias(alias)),
-            Platform::OpnSense => Ok(OpnSenseParser::convert_alias(alias)),
-            Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
+            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::PfSense => PfSenseParser::create_alias(alias).await,
+            Platform::OpnSense => OpnSenseParser::create_alias(alias).await,
+            Platform::NfTables => todo!(),
         }
     }
+
+    // pub fn convert_filter_rule(rule: FilterRule, platform: Platform) -> Result<Element, Error> {
+    //     match platform {
+    //         Platform::PfSense => Ok(PfSenseParser::convert_filter_rule(rule)),
+    //         Platform::OpnSense => Ok(OpnSenseParser::convert_filter_rule(rule)),
+    //         Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
+    //     }
+    // }
+
+    // pub fn convert_nat_rules(rule: NatRule, platform: Platform) -> Result<Element, Error> {
+    //     match platform {
+    //         Platform::PfSense => Ok(PfSenseParser::convert_nat_rule(rule)),
+    //         Platform::OpnSense => Ok(OpnSenseParser::convert_nat_rule(rule)),
+    //         Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
+    //     }
+    // }
+
+    // pub fn convert_alias(alias: Alias, platform: Platform) -> Result<Element, Error> {
+    //     match platform {
+    //         Platform::PfSense => Ok(PfSenseParser::convert_alias(alias)),
+    //         Platform::OpnSense => Ok(OpnSenseParser::convert_alias(alias)),
+    //         Platform::Generic | Platform::NfTables => Err("Not supported").handle_err(location!()),
+    //     }
+    // }
 }
 
 // @TODO:

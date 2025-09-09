@@ -1,4 +1,8 @@
-use nftables::schema::Rule;
+use nftables::{
+    expr::{Expression, Meta, MetaKey, NamedExpression},
+    schema::Rule,
+    stmt::{Match, Operator, Statement},
+};
 
 pub struct InterfaceHelper;
 
@@ -22,5 +26,13 @@ impl InterfaceHelper {
         }
 
         None
+    }
+
+    pub fn build(interface_name: &str) -> Statement<'static> {
+        Statement::Match(Match {
+            left: Expression::Named(NamedExpression::Meta(Meta { key: MetaKey::Iif })),
+            op: Operator::EQ,
+            right: Expression::String(interface_name.to_string().into()),
+        })
     }
 }

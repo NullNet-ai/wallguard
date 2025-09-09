@@ -18,7 +18,7 @@ impl PolicyHelper {
         None
     }
 
-    pub fn build(policy: &str) -> Option<Statement<'_>> {
+    pub fn build(policy: &str) -> Option<Statement<'static>> {
         match policy {
             "accept" => Some(Statement::Accept(None)),
             "drop" => Some(Statement::Drop(None)),

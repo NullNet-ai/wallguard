@@ -38,7 +38,7 @@ impl NatHelper {
         None
     }
 
-    pub fn build_nat(addr: Option<String>, port: Option<u32>) -> Option<Statement<'static>> {
+    pub fn build(addr: Option<String>, port: Option<u32>) -> Option<Statement<'static>> {
         if addr.is_none() && port.is_none() {
             return None;
         }

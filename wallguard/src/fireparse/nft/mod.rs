@@ -1,9 +1,10 @@
-use nftables::schema::{NfListObject, NfObject, Nftables};
+use nftables::schema::{NfListObject, NfObject, Nftables, Rule};
 use nullnet_liberror::Error;
-use wallguard_common::protobuf::wallguard_models::Configuration;
+use wallguard_common::protobuf::wallguard_models::{Configuration, FilterRule};
 
 use crate::fireparse::nft::{
-    hostmane_parser::NftablesHostnameParser, rules_parser::NftablesRulesParser,
+    addr_helper::AddrHelper, hostmane_parser::NftablesHostnameParser, port_helper::PortHelper,
+    rules_parser::NftablesRulesParser, utils::NftDirection,
 };
 
 mod hostmane_parser;
