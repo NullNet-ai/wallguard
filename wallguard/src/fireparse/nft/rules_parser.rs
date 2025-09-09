@@ -105,40 +105,43 @@ impl NftablesRulesParser {
 
         let (ip_protocol, l4_protocol) = filter_rule.protocol.split_once("/").unwrap_or(("*", "*"));
 
-        IpProtocolHelper::build(ip_protocol).map(|stmt| statements.push(stmt));
+        if let Some(stmt) = IpProtocolHelper::build(ip_protocol) {
+            statements.push(stmt);
+        }
 
         if !filter_rule.interface.is_empty() {
             let statement = InterfaceHelper::build(&filter_rule.interface);
             statements.push(statement);
         }
 
-        filter_rule
+        if let Some(stmt) = filter_rule
             .source_addr
             .and_then(|source_addr| AddrHelper::build(&source_addr, NftDirection::Source))
-            .map(|stmt| statements.push(stmt));
+        {
+            statements.push(stmt);
+        }
 
-        filter_rule
-            .source_port
-            .and_then(|source_port| {
-                PortHelper::build(&source_port, NftDirection::Source, l4_protocol)
-            })
-            .map(|stmt| statements.push(stmt));
+        if let Some(stmt) = filter_rule.source_port.and_then(|source_port| {
+            PortHelper::build(&source_port, NftDirection::Source, l4_protocol)
+        }) {
+            statements.push(stmt);
+        }
 
-        filter_rule
-            .destination_addr
-            .and_then(|destination_addr| {
-                AddrHelper::build(&destination_addr, NftDirection::Destination)
-            })
-            .map(|stmt| statements.push(stmt));
+        if let Some(stmt) = filter_rule.destination_addr.and_then(|destination_addr| {
+            AddrHelper::build(&destination_addr, NftDirection::Destination)
+        }) {
+            statements.push(stmt);
+        }
 
-        filter_rule
-            .destination_port
-            .and_then(|destination_port| {
-                PortHelper::build(&destination_port, NftDirection::Destination, l4_protocol)
-            })
-            .map(|stmt| statements.push(stmt));
+        if let Some(stmt) = filter_rule.destination_port.and_then(|destination_port| {
+            PortHelper::build(&destination_port, NftDirection::Destination, l4_protocol)
+        }) {
+            statements.push(stmt);
+        }
 
-        PolicyHelper::build(&filter_rule.policy).map(|stmt| statements.push(stmt));
+        if let Some(stmt) = PolicyHelper::build(&filter_rule.policy) {
+            statements.push(stmt);
+        }
 
         Ok(Rule {
             table: filter_rule.table.into(),
@@ -154,42 +157,46 @@ impl NftablesRulesParser {
 
         let (ip_protocol, l4_protocol) = nat_rule.protocol.split_once("/").unwrap_or(("*", "*"));
 
-        IpProtocolHelper::build(ip_protocol).map(|stmt| statements.push(stmt));
+        if let Some(stmt) = IpProtocolHelper::build(ip_protocol) {
+            statements.push(stmt);
+        }
 
         if !nat_rule.interface.is_empty() {
             let statement = InterfaceHelper::build(&nat_rule.interface);
             statements.push(statement);
         }
 
-        nat_rule
+        if let Some(stmt) = nat_rule
             .source_addr
             .and_then(|source_addr| AddrHelper::build(&source_addr, NftDirection::Source))
-            .map(|stmt| statements.push(stmt));
+        {
+            statements.push(stmt);
+        }
 
-        nat_rule
-            .source_port
-            .and_then(|source_port| {
-                PortHelper::build(&source_port, NftDirection::Source, l4_protocol)
-            })
-            .map(|stmt| statements.push(stmt));
+        if let Some(stmt) = nat_rule.source_port.and_then(|source_port| {
+            PortHelper::build(&source_port, NftDirection::Source, l4_protocol)
+        }) {
+            statements.push(stmt);
+        }
 
-        nat_rule
-            .destination_addr
-            .and_then(|destination_addr| {
-                AddrHelper::build(&destination_addr, NftDirection::Destination)
-            })
-            .map(|stmt| statements.push(stmt));
+        if let Some(stmt) = nat_rule.destination_addr.and_then(|destination_addr| {
+            AddrHelper::build(&destination_addr, NftDirection::Destination)
+        }) {
+            statements.push(stmt);
+        }
 
-        nat_rule
-            .destination_port
-            .and_then(|destination_port| {
-                PortHelper::build(&destination_port, NftDirection::Destination, l4_protocol)
-            })
-            .map(|stmt| statements.push(stmt));
+        if let Some(stmt) = nat_rule.destination_port.and_then(|destination_port| {
+            PortHelper::build(&destination_port, NftDirection::Destination, l4_protocol)
+        }) {
+            statements.push(stmt);
+        }
 
         let nat_ip = Some(nat_rule.redirect_ip).filter(|value| !value.is_empty());
         let nat_port = Some(nat_rule.redirect_port).filter(|value| *value != 0);
-        NatHelper::build(nat_ip, nat_port).map(|stmt| statements.push(stmt));
+
+        if let Some(stmt) = NatHelper::build(nat_ip, nat_port) {
+            statements.push(stmt);
+        }
 
         Ok(Rule {
             table: nat_rule.table.into(),

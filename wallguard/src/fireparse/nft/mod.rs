@@ -1,23 +1,23 @@
-use nftables::schema::{NfListObject, NfObject, Nftables, Rule};
-use nullnet_liberror::Error;
-use wallguard_common::protobuf::wallguard_models::{Configuration, FilterRule};
-
 use crate::fireparse::nft::{
-    addr_helper::AddrHelper, hostmane_parser::NftablesHostnameParser, port_helper::PortHelper,
-    rules_parser::NftablesRulesParser, utils::NftDirection,
+    hostmane_parser::NftablesHostnameParser, rules_parser::NftablesRulesParser,
 };
-
-mod hostmane_parser;
-mod rules_parser;
-mod utils;
+use nftables::{
+    batch::Batch,
+    schema::{NfListObject, NfObject, Nftables},
+};
+use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
 
 mod addr_helper;
+mod hostmane_parser;
 mod interface_helper;
 mod ip_protocol_helper;
 mod l4_protocol_helper;
 mod nat_helper;
 mod policy_helper;
 mod port_helper;
+mod rules_parser;
+mod utils;
 
 pub struct NftablesParser;
 
@@ -55,5 +55,39 @@ impl NftablesParser {
         }
 
         (tables_list, chains_list)
+    }
+
+    pub async fn create_filter_rule(rule: FilterRule) -> Result<(), Error> {
+        let rule = NftablesRulesParser::convert_filter_rule(rule)?;
+
+        let mut batch = Batch::new();
+        batch.add(NfListObject::Rule(rule));
+
+        tokio::task::spawn_blocking(move || {
+            let table = batch.to_nftables();
+            nftables::helper::apply_ruleset(&table)
+        })
+        .await
+        .handle_err(location!())?
+        .handle_err(location!())
+    }
+
+    pub async fn create_nat_rule(rule: NatRule) -> Result<(), Error> {
+        let rule = NftablesRulesParser::convert_nat_rule(rule)?;
+
+        let mut batch = Batch::new();
+        batch.add(NfListObject::Rule(rule));
+
+        tokio::task::spawn_blocking(move || {
+            let table = batch.to_nftables();
+            nftables::helper::apply_ruleset(&table)
+        })
+        .await
+        .handle_err(location!())?
+        .handle_err(location!())
+    }
+
+    pub async fn create_alias(_alias: Alias) -> Result<(), Error> {
+        Err("Not implemented").handle_err(location!())
     }
 }
