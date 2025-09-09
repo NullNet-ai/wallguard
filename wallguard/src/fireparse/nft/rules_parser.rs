@@ -1,10 +1,17 @@
 use crate::fireparse::nft::{
-    addr_helper::AddrHelper, interface_helper::InterfaceHelper,
-    ip_protocol_helper::IpProtocolHelper, l4_protocol_helper::L4ProtocolHelper,
-    nat_helper::NatHelper, policy_helper::PolicyHelper, port_helper::PortHelper,
-    utils::NftDirection,
+    addr_helper::AddrHelper,
+    interface_helper::InterfaceHelper,
+    ip_protocol_helper::IpProtocolHelper,
+    l4_protocol_helper::L4ProtocolHelper,
+    nat_helper::NatHelper,
+    policy_helper::PolicyHelper,
+    port_helper::PortHelper,
+    utils::{nffam2str, str2nffam, NftDirection},
 };
-use nftables::schema::{Nftables, Rule};
+use nftables::{
+    schema::{Nftables, Rule},
+    types::NfFamily,
+};
 use nullnet_liberror::Error;
 use wallguard_common::protobuf::wallguard_models::{FilterRule, NatRule};
 
@@ -59,6 +66,7 @@ impl NftablesRulesParser {
                                 redirect_port: port.unwrap_or_default(),
                                 table: rule.table.to_string(),
                                 chain: rule.chain.to_string(),
+                                family: nffam2str(rule.family),
                             });
                         } else {
                             filter_rules.push(FilterRule {
@@ -88,6 +96,7 @@ impl NftablesRulesParser {
                                 associated_rule_id: String::default(),
                                 table: rule.table.to_string(),
                                 chain: rule.chain.to_string(),
+                                family: nffam2str(rule.family),
                             });
                         }
                     }
@@ -148,6 +157,7 @@ impl NftablesRulesParser {
             chain: filter_rule.chain.into(),
             expr: statements.into(),
             comment: Some(filter_rule.description.into()),
+            family: str2nffam(&filter_rule.family).unwrap_or(NfFamily::IP),
             ..Default::default()
         })
     }
@@ -203,6 +213,7 @@ impl NftablesRulesParser {
             chain: nat_rule.chain.into(),
             expr: statements.into(),
             comment: Some(nat_rule.description.into()),
+            family: str2nffam(&nat_rule.family).unwrap_or(NfFamily::IP),
             ..Default::default()
         })
     }

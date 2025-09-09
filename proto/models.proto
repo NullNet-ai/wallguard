@@ -39,6 +39,7 @@ message FilterRule {
 
     string table = 17;
     string chain = 18;
+    string family = 19;
 }
 
 message NatRule {
@@ -67,6 +68,7 @@ message NatRule {
 
     string table = 18;
     string chain = 19;
+    string family = 20;
 }
 
 message IpAddress {

@@ -7,7 +7,7 @@ impl Serialize for FilterRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("FilterRule", 22)?;
+        let mut state = serializer.serialize_struct("FilterRule", 25)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("policy", &self.policy)?;
@@ -48,6 +48,7 @@ impl Serialize for FilterRule {
 
         state.serialize_field("table", &self.table)?;
         state.serialize_field("chain", &self.chain)?;
+        state.serialize_field("family", &self.family)?;
 
         state.end()
     }
@@ -84,6 +85,7 @@ impl<'de> Deserialize<'de> for FilterRule {
             associated_rule_id: String,
             table: Option<String>,
             chain: Option<String>,
+            family: Option<String>,
         }
 
         let raw = RawFilterRule::deserialize(deserializer)?;
@@ -143,6 +145,7 @@ impl<'de> Deserialize<'de> for FilterRule {
             associated_rule_id: raw.associated_rule_id,
             table: raw.table.unwrap_or_default(),
             chain: raw.chain.unwrap_or_default(),
+            family: raw.family.unwrap_or_default(),
         })
     }
 }
@@ -152,7 +155,7 @@ impl Serialize for NatRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("NatRule", 22)?;
+        let mut state = serializer.serialize_struct("NatRule", 25)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("protocol", &self.protocol)?;
@@ -193,6 +196,7 @@ impl Serialize for NatRule {
 
         state.serialize_field("table", &self.table)?;
         state.serialize_field("chain", &self.chain)?;
+        state.serialize_field("family", &self.family)?;
 
         state.end()
     }
@@ -229,6 +233,7 @@ impl<'de> Deserialize<'de> for NatRule {
             associated_rule_id: String,
             table: Option<String>,
             chain: Option<String>,
+            family: Option<String>,
         }
 
         let raw = RawNatRule::deserialize(deserializer)?;
@@ -288,6 +293,7 @@ impl<'de> Deserialize<'de> for NatRule {
             associated_rule_id: raw.associated_rule_id,
             table: raw.table.unwrap_or_default(),
             chain: raw.chain.unwrap_or_default(),
+            family: raw.family.unwrap_or_default(),
         })
     }
 }

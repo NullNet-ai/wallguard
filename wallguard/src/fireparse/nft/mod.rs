@@ -3,7 +3,7 @@ use crate::fireparse::nft::{
 };
 use nftables::{
     batch::Batch,
-    schema::{NfListObject, NfObject, Nftables},
+    schema::{NfCmd, NfListObject, NfObject, Nftables},
 };
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
@@ -61,7 +61,7 @@ impl NftablesParser {
         let rule = NftablesRulesParser::convert_filter_rule(rule)?;
 
         let mut batch = Batch::new();
-        batch.add(NfListObject::Rule(rule));
+        batch.add_cmd(NfCmd::Add(NfListObject::Rule(rule)));
 
         tokio::task::spawn_blocking(move || {
             let table = batch.to_nftables();
@@ -76,7 +76,7 @@ impl NftablesParser {
         let rule = NftablesRulesParser::convert_nat_rule(rule)?;
 
         let mut batch = Batch::new();
-        batch.add(NfListObject::Rule(rule));
+        batch.add_cmd(NfCmd::Add(NfListObject::Rule(rule)));
 
         tokio::task::spawn_blocking(move || {
             let table = batch.to_nftables();

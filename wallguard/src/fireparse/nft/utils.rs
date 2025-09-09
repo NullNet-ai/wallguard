@@ -1,4 +1,4 @@
-use nftables::stmt::Operator;
+use nftables::{stmt::Operator, types::NfFamily};
 
 pub fn nfop2str(operator: Operator) -> String {
     let value = match operator {
@@ -33,6 +33,31 @@ pub fn str2nfop(value: &str) -> Option<Operator> {
         "leq" => Some(Operator::LEQ),
         "geq" => Some(Operator::GEQ),
         "in" => Some(Operator::IN),
+        _ => None,
+    }
+}
+
+pub fn nffam2str(family: NfFamily) -> String {
+    let str = match family {
+        NfFamily::IP => "ip",
+        NfFamily::IP6 => "ip6",
+        NfFamily::INet => "inet",
+        NfFamily::ARP => "arp",
+        NfFamily::Bridge => "bridge",
+        NfFamily::NetDev => "netdev",
+    };
+
+    str.to_string()
+}
+
+pub fn str2nffam(value: &str) -> Option<NfFamily> {
+    match value.to_lowercase().as_str() {
+        "ip" => Some(NfFamily::IP),
+        "ip6" => Some(NfFamily::IP6),
+        "inet" => Some(NfFamily::INet),
+        "arp" => Some(NfFamily::ARP),
+        "bridge" => Some(NfFamily::Bridge),
+        "netdev" => Some(NfFamily::NetDev),
         _ => None,
     }
 }
