@@ -1,5 +1,5 @@
 use super::endpoint_parser::EndpointParser;
-use wallguard_common::protobuf::wallguard_models::{FilterRule, NatRule};
+use wallguard_common::protobuf::wallguard_models::{AddrInfo, FilterRule, NatRule, PortInfo};
 use xmltree::{Element, XMLNode};
 
 pub struct PfSenseRulesParser;
@@ -48,8 +48,8 @@ impl PfSenseRulesParser {
 
         let source_elem = EndpointParser::to_element(
             "source",
-            &rule.source_addr,
-            &rule.source_port,
+            &rule.source_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.source_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.source_type,
             rule.source_inversed,
         );
@@ -57,8 +57,8 @@ impl PfSenseRulesParser {
 
         let destination_elem = EndpointParser::to_element(
             "destination",
-            &rule.destination_addr,
-            &rule.destination_port,
+            &rule.destination_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.destination_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.destination_type,
             rule.destination_inversed,
         );
@@ -120,8 +120,8 @@ impl PfSenseRulesParser {
 
         let source_elem = EndpointParser::to_element(
             "source",
-            &rule.source_addr,
-            &rule.source_port,
+            &rule.source_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.source_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.source_type,
             rule.source_inversed,
         );
@@ -129,8 +129,8 @@ impl PfSenseRulesParser {
 
         let destination_elem = EndpointParser::to_element(
             "destination",
-            &rule.destination_addr,
-            &rule.destination_port,
+            &rule.destination_addr.map(|v| v.value).unwrap_or("*".into()),
+            &rule.destination_port.map(|v| v.value).unwrap_or("*".into()),
             &rule.destination_type,
             rule.destination_inversed,
         );
@@ -236,18 +236,31 @@ impl PfSenseRulesParser {
                 protocol: format!("{ipprotocol}/{protocol}"),
                 policy,
                 description,
-                source_port,
-                source_addr,
+                source_port: Some(PortInfo {
+                    value: source_port,
+                    ..Default::default()
+                }),
+                source_addr: Some(AddrInfo {
+                    value: source_addr,
+                    ..Default::default()
+                }),
                 source_type,
                 source_inversed,
-                destination_addr,
-                destination_port,
+                destination_addr: Some(AddrInfo {
+                    value: destination_addr,
+                    ..Default::default()
+                }),
+                destination_port: Some(PortInfo {
+                    value: destination_port,
+                    ..Default::default()
+                }),
                 destination_type,
                 destination_inversed,
                 interface,
                 order: index as u32,
                 id,
                 associated_rule_id,
+                ..Default::default()
             });
         }
 
@@ -318,12 +331,26 @@ impl PfSenseRulesParser {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}",),
                 description,
-                source_port,
-                source_addr,
+                source_port: Some(PortInfo {
+                    value: source_port,
+                    operator: String::default(),
+                }),
+                source_addr: Some(AddrInfo {
+                    version: 0,
+                    value: source_addr,
+                    operator: String::default(),
+                }),
                 source_type,
                 source_inversed,
-                destination_addr,
-                destination_port,
+                destination_addr: Some(AddrInfo {
+                    version: 0,
+                    value: destination_addr,
+                    operator: String::default(),
+                }),
+                destination_port: Some(PortInfo {
+                    value: destination_port,
+                    operator: String::default(),
+                }),
                 destination_type,
                 destination_inversed,
                 interface,
@@ -331,6 +358,7 @@ impl PfSenseRulesParser {
                 redirect_ip,
                 redirect_port,
                 associated_rule_id,
+                ..Default::default()
             });
         }
 
@@ -340,7 +368,7 @@ impl PfSenseRulesParser {
 #[cfg(test)]
 mod tests {
     use super::PfSenseRulesParser;
-    use wallguard_common::protobuf::wallguard_models::FilterRule;
+    use wallguard_common::protobuf::wallguard_models::{AddrInfo, FilterRule, PortInfo};
     use xmltree::{Element, XMLNode};
 
     fn find_child_text(element: &Element, name: &str) -> Option<String> {
@@ -383,12 +411,12 @@ mod tests {
         assert_eq!(rules[0].policy, "pass");
         assert_eq!(rules[0].protocol, "inet/any");
         assert_eq!(rules[0].description, "Default allow LAN to any rule");
-        assert_eq!(rules[0].source_addr, "lan");
-        assert_eq!(rules[0].source_port, "*");
+        assert_eq!(rules[0].source_addr.as_ref().unwrap().value, "lan");
+        assert_eq!(rules[0].source_port.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].source_type, "network");
         assert_eq!(rules[0].source_inversed, false);
-        assert_eq!(rules[0].destination_addr, "*");
-        assert_eq!(rules[0].destination_port, "*");
+        assert_eq!(rules[0].destination_addr.as_ref().unwrap().value, "*");
+        assert_eq!(rules[0].destination_port.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].destination_type, "address");
         assert_eq!(rules[0].destination_inversed, false);
         assert_eq!(rules[0].interface, "lan");
@@ -426,12 +454,12 @@ mod tests {
         assert_eq!(rules[0].disabled, false);
         assert_eq!(rules[0].protocol, "inet6/tcp");
         assert_eq!(rules[0].description, "NAT Rule");
-        assert_eq!(rules[0].source_addr, "*");
-        assert_eq!(rules[0].source_port, "*");
+        assert_eq!(rules[0].source_addr.as_ref().unwrap().value, "*");
+        assert_eq!(rules[0].source_port.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].source_type, "address");
         assert_eq!(rules[0].source_inversed, false);
-        assert_eq!(rules[0].destination_addr, "wanip");
-        assert_eq!(rules[0].destination_port, "8091");
+        assert_eq!(rules[0].destination_addr.as_ref().unwrap().value, "wanip");
+        assert_eq!(rules[0].destination_port.as_ref().unwrap().value, "8091");
         assert_eq!(rules[0].destination_type, "network");
         assert_eq!(rules[0].destination_inversed, false);
         assert_eq!(rules[0].interface, "wan");
@@ -488,12 +516,12 @@ mod tests {
         assert_eq!(frules[0].policy, "pass");
         assert_eq!(frules[0].protocol, "inet/any");
         assert_eq!(frules[0].description, "Allow LAN");
-        assert_eq!(frules[0].source_addr, "lan");
-        assert_eq!(frules[0].source_port, "*");
+        assert_eq!(frules[0].source_addr.as_ref().unwrap().value, "lan");
+        assert_eq!(frules[0].source_port.as_ref().unwrap().value, "*");
         assert_eq!(frules[0].source_type, "network");
         assert_eq!(frules[0].source_inversed, false);
-        assert_eq!(frules[0].destination_addr, "*");
-        assert_eq!(frules[0].destination_port, "*");
+        assert_eq!(frules[0].destination_addr.as_ref().unwrap().value, "*");
+        assert_eq!(frules[0].destination_port.as_ref().unwrap().value, "*");
         assert_eq!(frules[0].destination_type, "address");
         assert_eq!(frules[0].destination_inversed, false);
         assert_eq!(frules[0].interface, "lan");
@@ -505,10 +533,10 @@ mod tests {
         assert_eq!(nrules[0].disabled, true);
         assert_eq!(nrules[0].protocol, "inet/tcp");
         assert_eq!(nrules[0].description, "NAT Rule");
-        assert_eq!(nrules[0].source_addr, "*");
-        assert_eq!(nrules[0].source_port, "*");
-        assert_eq!(nrules[0].destination_addr, "wanip");
-        assert_eq!(nrules[0].destination_port, "8091");
+        assert_eq!(nrules[0].source_addr.as_ref().unwrap().value, "*");
+        assert_eq!(nrules[0].source_port.as_ref().unwrap().value, "*");
+        assert_eq!(nrules[0].destination_addr.as_ref().unwrap().value, "wanip");
+        assert_eq!(nrules[0].destination_port.as_ref().unwrap().value, "8091");
         assert_eq!(nrules[0].destination_type, "network");
         assert_eq!(nrules[0].destination_inversed, false);
         assert_eq!(nrules[0].interface, "wan");
@@ -546,12 +574,15 @@ mod tests {
         assert_eq!(rules[0].policy, "reject");
         assert_eq!(rules[0].protocol, "inet/any");
         assert_eq!(rules[0].description, "Block traffic");
-        assert_eq!(rules[0].source_addr, "*");
-        assert_eq!(rules[0].source_port, "*");
+        assert_eq!(rules[0].source_addr.as_ref().unwrap().value, "*");
+        assert_eq!(rules[0].source_port.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].source_type, "address");
         assert_eq!(rules[0].source_inversed, false);
-        assert_eq!(rules[0].destination_addr, "restricted_zone");
-        assert_eq!(rules[0].destination_port, "*");
+        assert_eq!(
+            rules[0].destination_addr.as_ref().unwrap().value,
+            "restricted_zone"
+        );
+        assert_eq!(rules[0].destination_port.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].destination_type, "address");
         assert_eq!(rules[0].destination_inversed, false);
         assert_eq!(rules[0].interface, "opt1");
@@ -595,18 +626,31 @@ mod tests {
             policy: "block".to_string(),
             protocol: "inet/tcp".to_string(),
             description: "Block SSH".to_string(),
-            source_addr: "*".to_string(),
-            source_port: "*".to_string(),
+            source_addr: Some(AddrInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
+            source_port: Some(PortInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
             source_type: "address".to_string(),
             source_inversed: false,
-            destination_addr: "192.168.1.100".to_string(),
-            destination_port: "22".to_string(),
+            destination_addr: Some(AddrInfo {
+                value: "192.168.1.100".to_string(),
+                ..Default::default()
+            }),
+            destination_port: Some(PortInfo {
+                value: "22".to_string(),
+                ..Default::default()
+            }),
             destination_type: "address".to_string(),
             destination_inversed: false,
             interface: "lan".to_string(),
             order: 0,
             id: 42,
             associated_rule_id: "qwerty".to_string(),
+            ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
@@ -638,18 +682,31 @@ mod tests {
             policy: "pass".to_string(),
             protocol: "inet/any".to_string(),
             description: "".to_string(),
-            source_addr: "*".to_string(),
-            source_port: "*".to_string(),
+            source_addr: Some(AddrInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
+            source_port: Some(PortInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
             source_type: "address".to_string(),
             source_inversed: false,
-            destination_addr: "*".to_string(),
-            destination_port: "*".to_string(),
+            destination_addr: Some(AddrInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
+            destination_port: Some(PortInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
             destination_type: "address".to_string(),
             destination_inversed: false,
             interface: "wan".to_string(),
             order: 1,
             id: 100,
             associated_rule_id: "qwerty".to_string(),
+            ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
@@ -668,24 +725,36 @@ mod tests {
             policy: "pass".to_string(),
             protocol: "inet/tcp".to_string(),
             description: "Allow HTTP traffic".to_string(),
-            source_addr: "*".to_string(),
-            source_port: "*".to_string(),
+            source_addr: Some(AddrInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
+            source_port: Some(PortInfo {
+                value: "*".to_string(),
+                ..Default::default()
+            }),
+            destination_addr: Some(AddrInfo {
+                value: "10.0.0.1".to_string(),
+                ..Default::default()
+            }),
+            destination_port: Some(PortInfo {
+                value: "80".to_string(),
+                ..Default::default()
+            }),
             source_type: "address".to_string(),
             source_inversed: false,
-            destination_addr: "10.0.0.1".to_string(),
-            destination_port: "80".to_string(),
             destination_type: "address".to_string(),
             destination_inversed: false,
             interface: "wan".to_string(),
             order: 2,
             id: 55,
             associated_rule_id: "qwerty".to_string(),
+            ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
         let descr_elem = elem.get_child("descr").unwrap();
 
-        // Check for CDATA content
         if let Some(XMLNode::CData(cdata)) = descr_elem.children.first() {
             assert_eq!(cdata, "Allow HTTP traffic");
         } else {

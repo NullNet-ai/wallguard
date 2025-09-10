@@ -2,6 +2,17 @@ syntax = "proto3";
 
 package wallguard_models;
 
+message AddrInfo {
+    int32 version = 1;
+    string value = 2;
+    string operator = 3;
+}
+
+message PortInfo {
+    string value = 1;
+    string operator = 2;
+}
+
 message FilterRule {
     bool disabled = 1;
 
@@ -9,13 +20,13 @@ message FilterRule {
     string protocol = 3;
 
     bool source_inversed = 4;
-    string source_port = 5;
-    string source_addr = 6;
+    PortInfo source_port = 5;
+    AddrInfo source_addr = 6;
     string source_type = 7;
 
     bool destination_inversed = 8;
-    string destination_port = 9;
-    string destination_addr = 10;
+    PortInfo destination_port = 9;
+    AddrInfo destination_addr = 10;
     string destination_type = 11;
 
     string description = 12;
@@ -25,6 +36,10 @@ message FilterRule {
     uint32 order = 15;
 
     string associated_rule_id = 16;
+
+    string table = 17;
+    string chain = 18;
+    string family = 19;
 }
 
 message NatRule {
@@ -32,13 +47,13 @@ message NatRule {
     string protocol = 3;
 
     bool source_inversed = 4;
-    string source_port = 5;
-    string source_addr = 6;
+    PortInfo source_port = 5;
+    AddrInfo source_addr = 6;
     string source_type = 7;
 
     bool destination_inversed = 8;
-    string destination_port = 9;
-    string destination_addr = 10;
+    PortInfo destination_port = 9;
+    AddrInfo destination_addr = 10;
     string destination_type = 11;
 
     string description = 12;
@@ -50,6 +65,10 @@ message NatRule {
     uint32 order = 16;
 
     string associated_rule_id = 17;
+
+    string table = 18;
+    string chain = 19;
+    string family = 20;
 }
 
 message IpAddress {
@@ -84,4 +103,6 @@ message Configuration {
     string hostname = 6;
     string gui_protocol = 7;
     SSHConfig ssh_config = 8;
+    repeated string tables = 9;
+    repeated string chains = 10;
 }

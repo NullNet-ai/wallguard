@@ -1,11 +1,13 @@
+use nftables::schema::Nftables;
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
-use xmltree::Element;
 
 use crate::data_transmission::sysconfig::types::FileData;
+use crate::fireparse::nft::NftablesParser;
 use crate::fireparse::opnsense::OpnSenseParser;
 use crate::{client_data::Platform, fireparse::pfsense::PfSenseParser};
 
+mod nft;
 mod opnsense;
 mod pfsense;
 
@@ -36,31 +38,49 @@ impl Fireparse {
 
                 OpnSenseParser::parse(&data)
             }
+            Platform::NfTables => {
+                let ruleset = files
+                    .into_iter()
+                    .find(|file| file.filename == "#NFRuleset")
+                    .ok_or("'#NFRuleset' not found")
+                    .handle_err(location!())?;
+
+                let tables: Nftables<'_> =
+                    serde_json::from_slice(&ruleset.content).handle_err(location!())?;
+
+                NftablesParser::parse(
+                    tables,
+                    format!("{:x}", md5::compute(ruleset.content.as_slice())),
+                )
+            }
             Platform::Generic => Err("Unsupported platform").handle_err(location!()),
         }
     }
 
-    pub fn convert_filter_rule(rule: FilterRule, platform: Platform) -> Result<Element, Error> {
+    pub async fn create_filter_rule(rule: FilterRule, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::PfSense => Ok(PfSenseParser::convert_filter_rule(rule)),
-            Platform::OpnSense => Ok(OpnSenseParser::convert_filter_rule(rule)),
-            Platform::Generic => Err("Not supported").handle_err(location!()),
+            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::PfSense => PfSenseParser::create_filter_rule(rule).await,
+            Platform::OpnSense => OpnSenseParser::create_filter_rule(rule).await,
+            Platform::NfTables => NftablesParser::create_filter_rule(rule).await,
         }
     }
 
-    pub fn convert_nat_rules(rule: NatRule, platform: Platform) -> Result<Element, Error> {
+    pub async fn create_nat_rule(rule: NatRule, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::PfSense => Ok(PfSenseParser::convert_nat_rule(rule)),
-            Platform::OpnSense => Ok(OpnSenseParser::convert_nat_rule(rule)),
-            Platform::Generic => Err("Not supported").handle_err(location!()),
+            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::PfSense => PfSenseParser::create_nat_rule(rule).await,
+            Platform::OpnSense => OpnSenseParser::create_nat_rule(rule).await,
+            Platform::NfTables => NftablesParser::create_nat_rule(rule).await,
         }
     }
 
-    pub fn convert_alias(alias: Alias, platform: Platform) -> Result<Element, Error> {
+    pub async fn create_alias(alias: Alias, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::PfSense => Ok(PfSenseParser::convert_alias(alias)),
-            Platform::OpnSense => Ok(OpnSenseParser::convert_alias(alias)),
-            Platform::Generic => Err("Not supported").handle_err(location!()),
+            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::PfSense => PfSenseParser::create_alias(alias).await,
+            Platform::OpnSense => OpnSenseParser::create_alias(alias).await,
+            Platform::NfTables => NftablesParser::create_alias(alias).await,
         }
     }
 }

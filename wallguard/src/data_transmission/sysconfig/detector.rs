@@ -4,6 +4,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 use tokio::fs;
 use tokio::fs::ReadDir;
+use wallguard_common::protobuf::wallguard_service::ConfigStatus;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum State {
@@ -25,6 +26,7 @@ impl Detector {
         match &self.platform {
             Platform::PfSense => Detector::check_pfsense().await,
             Platform::OpnSense => Detector::check_opnsense().await,
+            Platform::NfTables => State::Applied,
             Platform::Generic => unreachable!(),
         }
     }
@@ -67,5 +69,16 @@ impl Detector {
         }
 
         State::Applied
+    }
+}
+
+#[allow(clippy::from_over_into)]
+impl Into<i32> for State {
+    fn into(self) -> i32 {
+        match self {
+            State::Draft => ConfigStatus::CsDraft.into(),
+            State::Applied => ConfigStatus::CsApplied.into(),
+            State::Undefined => ConfigStatus::CsUndefined.into(),
+        }
     }
 }

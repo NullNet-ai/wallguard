@@ -1,3 +1,4 @@
+use crate::utilities::system;
 use aliases_parser::PfSenseAliasesParser;
 use hostname_parser::PfSenseHostnameParser;
 use interfaces_parser::PfSenseInterfacesParser;
@@ -36,18 +37,85 @@ impl PfSenseParser {
             ssh_config: Some(PfSenseSSHParser::parse(&document)),
             filter_rules,
             nat_rules,
+            tables: vec![],
+            chains: vec![],
         })
     }
 
-    pub fn convert_filter_rule(rule: FilterRule) -> Element {
-        PfSenseRulesParser::filter_rule_to_element(rule)
+    pub async fn create_filter_rule(rule: FilterRule) -> Result<(), Error> {
+        let element = PfSenseRulesParser::filter_rule_to_element(rule);
+
+        let content = tokio::fs::read("/conf/config.xml")
+            .await
+            .handle_err(location!())?;
+
+        let mut document = Element::parse(content.as_slice()).handle_err(location!())?;
+
+        let rules_node = document
+            .get_mut_child("filter")
+            .ok_or("Malformed config.xml file")
+            .handle_err(location!())?;
+
+        rules_node.children.push(xmltree::XMLNode::Element(element));
+
+        let mut buffer = Vec::new();
+        document.write(&mut buffer).handle_err(location!())?;
+        tokio::fs::write("/conf/config.xml", buffer)
+            .await
+            .handle_err(location!())?;
+
+        system::reload_configuraion().await
     }
 
-    pub fn convert_nat_rule(rule: NatRule) -> Element {
-        PfSenseRulesParser::nat_rule_to_element(rule)
+    pub async fn create_nat_rule(rule: NatRule) -> Result<(), Error> {
+        let element = PfSenseRulesParser::nat_rule_to_element(rule);
+
+        let content = tokio::fs::read("/conf/config.xml")
+            .await
+            .handle_err(location!())?;
+
+        let mut document = Element::parse(content.as_slice()).handle_err(location!())?;
+
+        let rules_node = document
+            .get_mut_child("nat")
+            .ok_or("Malformed config.xml file")
+            .handle_err(location!())?;
+
+        rules_node.children.push(xmltree::XMLNode::Element(element));
+
+        let mut buffer = Vec::new();
+        document.write(&mut buffer).handle_err(location!())?;
+        tokio::fs::write("/conf/config.xml", buffer)
+            .await
+            .handle_err(location!())?;
+
+        system::reload_configuraion().await
     }
 
-    pub fn convert_alias(alias: Alias) -> Element {
-        PfSenseAliasesParser::to_element(alias)
+    pub async fn create_alias(alias: Alias) -> Result<(), Error> {
+        let element = PfSenseAliasesParser::to_element(alias);
+
+        let content = tokio::fs::read("/conf/config.xml")
+            .await
+            .handle_err(location!())?;
+
+        let mut document = Element::parse(content.as_slice()).handle_err(location!())?;
+
+        let aliases_node = document
+            .get_mut_child("aliases")
+            .ok_or("Malformed config.xml")
+            .handle_err(location!())?;
+
+        aliases_node
+            .children
+            .push(xmltree::XMLNode::Element(element));
+
+        let mut buffer = Vec::new();
+        document.write(&mut buffer).handle_err(location!())?;
+        tokio::fs::write("/conf/config.xml", buffer)
+            .await
+            .handle_err(location!())?;
+
+        system::reload_configuraion().await
     }
 }

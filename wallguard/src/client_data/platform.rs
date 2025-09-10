@@ -1,12 +1,16 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use std::fmt;
-use std::path::PathBuf;
+
+use crate::data_transmission::sysconfig::data::{
+    ConfigXml, NftablesRuleset, SystemConfigurationFile,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Platform {
     Generic,
     PfSense,
     OpnSense,
+    NfTables,
 }
 
 impl TryFrom<&str> for Platform {
@@ -17,6 +21,7 @@ impl TryFrom<&str> for Platform {
             "generic" => Ok(Platform::Generic),
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
+            "nftables" => Ok(Platform::NfTables),
             _ => {
                 let errmsg = format!("Unsupported platform {value}");
                 Err(errmsg).handle_err(location!())
@@ -39,6 +44,7 @@ impl fmt::Display for Platform {
             Platform::PfSense => "pfsense",
             Platform::OpnSense => "opnsense",
             Platform::Generic => "generic",
+            Platform::NfTables => "nftables",
         };
 
         write!(f, "{value}")
@@ -58,9 +64,16 @@ impl Platform {
         true
     }
 
-    pub fn get_sysconf_files(&self) -> Vec<PathBuf> {
+    pub fn get_sysconf_files(&self) -> Vec<SystemConfigurationFile> {
         match self {
-            Platform::PfSense | Platform::OpnSense => vec![PathBuf::from("/conf/config.xml")],
+            Platform::PfSense | Platform::OpnSense => {
+                let file = ConfigXml::default();
+                vec![SystemConfigurationFile::ConfigXml(file)]
+            }
+            Platform::NfTables => {
+                let file = NftablesRuleset::default();
+                vec![SystemConfigurationFile::NftablesRuleset(file)]
+            }
             Platform::Generic => vec![],
         }
     }
