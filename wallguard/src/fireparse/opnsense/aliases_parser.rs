@@ -52,6 +52,7 @@ impl OpnSenseAliasesParser {
                     name,
                     value,
                     description,
+                    ..Default::default()
                 });
             }
         }

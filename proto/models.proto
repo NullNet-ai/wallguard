@@ -92,6 +92,8 @@ message Alias {
     string name = 2;
     string value = 3;
     string description = 4;
+    string table = 5;
+    string family = 6;
 }
 
 message Configuration {

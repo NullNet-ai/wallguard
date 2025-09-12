@@ -24,6 +24,8 @@ impl Datastore {
             name: alias.name.clone(),
             description: alias.description.clone(),
             alias_status: String::new(),
+            family: alias.family.clone(),
+            table: alias.table.clone(),
         };
 
         let request = CreateRequestBuilder::new()

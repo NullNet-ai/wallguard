@@ -1,4 +1,4 @@
-use nftables::{stmt::Operator, types::NfFamily};
+use nftables::{schema::SetType, stmt::Operator, types::NfFamily};
 
 pub fn nfop2str(operator: Operator) -> String {
     let value = match operator {
@@ -58,6 +58,33 @@ pub fn str2nffam(value: &str) -> Option<NfFamily> {
         "arp" => Some(NfFamily::ARP),
         "bridge" => Some(NfFamily::Bridge),
         "netdev" => Some(NfFamily::NetDev),
+        _ => None,
+    }
+}
+
+pub fn nfsettype2str(value: SetType) -> String {
+    let retval = match value {
+        SetType::Ipv4Addr => "ip",
+        SetType::Ipv6Addr => "ip6",
+        SetType::EtherAddr => "ether",
+        SetType::InetProto => "proto",
+        SetType::InetService => "service",
+        SetType::Mark => "mark",
+        SetType::Ifname => "interface",
+    };
+
+    retval.into()
+}
+
+pub fn str2nfsettype(value: &str) -> Option<SetType> {
+    match value {
+        "ip" => Some(SetType::Ipv4Addr),
+        "ip6" => Some(SetType::Ipv6Addr),
+        "ether" => Some(SetType::EtherAddr),
+        "proto" => Some(SetType::InetProto),
+        "service" => Some(SetType::InetService),
+        "mark" => Some(SetType::Mark),
+        "interface" => Some(SetType::Ifname),
         _ => None,
     }
 }

@@ -1,9 +1,7 @@
 use crate::fireparse::nft::utils::{nfop2str, str2nfop, NftDirection};
-use nftables::{
-    expr::{Expression, NamedExpression, Payload, Range, SetItem},
-    schema::Rule,
-    stmt::{Match, Statement},
-};
+use nftables::expr::{Expression, NamedExpression, Payload, Range, SetItem};
+use nftables::schema::Rule;
+use nftables::stmt::{Match, Statement};
 use wallguard_common::protobuf::wallguard_models::AddrInfo;
 
 pub struct AddrHelper;

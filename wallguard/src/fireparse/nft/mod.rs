@@ -1,5 +1,6 @@
 use crate::fireparse::nft::{
-    hostmane_parser::NftablesHostnameParser, rules_parser::NftablesRulesParser,
+    aliases_parser::NftablesAliasesParser, hostmane_parser::NftablesHostnameParser,
+    rules_parser::NftablesRulesParser,
 };
 use nftables::{
     batch::Batch,
@@ -9,6 +10,7 @@ use nullnet_liberror::{location, Error, ErrorHandler, Location};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
 
 mod addr_helper;
+mod aliases_parser;
 mod hostmane_parser;
 mod interface_helper;
 mod ip_protocol_helper;
@@ -24,11 +26,12 @@ pub struct NftablesParser;
 impl NftablesParser {
     pub fn parse(tables: Nftables<'_>, digest: String) -> Result<Configuration, Error> {
         let (filter_rules, nat_rules) = NftablesRulesParser::parse(&tables);
+        let aliases = NftablesAliasesParser::parse(&tables);
         let (tables, chains) = NftablesParser::collect_tables_and_chains(&tables);
 
         Ok(Configuration {
             digest,
-            aliases: vec![],
+            aliases,
             filter_rules,
             nat_rules,
             interfaces: vec![],
@@ -87,7 +90,17 @@ impl NftablesParser {
         .handle_err(location!())
     }
 
-    pub async fn create_alias(_alias: Alias) -> Result<(), Error> {
-        Err("Not implemented").handle_err(location!())
+    pub async fn create_alias(alias: Alias) -> Result<(), Error> {
+        let alias = NftablesAliasesParser::convert_alias(alias);
+        let mut batch = Batch::new();
+        batch.add_cmd(NfCmd::Add(NfListObject::Set(alias)));
+
+        tokio::task::spawn_blocking(move || {
+            let table = batch.to_nftables();
+            nftables::helper::apply_ruleset(&table)
+        })
+        .await
+        .handle_err(location!())?
+        .handle_err(location!())
     }
 }

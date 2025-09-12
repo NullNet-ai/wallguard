@@ -49,6 +49,7 @@ impl PfSenseAliasesParser {
                     name,
                     value,
                     description,
+                    ..Default::default()
                 });
             }
         }
