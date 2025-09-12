@@ -136,6 +136,10 @@ pub struct Alias {
     pub value: ::prost::alloc::string::String,
     #[prost(string, tag = "4")]
     pub description: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
+    pub table: ::prost::alloc::string::String,
+    #[prost(string, tag = "6")]
+    pub family: ::prost::alloc::string::String,
 }
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]

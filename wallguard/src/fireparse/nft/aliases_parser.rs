@@ -1,6 +1,7 @@
-use crate::fireparse::nft::utils::{nfsettype2str, str2nfsettype};
+use crate::fireparse::nft::utils::{nffam2str, nfsettype2str, str2nffam, str2nfsettype};
 use nftables::expr::Expression;
 use nftables::schema::{NfListObject, NfObject, Nftables, Set, SetType, SetTypeValue};
+use nftables::types::NfFamily;
 use std::borrow::Cow;
 use wallguard_common::protobuf::wallguard_models::Alias;
 
@@ -20,6 +21,8 @@ impl NftablesAliasesParser {
                     r#type: nfsettype2str(set_type),
                     name: set.name.to_string(),
                     value: NftablesAliasesParser::expressions_to_csv(&set.elem).unwrap_or_default(),
+                    family: nffam2str(set.family),
+                    table: set.table.to_string(),
                     ..Default::default()
                 });
             }
@@ -93,6 +96,8 @@ impl NftablesAliasesParser {
             name: alias.name.into(),
             set_type: SetTypeValue::Single(set_type),
             elem: Some(Cow::Owned(expressions)),
+            family: str2nffam(&alias.family).unwrap_or(NfFamily::IP),
+            table: alias.table.into(),
             ..Default::default()
         })
     }
