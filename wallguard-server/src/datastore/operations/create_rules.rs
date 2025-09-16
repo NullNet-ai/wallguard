@@ -1,4 +1,5 @@
-use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
+use nullnet_libdatastore::BatchCreateRequestBuilder;
+use crate::datastore::{Datastore, db_tables::DBTable};
 use nullnet_liberror::Error;
 use serde::Serialize;
 use serde_json::json;

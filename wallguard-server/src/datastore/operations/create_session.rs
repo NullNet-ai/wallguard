@@ -1,7 +1,7 @@
 use nullnet_liberror::Error;
 use serde_json::json;
 
-use crate::datastore::builders::CreateRequestBuilder;
+use nullnet_libdatastore::CreateRequestBuilder;
 use crate::datastore::{Datastore, RemoteAccessSession};
 
 impl Datastore {

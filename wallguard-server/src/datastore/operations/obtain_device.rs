@@ -1,6 +1,6 @@
-use crate::datastore::builders::AdvanceFilterBuilder;
-use crate::datastore::builders::GetByFilterRequestBuilder;
-use crate::datastore::builders::GetByIdRequestBuilder;
+use nullnet_libdatastore::AdvanceFilterBuilder;
+use nullnet_libdatastore::GetByFilterRequestBuilder;
+use nullnet_libdatastore::GetByIdRequestBuilder;
 use crate::datastore::db_tables::DBTable;
 use crate::datastore::{Datastore, Device};
 use crate::utilities::json;

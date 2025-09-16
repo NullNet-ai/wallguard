@@ -1,5 +1,7 @@
+use nullnet_libdatastore::BatchCreateRequestBuilder;
 use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder};
+use crate::datastore::{Datastore};
+
 use crate::traffic_handler::parsed_message::ParsedMessage;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 

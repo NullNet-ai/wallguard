@@ -1,6 +1,7 @@
+use nullnet_libdatastore::DeleteRequestBuilder;
 use nullnet_liberror::Error;
 
-use crate::datastore::{Datastore, DeviceInstance, builders::DeleteRequestBuilder};
+use crate::datastore::{Datastore, DeviceInstance};
 
 impl Datastore {
     pub async fn delete_device_instance(

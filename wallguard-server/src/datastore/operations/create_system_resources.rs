@@ -1,5 +1,6 @@
+use nullnet_libdatastore::BatchCreateRequestBuilder;
 use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder};
+use crate::datastore::{Datastore};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use wallguard_common::protobuf::wallguard_service::SystemResource;
 

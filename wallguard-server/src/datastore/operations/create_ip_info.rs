@@ -4,7 +4,7 @@ use nullnet_libipinfo::IpInfo;
 use serde_json::json;
 
 use crate::datastore::Datastore;
-use crate::datastore::builders::CreateRequestBuilder;
+use nullnet_libdatastore::CreateRequestBuilder;
 use crate::datastore::db_tables::DBTable;
 
 impl Datastore {

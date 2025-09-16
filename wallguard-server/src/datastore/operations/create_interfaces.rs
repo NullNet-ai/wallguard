@@ -1,5 +1,5 @@
-use crate::datastore::{Datastore, builders::BatchCreateRequestBuilder, db_tables::DBTable};
-use nullnet_libdatastore::ResponseData;
+use crate::datastore::{Datastore, db_tables::DBTable};
+use nullnet_libdatastore::{BatchCreateRequestBuilder, ResponseData};
 use nullnet_liberror::Error;
 use serde_json::json;
 use std::collections::HashMap;

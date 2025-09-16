@@ -1,4 +1,4 @@
-use crate::datastore::builders::{AdvanceFilterBuilder, GetByFilterRequestBuilder};
+use nullnet_libdatastore::{AdvanceFilterBuilder, GetByFilterRequestBuilder};
 use crate::datastore::db_tables::DBTable;
 use crate::datastore::{Datastore, DeviceConfiguration};
 use crate::utilities;

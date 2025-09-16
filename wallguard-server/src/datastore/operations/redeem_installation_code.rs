@@ -1,4 +1,4 @@
-use crate::datastore::builders::UpdateRequestBuilder;
+use nullnet_libdatastore::UpdateRequestBuilder;
 use crate::datastore::{Datastore, InstallationCode};
 use nullnet_liberror::Error;
 use serde_json::json;
