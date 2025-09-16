@@ -1,8 +1,5 @@
 use crate::{
-    datastore::{
-        AliasModel, Datastore,
-        db_tables::DBTable,
-    },
+    datastore::{AliasModel, Datastore, db_tables::DBTable},
     utilities,
 };
 use nullnet_libdatastore::{BatchCreateRequestBuilder, CreateRequestBuilder};

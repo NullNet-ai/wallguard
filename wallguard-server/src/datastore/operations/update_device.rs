@@ -1,8 +1,6 @@
-use nullnet_libdatastore::{
-    AdvanceFilterBuilder, BatchUpdateRequestBuilder, UpdateRequestBuilder,
-};
 use crate::datastore::db_tables::DBTable;
 use crate::datastore::{Datastore, Device};
+use nullnet_libdatastore::{AdvanceFilterBuilder, BatchUpdateRequestBuilder, UpdateRequestBuilder};
 use nullnet_liberror::Error;
 use serde_json::json;
 

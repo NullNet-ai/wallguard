@@ -1,6 +1,6 @@
-use nullnet_libdatastore::CreateRequestBuilder;
 use crate::datastore::{Datastore, DeviceConfiguration};
 use crate::utilities;
+use nullnet_libdatastore::CreateRequestBuilder;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {

@@ -1,8 +1,8 @@
 use nullnet_liberror::Error;
 use serde_json::json;
 
-use nullnet_libdatastore::CreateRequestBuilder;
 use crate::datastore::{Datastore, SSHKeypair};
+use nullnet_libdatastore::CreateRequestBuilder;
 
 impl Datastore {
     pub async fn create_ssh_keypair(&self, token: &str, keypair: &SSHKeypair) -> Result<(), Error> {

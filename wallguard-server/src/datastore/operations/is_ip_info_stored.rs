@@ -1,7 +1,7 @@
 use crate::datastore::Datastore;
+use crate::datastore::db_tables::DBTable;
 use nullnet_libdatastore::AdvanceFilterBuilder;
 use nullnet_libdatastore::GetByFilterRequestBuilder;
-use crate::datastore::db_tables::DBTable;
 use nullnet_liberror::Error;
 
 impl Datastore {

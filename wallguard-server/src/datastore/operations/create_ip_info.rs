@@ -4,8 +4,8 @@ use nullnet_libipinfo::IpInfo;
 use serde_json::json;
 
 use crate::datastore::Datastore;
-use nullnet_libdatastore::CreateRequestBuilder;
 use crate::datastore::db_tables::DBTable;
+use nullnet_libdatastore::CreateRequestBuilder;
 
 impl Datastore {
     pub async fn create_ip_info(
