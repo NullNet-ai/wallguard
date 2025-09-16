@@ -1,6 +1,5 @@
-use crate::datastore::{
-    Datastore, DeviceConfiguration, builders::UpdateRequestBuilder, db_tables::DBTable,
-};
+use crate::datastore::{Datastore, DeviceConfiguration, db_tables::DBTable};
+use nullnet_libdatastore::UpdateRequestBuilder;
 use nullnet_liberror::Error;
 use serde_json::json;
 

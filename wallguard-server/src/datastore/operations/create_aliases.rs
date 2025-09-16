@@ -1,11 +1,8 @@
 use crate::{
-    datastore::{
-        AliasModel, Datastore,
-        builders::{BatchCreateRequestBuilder, CreateRequestBuilder},
-        db_tables::DBTable,
-    },
+    datastore::{AliasModel, Datastore, db_tables::DBTable},
     utilities,
 };
+use nullnet_libdatastore::{BatchCreateRequestBuilder, CreateRequestBuilder};
 
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde_json::json;
