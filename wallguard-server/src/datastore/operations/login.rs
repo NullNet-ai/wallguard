@@ -1,7 +1,7 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 use crate::datastore::Datastore;
-use crate::datastore::builders::LoginRequestBuilder;
+use nullnet_libdatastore::LoginRequestBuilder;
 
 impl Datastore {
     /// Performs login using the provided `app_id` and `app_secret`.

@@ -1,8 +1,9 @@
+use nullnet_libdatastore::CreateRequestBuilder;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde_json::json;
 
 use crate::{
-    datastore::{Datastore, Device, builders::CreateRequestBuilder},
+    datastore::{Datastore, Device},
     utilities,
 };
 

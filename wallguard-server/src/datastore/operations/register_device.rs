@@ -1,5 +1,5 @@
-use crate::datastore::{Datastore, Device, builders::RegisterDeviceRequestBuilder};
-use nullnet_libdatastore::Response;
+use crate::datastore::{Datastore, Device};
+use nullnet_libdatastore::{RegisterDeviceRequestBuilder, Response};
 use nullnet_liberror::Error;
 
 impl Datastore {
