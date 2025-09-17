@@ -1,8 +1,4 @@
-use nftables::{
-    expr::{Expression, NamedExpression, Payload, PayloadField},
-    schema::Rule,
-    stmt::{Match, Operator, Statement},
-};
+use nftables::{schema::Rule, stmt::Statement};
 
 pub struct IpProtocolHelper;
 
@@ -32,29 +28,31 @@ impl IpProtocolHelper {
         None
     }
 
-    pub fn build(protocol: &str) -> Option<Statement<'static>> {
-        match protocol {
-            "ip" | "ip6" => {
-                let payload_field = PayloadField {
-                    field: "protocol".to_string().into(),
-                    protocol: protocol.to_string().into(),
-                };
+    pub fn build(_protocol: &str) -> Option<Statement<'static>> {
+        // match protocol {
+        //     "ip" | "ip6" => {
+        //         let payload_field = PayloadField {
+        //             field: "protocol".to_string().into(),
+        //             protocol: protocol.to_string().into(),
+        //         };
 
-                let left = Expression::Named(NamedExpression::Payload(Payload::PayloadField(
-                    payload_field,
-                )));
+        //         let left = Expression::Named(NamedExpression::Payload(Payload::PayloadField(
+        //             payload_field,
+        //         )));
 
-                let right = Expression::String(protocol.to_string().into());
+        //         let right = Expression::String(protocol.to_string().into());
 
-                let match_stmt = Match {
-                    left,
-                    right,
-                    op: Operator::EQ,
-                };
+        //         let match_stmt = Match {
+        //             left,
+        //             right,
+        //             op: Operator::EQ,
+        //         };
 
-                Some(Statement::Match(match_stmt))
-            }
-            _ => None,
-        }
+        //         Some(Statement::Match(match_stmt))
+        //     }
+        //     _ => None,
+        // }
+
+        None
     }
 }
