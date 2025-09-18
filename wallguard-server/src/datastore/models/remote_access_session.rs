@@ -70,6 +70,9 @@ impl RemoteAccessSession {
             "remote_access_session".into(),
             "remote_access_type".into(),
             "instance_id".into(),
+            "remote_access_local_addr".into(),
+            "remote_access_local_port".into(),
+            "remote_access_local_protocol".into(),
         ]
     }
 

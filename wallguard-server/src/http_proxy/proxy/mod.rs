@@ -89,5 +89,13 @@ pub async fn proxy_http_request(
             .json(ErrorJson::from("Failed to adapt tunnel transport"));
     };
 
-    request::proxy_request(request, body, "domain.com", false, tunnel_adapter).await
+    request::proxy_request(
+        request,
+        body,
+        // TODO:
+        "domain.com",
+        protocol.to_lowercase() == "https",
+        tunnel_adapter,
+    )
+    .await
 }
