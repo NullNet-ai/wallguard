@@ -198,7 +198,7 @@ impl Instance {
             tunnel_token: tunnel_token.into(),
             protocol: protocol.into(),
             local_addr: local_addr.into(),
-            local_port: local_port.into(),
+            local_port,
         };
 
         let message = ServerMessage {

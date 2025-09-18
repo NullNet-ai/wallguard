@@ -60,7 +60,6 @@ pub async fn establish_tunneled_tty(
 /// - `protocol`: The UI protocol string (to be replaced with enum in future)
 /// - `local_addr`: IP address of the local web server to connect to
 /// - `local_port`: Port of the local web server to connect to
-
 pub async fn establish_tunneled_ui(
     context: &AppContext,
     device_uuid: &str,
