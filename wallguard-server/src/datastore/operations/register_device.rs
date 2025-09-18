@@ -1,5 +1,5 @@
 use crate::datastore::{Datastore, Device};
-use nullnet_libdatastore::{RegisterDeviceRequestBuilder, Response};
+use nullnet_libdatastore::{RegisterDeviceRequestBuilder, ResponseData};
 use nullnet_liberror::Error;
 
 impl Datastore {
@@ -9,7 +9,7 @@ impl Datastore {
         account_id: &str,
         account_secret: &str,
         device: &Device,
-    ) -> Result<Response, Error> {
+    ) -> Result<ResponseData, Error> {
         let request = RegisterDeviceRequestBuilder::new()
             .account_id(account_id)
             .account_secret(account_secret)
