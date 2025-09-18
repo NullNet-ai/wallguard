@@ -11,7 +11,8 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
 enum TunnelType {
     Ssh(String),
     Tty,
-    UI(String),
+    // Local Addr, Local Port, Protocol
+    UI((String, u32, String)),
 }
 
 /// Establishes a tunneled SSH connection for a device using its `SSHKeypair`.
@@ -57,17 +58,22 @@ pub async fn establish_tunneled_tty(
 /// - `device_uuid`: The device UUID
 /// - `instance_id`: Instance ID
 /// - `protocol`: The UI protocol string (to be replaced with enum in future)
+/// - `local_addr`: IP address of the local web server to connect to
+/// - `local_port`: Port of the local web server to connect to
+
 pub async fn establish_tunneled_ui(
     context: &AppContext,
     device_uuid: &str,
     instance_id: &str,
     protocol: &str,
+    local_addr: &str,
+    local_port: u32,
 ) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(
         context,
         device_uuid,
         instance_id,
-        TunnelType::UI(protocol.into()),
+        TunnelType::UI((local_addr.into(), local_port, protocol.into())),
     )
     .await
 }
@@ -103,7 +109,11 @@ async fn establish_tunneled_channel(
                 .await?
         }
         TunnelType::Tty => client.request_tty_session(token.clone()).await?,
-        TunnelType::UI(protocol) => client.request_ui_session(token.clone(), protocol).await?,
+        TunnelType::UI((addr, port, protocol)) => {
+            client
+                .request_ui_session(token.clone(), addr, port, protocol)
+                .await?
+        }
     };
 
     tokio::select! {

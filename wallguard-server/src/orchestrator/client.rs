@@ -184,6 +184,8 @@ impl Instance {
     pub async fn request_ui_session(
         &self,
         tunnel_token: impl Into<String>,
+        local_addr: impl Into<String>,
+        local_port: u32,
         protocol: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
@@ -195,6 +197,8 @@ impl Instance {
         let ui_session_data = UiSessionData {
             tunnel_token: tunnel_token.into(),
             protocol: protocol.into(),
+            local_addr: local_addr.into(),
+            local_port: local_port.into(),
         };
 
         let message = ServerMessage {
