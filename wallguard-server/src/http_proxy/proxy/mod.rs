@@ -62,11 +62,23 @@ pub async fn proxy_http_request(
         return HttpResponse::NotFound().json(ErrorJson::from("Device is unauthorized"));
     }
 
-    let protocol = "http";
+    let (Some(local_addr), Some(local_port), Some(protocol)) =
+        (session.local_addr, session.local_port, session.protocol)
+    else {
+        return HttpResponse::InternalServerError().json(ErrorJson::from(
+            "Malformed session data: missing required info",
+        ));
+    };
 
-    let Ok(tunnel) =
-        tunneling::establish_tunneled_ui(&context, &device.uuid, &session.instance_id, protocol)
-            .await
+    let Ok(tunnel) = tunneling::establish_tunneled_ui(
+        &context,
+        &device.uuid,
+        &session.instance_id,
+        &protocol,
+        &local_addr,
+        local_port,
+    )
+    .await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));
@@ -77,5 +89,13 @@ pub async fn proxy_http_request(
             .json(ErrorJson::from("Failed to adapt tunnel transport"));
     };
 
-    request::proxy_request(request, body, "domain.com", false, tunnel_adapter).await
+    request::proxy_request(
+        request,
+        body,
+        // TODO:
+        "domain.com",
+        protocol.to_lowercase() == "https",
+        tunnel_adapter,
+    )
+    .await
 }

@@ -37,7 +37,9 @@ message SSHSessionData {
 
 message UISessionData {
     string tunnel_token = 1;
-    string protocol = 2;
+    string local_addr = 2;
+    uint32 local_port = 3;
+    string protocol = 4;
 }
 
 message ServerMessage {

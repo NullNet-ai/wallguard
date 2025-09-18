@@ -53,6 +53,10 @@ pub struct UiSessionData {
     #[prost(string, tag = "1")]
     pub tunnel_token: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    pub local_addr: ::prost::alloc::string::String,
+    #[prost(uint32, tag = "3")]
+    pub local_port: u32,
+    #[prost(string, tag = "4")]
     pub protocol: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

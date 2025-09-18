@@ -1,6 +1,5 @@
-use std::net::SocketAddr;
-
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use wallguard_common::protobuf::wallguard_commands::UiSessionData;
 
@@ -21,14 +20,9 @@ impl ExecutableCommand for OpenUiSessionCommand {
     async fn execute(self) -> Result<(), Error> {
         log::debug!("Received OpenUiSessionCommand");
 
-        let addr: SocketAddr = match self.data.protocol.to_lowercase().as_str() {
-            "http" => "127.0.0.1:80".parse().unwrap(),
-            "https" => "127.0.0.1:443".parse().unwrap(),
-            _ => {
-                return Err(format!("Unsupported protocol: {}", self.data.protocol))
-                    .handle_err(location!())
-            }
-        };
+        let addr: SocketAddr = format!("{}:{}", self.data.local_addr, self.data.local_port)
+            .parse()
+            .handle_err(location!())?;
 
         let local_stream = TcpStream::connect(addr).await.handle_err(location!())?;
 

@@ -31,6 +31,12 @@ pub struct RemoteAccessSession {
     pub token: String,
     #[serde(rename = "remote_access_type")]
     pub r#type: RemoteAccessType,
+    #[serde(rename = "remote_access_local_addr")]
+    pub local_addr: Option<String>,
+    #[serde(rename = "remote_access_local_port")]
+    pub local_port: Option<u32>,
+    #[serde(rename = "remote_access_local_protocol")]
+    pub protocol: Option<String>,
 }
 
 impl RemoteAccessSession {
@@ -46,7 +52,16 @@ impl RemoteAccessSession {
             instance_id: instance_id.into(),
             token,
             r#type,
+            local_addr: None,
+            local_port: None,
+            protocol: None,
         }
+    }
+
+    pub fn set_ex_data(&mut self, addr: String, port: u32, protocol: String) {
+        self.local_addr = Some(addr);
+        self.local_port = Some(port);
+        self.protocol = Some(protocol);
     }
 
     pub fn pluck() -> Vec<String> {
@@ -55,6 +70,9 @@ impl RemoteAccessSession {
             "remote_access_session".into(),
             "remote_access_type".into(),
             "instance_id".into(),
+            "remote_access_local_addr".into(),
+            "remote_access_local_port".into(),
+            "remote_access_local_protocol".into(),
         ]
     }
 
