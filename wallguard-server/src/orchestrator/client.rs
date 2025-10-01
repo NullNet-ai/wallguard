@@ -211,6 +211,28 @@ impl Instance {
             .handle_err(location!())
     }
 
+    pub async fn request_remote_desktop_session(
+        &self,
+        tunnel_token: impl Into<String>,
+    ) -> Result<(), Error> {
+        log::info!(
+            "Sending OpenRemoteDesktopSessionCommand to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
+
+        let message = ServerMessage {
+            message: Some(Message::OpenRemoteDesktopSessionCommand(
+                tunnel_token.into(),
+            )),
+        };
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())
+    }
+
     pub async fn create_filter_rule(&self, rule: FilterRule) -> Result<(), Error> {
         log::info!(
             "Sending CreateFilterRule to the client with device UUID {}, Instance {}",

@@ -53,15 +53,16 @@ message ServerMessage {
         SSHSessionData open_ssh_session_command = 5;
         string open_tty_session_command = 6;
         UISessionData open_ui_session_command = 7;
+        string open_remote_desktop_session_command = 8;
 
-        google.protobuf.Empty heartbeat_message = 8;
+        google.protobuf.Empty heartbeat_message = 9;
 
-        AuthenticationData device_authorized_message = 9;
-        google.protobuf.Empty device_deauthorized_message = 10;
-        google.protobuf.Empty authorization_rejected_message = 11;
+        AuthenticationData device_authorized_message = 10;
+        google.protobuf.Empty device_deauthorized_message = 11;
+        google.protobuf.Empty authorization_rejected_message = 12;
 
-        wallguard_models.FilterRule create_filter_rule = 12;
-        wallguard_models.NatRule create_nat_rule = 13;
-        wallguard_models.Alias create_alias = 14;
+        wallguard_models.FilterRule create_filter_rule = 13;
+        wallguard_models.NatRule create_nat_rule = 14;
+        wallguard_models.Alias create_alias = 15;
     }
 }

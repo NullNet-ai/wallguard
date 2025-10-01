@@ -7,6 +7,7 @@ pub enum RemoteAccessType {
     Ssh,
     Tty,
     Ui,
+    RemoteDesktop,
 }
 
 impl TryFrom<&str> for RemoteAccessType {
@@ -18,6 +19,7 @@ impl TryFrom<&str> for RemoteAccessType {
             "ssh" => Ok(RemoteAccessType::Ssh),
             "tty" => Ok(RemoteAccessType::Tty),
             "ui" => Ok(RemoteAccessType::Ui),
+            "remote_desktop" => Ok(RemoteAccessType::RemoteDesktop),
             _ => Err(format!("Remote access of type {lc_value} is not suppored")),
         }
     }

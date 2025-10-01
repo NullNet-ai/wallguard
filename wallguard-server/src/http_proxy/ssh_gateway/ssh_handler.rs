@@ -11,6 +11,7 @@ impl client::Handler for SSHHandler {
         &mut self,
         server_public_key: &ssh_key::PublicKey,
     ) -> Result<bool, Self::Error> {
+        // @TODO: Perform actual check
         Ok(true)
     }
 }

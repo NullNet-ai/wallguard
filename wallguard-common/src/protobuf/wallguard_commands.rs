@@ -63,7 +63,7 @@ pub struct UiSessionData {
 pub struct ServerMessage {
     #[prost(
         oneof = "server_message::Message",
-        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15"
     )]
     pub message: ::core::option::Option<server_message::Message>,
 }
@@ -85,19 +85,21 @@ pub mod server_message {
         OpenTtySessionCommand(::prost::alloc::string::String),
         #[prost(message, tag = "7")]
         OpenUiSessionCommand(super::UiSessionData),
-        #[prost(message, tag = "8")]
-        HeartbeatMessage(()),
+        #[prost(string, tag = "8")]
+        OpenRemoteDesktopSessionCommand(::prost::alloc::string::String),
         #[prost(message, tag = "9")]
-        DeviceAuthorizedMessage(super::AuthenticationData),
+        HeartbeatMessage(()),
         #[prost(message, tag = "10")]
-        DeviceDeauthorizedMessage(()),
+        DeviceAuthorizedMessage(super::AuthenticationData),
         #[prost(message, tag = "11")]
-        AuthorizationRejectedMessage(()),
+        DeviceDeauthorizedMessage(()),
         #[prost(message, tag = "12")]
-        CreateFilterRule(super::super::wallguard_models::FilterRule),
+        AuthorizationRejectedMessage(()),
         #[prost(message, tag = "13")]
-        CreateNatRule(super::super::wallguard_models::NatRule),
+        CreateFilterRule(super::super::wallguard_models::FilterRule),
         #[prost(message, tag = "14")]
+        CreateNatRule(super::super::wallguard_models::NatRule),
+        #[prost(message, tag = "15")]
         CreateAlias(super::super::wallguard_models::Alias),
     }
 }

@@ -14,6 +14,7 @@ use config::HttpProxyConfig;
 mod api;
 mod config;
 mod proxy;
+mod rd_gateway;
 mod ssh_gateway;
 mod tty_gateway;
 mod utilities;
@@ -64,6 +65,10 @@ pub async fn run_http_proxy(context: AppContext) {
             .route(
                 "/wallguard/gateway/tty",
                 web::to(tty_gateway::open_tty_session),
+            )
+            .route(
+                "/wallguard/gateway/rd",
+                web::to(rd_gateway::open_remote_desktop_session),
             )
             .route("/wallguard/rule/filter", web::to(create_filter_rule))
             .route("/wallguard/rule/nat", web::to(create_nat_rule))

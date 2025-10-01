@@ -25,7 +25,7 @@ impl TunnelAuthenticationTask {
         };
 
         let ClientMessage::Authentication(auth_frame) = message else {
-            log::error!("TunnelAuthenticationTask: Received unexpected message, aboring");
+            log::error!("TunnelAuthenticationTask: Received unexpected message, aborting");
             return;
         };
 

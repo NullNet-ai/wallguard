@@ -20,38 +20,38 @@ pub(crate) async fn relay(
             tty_tunnel.clone(),
             ws_session.clone()
         ) => {
-            log::info!("WebSocket → TTY relay ended.");
+            log::info!("WebSocket → RD relay ended.");
         }
-        _ = relay_messages_from_tty_to_client(ws_session, tty_tunnel) => {
-            log::info!("TTY → WebSocket relay ended.");
+        _ = relay_messages_from_rd_to_client(ws_session, tty_tunnel) => {
+            log::info!("RD → WebSocket relay ended.");
         }
     }
 }
 
 async fn relay_messages_from_user_to_client(
     mut stream: AggregatedMessageStream,
-    tty_tunnel: TunnelInstance,
+    rd_tunnel: TunnelInstance,
     mut ws_session: WSSession,
 ) {
     while let Some(msg) = stream.next().await {
         match msg {
             Ok(AggregatedMessage::Text(text)) => {
                 let data_frame = TunnelInstance::make_data_frame(text.as_bytes());
-                if let Err(err) = tty_tunnel.write(data_frame).await {
-                    log::error!("WS → TTY: Failed to write text: {}", err.to_str());
+                if let Err(err) = rd_tunnel.write(data_frame).await {
+                    log::error!("WS → RD: Failed to write text: {}", err.to_str());
                     return;
                 } else {
-                    log::debug!("WS → TTY: Sent text ({} bytes)", text.len());
+                    log::debug!("WS → RD: Sent text ({} bytes)", text.len());
                 }
             }
 
             Ok(AggregatedMessage::Binary(bin)) => {
                 let data_frame = TunnelInstance::make_data_frame(&bin);
-                if let Err(err) = tty_tunnel.write(data_frame).await {
-                    log::error!("WS → TTY: Failed to write binary: {}", err.to_str());
+                if let Err(err) = rd_tunnel.write(data_frame).await {
+                    log::error!("WS → RD: Failed to write binary: {}", err.to_str());
                     return;
                 } else {
-                    log::debug!("WS → TTY: Sent binary ({} bytes)", bin.len());
+                    log::debug!("WS → RD: Sent binary ({} bytes)", bin.len());
                 }
             }
 
@@ -65,11 +65,11 @@ async fn relay_messages_from_user_to_client(
             }
 
             Ok(_) => {
-                log::trace!("WS → TTY: Ignored unsupported message");
+                log::trace!("WS → RD: Ignored unsupported message");
             }
 
             Err(err) => {
-                log::error!("WS → TTY: Error reading WebSocket message: {err}");
+                log::error!("WS → RD: Error reading WebSocket message: {err}");
                 return;
             }
         }
@@ -78,32 +78,35 @@ async fn relay_messages_from_user_to_client(
     log::info!("WS → SSH: WebSocket stream closed.");
 }
 
-async fn relay_messages_from_tty_to_client(mut ws_session: WSSession, tty_tunnel: TunnelInstance) {
+async fn relay_messages_from_rd_to_client(mut ws_session: WSSession, rd_tunnel: TunnelInstance) {
     loop {
-        let Ok(message) = tty_tunnel.read().await else {
-            log::error!("TTY → WS: Failed to read from TTY session");
+        let Ok(message) = rd_tunnel.read().await else {
+            log::error!("RD → WS: Failed to read from TTY session");
             break;
         };
 
         let Some(message) = message.message else {
-            log::info!("TTY → WS: Reached EOF (client disconnected).");
+            log::info!("RD → WS: Reached EOF (client disconnected).");
             break;
         };
 
         let ClientMessage::Data(data) = message else {
-            log::error!("TTY → WS: Unexpected message.");
+            log::error!("RD → WS: Unexpected message.");
             break;
         };
 
         let message_for_ws = Bytes::copy_from_slice(&data.data);
 
         if let Err(err) = ws_session.binary(message_for_ws).await {
-            log::error!("TTY → WS: Failed to send binary message: {err}");
+            log::error!("RD → WS: Failed to send binary message: {err}");
             break;
         } else {
-            log::debug!("TTY → WS: Sent binary ({} bytes)", data.data.len());
+            log::debug!("RD → WS: Sent binary ({} bytes)", data.data.len());
         }
     }
 
-    log::info!("TTY → WS: TTY reader loop exited.");
+    log::info!("RD → WS: RD reader loop exited.");
 }
+
+// @TODO: Refactor
+// This relay implementation is identical to TTY's relay

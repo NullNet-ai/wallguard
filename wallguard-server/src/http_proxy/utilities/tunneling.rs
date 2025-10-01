@@ -13,6 +13,7 @@ enum TunnelType {
     Tty,
     // Local Addr, Local Port, Protocol
     UI((String, u32, String)),
+    RemoteDesktop,
 }
 
 /// Establishes a tunneled SSH connection for a device using its `SSHKeypair`.
@@ -49,6 +50,20 @@ pub async fn establish_tunneled_tty(
     instance_id: &str,
 ) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(context, device_uuid, instance_id, TunnelType::Tty).await
+}
+
+/// Establishes a tunneled remote desktop connection to the specified device.
+///
+/// # Arguments
+/// - `context`: The application context
+/// - `device_uuid`: The device UUID
+/// - `instance_id`: Instance ID
+pub async fn establish_tunneled_rd(
+    context: &AppContext,
+    device_uuid: &str,
+    instance_id: &str,
+) -> Result<TunnelInstance, Error> {
+    establish_tunneled_channel(context, device_uuid, instance_id, TunnelType::RemoteDesktop).await
 }
 
 /// Establishes a tunneled UI session using a given protocol string.
@@ -108,6 +123,7 @@ async fn establish_tunneled_channel(
                 .await?
         }
         TunnelType::Tty => client.request_tty_session(token.clone()).await?,
+        TunnelType::RemoteDesktop => client.request_remote_desktop_session(token.clone()).await?,
         TunnelType::UI((addr, port, protocol)) => {
             client
                 .request_ui_session(token.clone(), addr, port, protocol)

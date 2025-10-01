@@ -3,8 +3,8 @@ use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
     CreateAliasCommand, CreateFilterRuleCommand, CreateNatRuleCommand,
     EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
-    EnableTelemetryMonitoringCommand, HeartbeatCommand, OpenTtySessionCommand,
-    OpenUiSessionCommand, UpdateTokenCommand,
+    EnableTelemetryMonitoringCommand, HeartbeatCommand, OpenRemoteDesktopSessionCommand,
+    OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
 };
 use crate::control_channel::post_startup::post_startup;
 use crate::daemon::Daemon;
@@ -204,6 +204,16 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
                 _ = Storage::delete_value(Secret::AppSecret).await;
                 // Gracefuly transition to IDLE state
                 todo!();
+            }
+            server_message::Message::OpenRemoteDesktopSessionCommand(token) => {
+                let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!(
+                        "OpenRemoteDesktopSessionCommand execution failed: {}",
+                        err.to_str()
+                    );
+                }
             }
             server_message::Message::AuthorizationRejectedMessage(_) => {
                 Err("Unexpected message").handle_err(location!())?
