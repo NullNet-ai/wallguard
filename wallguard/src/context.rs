@@ -20,7 +20,7 @@ pub struct Context {
     pub daemon: Arc<Mutex<Daemon>>,
     pub transmission_manager: Arc<Mutex<TransmissionManager>>,
     pub client_data: ClientData,
-    pub remote_desktop_manager: RemoteDesktopManager,
+    pub remote_desktop_manager: Option<RemoteDesktopManager>,
 }
 
 impl Context {
@@ -45,7 +45,8 @@ impl Context {
             client_data.platform,
         );
 
-        let remote_desktop_manager = RemoteDesktopManager::new();
+        // @TODO
+        let remote_desktop_manager = RemoteDesktopManager::new().unwrap();
 
         Ok(Self {
             token_provider,
@@ -54,7 +55,7 @@ impl Context {
             daemon,
             client_data,
             transmission_manager: Arc::new(Mutex::new(transmission_manager)),
-            remote_desktop_manager,
+            remote_desktop_manager: Some(remote_desktop_manager),
         })
     }
 }

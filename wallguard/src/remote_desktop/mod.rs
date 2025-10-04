@@ -1,8 +1,10 @@
 use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{broadcast, mpsc, Mutex};
 
-use crate::remote_desktop::{screen_capturer::ScreenCapturer, screenshot::Screenshot};
+use crate::remote_desktop::{
+    messages::MessageHandler, screen_capturer::ScreenCapturer, screenshot::Screenshot,
+};
 
 mod messages;
 mod screen_capturer;
@@ -19,17 +21,21 @@ pub struct RemoteDesktopManager {
     counter: u128,
     last_screenshot: Arc<Mutex<Screenshot>>,
     terminate: broadcast::Sender<()>,
+    msg_handler: MessageHandler,
 }
 
 impl RemoteDesktopManager {
-    pub fn new() -> Self {
+    pub fn new() -> Result<Self, Error> {
         let (terminate, _) = broadcast::channel(1);
-        Self {
+        let msg_handler = MessageHandler::new()?;
+
+        Ok(Self {
             terminate,
             clients: Default::default(),
             counter: 0,
             last_screenshot: Default::default(),
-        }
+            msg_handler,
+        })
     }
 
     pub async fn on_client_connected(&mut self, client: ConnectedClient) -> u128 {
@@ -75,27 +81,12 @@ impl RemoteDesktopManager {
         Ok(())
     }
 
-    pub fn on_client_message(&self, id: u128, message: Vec<u8>) -> Result<(), Error> {
-        let json = serde_json::from_slice::<serde_json::Value>(&message).handle_err(location!())?;
+    pub async fn on_client_message(&self, id: u128, message: Vec<u8>) -> Result<(), Error> {
+        if !self.clients.lock().await.contains_key(&id) {
+            return Err(format!("No client with ID {id}")).handle_err(location!());
+        }
 
-        let message_type = json
-            .get("message_type")
-            .ok_or("Message Type is missing")
-            .handle_err(location!())?
-            .as_str()
-            .ok_or("Wrong type")
-            .handle_err(location!())?;
-
-        match message_type.to_lowercase().as_str() {
-            "mousemove" | "mousedown" | "mouseup" => todo!(),
-            "keyup" | "keydown" | "keypress" => todo!(),
-            "clipboard" => todo!(),
-            mt => {
-                return Err(format!("{mt} message type is not supported")).handle_err(location!());
-            }
-        };
-
-        Ok(())
+        self.msg_handler.on_message(message).await
     }
 }
 
@@ -132,6 +123,7 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
         }
 
         // @TODO
-        tokio::time::sleep(Duration::from_millis(50)).await;
+        todo!()
+        // tokio::time::sleep(Duration::from_millis(50)).await;
     }
 }

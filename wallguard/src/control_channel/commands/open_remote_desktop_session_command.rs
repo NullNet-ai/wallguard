@@ -23,30 +23,29 @@ impl OpenRemoteDesktopSessionCommand {
 }
 
 impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
-    async fn execute(mut self) -> Result<(), Error> {
+    async fn execute(self) -> Result<(), Error> {
         log::debug!("Received OpenRemoteDesktopSessionCommand");
 
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());
         };
 
-        let mut rdm = self.context.remote_desktop_manager.clone();
+        let Some(mut rdm) = self.context.remote_desktop_manager.clone() else {
+            return Err("Remote Desktop is not available").handle_err(location!());
+        };
 
         let (sender, receiver) = mpsc::channel(64);
         let id = rdm.on_client_connected(sender).await;
 
+        let rdm_copy = rdm.clone();
         tokio::spawn(async move {
             tokio::select! {
-                _ = stream_to_system(tunnel.reader, rdm.clone(), id) => {},
+                _ = stream_to_system(tunnel.reader, rdm_copy, id) => {},
                 _ = system_to_stream(tunnel.writer, receiver) => {},
             }
         });
 
-        let _ = self
-            .context
-            .remote_desktop_manager
-            .on_client_disconnected(id)
-            .await;
+        let _ = rdm.on_client_disconnected(id).await;
 
         Ok(())
     }
@@ -74,7 +73,10 @@ async fn stream_to_system(
             return Err("Unexpected message type").handle_err(location!())?;
         };
 
-        if let Err(err) = remote_desktop_manager.on_client_message(client_id, data_frame.data) {
+        if let Err(err) = remote_desktop_manager
+            .on_client_message(client_id, data_frame.data)
+            .await
+        {
             log::error!(
                 "OpenRemoteDesktopSessionCommand: Failed to handle client message: {}",
                 err.to_str()
