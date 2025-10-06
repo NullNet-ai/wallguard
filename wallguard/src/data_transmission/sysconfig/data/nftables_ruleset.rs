@@ -1,7 +1,7 @@
 use crate::data_transmission::sysconfig::data::FileToMonitor;
 use crate::data_transmission::sysconfig::types::FileData;
 use crate::utilities;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 const DEFAULT_PROGRAM: Option<&str> = None;
 const DEFAULT_PARAMETERS: &[&str] = &[];

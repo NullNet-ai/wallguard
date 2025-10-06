@@ -1,5 +1,5 @@
 use crate::reverse_tunnel::{TunnelInstance, TunnelReader, TunnelWriter};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;

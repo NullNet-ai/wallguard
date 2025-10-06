@@ -1,7 +1,7 @@
 use nftables::{
     expr::Expression,
     schema::Rule,
-    stmt::{Statement, NAT},
+    stmt::{NAT, Statement},
 };
 
 pub struct NatHelper;

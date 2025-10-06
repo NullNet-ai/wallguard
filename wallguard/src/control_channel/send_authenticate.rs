@@ -1,8 +1,8 @@
 use crate::control_channel::OutboundStream;
 use crate::storage::{Secret, Storage};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use wallguard_common::protobuf::wallguard_commands::{
-    client_message, Authentication, ClientMessage,
+    Authentication, ClientMessage, client_message,
 };
 
 pub async fn send_authenticate(outbound: OutboundStream) -> Result<(), Error> {

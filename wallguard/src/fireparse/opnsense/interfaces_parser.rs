@@ -13,7 +13,7 @@ impl OpnSenseInterfacesParser {
 
         if let Some(interfaces_node) = document.get_child("interfaces") {
             for interface in &interfaces_node.children {
-                if let XMLNode::Element(ref interface_element) = interface {
+                if let XMLNode::Element(interface_element) = interface {
                     let name = interface_element.name.clone();
 
                     let device = interface_element

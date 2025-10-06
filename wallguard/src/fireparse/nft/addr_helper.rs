@@ -1,4 +1,4 @@
-use crate::fireparse::nft::utils::{nfop2str, str2nfop, NftDirection};
+use crate::fireparse::nft::utils::{NftDirection, nfop2str, str2nfop};
 use nftables::expr::{Expression, NamedExpression, Payload, Range, SetItem};
 use nftables::schema::Rule;
 use nftables::stmt::{Match, Statement};
@@ -47,12 +47,11 @@ impl AddrHelper {
                             values.push(value.to_string());
                         };
 
-                        if let SetItem::Element(Expression::Range(range)) = item {
-                            if let Expression::String(from) = &range.range[0] {
-                                if let Expression::String(to) = &range.range[1] {
-                                    values.push(format!("{}-{}", from, to));
-                                }
-                            }
+                        if let SetItem::Element(Expression::Range(range)) = item
+                            && let Expression::String(from) = &range.range[0]
+                            && let Expression::String(to) = &range.range[1]
+                        {
+                            values.push(format!("{}-{}", from, to));
                         }
                     }
 

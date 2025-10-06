@@ -6,7 +6,7 @@ use nftables::{
     batch::Batch,
     schema::{NfCmd, NfListObject, NfObject, Nftables},
 };
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
 
 mod addr_helper;

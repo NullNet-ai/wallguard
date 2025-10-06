@@ -1,9 +1,9 @@
-use super::wallguard_cli::wallguard_cli_server::WallguardCli;
 use super::wallguard_cli::Caps;
 use super::wallguard_cli::JoinOrgReq;
 use super::wallguard_cli::JoinOrgRes;
 use super::wallguard_cli::LeaveOrgRes;
 use super::wallguard_cli::Status;
+use super::wallguard_cli::wallguard_cli_server::WallguardCli;
 use crate::daemon::Daemon;
 
 use std::sync::Arc;

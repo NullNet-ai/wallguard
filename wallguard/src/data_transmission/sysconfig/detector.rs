@@ -41,10 +41,9 @@ impl Detector {
             if let Some(ext) = Path::new(&entry.file_name())
                 .extension()
                 .and_then(OsStr::to_str)
+                && ext == "dirty"
             {
-                if ext == "dirty" {
-                    return State::Draft;
-                }
+                return State::Draft;
             }
         }
 
@@ -61,10 +60,9 @@ impl Detector {
             if let Some(ext) = Path::new(&entry.file_name())
                 .extension()
                 .and_then(OsStr::to_str)
+                && ext == "dirty"
             {
-                if ext == "dirty" {
-                    return State::Draft;
-                }
+                return State::Draft;
             }
         }
 

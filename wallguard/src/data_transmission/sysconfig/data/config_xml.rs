@@ -1,6 +1,6 @@
 use super::super::types::FileData;
 use crate::{data_transmission::sysconfig::data::FileToMonitor, utilities};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 const FILE_PATH: &str = "/conf/config.xml";
 

@@ -1,5 +1,5 @@
 use nftables::schema::Nftables;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule};
 
 use crate::data_transmission::sysconfig::types::FileData;

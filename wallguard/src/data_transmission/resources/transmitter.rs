@@ -72,7 +72,9 @@ pub(crate) async fn transmit_system_resources(
             });
             dump_dir.dump_item_to_file(dump_item).await;
             if dump_dir.is_full().await {
-                log::warn!("Dump size maximum limit reached. System resources routine entering idle mode...",);
+                log::warn!(
+                    "Dump size maximum limit reached. System resources routine entering idle mode...",
+                );
                 // wait for the server to come up again
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(10)).await;

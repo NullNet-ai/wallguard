@@ -2,7 +2,7 @@ use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::pty::{Pty, PtyReader, PtyWriter};
 use crate::reverse_tunnel::{TunnelReader, TunnelWriter};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::sync::Arc;
 use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
 use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;

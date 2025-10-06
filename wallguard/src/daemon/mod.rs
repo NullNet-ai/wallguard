@@ -10,13 +10,13 @@ use crate::daemon::cli_server::CliServer;
 use crate::daemon::state::DaemonState;
 use crate::server_data::ServerData;
 use crate::storage::{Secret, Storage};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use wallguard_cli::wallguard_cli_server::WallguardCliServer;
 use wallguard_cli::Status;
+use wallguard_cli::wallguard_cli_server::WallguardCliServer;
 
 #[derive(Debug)]
 pub struct Daemon {
@@ -77,7 +77,7 @@ impl Daemon {
 
                 let control_channel = ControlChannel::new(context, installation_code);
 
-                lock.state = DaemonState::Connected(control_channel);
+                lock.state = DaemonState::Connected(Box::new(control_channel));
 
                 Ok(())
             }

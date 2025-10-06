@@ -1,4 +1,4 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use wallguard_common::protobuf::wallguard_commands::UiSessionData;

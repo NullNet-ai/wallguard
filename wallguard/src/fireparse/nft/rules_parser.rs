@@ -6,7 +6,7 @@ use crate::fireparse::nft::{
     nat_helper::NatHelper,
     policy_helper::PolicyHelper,
     port_helper::PortHelper,
-    utils::{nffam2str, str2nffam, NftDirection},
+    utils::{NftDirection, nffam2str, str2nffam},
 };
 use nftables::{
     schema::{Nftables, Rule},

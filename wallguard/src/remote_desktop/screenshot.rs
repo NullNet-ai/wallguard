@@ -1,5 +1,5 @@
-use image::{codecs::webp::WebPEncoder, ExtendedColorType, ImageEncoder};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use image::{ExtendedColorType, ImageEncoder, codecs::webp::WebPEncoder};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::io::Cursor;
 
 #[derive(Default, Debug)]
@@ -47,5 +47,9 @@ impl Screenshot {
             .handle_err(location!())?;
 
         Ok(data)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
     }
 }

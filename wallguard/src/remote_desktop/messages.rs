@@ -1,6 +1,6 @@
 use copypasta::{ClipboardContext, ClipboardProvider};
 use enigo::{Button, Coordinate, Direction, Enigo, Key, Keyboard, Mouse, Settings};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde::{Deserialize, Serialize};
 use std::{fmt, sync::Arc};
 use tokio::sync::Mutex;

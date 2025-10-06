@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use tonic::transport::Channel;
 use wallguard_common::protobuf::wallguard_cli::{
-    status::State, wallguard_cli_client::WallguardCliClient, JoinOrgReq,
+    JoinOrgReq, status::State, wallguard_cli_client::WallguardCliClient,
 };
 
 mod arguments;

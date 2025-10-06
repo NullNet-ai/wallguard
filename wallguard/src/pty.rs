@@ -1,4 +1,4 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
 use std::sync::Mutex;
 use std::{

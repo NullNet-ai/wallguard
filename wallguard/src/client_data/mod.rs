@@ -1,5 +1,5 @@
 use device_uuid::retrieve_device_uuid;
-use nullnet_liberror::{location, ErrorHandler, Location};
+use nullnet_liberror::{ErrorHandler, Location, location};
 pub use platform::Platform;
 pub use target_os::TargetOs;
 

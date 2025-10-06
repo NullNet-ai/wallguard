@@ -5,7 +5,7 @@ use nftables::{
 };
 use wallguard_common::protobuf::wallguard_models::PortInfo;
 
-use crate::fireparse::nft::utils::{nfop2str, str2nfop, NftDirection};
+use crate::fireparse::nft::utils::{NftDirection, nfop2str, str2nfop};
 
 pub struct PortHelper;
 
@@ -51,12 +51,11 @@ impl PortHelper {
                             values.push(value.to_string());
                         };
 
-                        if let SetItem::Element(Expression::Range(range)) = item {
-                            if let Expression::Number(from) = &range.range[0] {
-                                if let Expression::Number(to) = &range.range[1] {
-                                    values.push(format!("{}-{}", from, to));
-                                }
-                            }
+                        if let SetItem::Element(Expression::Range(range)) = item
+                            && let Expression::Number(from) = &range.range[0]
+                            && let Expression::Number(to) = &range.range[1]
+                        {
+                            values.push(format!("{}-{}", from, to));
                         }
                     }
 

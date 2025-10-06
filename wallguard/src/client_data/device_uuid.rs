@@ -1,4 +1,4 @@
-use smbioslib::{table_load_from_device, SMBiosSystemInformation};
+use smbioslib::{SMBiosSystemInformation, table_load_from_device};
 
 /// Retrieves the UUID of the device by reading the SMBIOS (System Management BIOS) table.
 ///

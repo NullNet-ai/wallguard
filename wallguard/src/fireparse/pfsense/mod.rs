@@ -2,7 +2,7 @@ use crate::utilities::system;
 use aliases_parser::PfSenseAliasesParser;
 use hostname_parser::PfSenseHostnameParser;
 use interfaces_parser::PfSenseInterfacesParser;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use rules_parser::PfSenseRulesParser;
 use ssh_parser::PfSenseSSHParser;
 use wallguard_common::{

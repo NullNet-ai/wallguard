@@ -9,7 +9,7 @@ use crate::{
     wg_server::WGServer,
 };
 use detector::{Detector, State};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::time::Duration;
 use tokio::sync::broadcast;
 use wallguard_common::protobuf::wallguard_service::ConfigSnapshot;

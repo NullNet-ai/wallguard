@@ -1,4 +1,4 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::process::Command;
 
 pub async fn reload_configuraion() -> Result<(), Error> {

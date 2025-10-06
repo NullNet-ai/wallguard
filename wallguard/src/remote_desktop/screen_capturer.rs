@@ -1,5 +1,5 @@
 use super::screenshot::Screenshot;
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use scrap::{Capturer, Display};
 
 pub struct ScreenCapturer {

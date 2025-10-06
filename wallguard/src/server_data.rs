@@ -1,5 +1,5 @@
 use crate::arguments::Arguments;
-use nullnet_liberror::{location, ErrorHandler, Location};
+use nullnet_liberror::{ErrorHandler, Location, location};
 use std::net::SocketAddr;
 
 #[derive(Debug, Clone)]

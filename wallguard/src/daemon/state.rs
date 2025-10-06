@@ -1,14 +1,14 @@
-use super::wallguard_cli::status::State;
 use super::wallguard_cli::Connected;
 use super::wallguard_cli::Error;
 use super::wallguard_cli::Status;
+use super::wallguard_cli::status::State;
 use crate::control_channel::ControlChannel;
 use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum DaemonState {
     Idle,
-    Connected(ControlChannel),
+    Connected(Box<ControlChannel>),
     Error(String),
 }
 

@@ -1,4 +1,4 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use wallguard_common::{
     os_if::InterfaceSnapshot,
     protobuf::wallguard_models::{Alias, Configuration, FilterRule, NatRule},

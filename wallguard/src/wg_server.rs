@@ -1,6 +1,6 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tonic::Streaming;
 use wallguard_common::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
 use wallguard_common::protobuf::wallguard_service::{
@@ -40,15 +40,15 @@ impl WGServer {
         let retry_delay = Duration::from_secs(5);
 
         for attempt in 0..=max_retries {
-            if !self.is_connected().await {
-                if let Err(e) = self.connect().await {
-                    if attempt == max_retries {
-                        return Err(e);
-                    }
-
-                    tokio::time::sleep(retry_delay).await;
-                    continue;
+            if !self.is_connected().await
+                && let Err(e) = self.connect().await
+            {
+                if attempt == max_retries {
+                    return Err(e);
                 }
+
+                tokio::time::sleep(retry_delay).await;
+                continue;
             }
 
             let lock = self.interface.lock().await;

@@ -81,7 +81,7 @@ async fn relay_messages_from_user_to_client(
 async fn relay_messages_from_rd_to_client(mut ws_session: WSSession, rd_tunnel: TunnelInstance) {
     loop {
         let Ok(message) = rd_tunnel.read().await else {
-            log::error!("RD → WS: Failed to read from TTY session");
+            log::error!("RD → WS: Failed to read from RD session");
             break;
         };
 

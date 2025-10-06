@@ -2,7 +2,7 @@ use crate::control_channel::command::ExecutableCommand;
 use crate::remote_desktop::RemoteDesktopManager;
 use crate::reverse_tunnel::TunnelWriter;
 use crate::{context::Context, reverse_tunnel::TunnelReader};
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::sync::mpsc;
 use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
 use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
@@ -15,10 +15,7 @@ pub struct OpenRemoteDesktopSessionCommand {
 
 impl OpenRemoteDesktopSessionCommand {
     pub fn new(context: Context, token: String) -> Self {
-        Self {
-            context: context,
-            token: token,
-        }
+        Self { context, token }
     }
 }
 
@@ -37,15 +34,14 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
         let (sender, receiver) = mpsc::channel(64);
         let id = rdm.on_client_connected(sender).await;
 
-        let rdm_copy = rdm.clone();
         tokio::spawn(async move {
             tokio::select! {
-                _ = stream_to_system(tunnel.reader, rdm_copy, id) => {},
+                _ = stream_to_system(tunnel.reader, rdm.clone(), id) => {},
                 _ = system_to_stream(tunnel.writer, receiver) => {},
             }
-        });
 
-        let _ = rdm.on_client_disconnected(id).await;
+            let _ = rdm.on_client_disconnected(id).await;
+        });
 
         Ok(())
     }

@@ -1,6 +1,6 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use wallguard_common::protobuf::wallguard_commands::{
-    client_message, server_message, AuthorizationRequest, ClientMessage,
+    AuthorizationRequest, ClientMessage, client_message, server_message,
 };
 
 use crate::{

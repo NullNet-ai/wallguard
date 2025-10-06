@@ -1,6 +1,6 @@
-use nullnet_liberror::{location, Error, ErrorHandler, Location};
-use std::{collections::HashMap, sync::Arc};
-use tokio::sync::{broadcast, mpsc, Mutex};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use std::{collections::HashMap, sync::Arc, time::Duration};
+use tokio::sync::{Mutex, broadcast, mpsc};
 
 use crate::remote_desktop::{
     messages::MessageHandler, screen_capturer::ScreenCapturer, screenshot::Screenshot,
@@ -39,6 +39,7 @@ impl RemoteDesktopManager {
     }
 
     pub async fn on_client_connected(&mut self, client: ConnectedClient) -> u128 {
+        let client_id = self.counter;
         self.counter = self.counter.wrapping_add(1);
 
         let mut lock = self.clients.lock().await;
@@ -57,13 +58,18 @@ impl RemoteDesktopManager {
             });
         }
 
-        if let Ok(data) = self.last_screenshot.lock().await.as_webp() {
+        let screenshot = self.last_screenshot.lock().await;
+
+        if !screenshot.is_empty()
+            && let Ok(data) = screenshot.as_webp()
+            && !data.is_empty()
+        {
             let _ = client.send(data).await;
         }
 
-        lock.insert(self.counter, client);
+        lock.insert(client_id, client);
 
-        self.counter
+        client_id
     }
 
     pub async fn on_client_disconnected(&mut self, id: u128) -> Result<(), Error> {
@@ -112,18 +118,16 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
 
         let mut lock = manager.last_screenshot.lock().await;
 
-        if !lock.compare(&screenshot) {
+        if !screenshot.is_empty() && !lock.compare(&screenshot) {
             let data = screenshot.as_webp()?;
 
             for client in manager.clients.lock().await.values() {
-                let _ = client.send(data.clone());
+                let _ = client.send(data.clone()).await;
             }
 
             *lock = screenshot;
         }
 
-        // @TODO
-        todo!()
-        // tokio::time::sleep(Duration::from_millis(50)).await;
+        tokio::time::sleep(Duration::from_millis(50)).await;
     }
 }
