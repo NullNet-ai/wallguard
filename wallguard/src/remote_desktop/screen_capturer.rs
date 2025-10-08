@@ -20,15 +20,20 @@ impl ScreenCapturer {
         let mut buffer = Vec::default();
 
         buffer.extend_from_slice(&frame);
-
+        
+        // BGRA to RGBA
         for pixel in buffer.chunks_exact_mut(4) {
             pixel.swap(0, 2);
         }
 
-        Ok(Screenshot::new(
-            buffer,
-            self.capturer.width(),
-            self.capturer.height(),
-        ))
+        Ok(Screenshot::new(buffer, self.width(), self.height()))
+    }
+
+    pub fn width(&self) -> usize {
+        self.capturer.width()
+    }
+
+    pub fn height(&self) -> usize {
+        self.capturer.height()
     }
 }

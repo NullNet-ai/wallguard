@@ -1,5 +1,12 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use openh264::OpenH264API;
+use openh264::encoder::{Encoder, EncoderConfig};
+use openh264::formats::YUVBuffer;
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tokio::sync::{Mutex, broadcast, mpsc};
 
 use crate::remote_desktop::{
@@ -58,14 +65,14 @@ impl RemoteDesktopManager {
             });
         }
 
-        let screenshot = self.last_screenshot.lock().await;
+        // let screenshot = self.last_screenshot.lock().await;
 
-        if !screenshot.is_empty()
-            && let Ok(data) = screenshot.as_webp()
-            && !data.is_empty()
-        {
-            let _ = client.send(data).await;
-        }
+        // if !screenshot.is_empty()
+        //     && let Ok(data) = screenshot.as_webp()
+        //     && !data.is_empty()
+        // {
+        //     let _ = client.send(data).await;
+        // }
 
         lock.insert(client_id, client);
 
@@ -111,23 +118,59 @@ async fn capture_loop(manager: RemoteDesktopManager) {
 }
 
 async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
+    const TARGET_FPS: u64 = 24;
+
     let mut capturer = ScreenCapturer::new()?;
+    let target_frame_duration = Duration::from_millis(1000 / TARGET_FPS);
+
+    let api = OpenH264API::from_source();
+    let config = EncoderConfig::new();
+    let mut encoder = Encoder::with_api_config(api, config).handle_err(location!())?;
+
+    {
+        let mut lock = manager.last_screenshot.lock().await;
+        *lock = capturer.screenshot()?;
+    }
 
     loop {
+        let frame_start = Instant::now();
+
         let screenshot = capturer.screenshot()?;
-
-        let mut lock = manager.last_screenshot.lock().await;
-
-        if !screenshot.is_empty() && !lock.compare(&screenshot) {
-            let data = screenshot.as_webp()?;
-
-            for client in manager.clients.lock().await.values() {
-                let _ = client.send(data.clone()).await;
-            }
-
-            *lock = screenshot;
+        if screenshot.is_empty() {
+            tokio::time::sleep(target_frame_duration).await;
+            continue;
         }
 
-        tokio::time::sleep(Duration::from_millis(50)).await;
+        let mut lock = manager.last_screenshot.lock().await;
+        if lock.compare(&screenshot) {
+            drop(lock);
+            tokio::time::sleep(target_frame_duration).await;
+            continue;
+        }
+
+        let yuv_frame = YUVBuffer::from_rgb8_source(screenshot.clone());
+        let encoded_frame = match encoder.encode(&yuv_frame) {
+            Ok(bits) => bits.to_vec(),
+            Err(e) => {
+                log::warn!("Failed to encode frame: {:?}", e);
+                *lock = screenshot;
+                drop(lock);
+                continue;
+            }
+        };
+
+        if !encoded_frame.is_empty() {
+            for client in manager.clients.lock().await.values() {
+                let _ = client.send(encoded_frame.clone()).await;
+            }
+        }
+
+        *lock = screenshot;
+        drop(lock);
+
+        let elapsed = frame_start.elapsed();
+        if elapsed < target_frame_duration {
+            tokio::time::sleep(target_frame_duration - elapsed).await;
+        }
     }
 }
