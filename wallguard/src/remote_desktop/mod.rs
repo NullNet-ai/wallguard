@@ -13,14 +13,12 @@ use crate::remote_desktop::{
     messages::MessageHandler, screen_capturer::ScreenCapturer, screenshot::Screenshot,
 };
 
+mod client;
 mod messages;
 mod screen_capturer;
 mod screenshot;
 
-// TODO: Change Vec<u8> to actual message type
-type ConnectedClient = mpsc::Sender<Vec<u8>>;
-
-type ClientsInner = Arc<Mutex<HashMap<u128, ConnectedClient>>>;
+type ClientsInner = Arc<Mutex<HashMap<u128, client::Client>>>;
 
 #[derive(Clone, Debug)]
 pub struct RemoteDesktopManager {
@@ -45,7 +43,7 @@ impl RemoteDesktopManager {
         })
     }
 
-    pub async fn on_client_connected(&mut self, client: ConnectedClient) -> u128 {
+    pub async fn on_client_connected(&mut self, channel: mpsc::Sender<Vec<u8>>) -> u128 {
         let client_id = self.counter;
         self.counter = self.counter.wrapping_add(1);
 
@@ -65,16 +63,7 @@ impl RemoteDesktopManager {
             });
         }
 
-        // let screenshot = self.last_screenshot.lock().await;
-
-        // if !screenshot.is_empty()
-        //     && let Ok(data) = screenshot.as_webp()
-        //     && !data.is_empty()
-        // {
-        //     let _ = client.send(data).await;
-        // }
-
-        lock.insert(client_id, client);
+        lock.insert(client_id, client::Client::new(channel));
 
         client_id
     }
@@ -142,7 +131,7 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
         }
 
         let mut lock = manager.last_screenshot.lock().await;
-        if lock.compare(&screenshot) {
+        if lock.is_same(&screenshot) {
             drop(lock);
             tokio::time::sleep(target_frame_duration).await;
             continue;

@@ -17,7 +17,7 @@ impl Screenshot {
         }
     }
 
-    pub fn compare(&self, other: &Screenshot) -> bool {
+    pub fn is_same(&self, other: &Screenshot) -> bool {
         if self.buffer.len() != other.buffer.len() {
             return false;
         }
