@@ -1,14 +1,14 @@
+use crate::{http_proxy::rd_gateway::webrtc::WebRTCSession, reverse_tunnel::TunnelInstance};
 use actix_ws::{AggregatedMessage, AggregatedMessageStream, MessageStream, Session as WSSession};
-use futures_util::StreamExt as _;
-use prost::bytes::Bytes;
+use futures_util::StreamExt;
+use std::time::Duration;
 use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
 
-use crate::reverse_tunnel::TunnelInstance;
-
 pub(crate) async fn relay(
+    webrtc: WebRTCSession,
+    tty_tunnel: TunnelInstance,
     msg_stream: MessageStream,
     ws_session: WSSession,
-    tty_tunnel: TunnelInstance,
 ) {
     let stream = msg_stream
         .aggregate_continuations()
@@ -18,43 +18,83 @@ pub(crate) async fn relay(
         _ = relay_messages_from_user_to_client(
             stream,
             tty_tunnel.clone(),
-            ws_session.clone()
+            ws_session.clone(),
+            webrtc.clone()
         ) => {
-            log::info!("WebSocket → RD relay ended.");
+            log::info!("WebRTC → RD relay ended.");
         }
-        _ = relay_messages_from_rd_to_client(ws_session, tty_tunnel) => {
-            log::info!("RD → WebSocket relay ended.");
+        _ = relay_messages_from_rd_to_client(webrtc, tty_tunnel) => {
+            log::info!("RD → WebRTC relay ended.");
         }
     }
 }
 
 async fn relay_messages_from_user_to_client(
     mut stream: AggregatedMessageStream,
-    rd_tunnel: TunnelInstance,
+    _rd_tunnel: TunnelInstance,
     mut ws_session: WSSession,
+    webrtc_session: WebRTCSession,
 ) {
     while let Some(msg) = stream.next().await {
         match msg {
             Ok(AggregatedMessage::Text(text)) => {
-                let data_frame = TunnelInstance::make_data_frame(text.as_bytes());
-                if let Err(err) = rd_tunnel.write(data_frame).await {
-                    log::error!("WS → RD: Failed to write text: {}", err.to_str());
-                    return;
-                } else {
-                    log::debug!("WS → RD: Sent text ({} bytes)", text.len());
-                }
+                let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) else {
+                    log::error!("Received a non-JSON message from RD client");
+                    continue;
+                };
+
+                let Some(message_type) = json
+                    .as_object()
+                    .and_then(|obj| obj.get("type"))
+                    .and_then(|value| value.as_str())
+                else {
+                    log::error!("Received a malformed message from RD client");
+                    continue;
+                };
+
+                match message_type.to_lowercase().as_str() {
+                    "candidate" => {
+                        let Some(data) = json.as_object().and_then(|obj| obj.get("candidate"))
+                        else {
+                            log::error!("Received a malformed message from RD client");
+                            continue;
+                        };
+
+                        let Ok(candidate) = serde_json::from_value(data.clone()) else {
+                            log::error!("Received a malformed message from RD client");
+                            continue;
+                        };
+
+                        if webrtc_session.add_candidate(candidate).await.is_err() {
+                            log::error!("Failed to add candidate");
+                        }
+                    }
+                    mt => {
+                        log::error!("Unsupported message type {mt}");
+                        continue;
+                    }
+                };
             }
 
-            Ok(AggregatedMessage::Binary(bin)) => {
-                let data_frame = TunnelInstance::make_data_frame(&bin);
-                if let Err(err) = rd_tunnel.write(data_frame).await {
-                    log::error!("WS → RD: Failed to write binary: {}", err.to_str());
-                    return;
-                } else {
-                    log::debug!("WS → RD: Sent binary ({} bytes)", bin.len());
-                }
-            }
+            // Ok(AggregatedMessage::Text(text)) => {
+            //     let data_frame = TunnelInstance::make_data_frame(text.as_bytes());
+            //     if let Err(err) = rd_tunnel.write(data_frame).await {
+            //         log::error!("WS → RD: Failed to write text: {}", err.to_str());
+            //         return;
+            //     } else {
+            //         log::debug!("WS → RD: Sent text ({} bytes)", text.len());
+            //     }
+            // }
 
+            // Ok(AggregatedMessage::Binary(bin)) => {
+            //     let data_frame = TunnelInstance::make_data_frame(&bin);
+            //     if let Err(err) = rd_tunnel.write(data_frame).await {
+            //         log::error!("WS → RD: Failed to write binary: {}", err.to_str());
+            //         return;
+            //     } else {
+            //         log::debug!("WS → RD: Sent binary ({} bytes)", bin.len());
+            //     }
+            // }
             Ok(AggregatedMessage::Ping(msg)) => {
                 if let Err(err) = ws_session.pong(&msg).await {
                     log::error!("WS → WS: Failed to respond to ping: {err}");
@@ -75,38 +115,35 @@ async fn relay_messages_from_user_to_client(
         }
     }
 
-    log::info!("WS → SSH: WebSocket stream closed.");
+    log::info!("WS → RD: WebSocket stream closed.");
 }
 
-async fn relay_messages_from_rd_to_client(mut ws_session: WSSession, rd_tunnel: TunnelInstance) {
+async fn relay_messages_from_rd_to_client(webrtc: WebRTCSession, rd_tunnel: TunnelInstance) {
     loop {
         let Ok(message) = rd_tunnel.read().await else {
-            log::error!("RD → WS: Failed to read from RD session");
+            log::error!("RD → WebRTC: Failed to read from RD session");
             break;
         };
 
         let Some(message) = message.message else {
-            log::info!("RD → WS: Reached EOF (client disconnected).");
+            log::info!("RD → WebRTC: Reached EOF (client disconnected).");
             break;
         };
 
         let ClientMessage::Data(data) = message else {
-            log::error!("RD → WS: Unexpected message.");
+            log::error!("RD → WebRTC: Unexpected message.");
             break;
         };
 
-        let message_for_ws = Bytes::copy_from_slice(&data.data);
+        let len = data.data.len();
 
-        if let Err(err) = ws_session.binary(message_for_ws).await {
-            log::error!("RD → WS: Failed to send binary message: {err}");
+        if let Err(err) = webrtc.send(data.data, Duration::from_millis(33)).await {
+            log::error!("RD → WebRTC: Failed to send sample: {}", err.to_str());
             break;
         } else {
-            log::debug!("RD → WS: Sent binary ({} bytes)", data.data.len());
+            log::debug!("RD → WebRTC: Sent sample ({len} bytes)");
         }
     }
 
     log::info!("RD → WS: RD reader loop exited.");
 }
-
-// @TODO: Refactor
-// This relay implementation is identical to TTY's relay

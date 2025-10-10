@@ -49,6 +49,7 @@ serde_json.workspace = true
 nullnet-liberror.workspace = true
 
 russh = "0.54.3"
+webrtc = "0.14.0"
 
 [badges]
 maintenance = { status = "actively-developed" }

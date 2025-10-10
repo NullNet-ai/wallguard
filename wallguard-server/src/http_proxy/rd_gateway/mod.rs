@@ -3,6 +3,7 @@ use super::utilities::request_handling;
 use super::utilities::tunneling;
 use crate::app_context::AppContext;
 use crate::datastore::RemoteAccessType;
+use crate::http_proxy::rd_gateway::webrtc::WebRTCSession;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -11,6 +12,7 @@ use actix_web::web::{Data, Payload};
 use relay::relay;
 
 mod relay;
+mod webrtc;
 
 pub(super) async fn open_remote_desktop_session(
     request: HttpRequest,
@@ -65,18 +67,24 @@ pub(super) async fn open_remote_desktop_session(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    let (response, ws_session, ws_stream) =
-        match request_handling::upgrade_to_websocket(request, body) {
-            Ok(r) => r,
-            Err(resp) => return resp,
-        };
-
     if !tunnel.is_authenticated() {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Tunnel is not authenticated"));
     }
 
-    rt::spawn(relay(ws_stream, ws_session, tunnel));
+    let (response, mut ws_session, mut ws_stream) =
+        match request_handling::upgrade_to_websocket(request, body) {
+            Ok(r) => r,
+            Err(resp) => return resp,
+        };
+    rt::spawn(async move {
+        let Ok(webrtc_session) = WebRTCSession::establish(&mut ws_stream, &mut ws_session).await
+        else {
+            return log::error!("Failed to establish a WebRTC session");
+        };
+
+        relay(webrtc_session, tunnel, ws_stream, ws_session).await
+    });
 
     response
 }
