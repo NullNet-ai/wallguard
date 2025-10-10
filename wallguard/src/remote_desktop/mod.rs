@@ -1,6 +1,9 @@
+use crate::remote_desktop::{
+    messages::MessageHandler, screen_capturer::ScreenCapturer, screenshot::Screenshot,
+};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use openh264::OpenH264API;
-use openh264::encoder::{Encoder, EncoderConfig};
+use openh264::encoder::{Encoder, EncoderConfig, FrameRate, RateControlMode};
 use openh264::formats::YUVBuffer;
 use std::{
     collections::HashMap,
@@ -8,10 +11,6 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::{Mutex, broadcast, mpsc};
-
-use crate::remote_desktop::{
-    messages::MessageHandler, screen_capturer::ScreenCapturer, screenshot::Screenshot,
-};
 
 mod client;
 mod messages;
@@ -108,18 +107,26 @@ async fn capture_loop(manager: RemoteDesktopManager) {
 
 async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
     const TARGET_FPS: u64 = 24;
+    const KEYFRAME_INTERVAL: u64 = 60;
 
     let mut capturer = ScreenCapturer::new()?;
     let target_frame_duration = Duration::from_millis(1000 / TARGET_FPS);
 
     let api = OpenH264API::from_source();
-    let config = EncoderConfig::new();
+
+    let config = EncoderConfig::new()
+        .max_frame_rate(FrameRate::from_hz(TARGET_FPS as f32))
+        .skip_frames(false)
+        .rate_control_mode(RateControlMode::Quality);
+
     let mut encoder = Encoder::with_api_config(api, config).handle_err(location!())?;
 
     {
         let mut lock = manager.last_screenshot.lock().await;
         *lock = capturer.screenshot()?;
     }
+
+    let mut frame_count: u64 = 0;
 
     loop {
         let frame_start = Instant::now();
@@ -131,13 +138,13 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
         }
 
         let mut lock = manager.last_screenshot.lock().await;
-        if lock.is_same(&screenshot) {
-            drop(lock);
-            tokio::time::sleep(target_frame_duration).await;
-            continue;
-        }
 
         let yuv_frame = YUVBuffer::from_rgb8_source(screenshot.clone());
+
+        if frame_count.is_multiple_of(KEYFRAME_INTERVAL) {
+            encoder.force_intra_frame();
+        }
+
         let encoded_frame = match encoder.encode(&yuv_frame) {
             Ok(bits) => bits.to_vec(),
             Err(e) => {
@@ -150,12 +157,15 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
 
         if !encoded_frame.is_empty() {
             for client in manager.clients.lock().await.values() {
-                let _ = client.send(encoded_frame.clone()).await;
+                let _ = client
+                    .send(encoded_frame.clone(), target_frame_duration)
+                    .await;
             }
         }
 
         *lock = screenshot;
         drop(lock);
+        frame_count += 1;
 
         let elapsed = frame_start.elapsed();
         if elapsed < target_frame_duration {

@@ -20,7 +20,7 @@ impl ScreenCapturer {
         let mut buffer = Vec::default();
 
         buffer.extend_from_slice(&frame);
-        
+
         // BGRA to RGBA
         for pixel in buffer.chunks_exact_mut(4) {
             pixel.swap(0, 2);

@@ -8,9 +8,10 @@ use actix_web::HttpResponse;
 use actix_web::Responder;
 use actix_web::rt;
 use actix_web::web::{Data, Payload};
-use relay::relay;
+use handle_connection::handle_connection;
 
-mod relay;
+mod handle_connection;
+mod signal_message;
 
 pub(super) async fn open_remote_desktop_session(
     request: HttpRequest,
@@ -65,18 +66,18 @@ pub(super) async fn open_remote_desktop_session(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
+    if !tunnel.is_authenticated() {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Tunnel is not authenticated"));
+    }
+
     let (response, ws_session, ws_stream) =
         match request_handling::upgrade_to_websocket(request, body) {
             Ok(r) => r,
             Err(resp) => return resp,
         };
 
-    if !tunnel.is_authenticated() {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Tunnel is not authenticated"));
-    }
-
-    rt::spawn(relay(ws_stream, ws_session, tunnel));
+    rt::spawn(handle_connection(ws_stream, ws_session, tunnel));
 
     response
 }

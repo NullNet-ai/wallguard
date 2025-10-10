@@ -9,25 +9,26 @@ pub struct Screenshot {
 }
 
 impl Screenshot {
-    pub fn new(buffer: Vec<u8>, width: usize, height: usize) -> Self {
+    pub fn new(mut buffer: Vec<u8>, width: usize, height: usize) -> Self {
+        let mut write_idx = 0;
+        for read_idx in (0..buffer.len()).step_by(4) {
+            /* R */
+            buffer[write_idx] = buffer[read_idx];
+            /* G */
+            buffer[write_idx + 1] = buffer[read_idx + 1];
+            /* B */
+            buffer[write_idx + 2] = buffer[read_idx + 2];
+
+            write_idx += 3;
+        }
+
+        buffer.truncate(width * height * 3);
+        buffer.shrink_to_fit();
+
         Self {
             buffer,
             width,
             height,
-        }
-    }
-
-    pub fn is_same(&self, other: &Screenshot) -> bool {
-        if self.buffer.len() != other.buffer.len() {
-            return false;
-        }
-
-        unsafe {
-            libc::memcmp(
-                self.buffer.as_ptr() as *const libc::c_void,
-                other.buffer.as_ptr() as *const libc::c_void,
-                self.buffer.len(),
-            ) == 0
         }
     }
 
@@ -50,7 +51,7 @@ impl RGBSource for Screenshot {
     }
 
     fn pixel_f32(&self, x: usize, y: usize) -> (f32, f32, f32) {
-        let idx = (y * self.width + x) * 4;
+        let idx = (y * self.width + x) * 3; // RGB stride (changed from 4)
         let r = self.buffer[idx] as f32 / 255.0;
         let g = self.buffer[idx + 1] as f32 / 255.0;
         let b = self.buffer[idx + 2] as f32 / 255.0;
