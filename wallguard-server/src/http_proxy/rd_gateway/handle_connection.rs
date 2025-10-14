@@ -5,7 +5,10 @@ use crate::{
 };
 use actix_ws::{Message, MessageStream, Session};
 use futures_util::StreamExt;
-use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
+use wallguard_common::{
+    protobuf::wallguard_tunnel::client_frame::Message as ClientMessage,
+    timestamped_packet::TimestampedPacket,
+};
 use webrtc::{
     api::{
         APIBuilder,
@@ -25,6 +28,8 @@ use webrtc::{
 
 pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: TunnelInstance) {
     let mut media_engine = MediaEngine::default();
+    let _ = media_engine.register_default_codecs();
+
     let registry = interceptor::registry::Registry::new();
     let registry = register_default_interceptors(registry, &mut media_engine).unwrap();
 
@@ -174,8 +179,14 @@ async fn handle_messages_from_remote_desktop(
             break;
         };
 
+        let Ok(packet) = TimestampedPacket::from_bytes(&frame.data) else {
+            log::error!("Failed to deserialize RD tunnel packet");
+            continue;
+        };
+
         let sample = Sample {
-            data: frame.data.into(),
+            data: packet.data.into(),
+            duration: packet.duration,
             ..Default::default()
         };
 

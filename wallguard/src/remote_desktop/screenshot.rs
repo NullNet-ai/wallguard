@@ -17,19 +17,20 @@ impl Screenshot {
         }
     }
 
-    pub fn is_same(&self, other: &Screenshot) -> bool {
-        if self.buffer.len() != other.buffer.len() {
-            return false;
-        }
+    // @TODO
+    // pub fn is_same(&self, other: &Screenshot) -> bool {
+    //     if self.buffer.len() != other.buffer.len() {
+    //         return false;
+    //     }
 
-        unsafe {
-            libc::memcmp(
-                self.buffer.as_ptr() as *const libc::c_void,
-                other.buffer.as_ptr() as *const libc::c_void,
-                self.buffer.len(),
-            ) == 0
-        }
-    }
+    //     unsafe {
+    //         libc::memcmp(
+    //             self.buffer.as_ptr() as *const libc::c_void,
+    //             other.buffer.as_ptr() as *const libc::c_void,
+    //             self.buffer.len(),
+    //         ) == 0
+    //     }
+    // }
 
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()
