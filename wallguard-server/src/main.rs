@@ -16,6 +16,10 @@ mod utilities;
 async fn main() {
     env_logger::init();
 
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     let app_context = AppContext::new().await.unwrap_or_else(|err| {
         log::error!("Failed to initialize application context: {}", err.to_str());
         std::process::exit(1);

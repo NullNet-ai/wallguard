@@ -131,11 +131,12 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
         }
 
         let mut lock = manager.last_screenshot.lock().await;
-        if lock.is_same(&screenshot) {
-            drop(lock);
-            tokio::time::sleep(target_frame_duration).await;
-            continue;
-        }
+        // @ TODO
+        // if lock.is_same(&screenshot) {
+        //     drop(lock);
+        //     tokio::time::sleep(target_frame_duration).await;
+        //     continue;
+        // }
 
         let yuv_frame = YUVBuffer::from_rgb8_source(screenshot.clone());
         let encoded_frame = match encoder.encode(&yuv_frame) {
