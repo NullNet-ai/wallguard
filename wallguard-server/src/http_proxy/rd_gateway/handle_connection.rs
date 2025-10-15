@@ -6,7 +6,9 @@ use crate::{
 use actix_ws::{Message, MessageStream, Session};
 use futures_util::StreamExt;
 use wallguard_common::{
-    protobuf::wallguard_tunnel::client_frame::Message as ClientMessage,
+    protobuf::wallguard_tunnel::{
+        DataFrame, ServerFrame, client_frame::Message as ClientMessage, server_frame,
+    },
     timestamped_packet::TimestampedPacket,
 };
 use webrtc::{
@@ -68,19 +70,20 @@ pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: 
 
     peer_connection.on_ice_connection_state_change(Box::new(move |_| Box::pin(async {})));
 
+    let a_tunnel = Arc::new(tunnel.clone());
     peer_connection.on_data_channel(Box::new(move |data_channel| {
         data_channel.on_open(Box::new(move || Box::pin(async {})));
-        data_channel.on_open(Box::new(move || Box::pin(async {})));
-
-        let d2 = data_channel.clone();
+        let a_tunnel = a_tunnel.clone();
         data_channel.on_message(Box::new(move |msg| {
-            let msg_str = String::from_utf8(msg.data.to_vec()).unwrap();
+            let message = ServerFrame {
+                message: Some(server_frame::Message::Data(DataFrame {
+                    data: msg.data.to_vec(),
+                })),
+            };
 
-            let reversed: String = msg_str.chars().rev().collect();
-            let response = format!("Reversed: {}", reversed);
-            let d2 = d2.clone();
+            let a_tunnel = a_tunnel.clone();
             Box::pin(async move {
-                d2.send_text(response).await.unwrap();
+                let _ = a_tunnel.write(message).await;
             })
         }));
 
