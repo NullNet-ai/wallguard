@@ -16,7 +16,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libpcap-dev protobuf-compiler
+          sudo apt-get install -y libpcap-dev protobuf-compiler libpipewire-0.3-dev libpipewire-0.3-modules libspa-0.2-dev
 
       - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
