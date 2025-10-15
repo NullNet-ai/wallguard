@@ -1,6 +1,5 @@
 //! TODO:
 //! - Fetch session and related device in 1 Datastore query
-//! - Use actual device HTTP protocol (http vs https)
 
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;

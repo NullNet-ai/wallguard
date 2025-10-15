@@ -108,7 +108,6 @@ pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: 
     tokio::spawn(async move {
         let mut rtcp_buf = vec![0u8; 1500];
         while let Ok((_, _)) = rtp_sender.read(&mut rtcp_buf).await {}
-        println!("RTCP reader stopped");
     });
 
     tokio::select! {
