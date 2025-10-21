@@ -1,39 +1,27 @@
 use super::screenshot::Screenshot;
+use captis::{Capturer, init_capturer};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use scrap::{Capturer, Display};
 
 pub struct ScreenCapturer {
-    capturer: Capturer,
+    capturer: Box<dyn Capturer>,
 }
 
 impl ScreenCapturer {
     pub fn new() -> Result<Self, Error> {
-        let display = Display::primary().handle_err(location!())?;
-        let capturer = Capturer::new(display).handle_err(location!())?;
+        let capturer = init_capturer().handle_err(location!())?;
 
-        Ok(Self { capturer })
+        Ok(Self {
+            capturer: Box::new(capturer),
+        })
     }
 
     pub fn screenshot(&mut self) -> Result<Screenshot, Error> {
-        let frame = self.capturer.frame().handle_err(location!())?;
+        let buffer = self.capturer.capture(0).handle_err(location!())?;
 
-        let mut buffer = Vec::default();
-
-        buffer.extend_from_slice(&frame);
-
-        // BGRA to RGBA
-        for pixel in buffer.chunks_exact_mut(4) {
-            pixel.swap(0, 2);
-        }
-
-        Ok(Screenshot::new(buffer, self.width(), self.height()))
-    }
-
-    pub fn width(&self) -> usize {
-        self.capturer.width()
-    }
-
-    pub fn height(&self) -> usize {
-        self.capturer.height()
+        Ok(Screenshot::new(
+            buffer.to_vec(),
+            buffer.width() as usize,
+            buffer.height() as usize,
+        ))
     }
 }
