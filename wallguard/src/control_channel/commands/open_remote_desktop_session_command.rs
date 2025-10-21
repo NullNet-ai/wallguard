@@ -31,10 +31,10 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
             return Err("Remote Desktop is not available").handle_err(location!());
         };
 
-        let (sender, receiver) = mpsc::channel(64);
-        let id = rdm.on_client_connected(sender).await;
-
         tokio::spawn(async move {
+            let (sender, receiver) = mpsc::channel(64);
+            let id = rdm.on_client_connected(sender).await;
+
             tokio::select! {
                 _ = stream_to_system(tunnel.reader, rdm.clone(), id) => {},
                 _ = system_to_stream(tunnel.writer, receiver) => {},

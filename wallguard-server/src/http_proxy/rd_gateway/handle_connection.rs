@@ -73,6 +73,7 @@ pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: 
     let a_tunnel = Arc::new(tunnel.clone());
     peer_connection.on_data_channel(Box::new(move |data_channel| {
         data_channel.on_open(Box::new(move || Box::pin(async {})));
+
         let a_tunnel = a_tunnel.clone();
         data_channel.on_message(Box::new(move |msg| {
             let message = ServerFrame {
@@ -101,19 +102,20 @@ pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: 
         "main".to_string(),
     ));
 
-    let Ok(rtp_sender) = peer_connection.add_track(video_track.clone()).await else {
+    if peer_connection
+        .add_track(video_track.clone())
+        .await
+        .is_err()
+    {
         return log::error!("Failed to add video track to the peer connection");
     };
 
-    tokio::spawn(async move {
-        let mut rtcp_buf = vec![0u8; 1500];
-        while let Ok((_, _)) = rtp_sender.read(&mut rtcp_buf).await {}
-    });
-
     tokio::select! {
         _ = handle_signaling(stream, session, peer_connection.clone()) => {}
-        _ = handle_messages_from_remote_desktop(tunnel, video_track) => {}
+        _ = handle_messages_from_remote_desktop(tunnel.clone(), video_track) => {}
     }
+
+    let _ = peer_connection.close().await;
 }
 
 async fn handle_signaling(

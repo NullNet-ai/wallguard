@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::sync::{Mutex, broadcast, mpsc};
+use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
 mod client;
 mod messages;
@@ -22,7 +22,7 @@ type ClientsInner = Arc<Mutex<HashMap<u128, client::Client>>>;
 #[derive(Clone, Debug)]
 pub struct RemoteDesktopManager {
     clients: ClientsInner,
-    counter: u128,
+    counter: Arc<RwLock<u128>>,
     last_screenshot: Arc<Mutex<Screenshot>>,
     terminate: broadcast::Sender<()>,
     msg_handler: MessageHandler,
@@ -36,15 +36,19 @@ impl RemoteDesktopManager {
         Ok(Self {
             terminate,
             clients: Default::default(),
-            counter: 0,
+            counter: Default::default(),
             last_screenshot: Default::default(),
             msg_handler,
         })
     }
 
     pub async fn on_client_connected(&mut self, channel: mpsc::Sender<Vec<u8>>) -> u128 {
-        let client_id = self.counter;
-        self.counter = self.counter.wrapping_add(1);
+        let client_id = {
+            let mut counter = self.counter.write().await;
+            let id = *counter;
+            *counter = id.wrapping_add(1);
+            id
+        };
 
         let mut lock = self.clients.lock().await;
 
@@ -64,20 +68,23 @@ impl RemoteDesktopManager {
 
         lock.insert(client_id, client::Client::new(channel));
 
+        log::debug!("Client with ID {client_id} has just connected");
+
         client_id
     }
 
     pub async fn on_client_disconnected(&mut self, id: u128) -> Result<(), Error> {
-        self.clients
-            .lock()
-            .await
-            .remove(&id)
+        let mut lock = self.clients.lock().await;
+
+        lock.remove(&id)
             .ok_or(format!("No client by id {id}"))
             .handle_err(location!())?;
 
-        if self.clients.lock().await.is_empty() {
+        if lock.is_empty() {
             let _ = self.terminate.send(());
         }
+
+        log::debug!("Client with ID {id} has just disconnected");
 
         Ok(())
     }
@@ -116,7 +123,6 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
 
     let config = EncoderConfig::new()
         .max_frame_rate(FrameRate::from_hz(TARGET_FPS as f32))
-        .skip_frames(false)
         .rate_control_mode(RateControlMode::Quality);
 
     let mut encoder = Encoder::with_api_config(api, config).handle_err(location!())?;
