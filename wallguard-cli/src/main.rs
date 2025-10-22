@@ -47,14 +47,28 @@ async fn cli_connect() -> Client {
     WallguardCliClient::new(channel)
 }
 
+fn check_privileges() {
+    #[cfg(windows)]
+    {
+        if !is_elevated::is_elevated() {
+            println!("This program must be run as Administrator. Exiting …");
+            std::process::exit(-1);
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        if !nix::unistd::Uid::effective().is_root() {
+            println!("This program must be run as root. Exiting ...");
+            std::process::exit(-1);
+        }
+    }
+}
+
 #[tokio::main]
 pub async fn main() -> AnyResult<()> {
+    check_privileges();
     let arguments = Arguments::parse();
-
-    if !nix::unistd::Uid::effective().is_root() {
-        println!("This program must be run as root. Exiting ...");
-        std::process::exit(-1);
-    }
 
     match arguments.command {
         arguments::Command::Status => {

@@ -1,6 +1,5 @@
 use crate::constants::DUMP_DIR;
 use std::ops::RangeTo;
-use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use tokio::fs;
 use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResourcesData};
@@ -39,7 +38,7 @@ impl DumpDir {
             .expect("Failed to read packets and resources dumps directory");
         while let Ok(Some(file)) = dir.next_entry().await {
             if let Ok(meta) = file.metadata().await {
-                size += meta.size();
+                size += meta.len();
             }
         }
         size >= self.max_size
