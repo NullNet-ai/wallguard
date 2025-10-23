@@ -3,7 +3,7 @@ use crate::remote_desktop::{
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use openh264::OpenH264API;
-use openh264::encoder::{Encoder, EncoderConfig, FrameRate, RateControlMode};
+use openh264::encoder::{Encoder, EncoderConfig};
 use openh264::formats::YUVBuffer;
 use std::{
     collections::HashMap,
@@ -121,9 +121,7 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
 
     let api = OpenH264API::from_source();
 
-    let config = EncoderConfig::new()
-        .max_frame_rate(FrameRate::from_hz(TARGET_FPS as f32))
-        .rate_control_mode(RateControlMode::Quality);
+    let config = EncoderConfig::new().skip_frames(false);
 
     let mut encoder = Encoder::with_api_config(api, config).handle_err(location!())?;
 
