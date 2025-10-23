@@ -24,8 +24,27 @@ mod token_provider;
 mod utilities;
 mod wg_server;
 
+fn check_privileges() {
+    #[cfg(windows)]
+    {
+        if !is_elevated::is_elevated() {
+            println!("This program must be run as Administrator. Exiting …");
+            std::process::exit(-1);
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        if !nix::unistd::Uid::effective().is_root() {
+            println!("This program must be run as root. Exiting ...");
+            std::process::exit(-1);
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    check_privileges();
     env_logger::init();
 
     let arguments = match Arguments::try_parse() {
@@ -37,11 +56,6 @@ async fn main() {
     };
 
     Storage::init().await.unwrap();
-
-    if !nix::unistd::Uid::effective().is_root() {
-        log::error!("This program must be run as root. Exiting ...");
-        std::process::exit(-1);
-    }
 
     let Ok(server_data) = ServerData::try_from(&arguments) else {
         log::error!("Failed to collect server information. Exiting ...");
