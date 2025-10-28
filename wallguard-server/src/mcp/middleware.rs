@@ -11,7 +11,7 @@ use crate::{
 pub async fn authentication_middleware(
     State(context): State<AppContext>,
     headers: HeaderMap,
-    request: Request<axum::body::Body>,
+    mut request: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
     let session_token = extract_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
@@ -25,6 +25,7 @@ pub async fn authentication_middleware(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if matches!(session.r#type, RemoteAccessType::Mcp) {
+        request.extensions_mut().insert(session);
         Ok(next.run(request).await)
     } else {
         Err(StatusCode::BAD_REQUEST)
