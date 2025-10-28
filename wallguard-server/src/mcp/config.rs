@@ -32,7 +32,6 @@ impl Default for McpConfig {
     }
 }
 
-
 pub const SERVICE_INSTRUCTIONS: &str = "
 This server provides tools to interact with the client connected to the system.
 Tools:

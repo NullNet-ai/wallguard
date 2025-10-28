@@ -7,12 +7,12 @@ mod app_context;
 mod control_service;
 mod datastore;
 mod http_proxy;
+mod mcp;
 mod orchestrator;
 mod reverse_tunnel;
 mod token_provider;
 mod traffic_handler;
 mod utilities;
-mod mcp;
 
 #[tokio::main]
 async fn main() {

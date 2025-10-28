@@ -7,6 +7,7 @@ use rmcp::transport::sse_server::{SseServer, SseServerConfig};
 use tokio_util::sync::CancellationToken;
 
 mod config;
+mod middleware;
 mod schema;
 mod service;
 
@@ -21,7 +22,7 @@ pub async fn run_mcp_server(context: AppContext) -> Result<(), Error> {
         sse_keep_alive: None,
     };
 
-    let (sse_server, router) = SseServer::new(config);
+    let (sse_server, mut router) = SseServer::new(config);
 
     let listener = tokio::net::TcpListener::bind(sse_server.config.bind)
         .await
@@ -29,8 +30,13 @@ pub async fn run_mcp_server(context: AppContext) -> Result<(), Error> {
 
     let ct = sse_server.config.ct.child_token();
 
-    let service = MCPService::new(context);
+    let service = MCPService::new(context.clone());
     sse_server.with_service(move || service.clone());
+
+    router = router.layer(axum::middleware::from_fn_with_state(
+        context,
+        middleware::authentication_middleware,
+    ));
 
     log::info!("MCP server is running on {}", cfg.addr);
 
