@@ -3,8 +3,9 @@ use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
     CreateAliasCommand, CreateFilterRuleCommand, CreateNatRuleCommand,
     EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
-    EnableTelemetryMonitoringCommand, HeartbeatCommand, OpenRemoteDesktopSessionCommand,
-    OpenTtySessionCommand, OpenUiSessionCommand, UpdateTokenCommand,
+    EnableTelemetryMonitoringCommand, ExecuteCliCommand, HeartbeatCommand,
+    OpenRemoteDesktopSessionCommand, OpenTtySessionCommand, OpenUiSessionCommand,
+    UpdateTokenCommand,
 };
 use crate::control_channel::post_startup::post_startup;
 use crate::daemon::Daemon;
@@ -213,6 +214,13 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
                         "OpenRemoteDesktopSessionCommand execution failed: {}",
                         err.to_str()
                     );
+                }
+            }
+            server_message::Message::ExecuteCliCommandRequest(request) => {
+                let cmd = ExecuteCliCommand::new(outbound.clone(), request);
+
+                if let Err(err) = cmd.execute().await {
+                    log::error!("ExecuteCliCommand execution failed: {}", err.to_str());
                 }
             }
             server_message::Message::AuthorizationRejectedMessage(_) => {

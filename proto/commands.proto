@@ -18,10 +18,22 @@ message Authentication {
     string app_secret = 2;
 }
 
+message ExecuteCLICommandRequest {
+    string command = 1;
+    repeated string arguments = 2;
+}
+
+message ExecuteCLICommandResponse {
+    string stdout = 1;
+    string stderr = 2;
+    int32 status = 3;
+}
+
 message ClientMessage {
     oneof message {
         AuthorizationRequest authorization_request = 1;
         Authentication authentication = 2;
+        ExecuteCLICommandResponse execute_cli_command_response = 3;
     }
 }
 
@@ -64,5 +76,7 @@ message ServerMessage {
         wallguard_models.FilterRule create_filter_rule = 13;
         wallguard_models.NatRule create_nat_rule = 14;
         wallguard_models.Alias create_alias = 15;
+
+        ExecuteCLICommandRequest execute_cli_command_request = 16;
     }
 }
