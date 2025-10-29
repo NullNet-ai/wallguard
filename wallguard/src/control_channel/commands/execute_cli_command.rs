@@ -22,11 +22,18 @@ impl ExecuteCliCommand {
         Self { stream, request }
     }
 
-    async fn send_response(self, stdout: String, stderr: String, status: i32) -> Result<(), Error> {
+    async fn send_response(
+        self,
+        stdout: String,
+        stderr: String,
+        status: i32,
+        request_unique_id: String,
+    ) -> Result<(), Error> {
         let response = ExecuteCliCommandResponse {
             stdout,
             stderr,
             status,
+            request_unique_id,
         };
 
         let message = ClientMessage {
@@ -44,6 +51,8 @@ impl ExecuteCliCommand {
 
 impl ExecutableCommand for ExecuteCliCommand {
     async fn execute(self) -> Result<(), Error> {
+        let request_id = self.request.request_unique_id.clone();
+
         let Ok(mut child) = Command::new(&self.request.command)
             .args(&self.request.arguments)
             .stdin(Stdio::null())
@@ -52,7 +61,12 @@ impl ExecutableCommand for ExecuteCliCommand {
             .spawn()
         else {
             return self
-                .send_response("".into(), "Failed to spawn the commnd".into(), -1)
+                .send_response(
+                    "".into(),
+                    "Failed to spawn the commnd".into(),
+                    -1,
+                    request_id,
+                )
                 .await;
         };
 
@@ -73,6 +87,6 @@ impl ExecutableCommand for ExecuteCliCommand {
             .unwrap_or(None)
             .unwrap_or(-1);
 
-        self.send_response(stdout, stderr, status).await
+        self.send_response(stdout, stderr, status, request_id).await
     }
 }

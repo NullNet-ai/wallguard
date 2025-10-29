@@ -21,12 +21,14 @@ message Authentication {
 message ExecuteCLICommandRequest {
     string command = 1;
     repeated string arguments = 2;
+    string request_unique_id = 3;
 }
 
 message ExecuteCLICommandResponse {
     string stdout = 1;
     string stderr = 2;
     int32 status = 3;
+    string request_unique_id = 4;
 }
 
 message ClientMessage {

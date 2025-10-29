@@ -1,6 +1,7 @@
-use super::schema::{ExecuteCommandError, ExecuteCommandParameters};
+use super::schema::ExecuteCommandParameters;
 use crate::app_context::AppContext;
 use crate::mcp::config::SERVICE_INSTRUCTIONS;
+use crate::utilities::random;
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
@@ -8,8 +9,8 @@ use rmcp::model::{
     ServerInfo,
 };
 use rmcp::{ErrorData, ServerHandler, tool, tool_handler, tool_router};
-use std::process::Stdio;
-use tokio::{io::AsyncReadExt, process::Command};
+use std::time::Duration;
+use wallguard_common::protobuf::wallguard_commands::ExecuteCliCommandRequest;
 
 #[derive(Clone)]
 pub struct MCPService {
@@ -25,6 +26,10 @@ impl MCPService {
             tool_router: Self::tool_router(),
         }
     }
+
+    fn get_device_info(&self) -> (String, String) {
+        todo!()
+    }
 }
 
 #[tool_router]
@@ -36,78 +41,46 @@ impl MCPService {
             ExecuteCommandParameters,
         >,
     ) -> Result<CallToolResult, ErrorData> {
-        if command.trim().is_empty() {
+        let (device_uuid, instance_id) = self.get_device_info();
+
+        let Some(instance) = self
+            .context
+            .orchestractor
+            .get_client(&device_uuid, &instance_id)
+            .await
+        else {
             return Err(ErrorData {
                 code: ErrorCode::INVALID_REQUEST,
-                message: "Command was empty".into(),
+                message: "Client is not connected, try again later".into(),
                 data: None,
             });
-        }
+        };
 
-        let mut child = Command::new(&command)
-            .args(&arguments)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
+        let request = ExecuteCliCommandRequest {
+            command: command.clone(),
+            arguments: arguments.clone(),
+            request_unique_id: random::generate_random_string(32),
+        };
+
+        let timeout = Duration::from_secs(10);
+
+        let response = instance
+            .lock()
+            .await
+            .execute_cli_command(request, timeout)
+            .await
             .map_err(|err| ErrorData {
                 code: ErrorCode::INTERNAL_ERROR,
-                message: format!("Failed to spawn command `{}`: {}", command, err).into(),
+                message: format!("Failed to execute command: {}", err.to_str()).into(),
                 data: None,
             })?;
 
-        let mut stdout = String::new();
-        if let Some(mut out_pipe) = child.stdout.take() {
-            out_pipe
-                .read_to_string(&mut stdout)
-                .await
-                .map_err(|e| ErrorData {
-                    code: ErrorCode::INTERNAL_ERROR,
-                    message: format!("Failed to read stdout: {}", e).into(),
-                    data: None,
-                })?;
-        }
+        let output = format!(
+            "Command `{}` executed with args {:?}\nStatus: {}\nstdout:\n{}\nstderr:\n{}",
+            command, arguments, response.status, response.stdout, response.stderr
+        );
 
-        let mut stderr = String::new();
-        if let Some(mut err_pipe) = child.stderr.take() {
-            err_pipe
-                .read_to_string(&mut stderr)
-                .await
-                .map_err(|e| ErrorData {
-                    code: ErrorCode::INTERNAL_ERROR,
-                    message: format!("Failed to read stderr: {}", e).into(),
-                    data: None,
-                })?;
-        }
-
-        let status = child.wait().await.map_err(|e| ErrorData {
-            code: ErrorCode::INTERNAL_ERROR,
-            message: format!("Failed to wait on command: {}", e).into(),
-            data: None,
-        })?;
-
-        if status.success() {
-            let output = format!(
-                "Command `{}` executed with args {:?}\nstdout:\n{}\nstderr:\n{}",
-                command, arguments, stdout, stderr
-            );
-
-            Ok(CallToolResult::success(vec![Content::text(output)]))
-        } else {
-            let err_info = ExecuteCommandError {
-                command: command.clone(),
-                arguments: arguments.clone(),
-                error: format!("Exit status: {}", status),
-            };
-            let err_json = serde_json::to_string_pretty(&err_info)
-                .unwrap_or_else(|_| "<failed to serialize error>".to_string());
-
-            Err(ErrorData {
-                code: ErrorCode::INTERNAL_ERROR,
-                message: format!("Command `{}` failed. See data for details.", command).into(),
-                data: Some(err_json.into()),
-            })
-        }
+        Ok(CallToolResult::success(vec![Content::text(output)]))
     }
 }
 

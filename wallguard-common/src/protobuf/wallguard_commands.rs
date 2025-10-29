@@ -25,6 +25,8 @@ pub struct ExecuteCliCommandRequest {
     pub command: ::prost::alloc::string::String,
     #[prost(string, repeated, tag = "2")]
     pub arguments: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(string, tag = "3")]
+    pub request_unique_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExecuteCliCommandResponse {
@@ -34,6 +36,8 @@ pub struct ExecuteCliCommandResponse {
     pub stderr: ::prost::alloc::string::String,
     #[prost(int32, tag = "3")]
     pub status: i32,
+    #[prost(string, tag = "4")]
+    pub request_unique_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientMessage {
