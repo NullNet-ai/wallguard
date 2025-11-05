@@ -1,15 +1,18 @@
+use std::time::Duration;
+
 use super::schema::ExecuteCommandParameters;
 use crate::app_context::AppContext;
 use crate::mcp::config::SERVICE_INSTRUCTIONS;
 use crate::utilities::random;
+use axum::http::request::Parts;
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
     CallToolResult, Content, ErrorCode, Implementation, ProtocolVersion, ServerCapabilities,
     ServerInfo,
 };
-use rmcp::{ErrorData, ServerHandler, tool, tool_handler, tool_router};
-use std::time::Duration;
+use rmcp::service::RequestContext;
+use rmcp::{ErrorData, RoleServer, ServerHandler, tool, tool_handler, tool_router};
 use wallguard_common::protobuf::wallguard_commands::ExecuteCliCommandRequest;
 
 #[derive(Clone)]
@@ -27,8 +30,38 @@ impl MCPService {
         }
     }
 
-    fn get_device_info(&self) -> (String, String) {
-        todo!()
+    async fn get_device_info(
+        &self,
+        context: &RequestContext<RoleServer>,
+    ) -> Result<(String, String), ErrorData> {
+        let Some(mcp_session_id) = context
+            .extensions
+            .get::<Parts>()
+            .cloned()
+            .and_then(|parts| parts.headers.get("mcp-session-id").cloned())
+            .and_then(|value| value.to_str().map(|v| v.to_string()).ok())
+        else {
+            return Err(ErrorData {
+                code: ErrorCode::INVALID_REQUEST,
+                message: "MCP session id is undefined".into(),
+                data: None,
+            });
+        };
+
+        let session = self
+            .context
+            .mcp_sessions
+            .lock()
+            .await
+            .get(&mcp_session_id)
+            .cloned()
+            .ok_or(ErrorData {
+                code: ErrorCode::INVALID_REQUEST,
+                message: "MCP session id is undefined".into(),
+                data: None,
+            })?;
+
+        Ok((session.device_id, session.instance_id))
     }
 }
 
@@ -40,8 +73,9 @@ impl MCPService {
         Parameters(ExecuteCommandParameters { command, arguments }): Parameters<
             ExecuteCommandParameters,
         >,
+        context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, ErrorData> {
-        let (device_uuid, instance_id) = self.get_device_info();
+        let (device_uuid, instance_id) = self.get_device_info(&context).await?;
 
         let Some(instance) = self
             .context

@@ -1,6 +1,10 @@
-use nullnet_liberror::Error;
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use crate::datastore::Datastore;
+use nullnet_liberror::Error;
+use tokio::sync::Mutex;
+
+use crate::datastore::{Datastore, RemoteAccessSession};
 use crate::orchestrator::Orchestrator;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
@@ -45,6 +49,8 @@ pub struct AppContext {
 
     pub root_token_provider: TokenProvider,
     pub sysdev_token_provider: TokenProvider,
+
+    pub mcp_sessions: Arc<Mutex<HashMap<String, RemoteAccessSession>>>,
 }
 
 impl AppContext {
@@ -73,6 +79,7 @@ impl AppContext {
             tunnel,
             sysdev_token_provider,
             root_token_provider,
+            mcp_sessions: Default::default(),
         })
     }
 }

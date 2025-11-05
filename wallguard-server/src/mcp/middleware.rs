@@ -11,7 +11,7 @@ use crate::{
 pub async fn authentication_middleware(
     State(context): State<AppContext>,
     headers: HeaderMap,
-    mut request: Request<axum::body::Body>,
+    request: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
     let session_token = extract_token(&headers).ok_or(StatusCode::UNAUTHORIZED)?;
@@ -25,7 +25,29 @@ pub async fn authentication_middleware(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     if matches!(session.r#type, RemoteAccessType::Mcp) {
-        request.extensions_mut().insert(session);
+        if let Some(mcp_session_id) = extract_mcp_session(&headers) {
+            let mut sessions = context.mcp_sessions.lock().await;
+
+            match sessions.entry(mcp_session_id.clone()) {
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    entry.insert(session);
+                }
+
+                std::collections::hash_map::Entry::Occupied(entry) => {
+                    let existing = entry.get();
+                    if existing.token != session_token {
+                        log::error!(
+                            "MCP session token mismatch: session_id = {:?}, existing_token = {:?}, new_token = {:?}",
+                            &mcp_session_id,
+                            &existing.token,
+                            &session_token
+                        );
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                    }
+                }
+            }
+        }
+
         Ok(next.run(request).await)
     } else {
         Err(StatusCode::BAD_REQUEST)
@@ -41,6 +63,13 @@ fn extract_token(headers: &HeaderMap) -> Option<String> {
                 .strip_prefix("Bearer ")
                 .map(|stripped| stripped.to_string())
         })
+}
+
+fn extract_mcp_session(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("mcp-session-id")
+        .and_then(|value| value.to_str().ok())
+        .map(|header| header.to_string())
 }
 
 async fn get_datastore_token(context: &AppContext) -> Option<Arc<Token>> {
