@@ -3,9 +3,7 @@ use crate::{
     mcp::{config::McpConfig, service::MCPService, session_manager::SessionManagerEx},
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use rmcp::transport::streamable_http_server::{
-    StreamableHttpService,
-};
+use rmcp::transport::streamable_http_server::StreamableHttpService;
 
 mod config;
 mod middleware;
@@ -25,7 +23,7 @@ pub async fn run_mcp_server(context: AppContext) -> Result<(), Error> {
 
     let layer =
         axum::middleware::from_fn_with_state(context, middleware::authentication_middleware);
-        
+
     let router = axum::Router::new()
         .nest_service("/mcp", service)
         .layer(layer);
