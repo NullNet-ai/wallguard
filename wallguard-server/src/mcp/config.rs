@@ -36,4 +36,7 @@ pub const SERVICE_INSTRUCTIONS: &str = "
 This server provides tools to interact with the client connected to the system.
 Tools:
 - execute_command: Execute a CLI command
+
+Resources:
+- json://client_details: Obtain information about the client
 ";

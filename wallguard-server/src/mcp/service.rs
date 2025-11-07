@@ -2,17 +2,20 @@ use std::time::Duration;
 
 use super::schema::ExecuteCommandParameters;
 use crate::app_context::AppContext;
+use crate::datastore::Device;
 use crate::mcp::config::SERVICE_INSTRUCTIONS;
 use crate::utilities::random;
 use axum::http::request::Parts;
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
-    CallToolResult, Content, ErrorCode, Implementation, ProtocolVersion, ServerCapabilities,
-    ServerInfo,
+    AnnotateAble, CallToolResult, Content, ErrorCode, Implementation, ListResourcesResult,
+    PaginatedRequestParam, ProtocolVersion, RawResource, ReadResourceRequestParam,
+    ReadResourceResult, ResourceContents, ServerCapabilities, ServerInfo,
 };
 use rmcp::service::RequestContext;
 use rmcp::{ErrorData, RoleServer, ServerHandler, tool, tool_handler, tool_router};
+use serde_json::json;
 use wallguard_common::protobuf::wallguard_commands::ExecuteCliCommandRequest;
 
 #[derive(Clone)]
@@ -33,7 +36,7 @@ impl MCPService {
     async fn get_device_info(
         &self,
         context: &RequestContext<RoleServer>,
-    ) -> Result<(String, String), ErrorData> {
+    ) -> Result<(Device, String), ErrorData> {
         let Some(mcp_session_id) = context
             .extensions
             .get::<Parts>()
@@ -41,11 +44,10 @@ impl MCPService {
             .and_then(|parts| parts.headers.get("mcp-session-id").cloned())
             .and_then(|value| value.to_str().map(|v| v.to_string()).ok())
         else {
-            return Err(ErrorData {
-                code: ErrorCode::INVALID_REQUEST,
-                message: "MCP session id is undefined".into(),
-                data: None,
-            });
+            return Err(ErrorData::internal_error(
+                "MCP session id is undefined",
+                None,
+            ));
         };
 
         let session = self
@@ -61,7 +63,32 @@ impl MCPService {
                 data: None,
             })?;
 
-        Ok((session.device_id, session.instance_id))
+        let token = self
+            .context
+            .sysdev_token_provider
+            .get()
+            .await
+            .map_err(|_| {
+                ErrorData::internal_error(
+                    "Internal server error: failed to fetch datastore token",
+                    None,
+                )
+            })?;
+
+        let device = self
+            .context
+            .datastore
+            .obtain_device_by_id(&token.jwt, &session.device_id, false)
+            .await
+            .map_err(|err| {
+                ErrorData::internal_error(
+                    format!("Failed to fetch client data: {}", err.to_str()),
+                    None,
+                )
+            })?
+            .ok_or(ErrorData::internal_error("Clint not found", None))?;
+
+        Ok((device, session.instance_id))
     }
 }
 
@@ -75,19 +102,18 @@ impl MCPService {
         >,
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, ErrorData> {
-        let (device_uuid, instance_id) = self.get_device_info(&context).await?;
+        let (device, instance_id) = self.get_device_info(&context).await?;
 
         let Some(instance) = self
             .context
             .orchestractor
-            .get_client(&device_uuid, &instance_id)
+            .get_client(&device.uuid, &instance_id)
             .await
         else {
-            return Err(ErrorData {
-                code: ErrorCode::INVALID_REQUEST,
-                message: "Client is not connected, try again later".into(),
-                data: None,
-            });
+            return Err(ErrorData::internal_error(
+                "Client is not connected, try again later",
+                None,
+            ));
         };
 
         let request = ExecuteCliCommandRequest {
@@ -103,10 +129,11 @@ impl MCPService {
             .await
             .execute_cli_command(request, timeout)
             .await
-            .map_err(|err| ErrorData {
-                code: ErrorCode::INTERNAL_ERROR,
-                message: format!("Failed to execute command: {}", err.to_str()).into(),
-                data: None,
+            .map_err(|err| {
+                ErrorData::internal_error(
+                    format!("Failed to execute command: {}", err.to_str()),
+                    None,
+                )
             })?;
 
         let output = format!(
@@ -130,6 +157,37 @@ impl ServerHandler for MCPService {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(SERVICE_INSTRUCTIONS.into()),
+        }
+    }
+
+    async fn list_resources(
+        &self,
+        _: Option<PaginatedRequestParam>,
+        _: RequestContext<RoleServer>,
+    ) -> Result<ListResourcesResult, ErrorData> {
+        Ok(ListResourcesResult {
+            next_cursor: None,
+            resources: vec![
+                RawResource::new("json://client_details", "Client Details").no_annotation(),
+            ],
+        })
+    }
+
+    async fn read_resource(
+        &self,
+        ReadResourceRequestParam { uri }: ReadResourceRequestParam,
+        context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResult, ErrorData> {
+        let (device, _) = self.get_device_info(&context).await?;
+
+        match uri.as_str() {
+            "json://client_details" => Ok(ReadResourceResult {
+                contents: vec![ResourceContents::text(json!(device).to_string(), uri)],
+            }),
+            _ => Err(ErrorData::resource_not_found(
+                "Resource not found",
+                Some(json!({ "uri": uri })),
+            )),
         }
     }
 }
