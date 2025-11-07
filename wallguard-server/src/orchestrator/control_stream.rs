@@ -1,11 +1,12 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::time::Duration;
+use tokio::sync::broadcast;
 
 use crate::app_context::AppContext;
 use crate::orchestrator::client::{InboundStream, OutboundStream};
 use crate::token_provider::TokenProvider;
 use wallguard_common::protobuf::wallguard_commands::{
-    ServerMessage, client_message, server_message,
+    ExecuteCliCommandResponse, ServerMessage, client_message, server_message,
 };
 
 const HEARTBEAT_TIME: Duration = Duration::from_secs(20);
@@ -17,6 +18,7 @@ pub(crate) async fn control_stream(
     inbound: InboundStream,
     outbound: OutboundStream,
     context: AppContext,
+    channel: broadcast::Sender<ExecuteCliCommandResponse>,
 ) {
     log::info!("Starting a control stream for device UUID {device_uuid}, Instance {instance_id}");
 
@@ -43,7 +45,7 @@ pub(crate) async fn control_stream(
                 );
             }
         },
-        ares = authstream(inbound, outbound, context.clone()) => {
+        ares = authstream(inbound, outbound, context.clone(), channel) => {
             if let Err(err) = ares {
                 log::error!(
                     "Control stream for client with device UUID '{}' failed: {}",
@@ -99,6 +101,7 @@ async fn authstream(
     mut inbound: InboundStream,
     outbound: OutboundStream,
     context: AppContext,
+    channel: broadcast::Sender<ExecuteCliCommandResponse>,
 ) -> Result<(), Error> {
     let message = inbound
         .message()
@@ -146,8 +149,22 @@ async fn authstream(
 
             msg = inbound.message() => {
                 match msg {
-                    Ok(Some(_)) => {
-                        log::warn!("Unexpected message from client after authentication; ignoring");
+                    Ok(Some(message)) => {
+                        let Some(msg) = message.message else {
+                            log::warn!("Received message wrapper but no inner `message`; ignoring");
+                            continue;
+                        };
+
+                        match msg {
+                            client_message::Message::ExecuteCliCommandResponse(response) => {
+                                if let Err(err) = channel.send(response) {
+                                    log::error!("Failed to send response to the channel: {err}");
+                                }
+                            },
+                            other => {
+                                log::warn!("Unexpected message from client after authentication; ignoring: {:?}", other);
+                            },
+                        }
                     }
                     Ok(None) => {
                         return Err("Inbound stream closed by client").handle_err(location!());

@@ -20,8 +20,28 @@ pub struct Authentication {
     pub app_secret: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExecuteCliCommandRequest {
+    #[prost(string, tag = "1")]
+    pub command: ::prost::alloc::string::String,
+    #[prost(string, repeated, tag = "2")]
+    pub arguments: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(string, tag = "3")]
+    pub request_unique_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ExecuteCliCommandResponse {
+    #[prost(string, tag = "1")]
+    pub stdout: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub stderr: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub status: i32,
+    #[prost(string, tag = "4")]
+    pub request_unique_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientMessage {
-    #[prost(oneof = "client_message::Message", tags = "1, 2")]
+    #[prost(oneof = "client_message::Message", tags = "1, 2, 3")]
     pub message: ::core::option::Option<client_message::Message>,
 }
 /// Nested message and enum types in `ClientMessage`.
@@ -32,6 +52,8 @@ pub mod client_message {
         AuthorizationRequest(super::AuthorizationRequest),
         #[prost(message, tag = "2")]
         Authentication(super::Authentication),
+        #[prost(message, tag = "3")]
+        ExecuteCliCommandResponse(super::ExecuteCliCommandResponse),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -63,7 +85,7 @@ pub struct UiSessionData {
 pub struct ServerMessage {
     #[prost(
         oneof = "server_message::Message",
-        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16"
     )]
     pub message: ::core::option::Option<server_message::Message>,
 }
@@ -101,5 +123,7 @@ pub mod server_message {
         CreateNatRule(super::super::wallguard_models::NatRule),
         #[prost(message, tag = "15")]
         CreateAlias(super::super::wallguard_models::Alias),
+        #[prost(message, tag = "16")]
+        ExecuteCliCommandRequest(super::ExecuteCliCommandRequest),
     }
 }

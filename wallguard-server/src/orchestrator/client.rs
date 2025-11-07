@@ -1,8 +1,13 @@
+use std::time::Duration;
+
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
+use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tonic::Streaming;
+use wallguard_common::protobuf::wallguard_commands::ExecuteCliCommandRequest;
+use wallguard_common::protobuf::wallguard_commands::ExecuteCliCommandResponse;
 use wallguard_common::protobuf::wallguard_models::Alias;
 use wallguard_common::protobuf::wallguard_models::FilterRule;
 use wallguard_common::protobuf::wallguard_models::NatRule;
@@ -24,6 +29,7 @@ pub struct Instance {
     pub(crate) device_uuid: String,
     pub(crate) instance_id: String,
     pub(crate) outbound: OutboundStream,
+    pub(crate) channel: broadcast::Sender<ExecuteCliCommandResponse>,
 }
 
 impl Instance {
@@ -34,18 +40,22 @@ impl Instance {
         outbound: OutboundStream,
         context: AppContext,
     ) -> Self {
+        let (channel, _) = broadcast::channel(64);
+
         tokio::spawn(control_stream(
             device_uuid.clone(),
             instance_id.clone(),
             inbound,
             outbound.clone(),
             context,
+            channel.clone(),
         ));
 
         Self {
             device_uuid,
             instance_id,
             outbound,
+            channel,
         }
     }
 
@@ -282,5 +292,50 @@ impl Instance {
             .send(Ok(message))
             .await
             .handle_err(location!())
+    }
+
+    pub async fn execute_cli_command(
+        &self,
+        request: ExecuteCliCommandRequest,
+        timeout: Duration,
+    ) -> Result<ExecuteCliCommandResponse, Error> {
+        log::info!(
+            "Sending ExecuteCliCommandRequest to the client with device UUID {}, Instance {}",
+            self.device_uuid,
+            self.instance_id
+        );
+
+        let request_id = request.request_unique_id.clone();
+
+        let message = ServerMessage {
+            message: Some(Message::ExecuteCliCommandRequest(request)),
+        };
+
+        let mut channel = self.channel.subscribe();
+
+        self.outbound
+            .send(Ok(message))
+            .await
+            .handle_err(location!())?;
+
+        let result = tokio::time::timeout(timeout, async {
+            loop {
+                let Ok(response) = channel.recv().await else {
+                    return None;
+                };
+
+                if response.request_unique_id == request_id {
+                    return Some(response);
+                }
+            }
+        })
+        .await;
+
+        match result {
+            Ok(retval) => retval
+                .ok_or("Failed to receive response")
+                .handle_err(location!()),
+            Err(_) => Err("Request timed out").handle_err(location!()),
+        }
     }
 }

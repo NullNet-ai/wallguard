@@ -1,11 +1,13 @@
 use app_context::AppContext;
 use control_service::run_control_service;
 use http_proxy::run_http_proxy;
+use mcp::run_mcp_server;
 
 mod app_context;
 mod control_service;
 mod datastore;
 mod http_proxy;
+mod mcp;
 mod orchestrator;
 mod reverse_tunnel;
 mod token_provider;
@@ -40,6 +42,7 @@ async fn main() {
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {},
         _ = run_control_service(app_context.clone()) => {},
-        _ = run_http_proxy(app_context) => {}
+        _ = run_http_proxy(app_context.clone()) => {},
+        _ = run_mcp_server(app_context.clone()) => {}
     }
 }

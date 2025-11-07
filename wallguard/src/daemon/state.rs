@@ -5,17 +5,12 @@ use super::wallguard_cli::status::State;
 use crate::control_channel::ControlChannel;
 use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum DaemonState {
+    #[default]
     Idle,
     Connected(Box<ControlChannel>),
     Error(String),
-}
-
-impl Default for DaemonState {
-    fn default() -> Self {
-        Self::Idle
-    }
 }
 
 impl From<DaemonState> for Status {
