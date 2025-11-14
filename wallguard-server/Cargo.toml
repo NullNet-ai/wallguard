@@ -50,7 +50,12 @@ nullnet-liberror.workspace = true
 
 russh = "0.54.3"
 webrtc = "0.14.0"
-rmcp = { version = "0.8.3", features = ["server", "transport-streamable-http-server-session", "transport-streamable-http-server", "schemars"] }
+rmcp = { version = "0.8.3", features = [
+    "server", 
+    "transport-streamable-http-server-session", 
+    "transport-streamable-http-server", 
+    "schemars"
+    ] }
 tokio-util = "0.7.16"
 axum = "0.8.6"
 

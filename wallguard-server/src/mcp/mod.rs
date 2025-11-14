@@ -1,15 +1,15 @@
 use crate::{
     app_context::AppContext,
-    mcp::{config::McpConfig, service::MCPService, session_manager::SessionManagerEx},
+    mcp::{config::McpConfig, service::MCPService},
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use rmcp::transport::streamable_http_server::StreamableHttpService;
+use rmcp::transport::streamable_http_server::{
+    StreamableHttpService, session::local::LocalSessionManager,
+};
 
 mod config;
-mod middleware;
 mod schema;
 mod service;
-mod session_manager;
 
 pub async fn run_mcp_server(context: AppContext) -> Result<(), Error> {
     let cfg = McpConfig::from_env();
@@ -17,16 +17,11 @@ pub async fn run_mcp_server(context: AppContext) -> Result<(), Error> {
     let ctx = context.clone();
     let service = StreamableHttpService::new(
         move || Ok(MCPService::new(ctx.clone())),
-        SessionManagerEx::new(context.clone()).into(),
+        LocalSessionManager::default().into(),
         Default::default(),
     );
 
-    let layer =
-        axum::middleware::from_fn_with_state(context, middleware::authentication_middleware);
-
-    let router = axum::Router::new()
-        .nest_service("/mcp", service)
-        .layer(layer);
+    let router = axum::Router::new().nest_service("/mcp", service);
 
     let listener = tokio::net::TcpListener::bind(cfg.addr)
         .await

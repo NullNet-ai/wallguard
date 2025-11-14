@@ -1,13 +1,9 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
-use nullnet_liberror::Error;
-use tokio::sync::Mutex;
-
-use crate::datastore::{Datastore, RemoteAccessSession};
+use crate::datastore::Datastore;
 use crate::orchestrator::Orchestrator;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
+
+use nullnet_liberror::Error;
 
 // Unfortunately, we have to use both root and system device credentials because:
 // - The system device cannot fetch data outside its own organization; only the root account can do that.
@@ -49,8 +45,6 @@ pub struct AppContext {
 
     pub root_token_provider: TokenProvider,
     pub sysdev_token_provider: TokenProvider,
-
-    pub mcp_sessions: Arc<Mutex<HashMap<String, RemoteAccessSession>>>,
 }
 
 impl AppContext {
@@ -79,7 +73,6 @@ impl AppContext {
             tunnel,
             sysdev_token_provider,
             root_token_provider,
-            mcp_sessions: Default::default(),
         })
     }
 }
