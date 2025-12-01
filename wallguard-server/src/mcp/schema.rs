@@ -8,7 +8,6 @@ pub struct ExecuteCommandParameters {
     pub(super) session: String,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ObtainDeviceParameters {
     pub(super) session: String,

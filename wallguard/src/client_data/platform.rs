@@ -11,6 +11,7 @@ pub enum Platform {
     PfSense,
     OpnSense,
     NfTables,
+    Desktop,
 }
 
 impl TryFrom<&str> for Platform {
@@ -22,6 +23,7 @@ impl TryFrom<&str> for Platform {
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
             "nftables" => Ok(Platform::NfTables),
+            "desktop" => Ok(Platform::Desktop),
             _ => {
                 let errmsg = format!("Unsupported platform {value}");
                 Err(errmsg).handle_err(location!())
@@ -45,6 +47,7 @@ impl fmt::Display for Platform {
             Platform::OpnSense => "opnsense",
             Platform::Generic => "generic",
             Platform::NfTables => "nftables",
+            Platform::Desktop => "desktop",
         };
 
         write!(f, "{value}")
@@ -53,7 +56,7 @@ impl fmt::Display for Platform {
 
 impl Platform {
     pub fn can_monitor_config(&self) -> bool {
-        !matches!(self, Platform::Generic)
+        !matches!(self, Platform::Generic | Platform::Desktop)
     }
 
     pub fn can_monitor_telemetry(&self) -> bool {
@@ -62,6 +65,10 @@ impl Platform {
 
     pub fn can_monitor_traffic(&self) -> bool {
         true
+    }
+
+    pub fn can_open_remote_desktop_session(&self) -> bool {
+        matches!(self, Platform::Desktop)
     }
 
     pub fn get_sysconf_files(&self) -> Vec<SystemConfigurationFile> {
@@ -74,7 +81,7 @@ impl Platform {
                 let file = NftablesRuleset::default();
                 vec![SystemConfigurationFile::NftablesRuleset(file)]
             }
-            Platform::Generic => vec![],
+            Platform::Generic | Platform::Desktop => vec![],
         }
     }
 }

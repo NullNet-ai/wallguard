@@ -23,6 +23,16 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
     async fn execute(self) -> Result<(), Error> {
         log::debug!("Received OpenRemoteDesktopSessionCommand");
 
+        if !self
+            .context
+            .client_data
+            .platform
+            .can_open_remote_desktop_session()
+        {
+            return Err("Cannot open remote desktop session: unsupported session")
+                .handle_err(location!());
+        }
+
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());
         };

@@ -45,8 +45,11 @@ impl Context {
             client_data.platform,
         );
 
-        // @TODO
-        let remote_desktop_manager = RemoteDesktopManager::new().unwrap();
+        let remote_desktop_manager = if client_data.platform.can_open_remote_desktop_session() {
+            Some(RemoteDesktopManager::new().unwrap())
+        } else {
+            None
+        };
 
         Ok(Self {
             token_provider,
@@ -55,7 +58,7 @@ impl Context {
             daemon,
             client_data,
             transmission_manager: Arc::new(Mutex::new(transmission_manager)),
-            remote_desktop_manager: Some(remote_desktop_manager),
+            remote_desktop_manager,
         })
     }
 }

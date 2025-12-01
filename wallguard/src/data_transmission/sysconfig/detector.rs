@@ -27,7 +27,7 @@ impl Detector {
             Platform::PfSense => Detector::check_pfsense().await,
             Platform::OpnSense => Detector::check_opnsense().await,
             Platform::NfTables => State::Applied,
-            Platform::Generic => unreachable!(),
+            Platform::Generic | Platform::Desktop => unreachable!(),
         }
     }
 

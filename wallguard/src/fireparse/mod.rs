@@ -53,13 +53,17 @@ impl Fireparse {
                     format!("{:x}", md5::compute(ruleset.content.as_slice())),
                 )
             }
-            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::Generic | Platform::Desktop => {
+                Err("Unsupported platform").handle_err(location!())
+            }
         }
     }
 
     pub async fn create_filter_rule(rule: FilterRule, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::Generic | Platform::Desktop => {
+                Err("Unsupported platform").handle_err(location!())
+            }
             Platform::PfSense => PfSenseParser::create_filter_rule(rule).await,
             Platform::OpnSense => OpnSenseParser::create_filter_rule(rule).await,
             Platform::NfTables => NftablesParser::create_filter_rule(rule).await,
@@ -68,7 +72,9 @@ impl Fireparse {
 
     pub async fn create_nat_rule(rule: NatRule, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::Generic | Platform::Desktop => {
+                Err("Unsupported platform").handle_err(location!())
+            }
             Platform::PfSense => PfSenseParser::create_nat_rule(rule).await,
             Platform::OpnSense => OpnSenseParser::create_nat_rule(rule).await,
             Platform::NfTables => NftablesParser::create_nat_rule(rule).await,
@@ -77,7 +83,9 @@ impl Fireparse {
 
     pub async fn create_alias(alias: Alias, platform: Platform) -> Result<(), Error> {
         match platform {
-            Platform::Generic => Err("Unsupported platform").handle_err(location!()),
+            Platform::Generic | Platform::Desktop => {
+                Err("Unsupported platform").handle_err(location!())
+            }
             Platform::PfSense => PfSenseParser::create_alias(alias).await,
             Platform::OpnSense => OpnSenseParser::create_alias(alias).await,
             Platform::NfTables => NftablesParser::create_alias(alias).await,
