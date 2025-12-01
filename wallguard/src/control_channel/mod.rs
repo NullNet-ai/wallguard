@@ -200,11 +200,14 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
                 }
             }
             server_message::Message::DeviceDeauthorizedMessage(_) => {
-                // @TODO: Command
                 _ = Storage::delete_value(Secret::AppId).await;
                 _ = Storage::delete_value(Secret::AppSecret).await;
-                // Gracefuly transition to IDLE state
-                todo!();
+
+                let ctx = context.clone();
+                let _ = tokio::spawn(async move {
+                    let _ = Daemon::leave_org(ctx.daemon).await;
+                })
+                .await;
             }
             server_message::Message::OpenRemoteDesktopSessionCommand(token) => {
                 let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
