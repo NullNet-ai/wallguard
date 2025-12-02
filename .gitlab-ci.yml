@@ -1,21 +1,42 @@
-stages:
-  - build_and_push
+workflow:
+  auto_cancel:
+    on_new_commit: conservative
+    on_job_failure: all
 
-variables:
-  IMAGE_TAG: "latest"
+default:
+  tags:
+    - docker-52-1-21
+    - rust
 
-build-and-push:
-  stage: build_and_push
-  image: docker:24.0.5-cli
-  services:
-    - docker:24.0.5-dind
-  before_script:
-    - echo "$CI_JOB_TOKEN" | docker login $CI_REGISTRY -u gitlab-ci-token --password-stdin
+clean-docker:
+  stage: .pre
   script:
-    - docker build -t "$CI_REGISTRY_IMAGE/wallguard-server:$IMAGE_TAG" .
-    - docker push "$CI_REGISTRY_IMAGE/wallguard-server:$IMAGE_TAG"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: always
-    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
-      when: always
+    - docker system prune -a -f --volumes
+    - docker compose rm -f -s -v
+
+update-rust:
+  stage: .pre
+  script:
+    - rustup update
+
+fmt:
+  script:
+    - cargo fmt --all -- --check
+
+build:
+  script:
+    - cargo build --verbose
+
+clippy:
+  script:
+    - cargo clippy -- -D warnings
+
+test:
+  script:
+    - SSL_CERT_FILE="./tls/ca.pem" cargo test -- --nocapture
+  timeout: 10 minutes
+
+push-image:
+  script:
+    - docker build -t "wallguard-server:latest" .
+    - docker push "wallguard-server:latest"
