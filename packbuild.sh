@@ -1,34 +1,58 @@
 #!/usr/bin/env bash
-
 set -e
 
-case "$1" in
-    deb)
-        cargo build --release -p wallguard -p wallguard-cli
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <deb|freebsd> [version]"
+  exit 1
+fi
 
-        mkdir -p packages/debian/usr/local/bin
-        cp target/release/wallguard packages/debian/usr/local/bin/
-        cp target/release/wallguard-cli packages/debian/usr/local/bin/
+mode="$1"
+shift
 
-        dpkg-deb --build packages/debian ./
+case "$mode" in
+  deb)
+    if [ -z "$1" ]; then
+      echo "Error: missing version for deb package."
+      echo "Usage: $0 deb <version>"
+      exit 1
+    fi
+    VERSION="$1"
 
-        rm packages/debian/usr/local/bin/wallguard
-        rm packages/debian/usr/local/bin/wallguard-cli
-        ;;
-    freebsd)
-        cargo build --release -p wallguard -p wallguard-cli
+    cargo build --release -p wallguard -p wallguard-cli
 
-        mkdir -p packages/freebsd/usr/local/bin
-        cp target/release/wallguard packages/freebsd/usr/local/bin/
-        cp target/release/wallguard-cli packages/freebsd/usr/local/bin/
+    PKGDIR="packages/debian"
+    DEBIANDIR="$PKGDIR/DEBIAN"
 
-        pkg create -M packages/freebsd/+MANIFEST -r packages/freebsd
+    mkdir -p "$DEBIANDIR"
+    mkdir -p "$PKGDIR/usr/local/bin"
 
-        rm packages/freebsd/usr/local/bin/wallguard
-        rm packages/freebsd/usr/local/bin/wallguard-cli
-	;;
-    *)
-        echo "Unsupported or missing parameter."
-        exit 1
-        ;;
+    sed "s/__VERSION__/${VERSION}/g" "$PKGDIR/control.tpl" > "$DEBIANDIR/control"
+
+    cp target/release/wallguard "$PKGDIR/usr/local/bin/"
+    cp target/release/wallguard-cli "$PKGDIR/usr/local/bin/"
+
+    dpkg-deb --build "$PKGDIR" .
+
+    rm "$PKGDIR/usr/local/bin/wallguard" "$PKGDIR/usr/local/bin/wallguard-cli"
+    rm -rf "$DEBIANDIR"
+    ;;
+
+  freebsd)
+    cargo build --release -p wallguard -p wallguard-cli
+
+    mkdir -p packages/freebsd/usr/local/bin
+    cp target/release/wallguard packages/freebsd/usr/local/bin/
+    cp target/release/wallguard-cli packages/freebsd/usr/local/bin/
+
+    pkg create -M packages/freebsd/+MANIFEST -r packages/freebsd
+
+    rm packages/freebsd/usr/local/bin/wallguard
+    rm packages/freebsd/usr/local/bin/wallguard-cli
+    ;;
+
+  *)
+    echo "Unsupported mode: $mode"
+    echo "Usage: $0 <deb|freebsd> [version]"
+    exit 1
+    ;;
 esac

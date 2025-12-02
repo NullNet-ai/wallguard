@@ -2,27 +2,38 @@ name: Packages CI
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - 'wallguard/**'
-      - 'wallguard-common/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'wallguard/**'
-      - 'wallguard-common/**'
+    tags:
+      - 'v*.*.*'
 
 jobs:
-  debian:
+  build-deb-and-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine version from tag
+        id: version
+        run: |
+          # github.ref is like "refs/tags/v1.2.3"
+          TAG=${GITHUB_REF#refs/tags/}
+          # strip a leading 'v' if present
+          VERSION=${TAG#v}
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Using version: $VERSION"
 
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libpcap-dev protobuf-compiler libpipewire-0.3-dev libpipewire-0.3-modules libspa-0.2-dev libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+          sudo apt-get install -y libpcap-dev protobuf-compiler \
+            libpipewire-0.3-dev libpipewire-0.3-modules libspa-0.2-dev \
+            libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev \
+            libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
       - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -30,5 +41,19 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Build package
-        run: ./packbuild.sh deb
+      - name: Build .deb package
+        run: |
+          # pass the version to your script
+          ./packbuild.sh deb $VERSION
+
+      - name: Create Release and upload .deb
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "wallguard_*.deb"
+          tag: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            Release ${{ github.ref }}  
+            - Debian package for Wallguard (version ${{ env.VERSION }})
+          draft: false
+          prerelease: false

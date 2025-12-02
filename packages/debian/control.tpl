@@ -1,5 +1,5 @@
 Package: wallguard
-Version: 1.0.0
+Version: __VERSION__
 Architecture: amd64
 Maintainer: Anton Liashkevich <anton.liashkevich.eng@gmail.com>
 Description: WallGuard agent and CLI interface
