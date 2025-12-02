@@ -3,8 +3,14 @@ name: Packages CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'wallguard/**'
+      - 'wallguard-common/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'wallguard/**'
+      - 'wallguard-common/**'
 
 jobs:
   debian:
