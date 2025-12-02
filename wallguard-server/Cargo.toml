@@ -12,7 +12,7 @@ readme = "README.md"
 repository = "https://github.com/NullNet-ai/wallguard-server"
 #documentation = ""
 license = "AGPL-3.0-only"
-keywords = ["firewall", "network", "manager", "centralized", "monitor", "agent"]
+keywords = ["firewall", "network", "manager", "centralized", "monitor", "agent", "mcp-server"]
 categories = ["network-programming"]
 publish = false
 
