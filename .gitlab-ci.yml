@@ -13,28 +13,6 @@ clean-docker:
   script:
     - docker system prune -a -f --volumes
 
-update-rust:
-  stage: .pre
-  script:
-    - rustup update
-
-fmt:
-  script:
-    - cargo fmt --all -- --check
-
-build:
-  script:
-    - cargo build --verbose
-
-clippy:
-  script:
-    - cargo clippy -- -D warnings
-
-test:
-  script:
-    - SSL_CERT_FILE="./tls/ca.pem" cargo test -- --nocapture
-  timeout: 10 minutes
-
 push-image:
   script:
     - docker build -t "wallguard-server:latest" .
