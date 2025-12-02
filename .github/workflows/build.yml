@@ -24,8 +24,14 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Check formatting
+      - name: fmt
         run: cargo fmt --all -- --check
 
-      - name: Clippy (lint)
+      - name: build
+        run: cargo build --verbose
+
+      - name: clippy
         run: cargo clippy -- -D warnings
+
+      - name: test
+        run: cargo test -- --nocapture
