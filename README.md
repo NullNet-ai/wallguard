@@ -1,5 +1,8 @@
 # WallGuard
 
+[![Build CI](https://github.com/NullNet-ai/wallguard/actions/workflows/build.yml/badge.svg)](https://github.com/NullNet-ai/wallguard/actions/workflows/build.yml)
+[![Server Docker](https://github.com/NullNet-ai/wallguard/actions/workflows/docker.yml/badge.svg)](https://github.com/NullNet-ai/wallguard/actions/workflows/docker.yml)
+
 **WallGuard** is a part of **Nullnet**, built to work with firewalls and other network-facing systems. It consists of a server and a set of agents installed on target machines. The server manages the agents, collects data, and provides access to remote systems.
 
 ## Overivew
