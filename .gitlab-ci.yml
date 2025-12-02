@@ -12,7 +12,6 @@ clean-docker:
   stage: .pre
   script:
     - docker system prune -a -f --volumes
-    - docker compose rm -f -s -v
 
 update-rust:
   stage: .pre
