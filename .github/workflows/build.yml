@@ -3,8 +3,16 @@ name: Build CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'wallguard-server/**'
+      - 'wallguard-common/**'
+      - 'wallguard/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'wallguard-server/**'
+      - 'wallguard-common/**'
+      - 'wallguard/**'
 
 jobs:
   lint:
