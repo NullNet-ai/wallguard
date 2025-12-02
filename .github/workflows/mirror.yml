@@ -1,13 +1,23 @@
 name: Mirror to GitLab
 
 on:
-  push:
-    branches:
-      - 'main'
+  workflow_call:
+    secrets:
+      GITLAB_TOKEN:
+        required: true
 
 jobs:
-
   mirror_to_gitlab:
-    uses: NullNet-ai/appguard-server/.github/workflows/gitlab_mirror.yml@main
-    secrets:
-      GITLAB_TOKEN: ${{secrets.GITLAB_TOKEN}}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to GitLab
+        run: |
+          git remote add gitlab https://oauth2:${{secrets.GITLAB_TOKEN}}@gitlab.nullnet.ai/nullnet/${{github.event.repository.name}}.git
+          git config --global user.name "${{github.actor}}"
+          git fetch gitlab main
+          git push gitlab main --force
