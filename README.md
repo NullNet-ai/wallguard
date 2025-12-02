@@ -58,22 +58,6 @@ WallGuard relies on a separate service called **datastore** for database operati
 You can find the datastore project here:  
 🔗 [https://github.com/NullNet-ai/datastore](https://github.com/NullNet-ai/datastore)
 
-### Server Environment
-
-The server requires the following environment variables to be set:
-
-| Variable Name           | Description                                      | Default Value | Required      |
-| ----------------------- | ------------------------------------------------ | ------------- | ------------- |
-| `ROOT_ACCOUNT_ID`       | Datastore root account ID                        | _(empty)_     | Yes           |
-| `ROOT_ACCOUNT_SECRET`   | Datastore root account secret                    | _(empty)_     | Yes           |
-| `SYSTEM_ACCOUNT_ID`     | Datastore system/dev account ID                  | _(empty)_     | Yes           |
-| `SYSTEM_ACCOUNT_SECRET` | Datastore system/dev account secret              | _(empty)_     | Yes           |
-| `CONTROL_SERVICE_ADDR`  | Address where the control server listens         | `127.0.0.1`   | No            |
-| `CONTROL_SERVICE_PORT`  | Port where the control server listens            | `50051`       | No            |
-| `HTTP_PROXY_HOST`       | Address for the HTTP proxy server                | `127.0.0.1`   | No            |
-| `HTTP_PROXY_PORT`       | Port for the HTTP proxy server                   | `4444`        | No            |
-| `IP_INFO_API_KEY`       | API key for IP address resolution                | _(empty)_     | No (optional) |
-
 ## Contributing
 
 If you'd like to help improve **WallGuard**, you're welcome to open issues or submit pull requests.
