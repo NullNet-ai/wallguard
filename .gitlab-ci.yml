@@ -1,0 +1,21 @@
+stages:
+  - build_and_push
+
+variables:
+  IMAGE_TAG: "latest"
+
+build-and-push:
+  stage: build_and_push
+  image: docker:24.0.5-cli
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login $CI_REGISTRY -u gitlab-ci-token --password-stdin
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE/wallguard-server:$IMAGE_TAG" .
+    - docker push "$CI_REGISTRY_IMAGE/wallguard-server:$IMAGE_TAG"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: always
+    - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+      when: always
