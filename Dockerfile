@@ -13,7 +13,7 @@ COPY . .
 
 RUN cargo build --release -p wallguard-server
 
-FROM debian:bookworm-slim
+FROM debian:bookworm AS runtime
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libgcc-s1 libstdc++6 ca-certificates && \
