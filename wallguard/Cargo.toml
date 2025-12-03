@@ -18,7 +18,7 @@ libc = "0.2.178"
 chrono = "0.4.41"
 once_cell = "1.21.3"
 nullnet-traffic-monitor = "0.1.5"
-sysinfo = { version = "0.35.2", default-features = false, features = ["disk"] }
+sysinfo = { version = "0.37.2", default-features = false, features = ["disk"] }
 async-channel = "2.3.1"
 nullnet-libresmon = "0.1.2"
 wallguard-common = { path = "../wallguard-common" }
