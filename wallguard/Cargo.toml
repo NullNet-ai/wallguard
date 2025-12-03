@@ -34,6 +34,8 @@ nftables = "0.6.3"
 enigo = "0.6.1"
 copypasta = "0.10.2"
 openh264 = "0.9.0"
+
+[target.'cfg(not(freebsd))'.dependencies]
 captis = "0.6.1"
 
 [target.'cfg(windows)'.dependencies]

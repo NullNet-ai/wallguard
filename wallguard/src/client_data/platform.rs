@@ -67,6 +67,7 @@ impl Platform {
         true
     }
 
+    #[cfg(not(target_os = "freebsd"))]
     pub fn can_open_remote_desktop_session(&self) -> bool {
         matches!(self, Platform::Desktop)
     }
