@@ -15,7 +15,6 @@ mod daemon;
 mod data_transmission;
 mod fireparse;
 mod pty;
-mod remote_desktop;
 mod reverse_tunnel;
 mod server_data;
 mod storage;
@@ -23,6 +22,9 @@ mod timer;
 mod token_provider;
 mod utilities;
 mod wg_server;
+
+#[cfg(not(target_os = "freebsd"))]
+mod remote_desktop;
 
 fn check_privileges() {
     #[cfg(windows)]

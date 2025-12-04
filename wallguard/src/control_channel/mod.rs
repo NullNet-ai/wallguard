@@ -3,10 +3,13 @@ use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
     CreateAliasCommand, CreateFilterRuleCommand, CreateNatRuleCommand,
     EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
-    EnableTelemetryMonitoringCommand, ExecuteCliCommand, HeartbeatCommand,
-    OpenRemoteDesktopSessionCommand, OpenTtySessionCommand, OpenUiSessionCommand,
-    UpdateTokenCommand,
+    EnableTelemetryMonitoringCommand, ExecuteCliCommand, HeartbeatCommand, OpenTtySessionCommand,
+    OpenUiSessionCommand, UpdateTokenCommand,
 };
+
+#[cfg(not(target_os = "freebsd"))]
+use crate::control_channel::commands::OpenRemoteDesktopSessionCommand;
+
 use crate::control_channel::post_startup::post_startup;
 use crate::daemon::Daemon;
 use crate::storage::{Secret, Storage};
@@ -209,14 +212,26 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
                 })
                 .await;
             }
-            server_message::Message::OpenRemoteDesktopSessionCommand(token) => {
-                let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
 
-                if let Err(err) = cmd.execute().await {
-                    log::error!(
-                        "OpenRemoteDesktopSessionCommand execution failed: {}",
-                        err.to_str()
+            server_message::Message::OpenRemoteDesktopSessionCommand(token) => {
+                #[cfg(not(target_os = "freebsd"))]
+                {
+                    let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
+
+                    if let Err(err) = cmd.execute().await {
+                        log::error!(
+                            "OpenRemoteDesktopSessionCommand execution failed: {}",
+                            err.to_str()
+                        );
+                    }
+                }
+
+                #[cfg(target_os = "freebsd")]
+                {
+                    log::warn!(
+                        "FreeBSD does not support remote desktop, ignoring OpenRemoteDesktopSessionCommand"
                     );
+                    let _ = token;
                 }
             }
             server_message::Message::ExecuteCliCommandRequest(request) => {

@@ -3,7 +3,6 @@ use crate::constants::DISK_SIZE;
 use crate::daemon::Daemon;
 use crate::data_transmission::dump_dir::DumpDir;
 use crate::data_transmission::transmission_manager::TransmissionManager;
-use crate::remote_desktop::RemoteDesktopManager;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::server_data::ServerData;
 use crate::token_provider::TokenProvider;
@@ -11,6 +10,9 @@ use crate::wg_server::WGServer;
 use nullnet_liberror::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+#[cfg(not(target_os = "freebsd"))]
+use crate::remote_desktop::RemoteDesktopManager;
 
 #[derive(Clone, Debug)]
 pub struct Context {
@@ -20,6 +22,8 @@ pub struct Context {
     pub daemon: Arc<Mutex<Daemon>>,
     pub transmission_manager: Arc<Mutex<TransmissionManager>>,
     pub client_data: ClientData,
+
+    #[cfg(not(target_os = "freebsd"))]
     pub remote_desktop_manager: Option<RemoteDesktopManager>,
 }
 
@@ -45,6 +49,7 @@ impl Context {
             client_data.platform,
         );
 
+        #[cfg(not(target_os = "freebsd"))]
         let remote_desktop_manager = if client_data.platform.can_open_remote_desktop_session() {
             Some(RemoteDesktopManager::new().unwrap())
         } else {
@@ -58,6 +63,8 @@ impl Context {
             daemon,
             client_data,
             transmission_manager: Arc::new(Mutex::new(transmission_manager)),
+
+            #[cfg(not(target_os = "freebsd"))]
             remote_desktop_manager,
         })
     }
