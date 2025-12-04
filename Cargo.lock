@@ -3026,7 +3026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11eb36074a3ff5aaf8d47507d0f241fd3dfaf977594232753bef57f33ea21dc6"
 dependencies = [
  "async-channel",
- "sysinfo",
+ "sysinfo 0.35.2",
 ]
 
 [[package]]
@@ -4991,6 +4991,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "sysinfo"
+version = "0.37.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16607d5caffd1c07ce073528f9ed972d88db15dd44023fa57142963be3feb11f"
+dependencies = [
+ "libc",
+ "memchr",
+ "ntapi",
+ "objc2-core-foundation",
+ "objc2-io-kit",
+ "windows 0.61.3",
+]
+
+[[package]]
 name = "system-configuration"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5547,7 +5561,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "smbios-lib",
- "sysinfo",
+ "sysinfo 0.37.2",
  "tokio",
  "tonic 0.13.1",
  "wallguard-common",
@@ -5563,7 +5577,7 @@ dependencies = [
  "is_elevated",
  "nix 0.30.1",
  "prost",
- "sysinfo",
+ "sysinfo 0.37.2",
  "tokio",
  "tonic 0.13.1",
  "wallguard-common",
