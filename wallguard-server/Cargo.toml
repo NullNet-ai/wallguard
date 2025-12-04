@@ -48,7 +48,7 @@ serde.workspace = true
 serde_json.workspace = true
 nullnet-liberror.workspace = true
 
-russh = "0.54.3"
+russh = "0.55.0"
 webrtc = "0.14.0"
 rmcp = { version = "0.10.0", features = [
     "server", 
