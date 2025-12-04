@@ -56,7 +56,7 @@ rmcp = { version = "0.10.0", features = [
     "transport-streamable-http-server", 
     "schemars"
     ] }
-tokio-util = "0.7.16"
+tokio-util = "0.7.17"
 axum = "0.8.6"
 
 [badges]
