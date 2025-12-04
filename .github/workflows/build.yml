@@ -15,31 +15,53 @@ on:
       - 'wallguard/**'
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'ubuntu'
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libpcap-dev protobuf-compiler libpipewire-0.3-dev libpipewire-0.3-modules libspa-0.2-dev libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+          sudo apt-get install -y libpcap-dev protobuf-compiler libpipewire-0.3-dev \
+            libpipewire-0.3-modules libspa-0.2-dev libxcb1-dev libxcb-shm0-dev \
+            libxcb-randr0-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
-      - name: Set up Rust toolchain
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows'
+        run: |
+          choco install -y npcap
+
+          $url = "https://nmap.org/dist/npcap-sdk-1.15.zip"
+          $zip = "ncpk_sdk.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP\npcap-sdk"
+          
+          $sdklib = Join-Path $env:RUNNER_TEMP "npcap-sdk\Lib\x64"
+          Write-Host "Setting LIB to include SDK lib path: $sdklib"
+          echo "##[set-env name=LIB]$($env:LIB + ';' + $sdklib)"  
+
+
+      - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: fmt
+      - name: fmt check
         run: cargo fmt --all -- --check
 
-      - name: build
+      - name: Build workspace
         run: cargo build --verbose
 
-      - name: clippy
+      - name: lint (clippy)
         run: cargo clippy -- -D warnings
 
-      - name: test
+      - name: Test
         run: cargo test -- --nocapture
