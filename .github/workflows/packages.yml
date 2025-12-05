@@ -162,6 +162,7 @@ jobs:
           version: ${{ matrix.platform.os-version }}
           cpu_count: 4
           memory: 16G
+          environment_variables: VERSION
           shutdown_vm: true
           sync_files: vm-to-runner
           run: echo "Syncing artifacts"
