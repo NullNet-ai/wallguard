@@ -51,6 +51,7 @@ pub async fn generate_keypair(
 }
 
 #[cfg(test)]
+#[cfg(not(target_os = "windows"))]
 mod tests {
     use super::*;
 

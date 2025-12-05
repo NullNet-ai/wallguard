@@ -103,7 +103,7 @@ jobs:
         architecture: ${{ matrix.platform.arch }}
         version: ${{ matrix.platform.os-version }}
         cpu_count: 4
-        memory: 4G
+        memory: 8G
         environment_variables:
         shutdown_vm: false
         sync_files: runner-to-vm
@@ -119,7 +119,7 @@ jobs:
         architecture: ${{ matrix.platform.arch }}
         version: ${{ matrix.platform.os-version }}
         cpu_count: 4
-        memory: 4G
+        memory: 8G
         environment_variables:
         shutdown_vm: false
         sync_files: false
@@ -132,7 +132,7 @@ jobs:
         architecture: ${{ matrix.platform.arch }}
         version: ${{ matrix.platform.os-version }}
         cpu_count: 4
-        memory: 4G
+        memory: 8G
         environment_variables:
         shutdown_vm: false
         sync_files: false
@@ -145,7 +145,7 @@ jobs:
         architecture: ${{ matrix.platform.arch }}
         version: ${{ matrix.platform.os-version }}
         cpu_count: 4
-        memory: 4G
+        memory: 8G
         environment_variables:
         shutdown_vm: false
         sync_files: false
@@ -158,7 +158,7 @@ jobs:
         architecture: ${{ matrix.platform.arch }}
         version: ${{ matrix.platform.os-version }}
         cpu_count: 4
-        memory: 4G
+        memory: 8G
         environment_variables:
         shutdown_vm: true
         sync_files: false
