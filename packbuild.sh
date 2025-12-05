@@ -57,6 +57,8 @@ case "$mode" in
     sed "s/__VERSION__/${VERSION}/g" $PKGDIR/+MANIFEST.tpl > "$PKGDIR/+MANIFEST"
 
     pkg create -M $PKGDIR/+MANIFEST -r $PKGDIR
+
+    rm $PKGDIR/+MANIFEST $PKGDIR/usr/local/bin/wallguard $PKGDIR/usr/local/bin/wallguard-cli
     ;;
 
   *)
