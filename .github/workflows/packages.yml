@@ -46,16 +46,23 @@ jobs:
           # pass the version to your script
           ./packbuild.sh deb $VERSION
 
-      - name: Create Release and upload .deb
-        uses: ncipollo/release-action@v1
+      - name: Get existing GitHub release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          artifacts: "wallguard_*.deb"
           tag: ${{ github.ref }}
-          body: |
-            Release ${{ github.ref }}  
-            - Debian package for Wallguard (version ${{ env.VERSION }})
-          draft: false
-          prerelease: false
+
+      - name: Upload Lionux package to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: "wallguard_*.deb"
+          asset_name: "wallguard_${{ env.VERSION }}.deb"
+          asset_content_type: application/octet-stream
 
   build-windows-and-release:
     if: false # TODO: Impleement Windows packaging
@@ -96,17 +103,23 @@ jobs:
         run: |
           .\packbuild.bat windows ${{ env.VERSION }}
 
-      - name: Upload Windows package to Release
-        uses: ncipollo/release-action@v1
+      - name: Get existing GitHub release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          artifacts: "wallguard_*.exe,wallguard_*.msi,wallguard_*.zip"
           tag: ${{ github.ref }}
-          body: |
-            Release ${{ github.ref }}  
-            - Windows package for Wallguard (version ${{ env.VERSION }})
-          draft: false
-          prerelease: false
-          allowUpdates: true
+
+      - name: Upload Windows package to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: "wallguard_*.msi"
+          asset_name: "wallguard_${{ env.VERSION }}.msi"
+          asset_content_type: application/octet-stream
 
   build-freebsd-and-release:
     runs-on: ubuntu-latest
@@ -166,14 +179,20 @@ jobs:
           sync_files: vm-to-runner
           run: echo "Syncing artifacts"
 
-      - name: Upload FreeBSD package to Release
-        uses: ncipollo/release-action@v1
+      - name: Get existing GitHub release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          artifacts: "wallguard_*.pkg"
           tag: ${{ github.ref }}
-          body: |
-            Release ${{ github.ref }}  
-            - FreeBSD package for Wallguard (version ${{ env.VERSION }})
-          draft: false
-          prerelease: false
-          allowUpdates: true
+
+      - name: Upload FreeBSD package to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: "wallguard_*.pkg"
+          asset_name: "wallguard_${{ env.VERSION }}.pkg"
+          asset_content_type: application/octet-stream
