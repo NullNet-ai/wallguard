@@ -38,16 +38,25 @@ case "$mode" in
     ;;
 
   freebsd)
+    if [ -z "$1" ]; then
+      echo "Error: missing version (or release tag) for freebsd package."
+      echo "Usage: $0 freebsd <version>"
+      exit 1
+    fi
+    VERSION="$1"
+
     cargo build --release -p wallguard -p wallguard-cli
 
-    mkdir -p packages/freebsd/usr/local/bin
-    cp target/release/wallguard packages/freebsd/usr/local/bin/
-    cp target/release/wallguard-cli packages/freebsd/usr/local/bin/
+    PKGDIR="packages/freebsd"
 
-    pkg create -M packages/freebsd/+MANIFEST -r packages/freebsd
+    mkdir -p "$PKGDIR/usr/local/bin"
 
-    rm packages/freebsd/usr/local/bin/wallguard
-    rm packages/freebsd/usr/local/bin/wallguard-cli
+    cp target/release/wallguard "$PKGDIR/usr/local/bin/"
+    cp target/release/wallguard-cli "$PKGDIR/usr/local/bin/"
+
+    sed "s/__VERSION__/${VERSION}/g" $PKGDIR/+MANIFEST.tpl > "$PKGDIR/+MANIFEST"
+
+    pkg create -M $PKGDIR/+MANIFEST -r $PKGDIR
     ;;
 
   *)

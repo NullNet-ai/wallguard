@@ -1,6 +1,6 @@
 {
 	"name": "wallguard",
-	"version": "1.0.0",
+	"version": "__VERSION__",
 	"origin": "custom/wallguard",
 	"comment": "WallGuard agent and CLI",
 	"maintainer": "anton.liashkevich.eng@gmail.com",
