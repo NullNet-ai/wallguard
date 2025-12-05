@@ -11,7 +11,7 @@ serde.workspace = true
 serde_json.workspace = true
 nullnet-liberror.workspace = true
 
-bincode = "1.3.3"
+bincode = "2.0.1"
 get_if_addrs = "0.5.3"
 pnet = "0.35.0"
 
