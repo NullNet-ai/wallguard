@@ -169,7 +169,7 @@ jobs:
       - name: Upload FreeBSD package to Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "wallguard_*.txz,wallguard_*.tar.gz"
+          artifacts: "wallguard_*.pkg"
           tag: ${{ github.ref }}
           release_name: ${{ github.ref }}
           body: |
