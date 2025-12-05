@@ -82,7 +82,7 @@ jobs:
 
 
   build-bsd:
-    name: ${{ matrix.platform.name }}
+    name: Build & Test (${{ matrix.platform.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
@@ -111,7 +111,6 @@ jobs:
           sudo pkg update
           sudo pkg install -y cmake llvm libpcap protobuf
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          which cmake || (echo "cmake missing" && exit 1)
 
     - name: Check Formatting
       uses: cross-platform-actions/action@v0.30.0
