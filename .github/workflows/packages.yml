@@ -51,7 +51,6 @@ jobs:
         with:
           artifacts: "wallguard_*.deb"
           tag: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           body: |
             Release ${{ github.ref }}  
             - Debian package for Wallguard (version ${{ env.VERSION }})
@@ -59,6 +58,7 @@ jobs:
           prerelease: false
 
   build-windows-and-release:
+    if: false # TODO: Impleement Windows packaging
     runs-on: windows-latest
     permissions:
       contents: write
@@ -101,7 +101,6 @@ jobs:
         with:
           artifacts: "wallguard_*.exe,wallguard_*.msi,wallguard_*.zip"
           tag: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           body: |
             Release ${{ github.ref }}  
             - Windows package for Wallguard (version ${{ env.VERSION }})
@@ -172,7 +171,6 @@ jobs:
         with:
           artifacts: "wallguard_*.pkg"
           tag: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           body: |
             Release ${{ github.ref }}  
             - FreeBSD package for Wallguard (version ${{ env.VERSION }})
