@@ -59,7 +59,6 @@ jobs:
           prerelease: false
 
   build-windows-and-release:
-    if: false # TODO: Implement Windows packaging
     runs-on: windows-latest
     permissions:
       contents: write
@@ -164,7 +163,6 @@ jobs:
           version: ${{ matrix.platform.os-version }}
           cpu_count: 4
           memory: 16G
-          environment_variables:
           shutdown_vm: true
           sync_files: vm-to-runner
           run: echo "Syncing artifacts"
