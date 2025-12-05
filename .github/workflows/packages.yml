@@ -60,7 +60,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard_*.deb"
+          asset_path: "wallguard_${{ env.VERSION }}.deb"
           asset_name: "wallguard_${{ env.VERSION }}.deb"
           asset_content_type: application/octet-stream
 
@@ -117,7 +117,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard_*.msi"
+          asset_path: "wallguard_${{ env.VERSION }}.msi"
           asset_name: "wallguard_${{ env.VERSION }}.msi"
           asset_content_type: application/octet-stream
 
@@ -193,6 +193,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard_*.pkg"
+          asset_path: "wallguard_${{ env.VERSION }}.pkg"
           asset_name: "wallguard_${{ env.VERSION }}.pkg"
           asset_content_type: application/octet-stream
