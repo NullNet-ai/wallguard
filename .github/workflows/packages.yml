@@ -57,3 +57,127 @@ jobs:
             - Debian package for Wallguard (version ${{ env.VERSION }})
           draft: false
           prerelease: false
+
+  build-windows-and-release:
+    if: false # TODO: Implement Windows packaging
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine version from tag
+        id: version
+        run: |
+          # PowerShell script to extract version
+          $TAG = "${{ github.ref }}" -replace "refs/tags/", ""
+          $VERSION = $TAG -replace "^v", ""
+          echo "VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "Using version: $VERSION"
+
+      - name: Install dependencies
+        run: |
+          choco install -y protoc
+
+          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile "C:/npcap-sdk.zip"
+          Expand-Archive -LiteralPath C:/npcap-sdk.zip -DestinationPath C:/npcap-sdk
+          echo "LIB=C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
+
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Build Windows package
+        run: |
+          .\packbuild.bat windows ${{ env.VERSION }}
+
+      - name: Upload Windows package to Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "wallguard_*.exe,wallguard_*.msi,wallguard_*.zip"
+          tag: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            Release ${{ github.ref }}  
+            - Windows package for Wallguard (version ${{ env.VERSION }})
+          draft: false
+          prerelease: false
+          allowUpdates: true
+
+  build-freebsd-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+        - { name: FreeBSD, os: freebsd, os-version: '14.3', arch: x86_64 }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Determine version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Using version: $VERSION"
+
+      - name: Install Dependencies and Build FreeBSD package
+        uses: cross-platform-actions/action@v0.30.0
+        with:
+          operating_system: ${{ matrix.platform.os }}
+          architecture: ${{ matrix.platform.arch }}
+          version: ${{ matrix.platform.os-version }}
+          cpu_count: 4
+          memory: 16G
+          environment_variables:
+            VERSION: ${{ env.VERSION }}
+          shutdown_vm: false
+          sync_files: runner-to-vm
+          run: |
+            sudo pkg update
+            sudo pkg install -y cmake llvm libpcap protobuf bash
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            
+            export PATH=$HOME/.cargo/bin:$PATH
+            bash ./packbuild.sh freebsd $VERSION
+
+      - name: Sync artifacts back from VM
+        uses: cross-platform-actions/action@v0.30.0
+        with:
+          operating_system: ${{ matrix.platform.os }}
+          architecture: ${{ matrix.platform.arch }}
+          version: ${{ matrix.platform.os-version }}
+          cpu_count: 4
+          memory: 16G
+          environment_variables:
+          shutdown_vm: true
+          sync_files: vm-to-runner
+          run: echo "Syncing artifacts"
+
+      - name: Upload FreeBSD package to Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "wallguard_*.txz,wallguard_*.tar.gz"
+          tag: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            Release ${{ github.ref }}  
+            - FreeBSD package for Wallguard (version ${{ env.VERSION }})
+          draft: false
+          prerelease: false
+          allowUpdates: true
