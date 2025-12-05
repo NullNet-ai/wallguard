@@ -143,8 +143,7 @@ jobs:
           version: ${{ matrix.platform.os-version }}
           cpu_count: 4
           memory: 16G
-          environment_variables:
-            VERSION: ${{ env.VERSION }}
+          environment_variables: VERSION
           shutdown_vm: false
           sync_files: runner-to-vm
           run: |
