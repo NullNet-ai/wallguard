@@ -56,8 +56,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          choco install -y npcap
           choco install -y protoc
+          choco install -y npcap
+          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile "C:/npcap-sdk.zip"
+          Expand-Archive -LiteralPath C:/npcap-sdk.zip -DestinationPath C:/npcap-sdk
+          echo "LIB=C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
 
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -75,4 +78,89 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Test
+        run: cargo test -- --nocapture
+
+
+  build-bsd:
+    name: ${{ matrix.platform.name }} ${{ matrix.configuration }} ${{ matrix.platform.arch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+        - { name: FreeBSD, os: freebsd, os-version: '14.3', arch: x86_64,
+            install-cmd: "sudo pkg update && \ 
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+            sudo pkg install -y cmake llvm libpcap protobuf"
+          }
+
+    steps:
+    - uses: actions/checkout@main
+      with:
+        submodules: recursive
+
+    - name: Install dependencies ${{ matrix.platform.name }}
+      uses: cross-platform-actions/action@v0.30.0
+      with:
+        operating_system: ${{ matrix.platform.os }}
+        architecture: ${{ matrix.platform.arch }}
+        version: ${{ matrix.platform.os-version }}
+        cpu_count: 4
+        memory: 4G
+        environment_variables:
+        shutdown_vm: false
+        sync_files: runner-to-vm
+        run: ${{ matrix.platform.install-cmd }}
+
+    - name: Check formatting
+      uses: cross-platform-actions/action@v0.30.0
+      with:
+        operating_system: ${{ matrix.platform.os }}
+        architecture: ${{ matrix.platform.arch }}
+        version: ${{ matrix.platform.os-version }}
+        cpu_count: 4
+        memory: 4G
+        environment_variables:
+        shutdown_vm: false
+        sync_files: false
+        run: cargo fmt --all -- --check
+
+    - name: Build workspace
+      uses: cross-platform-actions/action@v0.30.0
+      with:
+        operating_system: ${{ matrix.platform.os }}
+        architecture: ${{ matrix.platform.arch }}
+        version: ${{ matrix.platform.os-version }}
+        cpu_count: 4
+        memory: 4G
+        environment_variables:
+        shutdown_vm: false
+        sync_files: false
+        run: cargo build --verbose
+
+    - name: Lint
+      uses: cross-platform-actions/action@v0.30.0
+      with:
+        operating_system: ${{ matrix.platform.os }}
+        architecture: ${{ matrix.platform.arch }}
+        version: ${{ matrix.platform.os-version }}
+        cpu_count: 4
+        memory: 4G
+        environment_variables:
+        shutdown_vm: false
+        sync_files: false
+        run: cargo clippy -- -D warnings
+
+    - name: Test
+      uses: cross-platform-actions/action@v0.30.0
+      with:
+        operating_system: ${{ matrix.platform.os }}
+        architecture: ${{ matrix.platform.arch }}
+        version: ${{ matrix.platform.os-version }}
+        cpu_count: 4
+        memory: 4G
+        environment_variables:
+        shutdown_vm: false
+        sync_files: false
         run: cargo test -- --nocapture
