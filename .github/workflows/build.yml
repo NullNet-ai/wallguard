@@ -89,12 +89,7 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-        - { name: FreeBSD, os: freebsd, os-version: '14.3', arch: x86_64,
-            install-cmd: "sudo pkg update && \ 
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-            . $HOME/.cargo/env \
-            sudo pkg install -y cmake llvm libpcap protobuf"
-          }
+        - { name: FreeBSD, os: freebsd, os-version: '14.3', arch: x86_64 }
 
     steps:
     - uses: actions/checkout@main
@@ -112,7 +107,11 @@ jobs:
         environment_variables:
         shutdown_vm: false
         sync_files: runner-to-vm
-        run: ${{ matrix.platform.install-cmd }}
+        run: |
+          sudo pkg update
+          sudo pkg install -y cmake llvm libpcap protobuf
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          which cmake || (echo "cmake missing" && exit 1)
 
     - name: Check Formatting
       uses: cross-platform-actions/action@v0.30.0
