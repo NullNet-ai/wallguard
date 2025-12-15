@@ -63,6 +63,10 @@ impl ControlChannel {
 
         let _ = self.terminate.send(());
     }
+
+    pub fn get_context(&self) -> Context {
+        self.context.clone()
+    }
 }
 
 async fn stream_wrapper(

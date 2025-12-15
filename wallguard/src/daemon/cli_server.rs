@@ -34,13 +34,23 @@ impl WallguardCli for CliServer {
         &self,
         _: tonic::Request<()>,
     ) -> Result<tonic::Response<Caps>, tonic::Status> {
-        let caps = Caps {
-            traffic: false,
-            telemetry: false,
-            sysconfig: false,
+        use crate::daemon::state::DaemonState;
+
+        let capabilities = match &self.inner.lock().await.state {
+            DaemonState::Connected(control_channel) => {
+                let ctx = control_channel.get_context();
+                let manager = ctx.transmission_manager.lock().await;
+
+                Caps {
+                    traffic: manager.has_packet_capture(),
+                    telemetry: manager.has_resource_monitoring(),
+                    sysconfig: manager.has_sysconf_monitoring(),
+                }
+            }
+            _ => Caps::default(),
         };
 
-        let response = tonic::Response::from(caps);
+        let response = tonic::Response::from(capabilities);
         Ok(response)
     }
 
