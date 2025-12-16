@@ -15,6 +15,17 @@ pub async fn post_startup(context: Context) {
         return;
     }
 
+    if crate::data_transmission::sysconfig::force_upload_once(
+        context.server.clone(),
+        context.client_data.platform,
+        context.token_provider.clone(),
+    )
+    .await
+    .is_err()
+    {
+        log::error!("Failed to upload intial configuration");
+    }
+
     let Ok(response) = context
         .server
         .get_device_settings(DeviceSettingsRequest {
