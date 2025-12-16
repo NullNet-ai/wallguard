@@ -97,7 +97,7 @@ jobs:
         submodules: recursive
 
     - name: Install Dependencies
-      uses: cross-platform-actions/action@v0.30.0
+      uses: cross-platform-actions/action@v0.31.0
       with:
         operating_system: ${{ matrix.platform.os }}
         architecture: ${{ matrix.platform.arch }}
@@ -113,7 +113,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
     - name: Check Formatting
-      uses: cross-platform-actions/action@v0.30.0
+      uses: cross-platform-actions/action@v0.31.0
       with:
         operating_system: ${{ matrix.platform.os }}
         architecture: ${{ matrix.platform.arch }}
@@ -126,7 +126,7 @@ jobs:
         run: $HOME/.cargo/bin/cargo fmt --all -- --check
 
     - name: Build
-      uses: cross-platform-actions/action@v0.30.0
+      uses: cross-platform-actions/action@v0.31.0
       with:
         operating_system: ${{ matrix.platform.os }}
         architecture: ${{ matrix.platform.arch }}
@@ -139,7 +139,7 @@ jobs:
         run: $HOME/.cargo/bin/cargo build --verbose
 
     - name: Lint
-      uses: cross-platform-actions/action@v0.30.0
+      uses: cross-platform-actions/action@v0.31.0
       with:
         operating_system: ${{ matrix.platform.os }}
         architecture: ${{ matrix.platform.arch }}
@@ -152,7 +152,7 @@ jobs:
         run: $HOME/.cargo/bin/cargo clippy -- -D warnings
 
     - name: Test
-      uses: cross-platform-actions/action@v0.30.0
+      uses: cross-platform-actions/action@v0.31.0
       with:
         operating_system: ${{ matrix.platform.os }}
         architecture: ${{ matrix.platform.arch }}
