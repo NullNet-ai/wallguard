@@ -71,7 +71,7 @@ pub async fn proxy_http_request(
 
     let Ok(tunnel) = tunneling::establish_tunneled_ui(
         &context,
-        &device.uuid,
+        &device.id,
         &session.instance_id,
         &protocol,
         &local_addr,

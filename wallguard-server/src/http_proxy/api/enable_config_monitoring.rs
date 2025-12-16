@@ -59,7 +59,7 @@ pub async fn enable_config_monitoring(
 
     let Some(client) = context
         .orchestractor
-        .get_client(&device.uuid, &body.instance_id)
+        .get_client(&device.id, &body.instance_id)
         .await
     else {
         return HttpResponse::NotFound().json(ErrorJson::from("Device is not online"));

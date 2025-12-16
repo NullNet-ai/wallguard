@@ -14,19 +14,19 @@ const HEARTBEAT_TIME: Duration = Duration::from_secs(20);
 const TOKEN_UPDATE_TIME: Duration = Duration::from_secs(60);
 
 pub(crate) async fn control_stream(
-    device_uuid: String,
+    device_id: String,
     instance_id: String,
     inbound: InboundStream,
     outbound: OutboundStream,
     context: AppContext,
     channel: broadcast::Sender<ExecuteCliCommandResponse>,
 ) {
-    log::info!("Starting a control stream for device UUID {device_uuid}, Instance {instance_id}");
+    log::info!("Starting a control stream for device ID {device_id}, Instance {instance_id}");
 
     if let Ok(token) = context.sysdev_token_provider.get().await {
         if context
             .datastore
-            .update_device_online_status(&token.jwt, &device_uuid, true)
+            .update_device_online_status(&token.jwt, &device_id, true)
             .await
             .is_err()
         {
@@ -37,11 +37,11 @@ pub(crate) async fn control_stream(
     }
 
     tokio::select! {
-        hres = healthcheck(outbound.clone(), context.clone(), device_uuid.clone()) => {
+        hres = healthcheck(outbound.clone(), context.clone(), device_id.clone()) => {
             if let Err(err) = hres {
                 log::error!(
-                    "Health check for client with device UUID '{}' failed: {}",
-                    device_uuid,
+                    "Health check for client with device ID '{}' failed: {}",
+                    device_id,
                     err.to_str()
                 );
             }
@@ -49,8 +49,8 @@ pub(crate) async fn control_stream(
         ares = authstream(inbound, outbound, context.clone(), channel) => {
             if let Err(err) = ares {
                 log::error!(
-                    "Control stream for client with device UUID '{}' failed: {}",
-                    device_uuid,
+                    "Control stream for client with device ID '{}' failed: {}",
+                    device_id,
                     err.to_str()
                 );
             }
@@ -59,7 +59,7 @@ pub(crate) async fn control_stream(
 
     let _ = context
         .orchestractor
-        .on_disconnected(&device_uuid, &instance_id)
+        .on_disconnected(&device_id, &instance_id)
         .await;
 
     if let Ok(token) = context.sysdev_token_provider.get().await {
@@ -70,12 +70,12 @@ pub(crate) async fn control_stream(
 
         let is_online = context
             .orchestractor
-            .does_client_have_connected_instances(&device_uuid)
+            .does_client_have_connected_instances(&device_id)
             .await;
 
         if context
             .datastore
-            .update_device_online_status(&token.jwt, &device_uuid, is_online)
+            .update_device_online_status(&token.jwt, &device_id, is_online)
             .await
             .is_err()
         {
@@ -89,20 +89,8 @@ pub(crate) async fn control_stream(
 async fn healthcheck(
     stream: OutboundStream,
     context: AppContext,
-    device_uuid: String,
+    device_id: String,
 ) -> Result<(), Error> {
-    let Ok(token) = context.sysdev_token_provider.get().await else {
-        return Err("Failed to obtain token").handle_err(location!());
-    };
-
-    let Ok(Some(device)) = context
-        .datastore
-        .obtain_device_by_uuid(&token.jwt, &device_uuid, false)
-        .await
-    else {
-        return Err("Failed to obtain device").handle_err(location!());
-    };
-
     loop {
         let heartbeat = ServerMessage {
             message: Some(server_message::Message::HeartbeatMessage(())),
@@ -111,7 +99,7 @@ async fn healthcheck(
         stream.send(Ok(heartbeat)).await.handle_err(location!())?;
 
         if let Ok(token) = context.sysdev_token_provider.get().await {
-            let data = HeartbeatModel::from_device_id(device.id.clone());
+            let data = HeartbeatModel::from_device_id(device_id.clone());
             if context
                 .datastore
                 .create_heartbeat(&token.jwt, &data)

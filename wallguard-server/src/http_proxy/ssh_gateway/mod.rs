@@ -67,7 +67,7 @@ pub(super) async fn open_ssh_session(
 
     let Ok(tunnel) = tunneling::establish_tunneled_ssh(
         &context,
-        &device.uuid,
+        &device.id,
         &session.instance_id,
         &keypair.public_key,
     )

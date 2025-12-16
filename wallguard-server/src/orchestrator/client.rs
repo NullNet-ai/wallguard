@@ -26,7 +26,7 @@ pub(crate) type InboundStream = Streaming<ClientMessage>;
 
 #[derive(Debug)]
 pub struct Instance {
-    pub(crate) device_uuid: String,
+    pub(crate) device_id: String,
     pub(crate) instance_id: String,
     pub(crate) outbound: OutboundStream,
     pub(crate) channel: broadcast::Sender<ExecuteCliCommandResponse>,
@@ -34,7 +34,7 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(
-        device_uuid: String,
+        device_id: String,
         instance_id: String,
         inbound: InboundStream,
         outbound: OutboundStream,
@@ -43,7 +43,7 @@ impl Instance {
         let (channel, _) = broadcast::channel(64);
 
         tokio::spawn(control_stream(
-            device_uuid.clone(),
+            device_id.clone(),
             instance_id.clone(),
             inbound,
             outbound.clone(),
@@ -52,7 +52,7 @@ impl Instance {
         ));
 
         Self {
-            device_uuid,
+            device_id,
             instance_id,
             outbound,
             channel,
@@ -61,8 +61,8 @@ impl Instance {
 
     pub async fn authorize(&mut self, data: AuthenticationData) -> Result<(), Error> {
         log::debug!(
-            "Authorizing Device {}, Instance {}",
-            self.device_uuid,
+            "Authorizing Device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -80,8 +80,8 @@ impl Instance {
 
     pub async fn _deauthorize(&mut self) -> Result<(), Error> {
         log::debug!(
-            "Deauthorizing Device {}, Instance {}",
-            self.device_uuid,
+            "Deauthorizing Device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -99,8 +99,8 @@ impl Instance {
 
     pub async fn enable_network_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableNetworkMonitoringCommand to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending EnableNetworkMonitoringCommand to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -116,8 +116,8 @@ impl Instance {
 
     pub async fn enable_telemetry_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableTelemetryMonitoringCommand to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending EnableTelemetryMonitoringCommand to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -133,8 +133,8 @@ impl Instance {
 
     pub async fn enable_configuration_monitoring(&self, enable: bool) -> Result<(), Error> {
         log::info!(
-            "Sending EnableConfigurationMonitoringCommand to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending EnableConfigurationMonitoringCommand to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -154,8 +154,8 @@ impl Instance {
         public_key: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenSshSessionCommandto to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending OpenSshSessionCommandto to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -176,8 +176,8 @@ impl Instance {
 
     pub async fn request_tty_session(&self, tunnel_token: impl Into<String>) -> Result<(), Error> {
         log::info!(
-            "Sending OpenTtySessionCommand to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending OpenTtySessionCommand to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -199,8 +199,8 @@ impl Instance {
         protocol: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenUiSessionCommand to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending OpenUiSessionCommand to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -226,8 +226,8 @@ impl Instance {
         tunnel_token: impl Into<String>,
     ) -> Result<(), Error> {
         log::info!(
-            "Sending OpenRemoteDesktopSessionCommand to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending OpenRemoteDesktopSessionCommand to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -245,8 +245,8 @@ impl Instance {
 
     pub async fn create_filter_rule(&self, rule: FilterRule) -> Result<(), Error> {
         log::info!(
-            "Sending CreateFilterRule to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending CreateFilterRule to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -262,8 +262,8 @@ impl Instance {
 
     pub async fn create_nat_rule(&self, rule: NatRule) -> Result<(), Error> {
         log::info!(
-            "Sending CreateNatRule to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending CreateNatRule to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -279,8 +279,8 @@ impl Instance {
 
     pub async fn create_alias(&self, alias: Alias) -> Result<(), Error> {
         log::info!(
-            "Sending CreateAlias to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending CreateAlias to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 
@@ -300,8 +300,8 @@ impl Instance {
         timeout: Duration,
     ) -> Result<ExecuteCliCommandResponse, Error> {
         log::info!(
-            "Sending ExecuteCliCommandRequest to the client with device UUID {}, Instance {}",
-            self.device_uuid,
+            "Sending ExecuteCliCommandRequest to the client with device ID {}, Instance {}",
+            self.device_id,
             self.instance_id
         );
 

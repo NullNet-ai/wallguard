@@ -150,7 +150,7 @@ impl AuthReqHandler {
             let device = match self
                 .context
                 .datastore
-                .obtain_device_by_uuid(&root_token.jwt, &auth.uuid, true)
+                .obtain_device_by_id(&root_token.jwt, &installation_code.device_id, true)
                 .await
             {
                 Ok(device) => device,
@@ -232,35 +232,25 @@ impl AuthReqHandler {
         };
 
         let instance = Arc::new(Mutex::new(Instance::new(
-            device.uuid.clone(),
+            device.id.clone(),
             instance_id,
             inbound,
             outbound,
             context,
         )));
 
-        if clients.get(&device.uuid).is_none() {
-            clients.insert(device.uuid.clone(), Default::default());
+        if clients.get(&device.id).is_none() {
+            clients.insert(device.id.clone(), Default::default());
         }
 
         if let Some(auth_data) = authentication {
             if instance.lock().await.authorize(auth_data).await.is_ok() {
-                clients
-                    .get(&device.uuid)
-                    .unwrap()
-                    .lock()
-                    .await
-                    .push(instance);
+                clients.get(&device.id).unwrap().lock().await.push(instance);
             } else {
                 log::error!("Failed to authorize a device");
             }
         } else {
-            clients
-                .get(&device.uuid)
-                .unwrap()
-                .lock()
-                .await
-                .push(instance);
+            clients.get(&device.id).unwrap().lock().await.push(instance);
         }
     }
 }

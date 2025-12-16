@@ -112,7 +112,7 @@ impl MCPService {
         let Some(instance) = self
             .context
             .orchestractor
-            .get_client(&device.uuid, &session.instance_id)
+            .get_client(&device.id, &session.instance_id)
             .await
         else {
             return Err(ErrorData::internal_error(

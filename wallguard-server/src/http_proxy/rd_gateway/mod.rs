@@ -60,7 +60,7 @@ pub(super) async fn open_remote_desktop_session(
     }
 
     let Ok(tunnel) =
-        tunneling::establish_tunneled_rd(&context, &device.uuid, &session.instance_id).await
+        tunneling::establish_tunneled_rd(&context, &device.id, &session.instance_id).await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));

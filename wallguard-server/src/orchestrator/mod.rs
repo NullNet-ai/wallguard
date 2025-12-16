@@ -41,16 +41,17 @@ impl Orchestrator {
         tokio::spawn(handler.handle(inbound, outbound));
     }
 
-    pub async fn on_disconnected(&self, uuid: &str, instance_id: &str) -> Result<(), Error> {
-        log::info!("Orchestrator: on_client_disconnected, uuid {uuid}, Instance {instance_id}");
+    pub async fn on_disconnected(&self, device_id: &str, instance_id: &str) -> Result<(), Error> {
+        log::info!("Orchestrator: on_client_disconnected, id {device_id}, Instance {instance_id}");
 
         let lock = self.clients.lock().await;
 
-        if lock.get(uuid).is_none() {
-            Err(format!("Device with UUID '{uuid}' is not connected")).handle_err(location!())?;
+        if lock.get(device_id).is_none() {
+            Err(format!("Device with ID '{device_id}' is not connected"))
+                .handle_err(location!())?;
         }
 
-        let mut instances = lock.get(uuid).unwrap().lock().await;
+        let mut instances = lock.get(device_id).unwrap().lock().await;
 
         let filtered: Vec<_> = instances
             .drain(..)
@@ -65,12 +66,16 @@ impl Orchestrator {
         Ok(())
     }
 
-    pub async fn get_client_instances(&self, device_uuid: &str) -> Option<InstancesVector> {
-        self.clients.lock().await.get(device_uuid).cloned()
+    pub async fn get_client_instances(&self, device_id: &str) -> Option<InstancesVector> {
+        self.clients.lock().await.get(device_id).cloned()
     }
 
-    pub async fn get_client(&self, uuid: &str, instance_id: &str) -> Option<Arc<Mutex<Instance>>> {
-        let instances = self.get_client_instances(uuid).await?;
+    pub async fn get_client(
+        &self,
+        device_id: &str,
+        instance_id: &str,
+    ) -> Option<Arc<Mutex<Instance>>> {
+        let instances = self.get_client_instances(device_id).await?;
 
         for instance in instances.lock().await.iter() {
             if instance.lock().await.instance_id == instance_id {
@@ -81,8 +86,8 @@ impl Orchestrator {
         None
     }
 
-    pub async fn does_client_have_connected_instances(&self, uuid: &str) -> bool {
-        if let Some(vec) = self.clients.lock().await.get(uuid) {
+    pub async fn does_client_have_connected_instances(&self, device_id: &str) -> bool {
+        if let Some(vec) = self.clients.lock().await.get(device_id) {
             !vec.lock().await.is_empty()
         } else {
             false

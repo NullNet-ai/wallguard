@@ -20,18 +20,18 @@ enum TunnelType {
 ///
 /// # Arguments
 /// - `context`: The application context with orchestrator and tunnel services
-/// - `device_uuid`: The device UUID
+/// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
 /// - `public_key`: The SSH public key used for authentication
 pub async fn establish_tunneled_ssh(
     context: &AppContext,
-    device_uuid: &str,
+    device_id: &str,
     instance_id: &str,
     public_key: &str,
 ) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(
         context,
-        device_uuid,
+        device_id,
         instance_id,
         TunnelType::Ssh(public_key.into()),
     )
@@ -42,42 +42,42 @@ pub async fn establish_tunneled_ssh(
 ///
 /// # Arguments
 /// - `context`: The application context
-/// - `device_uuid`: The device UUID
+/// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
 pub async fn establish_tunneled_tty(
     context: &AppContext,
-    device_uuid: &str,
+    device_id: &str,
     instance_id: &str,
 ) -> Result<TunnelInstance, Error> {
-    establish_tunneled_channel(context, device_uuid, instance_id, TunnelType::Tty).await
+    establish_tunneled_channel(context, device_id, instance_id, TunnelType::Tty).await
 }
 
 /// Establishes a tunneled remote desktop connection to the specified device.
 ///
 /// # Arguments
 /// - `context`: The application context
-/// - `device_uuid`: The device UUID
+/// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
 pub async fn establish_tunneled_rd(
     context: &AppContext,
-    device_uuid: &str,
+    device_id: &str,
     instance_id: &str,
 ) -> Result<TunnelInstance, Error> {
-    establish_tunneled_channel(context, device_uuid, instance_id, TunnelType::RemoteDesktop).await
+    establish_tunneled_channel(context, device_id, instance_id, TunnelType::RemoteDesktop).await
 }
 
 /// Establishes a tunneled UI session using a given protocol string.
 ///
 /// # Arguments
 /// - `context`: The application context
-/// - `device_uuid`: The device UUID
+/// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
 /// - `protocol`: The UI protocol string (to be replaced with enum in future)
 /// - `local_addr`: IP address of the local web server to connect to
 /// - `local_port`: Port of the local web server to connect to
 pub async fn establish_tunneled_ui(
     context: &AppContext,
-    device_uuid: &str,
+    device_id: &str,
     instance_id: &str,
     protocol: &str,
     local_addr: &str,
@@ -85,7 +85,7 @@ pub async fn establish_tunneled_ui(
 ) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(
         context,
-        device_uuid,
+        device_id,
         instance_id,
         TunnelType::UI((local_addr.into(), local_port, protocol.into())),
     )
@@ -101,15 +101,15 @@ pub async fn establish_tunneled_ui(
 /// Returns an error if the client is not connected, request fails, or connection times out.
 async fn establish_tunneled_channel(
     context: &AppContext,
-    device_uuid: &str,
+    device_id: &str,
     instance_id: &str,
     r#type: TunnelType,
 ) -> Result<TunnelInstance, Error> {
     let client = context
         .orchestractor
-        .get_client(device_uuid, instance_id)
+        .get_client(device_id, instance_id)
         .await
-        .ok_or_else(|| format!("Client with device UUID '{device_uuid}' is not connected"))
+        .ok_or_else(|| format!("Client with device ID '{device_id}' is not connected"))
         .handle_err(location!())?;
 
     let client = client.lock().await;

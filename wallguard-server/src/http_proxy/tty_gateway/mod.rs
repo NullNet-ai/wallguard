@@ -57,7 +57,7 @@ pub(super) async fn open_tty_session(
     }
 
     let Ok(tunnel) =
-        tunneling::establish_tunneled_tty(&context, &device.uuid, &session.instance_id).await
+        tunneling::establish_tunneled_tty(&context, &device.id, &session.instance_id).await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish a tunnel"));

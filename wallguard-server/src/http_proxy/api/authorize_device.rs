@@ -71,11 +71,7 @@ pub async fn authorize_device(
             .json(ErrorJson::from("Failed to update device record"));
     };
 
-    let Some(instances) = context
-        .orchestractor
-        .get_client_instances(&device.uuid)
-        .await
-    else {
+    let Some(instances) = context.orchestractor.get_client_instances(&device.id).await else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Device is not connected"));
     };
@@ -96,10 +92,10 @@ pub async fn authorize_device(
     };
 
     for id in instances_ids {
-        let Some(instance) = context.orchestractor.get_client(&device.uuid, &id).await else {
+        let Some(instance) = context.orchestractor.get_client(&device.id, &id).await else {
             return HttpResponse::InternalServerError().json(format!(
                 "Failed to find an instance {} of device {}",
-                id, device.uuid
+                id, device.id
             ));
         };
 
