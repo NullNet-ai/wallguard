@@ -150,7 +150,7 @@ impl AuthReqHandler {
             let device = match self
                 .context
                 .datastore
-                .obtain_device_by_uuid(&root_token.jwt, &auth.uuid)
+                .obtain_device_by_uuid(&root_token.jwt, &auth.uuid, true)
                 .await
             {
                 Ok(device) => device,

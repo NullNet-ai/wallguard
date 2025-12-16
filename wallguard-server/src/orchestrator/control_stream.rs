@@ -3,6 +3,7 @@ use std::time::Duration;
 use tokio::sync::broadcast;
 
 use crate::app_context::AppContext;
+use crate::datastore::HeartbeatModel;
 use crate::orchestrator::client::{InboundStream, OutboundStream};
 use crate::token_provider::TokenProvider;
 use wallguard_common::protobuf::wallguard_commands::{
@@ -36,7 +37,7 @@ pub(crate) async fn control_stream(
     }
 
     tokio::select! {
-        hres = healthcheck(outbound.clone()) => {
+        hres = healthcheck(outbound.clone(), context.clone(), device_uuid.clone()) => {
             if let Err(err) = hres {
                 log::error!(
                     "Health check for client with device UUID '{}' failed: {}",
@@ -85,13 +86,41 @@ pub(crate) async fn control_stream(
     }
 }
 
-async fn healthcheck(stream: OutboundStream) -> Result<(), Error> {
+async fn healthcheck(
+    stream: OutboundStream,
+    context: AppContext,
+    device_uuid: String,
+) -> Result<(), Error> {
+    let Ok(token) = context.sysdev_token_provider.get().await else {
+        return Err("Failed to obtain token").handle_err(location!());
+    };
+
+    let Ok(Some(device)) = context
+        .datastore
+        .obtain_device_by_uuid(&token.jwt, &device_uuid, false)
+        .await
+    else {
+        return Err("Failed to obtain device").handle_err(location!());
+    };
+
     loop {
         let heartbeat = ServerMessage {
             message: Some(server_message::Message::HeartbeatMessage(())),
         };
 
         stream.send(Ok(heartbeat)).await.handle_err(location!())?;
+
+        if let Ok(token) = context.sysdev_token_provider.get().await {
+            let data = HeartbeatModel::from_device_id(device.id.clone());
+            if context
+                .datastore
+                .create_heartbeat(&token.jwt, &data)
+                .await
+                .is_err()
+            {
+                log::error!("Failed to write heatbeat");
+            }
+        }
 
         tokio::time::sleep(HEARTBEAT_TIME).await;
     }

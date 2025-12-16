@@ -11,6 +11,7 @@ impl Datastore {
         &self,
         token: &str,
         device_uuid: &str,
+        performed_by_root: bool,
     ) -> Result<Option<Device>, Error> {
         let filter = AdvanceFilterBuilder::new()
             .field("device_uuid")
@@ -28,10 +29,7 @@ impl Datastore {
             .order_by("timestamp")
             .order_direction("desc")
             .case_sensitive_sorting(true)
-            // `obtain_device_by_uuid` is done by `AuthReqHandler`
-            // We assume that at this point the server performs this request
-            // using root credentials.
-            .performed_by_root(true)
+            .performed_by_root(performed_by_root)
             .build();
 
         let response = self.inner.clone().get_by_filter(request, token).await?;

@@ -3,6 +3,7 @@ mod create_config;
 mod create_connections;
 mod create_device;
 mod create_device_instance;
+mod create_heartbeat;
 mod create_interfaces;
 mod create_ip_info;
 mod create_rules;
