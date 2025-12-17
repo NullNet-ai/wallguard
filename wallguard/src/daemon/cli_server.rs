@@ -1,9 +1,8 @@
-use super::wallguard_cli::Caps;
-use super::wallguard_cli::JoinOrgReq;
-use super::wallguard_cli::JoinOrgRes;
-use super::wallguard_cli::LeaveOrgRes;
-use super::wallguard_cli::Status;
-use super::wallguard_cli::wallguard_cli_server::WallguardCli;
+use wallguard_common::protobuf::wallguard_cli::Caps;
+use wallguard_common::protobuf::wallguard_cli::CommonResponse;
+use wallguard_common::protobuf::wallguard_cli::JoinOrgReq;
+use wallguard_common::protobuf::wallguard_cli::Status;
+use wallguard_common::protobuf::wallguard_cli::wallguard_cli_server::WallguardCli;
 use crate::daemon::Daemon;
 
 use std::sync::Arc;
@@ -57,15 +56,15 @@ impl WallguardCli for CliServer {
     async fn join_org(
         &self,
         request: tonic::Request<JoinOrgReq>,
-    ) -> Result<tonic::Response<JoinOrgRes>, tonic::Status> {
+    ) -> Result<tonic::Response<CommonResponse>, tonic::Status> {
         let installation_code = request.into_inner().installation_code;
 
         let response = match Daemon::join_org(self.inner.clone(), installation_code).await {
-            Ok(_) => JoinOrgRes {
+            Ok(_) => CommonResponse {
                 success: true,
                 message: String::from("OK"),
             },
-            Err(message) => JoinOrgRes {
+            Err(message) => CommonResponse {
                 success: false,
                 message,
             },
@@ -77,13 +76,13 @@ impl WallguardCli for CliServer {
     async fn leave_org(
         &self,
         _: tonic::Request<()>,
-    ) -> Result<tonic::Response<LeaveOrgRes>, tonic::Status> {
+    ) -> Result<tonic::Response<CommonResponse>, tonic::Status> {
         let response = match Daemon::leave_org(self.inner.clone()).await {
-            Ok(_) => LeaveOrgRes {
+            Ok(_) => CommonResponse {
                 success: true,
                 message: String::from("OK"),
             },
-            Err(message) => LeaveOrgRes {
+            Err(message) => CommonResponse {
                 success: false,
                 message,
             },

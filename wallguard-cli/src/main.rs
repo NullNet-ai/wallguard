@@ -93,6 +93,9 @@ pub async fn main() -> AnyResult<()> {
                     println!("  STATE    : ERROR");
                     println!("  Message  : {}", error.message);
                 }
+                State::Connecting(_) => {
+                    println!("  STATE    : CONNECTING");
+                }
             }
         }
         arguments::Command::Capabilities => {

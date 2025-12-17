@@ -35,7 +35,12 @@ impl WGServer {
         Ok(())
     }
 
-    async fn get_interface(&self) -> Result<WallGuardGrpcInterface, Error> {
+    pub async fn reset(&self) {
+        let mut lock = self.interface.lock().await;
+        *lock = None;
+    }
+
+    pub async fn get_interface(&self) -> Result<WallGuardGrpcInterface, Error> {
         let max_retries = 3;
         let retry_delay = Duration::from_secs(5);
 

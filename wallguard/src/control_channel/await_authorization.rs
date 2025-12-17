@@ -67,10 +67,6 @@ pub async fn await_authorization(
             server_message::Message::AuthorizationRejectedMessage(_) => {
                 return Ok(Verdict::Rejected);
             }
-            server_message::Message::HeartbeatMessage(_) => {
-                log::debug!("Awaiting authorization: heartbeat");
-                continue;
-            }
             _ => Err("Unexpected message").handle_err(location!())?,
         };
     }

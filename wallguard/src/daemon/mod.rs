@@ -1,5 +1,4 @@
 #[rustfmt::skip]
-mod wallguard_cli;
 mod cli_server;
 mod state;
 
@@ -13,10 +12,9 @@ use crate::storage::{Secret, Storage};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
-use wallguard_cli::Status;
-use wallguard_cli::wallguard_cli_server::WallguardCliServer;
+use wallguard_common::protobuf::wallguard_cli::Status;
+use wallguard_common::protobuf::wallguard_cli::wallguard_cli_server::WallguardCliServer;
 
 #[derive(Debug)]
 pub struct Daemon {
@@ -60,8 +58,8 @@ impl Daemon {
         this: Arc<Mutex<Daemon>>,
         installation_code: String,
     ) -> Result<(), String> {
-        let mut lock = this.lock().await;
-        match &lock.state {
+        let lock = this.lock().await;
+        match lock.state {
             DaemonState::Idle => {
                 Storage::set_value(Secret::InstallationCode, &installation_code)
                     .await
@@ -75,9 +73,9 @@ impl Daemon {
                 .await
                 .map_err(|err| err.to_str().to_string())?;
 
-                let control_channel = ControlChannel::new(context, installation_code);
+                drop(lock);
 
-                lock.state = DaemonState::Connected(Box::new(control_channel));
+                tokio::spawn(async move { Daemon::connect(context).await });
 
                 Ok(())
             }
@@ -117,14 +115,27 @@ impl Daemon {
         if let DaemonState::Connected(control_channel) = this.lock().await.state.clone() {
             control_channel.terminate().await
         }
+
         this.lock().await.state = DaemonState::Error(reason.into());
+    }
 
-        tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(5)).await;
+    pub(crate) async fn connect(context: Context) {
+        let daemon = context.clone().daemon;
 
-            if let Some(code) = Storage::get_value(Secret::InstallationCode).await {
-                let _ = Daemon::join_org(this, code).await;
-            }
-        });
+        daemon.lock().await.state = DaemonState::Connecting;
+
+        context.server.reset().await;
+
+        if context.server.get_interface().await.is_err() {
+            Daemon::on_error(daemon, "Failed to connect to the server").await;
+            return;
+        }
+
+        if let Some(installation_code) = Storage::get_value(Secret::InstallationCode).await {
+            let control_channel = ControlChannel::new(context, installation_code);
+            daemon.lock().await.state = DaemonState::Connected(Box::new(control_channel));
+        } else {
+            Daemon::on_error(daemon, "Failed to obtain installation code").await;
+        }
     }
 }

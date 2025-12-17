@@ -19,6 +19,7 @@ message CommonResponse {
 message Status {
     oneof state {
         google.protobuf.Empty idle = 1;
+        google.protobuf.Empty connecting = 2;
         Connected connected = 3;
         Error error = 4;
     }

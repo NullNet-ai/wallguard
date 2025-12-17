@@ -20,8 +20,8 @@ pub struct Context {
     pub server: WGServer,
     pub tunnel: ReverseTunnel,
     pub daemon: Arc<Mutex<Daemon>>,
-    pub transmission_manager: Arc<Mutex<TransmissionManager>>,
     pub client_data: ClientData,
+    pub(crate) transmission_manager: Arc<Mutex<TransmissionManager>>,
 
     #[cfg(not(target_os = "freebsd"))]
     pub remote_desktop_manager: Option<RemoteDesktopManager>,
