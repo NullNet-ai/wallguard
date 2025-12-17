@@ -119,11 +119,11 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
     tokio::select! {
         r1 = healthcheck(outbound.clone()) => {
             log::warn!("Healthcheck terminated");
-            return r1;
+            r1
         }
         r2 = handle_incoming_messages(inbound, outbound, context) => {
             log::warn!("Message handling terminated");
-            return r2;
+            r2
         }
     }
 }
