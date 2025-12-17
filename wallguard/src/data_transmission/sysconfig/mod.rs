@@ -40,6 +40,10 @@ pub async fn force_upload_once(
 ) -> Result<(), Error> {
     let mut files = platform.get_sysconf_files();
 
+    for file in files.iter_mut() {
+        let _ = file.update().await;
+    }
+
     if !files.is_empty() {
         let detector = Detector::new(platform);
         let state = detector.check().await;
