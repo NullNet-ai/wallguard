@@ -10,7 +10,6 @@ use wallguard_common::protobuf::wallguard_commands::{
     ExecuteCliCommandResponse, ServerMessage, client_message, server_message,
 };
 
-const HEARTBEAT_TIME: Duration = Duration::from_secs(20);
 const TOKEN_UPDATE_TIME: Duration = Duration::from_secs(60);
 
 pub(crate) async fn control_stream(
@@ -36,26 +35,21 @@ pub(crate) async fn control_stream(
         log::error!("Failed to obtain system device token");
     }
 
-    tokio::select! {
-        hres = healthcheck(outbound.clone(), context.clone(), device_id.clone()) => {
-            if let Err(err) = hres {
-                log::error!(
-                    "Health check for client with device ID '{}' failed: {}",
-                    device_id,
-                    err.to_str()
-                );
-            }
-        },
-        ares = authstream(inbound, outbound, context.clone(), channel) => {
-            if let Err(err) = ares {
-                log::error!(
-                    "Control stream for client with device ID '{}' failed: {}",
-                    device_id,
-                    err.to_str()
-                );
-            }
-        },
-    };
+    if let Err(err) = authstream(
+        inbound,
+        outbound,
+        context.clone(),
+        channel,
+        device_id.clone(),
+    )
+    .await
+    {
+        log::error!(
+            "Control stream for client with device ID '{}' failed: {}",
+            device_id,
+            err.to_str()
+        );
+    }
 
     let _ = context
         .orchestractor
@@ -86,39 +80,12 @@ pub(crate) async fn control_stream(
     }
 }
 
-async fn healthcheck(
-    stream: OutboundStream,
-    context: AppContext,
-    device_id: String,
-) -> Result<(), Error> {
-    loop {
-        let heartbeat = ServerMessage {
-            message: Some(server_message::Message::HeartbeatMessage(())),
-        };
-
-        stream.send(Ok(heartbeat)).await.handle_err(location!())?;
-
-        if let Ok(token) = context.sysdev_token_provider.get().await {
-            let data = HeartbeatModel::from_device_id(device_id.clone());
-            if context
-                .datastore
-                .create_heartbeat(&token.jwt, &data)
-                .await
-                .is_err()
-            {
-                log::error!("Failed to write heatbeat");
-            }
-        }
-
-        tokio::time::sleep(HEARTBEAT_TIME).await;
-    }
-}
-
 async fn authstream(
     mut inbound: InboundStream,
     outbound: OutboundStream,
     context: AppContext,
     channel: broadcast::Sender<ExecuteCliCommandResponse>,
+    device_id: String,
 ) -> Result<(), Error> {
     let message = inbound
         .message()
@@ -139,7 +106,7 @@ async fn authstream(
         authentication.app_id,
         authentication.app_secret,
         false,
-        context.datastore,
+        context.datastore.clone(),
     );
 
     outbound
@@ -178,6 +145,22 @@ async fn authstream(
                                     log::error!("Failed to send response to the channel: {err}");
                                 }
                             },
+                            client_message::Message::Heartbeat(()) => {
+                                log::debug!("Received a heartbeat from {device_id}");
+                                if let Ok(token) = context.sysdev_token_provider.get().await {
+                                    let data = HeartbeatModel::from_device_id(device_id.clone());
+                                    if context
+                                        .datastore
+                                        .create_heartbeat(&token.jwt, &data)
+                                        .await
+                                        .is_err()
+                                    {
+                                        log::error!("Failed to write heatbeat");
+                                    }
+                                } else {
+                                    log::error!("Heartbeat: Failed to obtain token");
+                                }
+                            }
                             other => {
                                 log::warn!("Unexpected message from client after authentication; ignoring: {:?}", other);
                             },

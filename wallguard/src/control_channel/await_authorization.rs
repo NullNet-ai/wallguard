@@ -39,39 +39,31 @@ pub async fn await_authorization(
         .await
         .handle_err(location!())?;
 
-    loop {
-        let message = inbound
-            .lock()
-            .await
-            .message()
-            .await
-            .handle_err(location!())?
-            .ok_or("Server sent an empty message")
-            .handle_err(location!())?
-            .message
-            .ok_or("Malformed message (empty payload)")
-            .handle_err(location!())?;
+    let message = inbound
+        .lock()
+        .await
+        .message()
+        .await
+        .handle_err(location!())?
+        .ok_or("Server sent an empty message")
+        .handle_err(location!())?
+        .message
+        .ok_or("Malformed message (empty payload)")
+        .handle_err(location!())?;
 
-        match message {
-            server_message::Message::DeviceAuthorizedMessage(data) => {
-                if let Some(app_id) = data.app_id {
-                    Storage::set_value(Secret::AppId, &app_id).await?;
-                }
+    match message {
+        server_message::Message::DeviceAuthorizedMessage(data) => {
+            if let Some(app_id) = data.app_id {
+                Storage::set_value(Secret::AppId, &app_id).await?;
+            }
 
-                if let Some(app_secret) = data.app_secret {
-                    Storage::set_value(Secret::AppSecret, &app_secret).await?;
-                }
+            if let Some(app_secret) = data.app_secret {
+                Storage::set_value(Secret::AppSecret, &app_secret).await?;
+            }
 
-                return Ok(Verdict::Approved);
-            }
-            server_message::Message::AuthorizationRejectedMessage(_) => {
-                return Ok(Verdict::Rejected);
-            }
-            server_message::Message::HeartbeatMessage(_) => {
-                log::debug!("Awaiting authorization: heartbeat");
-                continue;
-            }
-            _ => Err("Unexpected message").handle_err(location!())?,
-        };
+            Ok(Verdict::Approved)
+        }
+        server_message::Message::AuthorizationRejectedMessage(_) => Ok(Verdict::Rejected),
+        _ => Err("Unexpected message").handle_err(location!())?,
     }
 }

@@ -8,7 +8,7 @@ pub struct CommonResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Status {
-    #[prost(oneof = "status::State", tags = "1, 3, 4")]
+    #[prost(oneof = "status::State", tags = "1, 2, 3, 4")]
     pub state: ::core::option::Option<status::State>,
 }
 /// Nested message and enum types in `Status`.
@@ -17,6 +17,8 @@ pub mod status {
     pub enum State {
         #[prost(message, tag = "1")]
         Idle(()),
+        #[prost(message, tag = "2")]
+        Connecting(()),
         #[prost(message, tag = "3")]
         Connected(super::Connected),
         #[prost(message, tag = "4")]

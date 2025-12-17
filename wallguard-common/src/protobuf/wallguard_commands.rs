@@ -41,7 +41,7 @@ pub struct ExecuteCliCommandResponse {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientMessage {
-    #[prost(oneof = "client_message::Message", tags = "1, 2, 3")]
+    #[prost(oneof = "client_message::Message", tags = "1, 2, 3, 4")]
     pub message: ::core::option::Option<client_message::Message>,
 }
 /// Nested message and enum types in `ClientMessage`.
@@ -54,6 +54,8 @@ pub mod client_message {
         Authentication(super::Authentication),
         #[prost(message, tag = "3")]
         ExecuteCliCommandResponse(super::ExecuteCliCommandResponse),
+        #[prost(message, tag = "4")]
+        Heartbeat(()),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -85,7 +87,7 @@ pub struct UiSessionData {
 pub struct ServerMessage {
     #[prost(
         oneof = "server_message::Message",
-        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16"
+        tags = "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15"
     )]
     pub message: ::core::option::Option<server_message::Message>,
 }
@@ -110,20 +112,18 @@ pub mod server_message {
         #[prost(string, tag = "8")]
         OpenRemoteDesktopSessionCommand(::prost::alloc::string::String),
         #[prost(message, tag = "9")]
-        HeartbeatMessage(()),
-        #[prost(message, tag = "10")]
         DeviceAuthorizedMessage(super::AuthenticationData),
-        #[prost(message, tag = "11")]
+        #[prost(message, tag = "10")]
         DeviceDeauthorizedMessage(()),
-        #[prost(message, tag = "12")]
+        #[prost(message, tag = "11")]
         AuthorizationRejectedMessage(()),
-        #[prost(message, tag = "13")]
+        #[prost(message, tag = "12")]
         CreateFilterRule(super::super::wallguard_models::FilterRule),
-        #[prost(message, tag = "14")]
+        #[prost(message, tag = "13")]
         CreateNatRule(super::super::wallguard_models::NatRule),
-        #[prost(message, tag = "15")]
+        #[prost(message, tag = "14")]
         CreateAlias(super::super::wallguard_models::Alias),
-        #[prost(message, tag = "16")]
+        #[prost(message, tag = "15")]
         ExecuteCliCommandRequest(super::ExecuteCliCommandRequest),
     }
 }
