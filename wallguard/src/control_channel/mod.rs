@@ -110,8 +110,6 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
         }
     }
 
-    // Clone the outbound stream to keep it alive—closing it signals
-    // an error to the server, which closes the connection.
     send_authenticate(outbound.clone()).await?;
 
     tokio::spawn(post_startup(context.clone()));

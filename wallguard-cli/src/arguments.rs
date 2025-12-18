@@ -48,13 +48,9 @@ pub enum Command {
 
     /// Start the service with optional configuration
     Start {
-        /// Host address for the control channel
+        /// URL for the control channel
         #[arg(long)]
-        control_channel_host: Option<String>,
-
-        /// Port for the control channel
-        #[arg(long)]
-        control_channel_port: Option<u16>,
+        control_channel_url: Option<String>,
 
         /// Target platform
         #[arg(long, value_enum, default_value_t = Platform::Generic)]

@@ -115,7 +115,10 @@ pub async fn main() -> AnyResult<()> {
                 .into_inner();
 
             match response.success {
-                true => println!("Successfully joined organization."),
+                true => {
+                    println!("Request submitted");
+                    println!("Check its status with `wallguard-cli status`.");
+                }
                 false => eprintln!("Failed to join organization: {}", response.message),
             }
         }
@@ -124,14 +127,16 @@ pub async fn main() -> AnyResult<()> {
             let response = client.leave_org(()).await?.into_inner();
 
             match response.success {
-                true => println!("Successfully left the current organization."),
+                true => {
+                    println!("Request submitted");
+                    println!("Check its status with `wallguard-cli status`.");
+                }
                 false => eprintln!("Failed to leave organization: {}", response.message),
             }
         }
 
         arguments::Command::Start {
-            control_channel_host,
-            control_channel_port,
+            control_channel_url,
             platform,
         } => {
             if is_agent_running() {
@@ -139,16 +144,13 @@ pub async fn main() -> AnyResult<()> {
                 return Ok(());
             }
 
-            const DEFAULT_SERVER_HOST: &str = "127.0.0.1";
+            const DEFAULT_SERVER_URL: &str = "localhost:50051";
 
-            let control_channel_host = control_channel_host.unwrap_or(DEFAULT_SERVER_HOST.into());
-            let control_channel_port = control_channel_port.unwrap_or(50051);
+            let control_channel_url = control_channel_url.unwrap_or(DEFAULT_SERVER_URL.into());
 
             if Command::new("wallguard")
-                .arg("--control-channel-host")
-                .arg(&control_channel_host)
-                .arg("--control-channel-port")
-                .arg(control_channel_port.to_string())
+                .arg("--control-channel-url")
+                .arg(&control_channel_url)
                 .arg("--platform")
                 .arg(platform.to_string())
                 .stdout(Stdio::null())
@@ -159,7 +161,8 @@ pub async fn main() -> AnyResult<()> {
                 eprintln!("Failed to spawn WallGuard agent.");
                 std::process::exit(-1);
             } else {
-                println!("Successfully spawned WallGuard agent.");
+                println!("WallGuard agent started successfully.");
+                println!("Check its status with `wallguard-cli status`.");
             }
         }
         arguments::Command::Stop => {
@@ -182,7 +185,7 @@ pub async fn main() -> AnyResult<()> {
                         eprintln!("Failed to send SIGKILL to WallGuard agent");
                         std::process::exit(-1);
                     } else {
-                        println!("Successfully stopped WallGuard agent");
+                        println!("WallGuard agent stopped successfully.");
                         break;
                     }
                 }

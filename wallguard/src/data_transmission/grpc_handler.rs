@@ -7,40 +7,12 @@ use std::time::Duration;
 use tokio::fs;
 use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResourcesData};
 
-/**
- * TODO: Handle reconnections & retransmissions
- */
 pub(crate) async fn _handle_connection_and_retransmission(
     interface: WGServer,
     dump_dir: DumpDir,
     token_provider: TokenProvider,
 ) {
     loop {
-        // if interface.lock().await.is_some() {
-        //     // check if the server is still up (sending empty logs)
-        //     if interface
-        //         .lock()
-        //         .await
-        //         .as_mut()
-        //         .unwrap()
-        //         .handle_logs(Logs {
-        //             logs: vec![],
-        //             token: token.read().await.clone(),
-        //         })
-        //         .await
-        //         .is_err()
-        //     {
-        //         log::error!("Failed to contact server. Reconnecting...",);
-        //         *interface.lock().await = None;
-        //     } else {
-        //         tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-        //     }
-        // } else {
-        // wait for the server to come up...
-        // let client = WallGuardGrpcInterface::new(addr, port).await;
-        // *interface.lock().await = Some(client);
-        // wait for the token to be available
-
         loop {
             if interface.is_connected().await {
                 break;
@@ -89,8 +61,7 @@ pub(crate) async fn _handle_connection_and_retransmission(
                 };
                 if send_res.is_err() {
                     // server is down again, try again later
-                    // *interface.lock().await = None;
-                    log::error!("Failed to send dump. Reconnecting...",);
+                    log::warn!("Failed to send dump. Reconnecting...",);
                     // update dump file with unsent items
                     dump_dir._update_items_dump_file(file.path(), dump).await;
                     break 'file_loop;
@@ -104,6 +75,5 @@ pub(crate) async fn _handle_connection_and_retransmission(
                 .await
                 .expect("Failed to remove dump file");
         }
-        // }
     }
 }

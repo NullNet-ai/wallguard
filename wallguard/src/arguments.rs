@@ -7,13 +7,9 @@ use clap::Parser;
     about = "WallGuard agent that monitors the device and provides remote access."
 )]
 pub struct Arguments {
-    /// IP address of the gRPC server
+    /// URL of the gRPC server
     #[arg(long)]
-    pub control_channel_host: String,
-
-    /// Port of the gRPC server
-    #[arg(long)]
-    pub control_channel_port: u16,
+    pub control_channel_url: String,
 
     /// Target platform
     #[arg(long)]
