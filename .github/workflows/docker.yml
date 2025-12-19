@@ -7,12 +7,6 @@ on:
     paths:
       - 'wallguard-server/**'
       - 'wallguard-common/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'wallguard-server/**'
-      - 'wallguard-common/**'
 
 jobs:
   build-and-push:
