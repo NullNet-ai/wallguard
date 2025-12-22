@@ -148,7 +148,7 @@ jobs:
           echo "Using version: $VERSION"
 
       - name: Install Dependencies and Build FreeBSD package
-        uses: cross-platform-actions/action@v0.31.0
+        uses: cross-platform-actions/action@v0.32.0
         with:
           operating_system: ${{ matrix.platform.os }}
           architecture: ${{ matrix.platform.arch }}
@@ -167,7 +167,7 @@ jobs:
             bash ./packbuild.sh freebsd $VERSION
 
       - name: Sync artifacts back from VM
-        uses: cross-platform-actions/action@v0.31.0
+        uses: cross-platform-actions/action@v0.32.0
         with:
           operating_system: ${{ matrix.platform.os }}
           architecture: ${{ matrix.platform.arch }}
