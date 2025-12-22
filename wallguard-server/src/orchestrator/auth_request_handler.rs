@@ -46,7 +46,7 @@ impl AuthReqHandler {
         log::info!(
             "Auth request received: code={}, uuid={}",
             auth.code,
-            auth.uuid
+            utilities::str::mask_string(&auth.uuid, 5, 5)
         );
 
         let mut clients = self.context.orchestractor.clients.lock().await;
