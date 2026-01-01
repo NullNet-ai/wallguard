@@ -25,6 +25,7 @@ use tokio_rustls::TlsConnector;
 use tokio_rustls::client::TlsStream;
 use webpki_roots::TLS_SERVER_ROOTS;
 
+use crate::http_proxy::proxy::cert_verifier::AcceptAllVerifier;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 use crate::reverse_tunnel::TunnelAdapter;
 
@@ -35,9 +36,15 @@ async fn handshake(
     let mut root_store = RootCertStore::empty();
     root_store.extend(TLS_SERVER_ROOTS.iter().map(|ta| ta.to_owned()));
 
-    let config = ClientConfig::builder()
+    let mut config = ClientConfig::builder()
         .with_root_certificates(root_store)
         .with_no_client_auth();
+
+    // @TODO:
+    // Fetch target certificates and validate them.
+    config
+        .dangerous()
+        .set_certificate_verifier(Arc::new(AcceptAllVerifier));
 
     let connector = TlsConnector::from(Arc::new(config));
 
