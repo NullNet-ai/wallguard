@@ -15,7 +15,7 @@ impl ServerCertVerifier for AcceptAllVerifier {
         _4: &[u8],
         _5: UnixTime,
     ) -> Result<ServerCertVerified, Error> {
-        todo!()
+        Ok(ServerCertVerified::assertion())
     }
 
     fn verify_tls12_signature(
