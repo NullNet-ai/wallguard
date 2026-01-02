@@ -126,7 +126,7 @@ impl Daemon {
 
         context.server.reset().await;
 
-        if context.server.get_interface().await.is_err() {
+        if context.server.get_interface(true).await.is_err() {
             Daemon::on_error(daemon, "Failed to connect to the server").await;
             return;
         }

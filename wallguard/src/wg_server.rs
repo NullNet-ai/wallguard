@@ -40,20 +40,26 @@ impl WGServer {
         *lock = None;
     }
 
-    pub async fn get_interface(&self) -> Result<WallGuardGrpcInterface, Error> {
+    pub async fn get_interface(
+        &self,
+        retry_forever: bool,
+    ) -> Result<WallGuardGrpcInterface, Error> {
         let max_retries = 3;
         let retry_delay = Duration::from_secs(5);
+        let mut attempt: usize = 0;
 
-        for attempt in 0..=max_retries {
-            if !self.is_connected().await
-                && let Err(e) = self.connect().await
-            {
-                if attempt == max_retries {
-                    return Err(e);
+        loop {
+            if !self.is_connected().await {
+                if let Err(e) = self.connect().await {
+                    // Если превышены попытки и не бесконечный режим
+                    if !retry_forever && attempt >= max_retries {
+                        return Err(e);
+                    }
+
+                    attempt += 1;
+                    tokio::time::sleep(retry_delay).await;
+                    continue;
                 }
-
-                tokio::time::sleep(retry_delay).await;
-                continue;
             }
 
             let lock = self.interface.lock().await;
@@ -61,35 +67,37 @@ impl WGServer {
                 return Ok(interface.clone());
             }
 
-            if attempt == max_retries {
+            if !retry_forever && attempt >= max_retries {
                 return Err("Failed to connect to the server").handle_err(location!());
             }
 
+            attempt += 1;
             tokio::time::sleep(retry_delay).await;
         }
-
-        Err("Failed to connect to the server").handle_err(location!())
     }
 
     pub async fn request_control_channel(
         &self,
         receiver: mpsc::Receiver<ClientMessage>,
     ) -> Result<Streaming<ServerMessage>, Error> {
-        self.get_interface()
+        self.get_interface(false)
             .await?
             .request_control_channel(receiver)
             .await
     }
 
     pub async fn handle_packets_data(&self, data: PacketsData) -> Result<(), Error> {
-        self.get_interface().await?.handle_packets_data(data).await
+        self.get_interface(false)
+            .await?
+            .handle_packets_data(data)
+            .await
     }
 
     pub async fn handle_system_resources_data(
         &self,
         data: SystemResourcesData,
     ) -> Result<(), Error> {
-        self.get_interface()
+        self.get_interface(false)
             .await?
             .handle_system_resources_data(data)
             .await
@@ -99,13 +107,16 @@ impl WGServer {
         &self,
         request: DeviceSettingsRequest,
     ) -> Result<DeviceSettingsResponse, Error> {
-        self.get_interface()
+        self.get_interface(false)
             .await?
             .get_device_settings(request)
             .await
     }
 
     pub async fn handle_config_data(&self, data: ConfigSnapshot) -> Result<(), Error> {
-        self.get_interface().await?.handle_config_data(data).await
+        self.get_interface(false)
+            .await?
+            .handle_config_data(data)
+            .await
     }
 }
