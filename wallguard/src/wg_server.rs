@@ -49,17 +49,16 @@ impl WGServer {
         let mut attempt: usize = 0;
 
         loop {
-            if !self.is_connected().await {
-                if let Err(e) = self.connect().await {
-                    // Если превышены попытки и не бесконечный режим
-                    if !retry_forever && attempt >= max_retries {
-                        return Err(e);
-                    }
-
-                    attempt += 1;
-                    tokio::time::sleep(retry_delay).await;
-                    continue;
+            if !self.is_connected().await
+                && let Err(e) = self.connect().await
+            {
+                if !retry_forever && attempt >= max_retries {
+                    return Err(e);
                 }
+
+                attempt += 1;
+                tokio::time::sleep(retry_delay).await;
+                continue;
             }
 
             let lock = self.interface.lock().await;

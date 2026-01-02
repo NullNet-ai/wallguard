@@ -6,6 +6,7 @@ use tonic::transport::CertificateDer;
 #[derive(Debug)]
 pub(super) struct AcceptAllVerifier;
 
+#[allow(clippy::just_underscores_and_digits)]
 impl ServerCertVerifier for AcceptAllVerifier {
     fn verify_server_cert(
         &self,
