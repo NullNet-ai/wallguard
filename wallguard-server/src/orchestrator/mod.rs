@@ -20,11 +20,12 @@ mod new_connection_handler;
 
 type InstancesVector = Arc<Mutex<Vec<Arc<Mutex<Instance>>>>>;
 type ClientsMap = Arc<Mutex<HashMap<String, InstancesVector>>>;
+type TunnelInfo = (String, oneshot::Sender<()>);
 
 #[derive(Debug, Clone, Default)]
 pub struct Orchestrator {
     pub(crate) clients: ClientsMap,
-    pub(self) tunnels: Arc<Mutex<HashMap<String, Vec<(String, oneshot::Sender<()>)>>>>,
+    pub(self) tunnels: Arc<Mutex<HashMap<String, Vec<TunnelInfo>>>>,
 }
 
 impl Orchestrator {
