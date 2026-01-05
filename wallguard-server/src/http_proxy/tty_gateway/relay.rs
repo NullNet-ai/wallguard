@@ -3,18 +3,28 @@ use futures_util::StreamExt as _;
 use prost::bytes::Bytes;
 use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
 
-use crate::reverse_tunnel::TunnelInstance;
+use crate::{
+    app_context::AppContext, datastore::RemoteAccessSession, reverse_tunnel::TunnelInstance,
+};
 
 pub(crate) async fn relay(
     msg_stream: MessageStream,
     ws_session: WSSession,
     tty_tunnel: TunnelInstance,
+    remote_access_session: RemoteAccessSession,
+    context: AppContext,
 ) {
     let stream = msg_stream
         .aggregate_continuations()
         .max_continuation_size(2_usize.pow(20));
 
+    let (tunnel_id, tunnel_terminate) = context
+        .orchestractor
+        .on_tunnel_established(&remote_access_session.id)
+        .await;
+
     tokio::select! {
+        _ = tunnel_terminate => {}
         _ = relay_messages_from_user_to_client(
             stream,
             tty_tunnel.clone(),
@@ -26,6 +36,11 @@ pub(crate) async fn relay(
             log::info!("TTY → WebSocket relay ended.");
         }
     }
+
+    context
+        .orchestractor
+        .on_tunnel_terminated(&remote_access_session.id, &tunnel_id)
+        .await;
 }
 
 async fn relay_messages_from_user_to_client(

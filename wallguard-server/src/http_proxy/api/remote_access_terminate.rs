@@ -25,7 +25,10 @@ pub async fn remote_access_terminate(
         Err(resp) => return resp,
     };
 
-    // Notify agent
+    context
+        .orchestractor
+        .terminate_all_tunnels_for_session(&session.id)
+        .await;
 
     if context
         .datastore
