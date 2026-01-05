@@ -11,6 +11,7 @@ mod create_session;
 mod create_ssh_keypair;
 mod create_system_resources;
 mod delete_device_instance;
+mod delete_remote_access_session;
 mod is_ip_info_stored;
 mod login;
 mod obtain_config;

@@ -5,6 +5,7 @@ use crate::http_proxy::api::create_nat_rule;
 use crate::http_proxy::api::enable_config_monitoring;
 use crate::http_proxy::api::enable_telemetry_monitoring;
 use crate::http_proxy::api::enable_traffic_monitoring;
+use crate::http_proxy::api::remote_access_terminate;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use api::authorize_device;
@@ -41,6 +42,10 @@ pub async fn run_http_proxy(context: AppContext) {
             .route(
                 "/wallguard/api/v1/remote_access",
                 web::post().to(request_session),
+            )
+            .route(
+                "/wallguard/api/v1/remote_access",
+                web::delete().to(remote_access_terminate),
             )
             .route(
                 "/wallguard/api/v1/authorize_device",

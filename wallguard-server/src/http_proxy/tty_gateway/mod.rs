@@ -74,7 +74,13 @@ pub(super) async fn open_tty_session(
             .json(ErrorJson::from("Tunnel is not authenticated"));
     }
 
-    rt::spawn(relay(ws_stream, ws_session, tunnel));
+    rt::spawn(relay(
+        ws_stream,
+        ws_session,
+        tunnel,
+        session,
+        context.get_ref().clone(),
+    ));
 
     response
 }

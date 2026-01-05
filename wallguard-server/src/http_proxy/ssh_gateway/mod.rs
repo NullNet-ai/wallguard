@@ -96,6 +96,12 @@ pub(super) async fn open_ssh_session(
         Err(resp) => return resp,
     };
 
-    rt::spawn(relay(stream, ws_session, ssh_session));
+    rt::spawn(relay(
+        stream,
+        ws_session,
+        ssh_session,
+        session,
+        context.get_ref().clone(),
+    ));
     response
 }

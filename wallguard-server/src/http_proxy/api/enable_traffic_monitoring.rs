@@ -11,7 +11,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 #[derive(Deserialize)]
-pub struct RequestPayload {
+pub(in crate::http_proxy) struct RequestPayload {
     device_id: String,
     instance_id: String,
     enable: bool,

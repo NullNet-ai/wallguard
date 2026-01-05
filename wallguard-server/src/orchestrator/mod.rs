@@ -2,7 +2,7 @@ use client::Instance;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, oneshot};
 
 use crate::{
     app_context::AppContext,
@@ -10,6 +10,7 @@ use crate::{
         client::{InboundStream, OutboundStream},
         new_connection_handler::NewConnectionHandler,
     },
+    utilities,
 };
 
 mod auth_request_handler;
@@ -19,10 +20,12 @@ mod new_connection_handler;
 
 type InstancesVector = Arc<Mutex<Vec<Arc<Mutex<Instance>>>>>;
 type ClientsMap = Arc<Mutex<HashMap<String, InstancesVector>>>;
+type TunnelInfo = (String, oneshot::Sender<()>);
 
 #[derive(Debug, Clone, Default)]
 pub struct Orchestrator {
     pub(crate) clients: ClientsMap,
+    pub(self) tunnels: Arc<Mutex<HashMap<String, Vec<TunnelInfo>>>>,
 }
 
 impl Orchestrator {
@@ -91,6 +94,58 @@ impl Orchestrator {
             !vec.lock().await.is_empty()
         } else {
             false
+        }
+    }
+
+    pub async fn on_tunnel_established(&self, session_id: &str) -> (String, oneshot::Receiver<()>) {
+        let mut lock = self.tunnels.lock().await;
+
+        let vector = lock.entry(session_id.to_string()).or_default();
+
+        let (sender, receiver) = oneshot::channel();
+
+        let tunnel_id = loop {
+            let candidate = utilities::random::generate_random_string(32);
+
+            if vector.iter().any(|(id, _)| id == &candidate) {
+                continue;
+            }
+
+            break candidate;
+        };
+
+        vector.push((tunnel_id.clone(), sender));
+
+        (tunnel_id, receiver)
+    }
+
+    pub async fn on_tunnel_terminated(&self, session_id: &str, tunnel_id: &str) {
+        let mut lock = self.tunnels.lock().await;
+
+        if let Some(vec) = lock.get_mut(session_id) {
+            vec.retain(|(id, _)| id != tunnel_id);
+
+            if vec.is_empty() {
+                lock.remove(session_id);
+            }
+        }
+    }
+
+    pub async fn terminate_all_tunnels_for_session(&self, session_id: &str) {
+        let removed_senders = {
+            let mut lock = self.tunnels.lock().await;
+
+            if let Some(vec) = lock.remove(session_id) {
+                vec.into_iter()
+                    .map(|(_, sender)| sender)
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            }
+        };
+
+        for sender in removed_senders {
+            let _ = sender.send(());
         }
     }
 }

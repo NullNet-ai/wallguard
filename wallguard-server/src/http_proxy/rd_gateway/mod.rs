@@ -77,7 +77,13 @@ pub(super) async fn open_remote_desktop_session(
             Err(resp) => return resp,
         };
 
-    rt::spawn(handle_connection(ws_stream, ws_session, tunnel));
+    rt::spawn(handle_connection(
+        ws_stream,
+        ws_session,
+        tunnel,
+        session,
+        context.get_ref().clone(),
+    ));
 
     response
 }

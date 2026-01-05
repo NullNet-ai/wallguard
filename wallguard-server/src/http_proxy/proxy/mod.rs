@@ -1,6 +1,3 @@
-//! TODO:
-//! - Fetch session and related device in 1 Datastore query
-
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -84,18 +81,46 @@ pub async fn proxy_http_request(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
+    if !tunnel.is_authenticated() {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Tunnel is not authenticated"));
+    }
+
     let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to adapt tunnel transport"));
     };
 
-    request::proxy_request(
+    let (tunnel_id, tunnel_terminate) = context
+        .orchestractor
+        .on_tunnel_established(&session.id)
+        .await;
+
+    let proxy_fut = request::proxy_request(
         request,
         body,
-        // TODO:
-        "domain.com",
+        "domain.com", // TODO: real domain
         protocol.to_lowercase() == "https",
         tunnel_adapter,
-    )
-    .await
+    );
+
+    tokio::pin!(proxy_fut);
+
+    let response = tokio::select! {
+        _ = tunnel_terminate => {
+            HttpResponse::InternalServerError()
+                .json(ErrorJson::from("Tunnel has been terminated unexpectedly"))
+        }
+
+        result = &mut proxy_fut => {
+            result
+        }
+    };
+
+    context
+        .orchestractor
+        .on_tunnel_terminated(&session.id, &tunnel_id)
+        .await;
+
+    response
 }

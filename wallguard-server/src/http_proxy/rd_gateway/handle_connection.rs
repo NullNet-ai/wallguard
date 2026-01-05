@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
+    app_context::AppContext, datastore::RemoteAccessSession,
     http_proxy::rd_gateway::signal_message::SignalMessage, reverse_tunnel::TunnelInstance,
 };
 use actix_ws::{Message, MessageStream, Session};
@@ -28,7 +29,13 @@ use webrtc::{
     track::track_local::track_local_static_sample::TrackLocalStaticSample,
 };
 
-pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: TunnelInstance) {
+pub async fn handle_connection(
+    stream: MessageStream,
+    session: Session,
+    tunnel: TunnelInstance,
+    remote_access_session: RemoteAccessSession,
+    context: AppContext,
+) {
     let mut media_engine = MediaEngine::default();
     let _ = media_engine.register_default_codecs();
 
@@ -110,10 +117,21 @@ pub async fn handle_connection(stream: MessageStream, session: Session, tunnel: 
         return log::error!("Failed to add video track to the peer connection");
     };
 
+    let (tunnel_id, tunnel_terminate) = context
+        .orchestractor
+        .on_tunnel_established(&remote_access_session.id)
+        .await;
+
     tokio::select! {
+        _ = tunnel_terminate => {}
         _ = handle_signaling(stream, session, peer_connection.clone()) => {}
         _ = handle_messages_from_remote_desktop(tunnel.clone(), video_track) => {}
     }
+
+    context
+        .orchestractor
+        .on_tunnel_terminated(&remote_access_session.id, &tunnel_id)
+        .await;
 
     let _ = peer_connection.close().await;
 }

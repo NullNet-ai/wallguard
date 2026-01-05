@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Device {
     pub id: String,
-
     #[serde(rename = "device_uuid")]
     pub uuid: String,
     #[serde(rename = "is_traffic_monitoring_enabled")]

@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Deserialize)]
-pub struct RequestPayload {
+pub(in crate::http_proxy) struct RequestPayload {
     device_id: String,
     instance_id: String,
     rule: FilterRule,

@@ -1,3 +1,6 @@
+use crate::app_context::AppContext;
+use crate::datastore::RemoteAccessSession;
+
 use super::ssh_session::SSHSession;
 use actix_ws::{AggregatedMessage, AggregatedMessageStream, MessageStream, Session as WSSession};
 use futures_util::StreamExt as _;
@@ -15,12 +18,26 @@ use tokio::io::AsyncWriteExt;
 /// - `stream`: The WebSocket message stream.
 /// - `ws_session`: The WebSocket session used to send messages back to the client.
 /// - `ssh_session`: The SSH session used to read and write data.
-pub(crate) async fn relay(stream: MessageStream, ws_session: WSSession, ssh_session: SSHSession) {
+/// - `ra_session`: The remote access session
+/// - `context`: Application context
+pub(crate) async fn relay(
+    stream: MessageStream,
+    ws_session: WSSession,
+    ssh_session: SSHSession,
+    remote_access_session: RemoteAccessSession,
+    context: AppContext,
+) {
     let stream = stream
         .aggregate_continuations()
         .max_continuation_size(2_usize.pow(20));
 
+    let (tunnel_id, tunnel_terminate) = context
+        .orchestractor
+        .on_tunnel_established(&remote_access_session.id)
+        .await;
+
     tokio::select! {
+        _ = tunnel_terminate => {}
         _ = relay_messages_from_user_to_client(
             stream,
             ssh_session.clone(),
@@ -32,6 +49,11 @@ pub(crate) async fn relay(stream: MessageStream, ws_session: WSSession, ssh_sess
             log::info!("SSH → WebSocket relay ended.");
         }
     }
+
+    context
+        .orchestractor
+        .on_tunnel_terminated(&remote_access_session.id, &tunnel_id)
+        .await;
 }
 
 /// Relays incoming WebSocket messages to the SSH session's input stream.
