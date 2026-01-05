@@ -1,9 +1,10 @@
 use crate::{datastore::db_tables::DBTable, utilities::random::generate_random_string};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum RemoteAccessType {
+    #[default]
     Ssh,
     Tty,
     Ui,
@@ -27,8 +28,9 @@ impl TryFrom<&str> for RemoteAccessType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct RemoteAccessSession {
+    pub id: String,
     pub device_id: String,
     pub instance_id: String,
     #[serde(rename = "remote_access_session")]
@@ -59,6 +61,7 @@ impl RemoteAccessSession {
             local_addr: None,
             local_port: None,
             protocol: None,
+            ..Default::default()
         }
     }
 
@@ -70,6 +73,7 @@ impl RemoteAccessSession {
 
     pub fn pluck() -> Vec<String> {
         vec![
+            "id".into(),
             "device_id".into(),
             "remote_access_session".into(),
             "remote_access_type".into(),

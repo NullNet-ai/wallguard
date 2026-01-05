@@ -12,7 +12,7 @@ use serde_json::json;
 use wallguard_common::protobuf::wallguard_commands::AuthenticationData;
 
 #[derive(Deserialize)]
-pub struct RequestPayload {
+pub(in crate::http_proxy) struct RequestPayload {
     device_id: String,
 }
 
