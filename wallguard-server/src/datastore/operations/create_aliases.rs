@@ -34,7 +34,7 @@ impl Datastore {
 
         let response = self.inner.clone().create(request, token).await?;
 
-        if response.count != 0 {
+        if response.count == 0 {
             Err("Failed to create an alias").handle_err(location!())?;
         }
 

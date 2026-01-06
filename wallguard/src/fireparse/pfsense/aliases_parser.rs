@@ -33,7 +33,7 @@ impl PfSenseAliasesParser {
                     .and_then(|e| e.get_text())
                     .or(url)
                     .map(|s| s.to_string())
-                    .unwrap_or_else(|| "None".to_string())
+                    .unwrap_or_else(|| "none".to_string())
                     .split_whitespace()
                     .collect::<Vec<&str>>()
                     .join(",");

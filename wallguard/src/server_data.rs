@@ -40,8 +40,6 @@ impl TryFrom<&Arguments> for ServerData {
             }
         };
 
-        log::error!("{grpc_addr}");
-
         Ok(Self { grpc_addr })
     }
 }

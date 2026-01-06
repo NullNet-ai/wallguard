@@ -12,7 +12,7 @@ pub struct AliasModel {
     pub table: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IpAliasModel {
     pub alias_id: String,
     pub ip: String,
@@ -31,12 +31,16 @@ impl AliasModel {
     pub fn extract_ip_aliases(&self, alias_from: &Alias, alias_id: &str) -> Vec<IpAliasModel> {
         let values: Vec<String> = alias_from.value.split(",").map(str::to_string).collect();
 
-        if self.r#type == "host" || self.r#type == "ip" || self.r#type == " ip6" {
+        if self.r#type == "host" || self.r#type == "ip" || self.r#type == "ip6" {
             values
                 .into_iter()
                 .map(|value| IpAliasModel {
                     alias_id: alias_id.to_string(),
-                    ip: value,
+                    ip: if value.to_lowercase() == "none" {
+                        "0.0.0.0".into()
+                    } else {
+                        value
+                    },
                     prefix: 32,
                 })
                 .collect()
@@ -55,7 +59,11 @@ impl AliasModel {
 
                     IpAliasModel {
                         alias_id: alias_id.to_string(),
-                        ip: addr.clone(),
+                        ip: if addr.to_lowercase() == "none" {
+                            "0.0.0.0".into()
+                        } else {
+                            addr
+                        },
                         prefix,
                     }
                 })
