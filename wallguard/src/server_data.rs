@@ -2,6 +2,8 @@ use crate::arguments::Arguments;
 use nullnet_liberror::{ErrorHandler, Location, location};
 use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 
+const DEFAULT_PORT: u16 = 50051;
+
 #[derive(Debug, Clone)]
 pub struct ServerData {
     pub(crate) grpc_addr: SocketAddr,
@@ -14,10 +16,13 @@ impl TryFrom<&Arguments> for ServerData {
         let grpc_addr = match arguments.control_channel_url.parse::<SocketAddr>() {
             Ok(addr) => addr,
             Err(_) => {
-                let addrs_iter = arguments
-                    .control_channel_url
-                    .to_socket_addrs()
-                    .handle_err(location!())?;
+                let url_with_port = if arguments.control_channel_url.contains(':') {
+                    arguments.control_channel_url.to_string()
+                } else {
+                    format!("{}:{}", arguments.control_channel_url, DEFAULT_PORT)
+                };
+
+                let addrs_iter = url_with_port.to_socket_addrs().handle_err(location!())?;
 
                 let mut ipv6 = None;
                 let mut ipv4 = None;
@@ -35,7 +40,7 @@ impl TryFrom<&Arguments> for ServerData {
                 }
 
                 ipv4.or(ipv6)
-                    .ok_or("Failed to resolve address")
+                    .ok_or("Failed to resolve address with default port")
                     .handle_err(location!())?
             }
         };
