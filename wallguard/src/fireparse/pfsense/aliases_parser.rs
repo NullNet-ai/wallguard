@@ -232,7 +232,7 @@ mod tests {
         assert_eq!(aliases.len(), 1);
         assert_eq!(aliases[0].name, "MissingFields");
         assert_eq!(aliases[0].r#type, "none");
-        assert_eq!(aliases[0].value, "None");
+        assert_eq!(aliases[0].value, "none");
         assert_eq!(aliases[0].description, "");
     }
 
