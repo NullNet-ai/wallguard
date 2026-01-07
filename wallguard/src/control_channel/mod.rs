@@ -99,14 +99,20 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
         context.client_data.clone(),
         installation_code,
     )
-    .await?
+    .await
     {
-        await_authorization::Verdict::Approved => {}
-        await_authorization::Verdict::Rejected => {
-            Err("Auhtorization has been rejected").handle_err(location!())?;
-            // Cleanup ??
-            // Remove ORG ID?
-            // Enter some other state or something?
+        Ok(await_authorization::Verdict::Approved) => {}
+        Ok(await_authorization::Verdict::Rejected) => {
+            Daemon::on_error(context.clone().daemon, "Auhtorization has been rejected").await;
+            return Ok(());
+        }
+        Err(err) => {
+            Daemon::on_error(
+                context.clone().daemon,
+                &format!("Authorization failed: {}", err.to_str()),
+            )
+            .await;
+            return Ok(());
         }
     }
 

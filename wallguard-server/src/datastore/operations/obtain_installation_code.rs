@@ -10,7 +10,7 @@ impl Datastore {
         token: &str,
     ) -> Result<Option<InstallationCode>, Error> {
         let filter = AdvanceFilterBuilder::new()
-            .field("code")
+            .field("token")
             .values(format!("[\"{code}\"]"))
             .r#type("criteria")
             .operator("equal")
