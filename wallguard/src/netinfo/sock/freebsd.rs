@@ -75,7 +75,7 @@ fn parse_sockstat_output_with_pid(
                     let local_addr = if addr_str == "*" {
                         match version {
                             IpVersion::V4 => IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-                            IpVersion::V6 => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
+                            _ => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
                         }
                     } else {
                         addr_str
