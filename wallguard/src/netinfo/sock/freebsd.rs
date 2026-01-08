@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::process::Command;
 
 use tokio::fs;
 use tokio::io;
+use tokio::process::Command;
 
 use super::{IpVersion, Protocol, SocketInfo};
 
 async fn find_process_for_socket(pid: u32) -> io::Result<Option<(u32, String)>> {
-    let ps_output = tokio::process::Command::new("ps")
+    let ps_output = Command::new("ps")
         .arg("-p")
         .arg(pid.to_string())
         .arg("-o")
@@ -123,7 +123,10 @@ pub(super) async fn get_sockets_info() -> io::Result<Vec<SocketInfo>> {
         args.push("-P".into());
         args.push(proto_str.into());
 
-        let sockstat_output = Command::new("sockstat").args(&args).output().await?;
+        let sockstat_output = Command::new("sockstat")
+            .args(&args)
+            .output()
+            .await?;
 
         if !sockstat_output.status.success() {
             continue;
