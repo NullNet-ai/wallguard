@@ -11,10 +11,12 @@ pub enum Protocol {
     UDP,
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IpVersion {
     V4,
     V6,
+    Dual
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

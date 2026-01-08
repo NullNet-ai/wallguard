@@ -69,6 +69,7 @@ async fn parse_proc_net(
                             continue;
                         }
                     }
+                    _ => continue,
                 };
 
                 map.insert(inode, (local_addr, port, proto.clone(), version.clone()));

@@ -98,22 +98,32 @@ pub(super) async fn get_sockets_info() -> io::Result<Vec<SocketInfo>> {
     for (proto, version) in [
         (Protocol::TCP, IpVersion::V4),
         (Protocol::TCP, IpVersion::V6),
+        (Protocol::TCP, IpVersion::Dual),
         (Protocol::UDP, IpVersion::V4),
         (Protocol::UDP, IpVersion::V6),
+        (Protocol::UDP, IpVersion::Dual),
     ] {
-        let sockstat_output = tokio::process::Command::new("sockstat")
-            .arg(match version {
-                IpVersion::V4 => "-4",
-                IpVersion::V6 => "-6",
-            })
-            .arg("-P")
-            .arg(match proto {
-                Protocol::TCP => "tcp",
-                Protocol::UDP => "udp",
-            })
-            .arg("-l")
-            .output()
-            .await?;
+        let mut args: Vec<String> = Vec::new();
+
+        match version {
+            IpVersion::V4 => args.push("-4".into()),
+            IpVersion::V6 => args.push("-6".into()),
+            IpVersion::Dual => {}
+        };
+
+        args.push("-l".into());
+
+        let proto_str = match (version, proto) {
+            (IpVersion::Dual, Protocol::TCP) => "tcp46",
+            (IpVersion::Dual, Protocol::UDP) => "udp46",
+            (_, Protocol::TCP) => "tcp",
+            (_, Protocol::UDP) => "udp",
+        };
+
+        args.push("-P".into());
+        args.push(proto_str.into());
+
+        let sockstat_output = Command::new("sockstat").args(&args).output().await?;
 
         if !sockstat_output.status.success() {
             continue;
