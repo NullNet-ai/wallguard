@@ -172,7 +172,9 @@ fn parse_sockstat_output_with_pid(
                             IpVersion::V6 => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
                         }
                     } else {
-                        addr_str.parse::<IpAddr>().ok()?
+                        addr_str
+                            .parse::<IpAddr>()
+                            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
                     };
 
                     sockets.push((local_addr, port, proto.clone(), version.clone(), pid));
