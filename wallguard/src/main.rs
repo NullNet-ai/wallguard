@@ -22,6 +22,7 @@ mod timer;
 mod token_provider;
 mod utilities;
 mod wg_server;
+mod netinfo;
 
 #[cfg(not(target_os = "freebsd"))]
 mod remote_desktop;
@@ -49,25 +50,27 @@ async fn main() {
     check_privileges();
     env_logger::init();
 
-    let arguments = match Arguments::try_parse() {
-        Ok(args) => args,
-        Err(err) => {
-            log::error!("Failed to parse CLI arguments: {err}");
-            std::process::exit(1);
-        }
-    };
+    netinfo::perform_service_discovery().await;
 
-    Storage::init().await.unwrap();
+    // let arguments = match Arguments::try_parse() {
+    //     Ok(args) => args,
+    //     Err(err) => {
+    //         log::error!("Failed to parse CLI arguments: {err}");
+    //         std::process::exit(1);
+    //     }
+    // };
 
-    let Ok(server_data) = ServerData::try_from(&arguments) else {
-        log::error!("Failed to collect server information. Exiting ...");
-        std::process::exit(-1);
-    };
+    // Storage::init().await.unwrap();
 
-    let Ok(client_data) = ClientData::try_from(arguments.platform) else {
-        log::error!("Failed to collect client information. Exiting ...");
-        std::process::exit(-1);
-    };
+    // let Ok(server_data) = ServerData::try_from(&arguments) else {
+    //     log::error!("Failed to collect server information. Exiting ...");
+    //     std::process::exit(-1);
+    // };
 
-    Daemon::run(client_data, server_data).await.unwrap()
+    // let Ok(client_data) = ClientData::try_from(arguments.platform) else {
+    //     log::error!("Failed to collect client information. Exiting ...");
+    //     std::process::exit(-1);
+    // };
+
+    // Daemon::run(client_data, server_data).await.unwrap()
 }
