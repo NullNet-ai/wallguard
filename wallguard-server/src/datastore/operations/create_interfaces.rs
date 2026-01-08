@@ -21,6 +21,7 @@ impl Datastore {
             .map(|iface| {
                 let mut json = serde_json::to_value(iface).unwrap_or_default();
                 json["device_configuration_id"] = json!(config_id);
+                json.as_object_mut().unwrap().remove("addresses");
                 json
             })
             .collect();
@@ -30,6 +31,7 @@ impl Datastore {
             .durability("hard")
             .entity_prefix("IF")
             .records(serde_json::to_string(&serde_json::Value::Array(records)).unwrap())
+            .pluck("id,device,name")
             .build();
 
         let response_data = self.inner.clone().batch_create(request, token).await?;
@@ -68,6 +70,7 @@ impl Datastore {
     }
 }
 
+#[derive(Debug)]
 pub struct InterfaceInsertionResult {
     map: HashMap<String, String>,
 }
