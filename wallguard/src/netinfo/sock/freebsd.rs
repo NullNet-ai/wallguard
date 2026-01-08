@@ -166,9 +166,16 @@ fn parse_sockstat_output_with_pid(
                 let port_str = &local_addr_port[colon + 1..];
 
                 if let Ok(port) = port_str.parse::<u16>() {
-                    if let Ok(local_addr) = addr_str.parse::<IpAddr>() {
-                        sockets.push((local_addr, port, proto.clone(), version.clone(), pid));
-                    }
+                    let local_addr = if addr_str == "*" {
+                        match version {
+                            IpVersion::V4 => IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                            IpVersion::V6 => IpAddr::V6(Ipv6Addr::UNSPECIFIED),
+                        }
+                    } else {
+                        addr_str.parse::<IpAddr>().ok()?
+                    };
+
+                    sockets.push((local_addr, port, proto.clone(), version.clone(), pid));
                 }
             }
         }
