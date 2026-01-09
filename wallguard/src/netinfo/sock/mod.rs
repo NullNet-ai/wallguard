@@ -1,9 +1,12 @@
 use std::net::IpAddr;
 
-#[cfg(target_os = "linux")]
-mod linux;
-#[cfg(target_os = "freebsd")]
-mod freebsd;
+// #[cfg(target_os = "linux")]
+// mod linux;
+// #[cfg(target_os = "freebsd")]
+// mod freebsd;
+
+#[cfg(target_os = "windows")]
+mod windows;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Protocol {
@@ -16,7 +19,6 @@ pub enum Protocol {
 pub enum IpVersion {
     V4,
     V6,
-    Dual
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -30,15 +32,20 @@ pub struct SocketInfo {
 }
 
 pub async fn get_sockets_info() -> Vec<SocketInfo> {
-    #[cfg(target_os = "linux")]
+    // #[cfg(target_os = "linux")]
+    // {
+    //     return linux::get_sockets_info().await.unwrap_or_default();
+    // }
+
+    // #[cfg(target_os = "freebsd")]
+    // {
+    //     return freebsd::get_sockets_info().await.unwrap_or_default();
+    // }
+
+    #[cfg(target_os = "windows")]
     {
-        return linux::get_sockets_info().await.unwrap_or_default();
+        return windows::get_sockets_info();
     }
 
-    #[cfg(target_os = "freebsd")]
-    {
-        return freebsd::get_sockets_info().await.unwrap_or_default();
-    }
-    
-    vec![]
+    unimplemented!()
 }
