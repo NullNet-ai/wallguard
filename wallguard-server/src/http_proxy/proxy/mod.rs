@@ -10,7 +10,6 @@ use crate::http_proxy::utilities::request_handling;
 use crate::http_proxy::utilities::tunneling;
 use crate::reverse_tunnel::TunnelAdapter;
 
-mod cert_verifier;
 mod request;
 
 pub async fn proxy_http_request(

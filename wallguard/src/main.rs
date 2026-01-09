@@ -1,10 +1,10 @@
-use crate::arguments::Arguments;
-use crate::client_data::ClientData;
-use crate::daemon::Daemon;
-use crate::server_data::ServerData;
-use crate::storage::Storage;
+// use crate::arguments::Arguments;
+// use crate::client_data::ClientData;
+// use crate::daemon::Daemon;
+// use crate::server_data::ServerData;
+// use crate::storage::Storage;
 
-use clap::Parser as _;
+// use clap::Parser as _;
 
 mod arguments;
 mod client_data;
@@ -14,6 +14,7 @@ mod control_channel;
 mod daemon;
 mod data_transmission;
 mod fireparse;
+mod netinfo;
 mod pty;
 mod reverse_tunnel;
 mod server_data;
@@ -22,7 +23,6 @@ mod timer;
 mod token_provider;
 mod utilities;
 mod wg_server;
-mod netinfo;
 
 #[cfg(not(target_os = "freebsd"))]
 mod remote_desktop;
@@ -50,7 +50,11 @@ async fn main() {
     check_privileges();
     env_logger::init();
 
-    netinfo::perform_service_discovery().await;
+    let services = netinfo::perform_service_discovery().await;
+
+    for service in services {
+        println!("{:?}", service);
+    }
 
     // let arguments = match Arguments::try_parse() {
     //     Ok(args) => args,

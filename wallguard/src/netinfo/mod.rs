@@ -1,15 +1,7 @@
-use crate::netinfo::sock::{IpVersion, Protocol};
-
+mod service;
 mod sock;
 
-pub struct ServiceInfo {}
-
-pub async fn perform_service_discovery() -> Vec<ServiceInfo> {
+pub async fn perform_service_discovery() -> Vec<service::ServiceInfo> {
     let sockets = sock::get_sockets_info().await;
-
-    for socket in sockets.iter() {
-        println!("{:?}", socket);
-    }
-
-    vec![]
+    service::gather_info(&sockets).await
 }
