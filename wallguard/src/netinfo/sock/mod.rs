@@ -39,6 +39,11 @@ async fn get_sockets_info_impl() -> Vec<SocketInfo> {
     windows::get_sockets_info()
 }
 
+#[cfg(target_os = "freebsd")]
+async fn get_sockets_info_impl() -> Vec<SocketInfo> {
+    freebsd::get_sockets_info().await
+}
+
 pub async fn get_sockets_info() -> Vec<SocketInfo> {
     get_sockets_info_impl().await
 }
