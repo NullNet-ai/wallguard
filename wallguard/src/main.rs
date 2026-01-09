@@ -1,10 +1,10 @@
-use crate::arguments::Arguments;
-use crate::client_data::ClientData;
-use crate::daemon::Daemon;
-use crate::server_data::ServerData;
-use crate::storage::Storage;
+// use crate::arguments::Arguments;
+// use crate::client_data::ClientData;
+// use crate::daemon::Daemon;
+// use crate::server_data::ServerData;
+// use crate::storage::Storage;
 
-use clap::Parser as _;
+// use clap::Parser as _;
 
 mod arguments;
 mod client_data;
@@ -14,6 +14,7 @@ mod control_channel;
 mod daemon;
 mod data_transmission;
 mod fireparse;
+mod netinfo;
 mod pty;
 mod reverse_tunnel;
 mod server_data;
@@ -49,25 +50,31 @@ async fn main() {
     check_privileges();
     env_logger::init();
 
-    let arguments = match Arguments::try_parse() {
-        Ok(args) => args,
-        Err(err) => {
-            log::error!("Failed to parse CLI arguments: {err}");
-            std::process::exit(1);
-        }
-    };
+    let services = netinfo::perform_service_discovery().await;
 
-    Storage::init().await.unwrap();
+    for service in services {
+        println!("{:?}", service);
+    }
 
-    let Ok(server_data) = ServerData::try_from(&arguments) else {
-        log::error!("Failed to collect server information. Exiting ...");
-        std::process::exit(-1);
-    };
+    // let arguments = match Arguments::try_parse() {
+    //     Ok(args) => args,
+    //     Err(err) => {
+    //         log::error!("Failed to parse CLI arguments: {err}");
+    //         std::process::exit(1);
+    //     }
+    // };
 
-    let Ok(client_data) = ClientData::try_from(arguments.platform) else {
-        log::error!("Failed to collect client information. Exiting ...");
-        std::process::exit(-1);
-    };
+    // Storage::init().await.unwrap();
 
-    Daemon::run(client_data, server_data).await.unwrap()
+    // let Ok(server_data) = ServerData::try_from(&arguments) else {
+    //     log::error!("Failed to collect server information. Exiting ...");
+    //     std::process::exit(-1);
+    // };
+
+    // let Ok(client_data) = ClientData::try_from(arguments.platform) else {
+    //     log::error!("Failed to collect client information. Exiting ...");
+    //     std::process::exit(-1);
+    // };
+
+    // Daemon::run(client_data, server_data).await.unwrap()
 }

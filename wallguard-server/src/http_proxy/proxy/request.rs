@@ -23,9 +23,9 @@ use rustls::{ClientConfig, RootCertStore};
 use std::sync::Arc;
 use tokio_rustls::TlsConnector;
 use tokio_rustls::client::TlsStream;
+use wallguard_common::cert_verifier::AcceptAllVerifier;
 use webpki_roots::TLS_SERVER_ROOTS;
 
-use crate::http_proxy::proxy::cert_verifier::AcceptAllVerifier;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 use crate::reverse_tunnel::TunnelAdapter;
 

@@ -4,7 +4,7 @@ use rustls::{DigitallySignedStruct, Error, SignatureScheme};
 use tonic::transport::CertificateDer;
 
 #[derive(Debug)]
-pub(super) struct AcceptAllVerifier;
+pub struct AcceptAllVerifier;
 
 #[allow(clippy::just_underscores_and_digits)]
 impl ServerCertVerifier for AcceptAllVerifier {

@@ -20,24 +20,27 @@ sysinfo = { version = "0.37.2", default-features = false, features = ["disk"] }
 async-channel = "2.3.1"
 nullnet-libresmon = "0.1.2"
 wallguard-common = { path = "../wallguard-common" }
-prost.workspace = true
-tonic.workspace = true
-tokio.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-nullnet-liberror.workspace = true
 xmltree = "0.12.0"
 md5 = "0.8.0"
 nftables = "0.6.3"
 enigo = "0.6.1"
 copypasta = "0.10.2"
 openh264 = "0.9.0"
+prost.workspace = true
+tonic.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+nullnet-liberror.workspace = true
+rustls.workspace = true
+tokio-rustls.workspace = true
 
 [target.'cfg(not(target_os = "freebsd"))'.dependencies]
 captis = "0.6.1"
 
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
+winapi = {version = "0.3.9", features = ["winerror", "iphlpapi", "handleapi", "tlhelp32"]}
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.30.1", features = ["user"] }
