@@ -95,7 +95,7 @@ pub(crate) fn tcp6_sockets() -> io::Result<Vec<(SocketAddr, u32)>> {
             .filter(|row| row.dwState == MIB_TCP_STATE_LISTEN)
             .map(|row| {
                 let octets: [u8; 16] = std::mem::transmute(row.ucLocalAddr);
-                let addr = Ipv6Addr::from_octets(octets);
+                let addr = Ipv6Addr::from(octets);
                 let port = u16::from_be((row.dwLocalPort & 0xFFFF) as u16);
 
                 (
