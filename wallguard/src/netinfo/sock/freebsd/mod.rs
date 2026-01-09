@@ -8,27 +8,27 @@ use udp::{udp_sockets, udp6_sockets};
 
 use super::{Protocol, SocketInfo};
 
-pub(super) fn get_sockets_info() -> Vec<SocketInfo> {
+pub(super) async fn  get_sockets_info() -> Vec<SocketInfo> {
     let sockets = [
         (
-            tcp_sockets().unwrap_or_default(),
+            tcp_sockets().await.unwrap_or_default(),
             Protocol::TCP,
         ),
         (
-            tcp6_sockets().unwrap_or_default(),
+            tcp6_sockets().await.unwrap_or_default(),
             Protocol::TCP,
         ),
         (
-            udp_sockets().unwrap_or_default(),
+            udp_sockets().await.unwrap_or_default(),
             Protocol::UDP,
         ),
         (
-            udp6_sockets().unwrap_or_default(),
+            udp6_sockets().await.unwrap_or_default(),
             Protocol::UDP,
         ),
     ];
 
-    let snapshot = snapshot_processes().unwrap_or_default();
+    let snapshot = snapshot_processes().await.unwrap_or_default();
 
     sockets
         .iter()
