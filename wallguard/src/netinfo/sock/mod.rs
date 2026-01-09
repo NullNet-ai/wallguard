@@ -1,7 +1,8 @@
-use std::net::IpAddr;
+use std::net::SocketAddr;
 
-// #[cfg(target_os = "linux")]
-// mod linux;
+#[cfg(target_os = "linux")]
+mod linux;
+
 // #[cfg(target_os = "freebsd")]
 // mod freebsd;
 
@@ -23,29 +24,21 @@ pub enum IpVersion {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SocketInfo {
-    pub pid: u32,
     pub process_name: String,
     pub protocol: Protocol,
-    pub ip_version: IpVersion,
-    pub local_addr: IpAddr,
-    pub local_port: u16,
+    pub sockaddr: SocketAddr,
+}
+
+#[cfg(target_os = "linux")]
+async fn get_sockets_info_impl() -> Vec<SocketInfo> {
+    linux::get_sockets_info().await
+}
+
+#[cfg(target_os = "windows")]
+async fn get_sockets_info_impl() -> Vec<SocketInfo> {
+    windows::get_sockets_info()
 }
 
 pub async fn get_sockets_info() -> Vec<SocketInfo> {
-    // #[cfg(target_os = "linux")]
-    // {
-    //     return linux::get_sockets_info().await.unwrap_or_default();
-    // }
-
-    // #[cfg(target_os = "freebsd")]
-    // {
-    //     return freebsd::get_sockets_info().await.unwrap_or_default();
-    // }
-
-    #[cfg(target_os = "windows")]
-    {
-        return windows::get_sockets_info();
-    }
-
-    unimplemented!()
+    get_sockets_info_impl().await
 }

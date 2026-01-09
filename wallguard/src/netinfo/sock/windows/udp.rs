@@ -84,8 +84,8 @@ pub(crate) fn udp6_sockets() -> io::Result<Vec<(SocketAddr, u32)>> {
         let values = rows
             .iter()
             .map(|row| {
-                let bytes: [u8; 16] = std::mem::transmute(row.ucLocalAddr);
-                let addr = Ipv6Addr::from(bytes);
+                let octets: [u8; 16] = std::mem::transmute(row.ucLocalAddr);
+                let addr = Ipv6Addr::from_octets(octets);
                 let port = u16::from_be((row.dwLocalPort & 0xFFFF) as u16);
 
                 (
