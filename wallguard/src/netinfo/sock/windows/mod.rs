@@ -8,7 +8,7 @@ use udp::{udp_sockets, udp6_sockets};
 
 use super::{IpVersion, Protocol, SocketInfo};
 
-pub(super) async fn get_sockets_info() -> Vec<SocketInfo> {
+pub(super) fn get_sockets_info() -> Vec<SocketInfo> {
     let sockets = [
         (
             tcp_sockets().unwrap_or_default(),
