@@ -1,5 +1,5 @@
 use std::io;
-use std::net::{SocketAddr};
+use std::net::SocketAddr;
 use tokio::process::Command;
 
 pub(crate) async fn udp_sockets() -> io::Result<Vec<(SocketAddr, u32)>> {

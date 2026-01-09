@@ -58,7 +58,7 @@ async fn parse_proc_net(
                         let b = ((ip >> 08) & 0xff) as u8;
                         let c = ((ip >> 16) & 0xff) as u8;
                         let d = ((ip >> 24) & 0xff) as u8;
-                        
+
                         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(a, b, c, d), port))
                     }
                     IpVersion::V6 => {
