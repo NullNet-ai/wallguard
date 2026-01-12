@@ -3,6 +3,7 @@ use crate::constants::SNAPLEN;
 use crate::data_transmission::packets::transmitter::transmit_packets;
 use crate::data_transmission::resources::transmitter::transmit_system_resources;
 use crate::data_transmission::sysconfig;
+use crate::netinfo::monitor_services;
 use crate::wg_server::WGServer;
 use crate::{data_transmission::dump_dir::DumpDir, token_provider::TokenProvider};
 use async_channel::Receiver;
@@ -15,6 +16,7 @@ pub(crate) struct TransmissionManager {
     packet_capture: Option<Receiver<PacketInfo>>,
     resource_monitoring: Option<Receiver<SystemResources>>,
     sysconf_monitoring: Option<broadcast::Sender<()>>,
+    services_monitoring: Option<broadcast::Sender<()>>,
 
     interface: WGServer,
     dump_dir: DumpDir,
@@ -36,6 +38,7 @@ impl TransmissionManager {
             packet_capture: None,
             resource_monitoring: None,
             sysconf_monitoring: None,
+            services_monitoring: None,
 
             interface,
             dump_dir,
@@ -44,6 +47,10 @@ impl TransmissionManager {
             server_addr,
             platform,
         }
+    }
+
+    pub(crate) fn has_services_monitoring(&self) -> bool {
+        self.services_monitoring.is_some()
     }
 
     pub(crate) fn has_packet_capture(&self) -> bool {
@@ -134,6 +141,27 @@ impl TransmissionManager {
         });
     }
 
+    pub(crate) fn start_services_monitoring(&mut self) {
+        if self.has_services_monitoring() {
+            return;
+        }
+
+        let (terminate, _) = broadcast::channel(1);
+
+        let interface = self.interface.clone();
+        let token_provider = self.token_provider.clone();
+        let mut receiver = terminate.subscribe();
+
+        self.services_monitoring = Some(terminate);
+
+        tokio::spawn(async move {
+            tokio::select! {
+                _ = receiver.recv() => {},
+                _ = monitor_services(interface, token_provider) => {}
+            }
+        });
+    }
+
     pub(crate) fn terminate_packet_capture(&mut self) {
         let Some(rx) = &self.packet_capture else {
             return;
@@ -161,5 +189,16 @@ impl TransmissionManager {
         let _ = terminate.send(());
 
         self.sysconf_monitoring = None
+    }
+
+    pub(crate) fn terminate_services_monitoring(&mut self) {
+        let Some(terminate) = &self.services_monitoring else {
+            return;
+        };
+
+        log::info!("Terminating sysconf monitoring");
+        let _ = terminate.send(());
+
+        self.services_monitoring = None
     }
 }

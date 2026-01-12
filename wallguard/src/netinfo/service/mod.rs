@@ -1,5 +1,8 @@
 use crate::netinfo::sock::SocketInfo;
 use std::net::SocketAddr;
+use wallguard_common::protobuf::wallguard_service::{
+    ServiceInfo as ServiceInfoGrpc, ServiceProtocol as ProtocolGrpc,
+};
 
 mod http;
 
@@ -14,6 +17,20 @@ pub struct ServiceInfo {
     addr: SocketAddr,
     protocol: Protocol,
     program: String,
+}
+
+impl Into<ServiceInfoGrpc> for ServiceInfo {
+    fn into(self) -> ServiceInfoGrpc {
+        ServiceInfoGrpc {
+            protocol: match self.protocol {
+                Protocol::Http => ProtocolGrpc::Http.into(),
+                Protocol::Https => ProtocolGrpc::Https.into(),
+            },
+            program: self.program,
+            address: self.addr.ip().to_string(),
+            port: self.addr.port().into(),
+        }
+    }
 }
 
 pub async fn gather_info(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
