@@ -15,6 +15,7 @@ pub enum Protocol {
     Udp,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum IpVersion {
     V4,

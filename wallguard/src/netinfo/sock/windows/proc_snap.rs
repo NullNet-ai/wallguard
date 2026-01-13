@@ -36,7 +36,7 @@ pub fn snapshot_processes() -> std::io::Result<HashMap<u32, String>> {
                 .to_string_lossy()
                 .into_owned();
 
-            map.insert(entry.th32ProcessID as u32, name);
+            map.insert(entry.th32ProcessID, name);
 
             if Process32NextW(snapshot, &mut entry as *mut _) == 0 {
                 break;
