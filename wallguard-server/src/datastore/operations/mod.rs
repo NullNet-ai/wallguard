@@ -23,3 +23,4 @@ mod redeem_installation_code;
 mod register_device;
 mod update_config;
 mod update_device;
+mod update_services;

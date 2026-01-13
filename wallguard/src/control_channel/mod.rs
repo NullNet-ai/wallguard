@@ -59,6 +59,7 @@ impl ControlChannel {
         manager.terminate_packet_capture();
         manager.terminate_resource_monitoring();
         manager.terminate_sysconfig_monitoring();
+        manager.terminate_services_monitoring();
 
         drop(manager);
 

@@ -14,6 +14,7 @@ mod control_channel;
 mod daemon;
 mod data_transmission;
 mod fireparse;
+mod netinfo;
 mod pty;
 mod reverse_tunnel;
 mod server_data;

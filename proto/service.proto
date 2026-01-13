@@ -20,6 +20,9 @@ service WallGuard {
 
   rpc HandleConfigData(ConfigSnapshot) 
     returns (google.protobuf.Empty);
+
+  rpc ReportServices(ServicesMessage) 
+    returns (google.protobuf.Empty);
 }
 
 message PacketsData {
@@ -75,4 +78,21 @@ message ConfigSnapshot {
   string token = 1;
   wallguard_models.Configuration configuration = 2;
   ConfigStatus status = 3;
+}
+
+enum ServiceProtocol {
+  HTTP = 0;
+  HTTPS = 1;
+}
+
+message ServiceInfo {
+  ServiceProtocol protocol = 1;
+  string program = 2;
+  string address = 3;
+  int64 port = 4;
+}
+
+message ServicesMessage {
+  repeated ServiceInfo services = 1;
+  string token = 2;
 }

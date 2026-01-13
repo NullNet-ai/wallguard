@@ -3,6 +3,8 @@ use std::time::Duration;
 use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
 
 pub async fn post_startup(context: Context) {
+    log::info!("Post startup procedure init");
+
     let timeout = Duration::from_secs(10);
 
     let token = context
@@ -60,4 +62,10 @@ pub async fn post_startup(context: Context) {
             .await
             .start_packet_capture();
     }
+
+    context
+        .transmission_manager
+        .lock()
+        .await
+        .start_services_monitoring();
 }

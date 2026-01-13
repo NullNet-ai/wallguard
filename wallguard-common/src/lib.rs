@@ -1,3 +1,4 @@
+pub mod cert_verifier;
 pub mod os_if;
 pub mod protobuf;
 pub mod timestamped_packet;

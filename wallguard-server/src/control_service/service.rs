@@ -11,7 +11,8 @@ use wallguard_common::protobuf::wallguard_service::wall_guard_server::{
     WallGuard, WallGuardServer,
 };
 use wallguard_common::protobuf::wallguard_service::{
-    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, ServicesMessage,
+    SystemResourcesData,
 };
 use wallguard_common::protobuf::wallguard_tunnel::reverse_tunnel_server::{
     ReverseTunnel, ReverseTunnelServer,
@@ -100,6 +101,13 @@ impl WallGuard for WallGuardService {
         request: Request<ConfigSnapshot>,
     ) -> Result<Response<()>, Status> {
         self.handle_config_data_impl(request).await
+    }
+
+    async fn report_services(
+        &self,
+        request: Request<ServicesMessage>,
+    ) -> Result<Response<()>, Status> {
+        self.report_services_impl(request).await
     }
 }
 

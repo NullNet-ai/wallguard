@@ -9,6 +9,7 @@ use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::Channel;
 
 use crate::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
+use crate::protobuf::wallguard_service::ServicesMessage;
 use crate::protobuf::wallguard_service::wall_guard_client::WallGuardClient;
 use crate::protobuf::wallguard_service::{
     ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
@@ -107,6 +108,15 @@ impl WallGuardGrpcInterface {
         self.client
             .clone()
             .handle_config_data(request)
+            .await
+            .handle_err(location!())
+            .map(|response| response.into_inner())
+    }
+
+    pub async fn report_services(&self, request: ServicesMessage) -> Result<(), Error> {
+        self.client
+            .clone()
+            .report_services(request)
             .await
             .handle_err(location!())
             .map(|response| response.into_inner())

@@ -19,6 +19,7 @@ pub enum DBTable {
     DeviceCredentials,
     InstallationCodes,
     DeviceInstances,
+    DeviceServices,
     Heartbeats,
 }
 
@@ -44,6 +45,7 @@ impl Display for DBTable {
             DBTable::InstallationCodes => "installation_codes",
             DBTable::DeviceInstances => "device_instances",
             DBTable::Heartbeats => "device_heartbeats",
+            DBTable::DeviceServices => "device_services",
         };
         write!(f, "{table_name}")
     }
