@@ -8,7 +8,7 @@ members = [
 
 [workspace.dependencies]
 tokio = { version = "1.43.0", features = ["full"] }
-tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
+tonic = { version = "0.14.2", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
 rustls = "0.23.27"
 serde = { version = "1.0.219", features = ["derive"] }
