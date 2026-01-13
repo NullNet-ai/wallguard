@@ -15,7 +15,7 @@ pub async fn monitor_services(
     token_provider: TokenProvider,
 ) -> Result<(), Error> {
     log::info!("Staring services monitoring ...");
-    
+
     loop {
         let sockets = sock::get_sockets_info().await;
         let services = service::gather_info(&sockets).await;

@@ -29,6 +29,14 @@ fn main() {
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
+            "wallguard_service.ServiceInfo",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
+            "wallguard_service.ServiceProtocol",
+            "#[derive(serde::Serialize, serde::Deserialize)]",
+        )
+        .type_attribute(
             "wallguard_models.AddrInfo",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )

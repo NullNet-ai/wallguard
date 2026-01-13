@@ -78,6 +78,7 @@ pub struct ConfigSnapshot {
     #[prost(enumeration = "ConfigStatus", tag = "3")]
     pub status: i32,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ServiceInfo {
     #[prost(enumeration = "ServiceProtocol", tag = "1")]
@@ -125,6 +126,7 @@ impl ConfigStatus {
         }
     }
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ServiceProtocol {

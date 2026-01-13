@@ -1,6 +1,6 @@
+use super::{Protocol, SocketInfo};
 use std::net::SocketAddr;
 use tokio::process::Command;
-use super::{Protocol, SocketInfo};
 
 fn parse_sockstat_addr(addr_str: &str, is_ipv6: bool) -> Option<SocketAddr> {
     use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
