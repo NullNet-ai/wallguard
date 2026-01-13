@@ -96,7 +96,7 @@ async fn detect_protocol(addr: SocketAddr) -> Option<crate::netinfo::service::Pr
 pub(super) async fn filter(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
     let tcp_sockets = sockets
         .iter()
-        .filter(|s| matches!(s.protocol, crate::netinfo::sock::Protocol::TCP));
+        .filter(|s| matches!(s.protocol, crate::netinfo::sock::Protocol::Tcp));
 
     let mut services = Vec::new();
 

@@ -30,7 +30,7 @@ async fn parse_proc_net(
             continue;
         }
 
-        if let Protocol::TCP = proto {
+        if let Protocol::Tcp = proto {
             // Only include TCP if state == "0A" (LISTEN)
             let state_hex = cols[3];
             if state_hex != "0A" {
@@ -54,8 +54,8 @@ async fn parse_proc_net(
                         };
 
                         let ip = u32::from_str_radix(addr_hex, 16).unwrap();
-                        let a = ((ip >> 00) & 0xff) as u8;
-                        let b = ((ip >> 08) & 0xff) as u8;
+                        let a = (ip & 0xff) as u8;
+                        let b = ((ip >> 8) & 0xff) as u8;
                         let c = ((ip >> 16) & 0xff) as u8;
                         let d = ((ip >> 24) & 0xff) as u8;
 
@@ -86,19 +86,19 @@ async fn parse_proc_net(
 pub(super) async fn build_inode_sock_map() -> HashMap<u64, (SocketAddr, Protocol)> {
     let mut inode_map = HashMap::new();
 
-    if let Ok(tcp_map) = parse_proc_net("/proc/net/tcp", Protocol::TCP, IpVersion::V4).await {
+    if let Ok(tcp_map) = parse_proc_net("/proc/net/tcp", Protocol::Tcp, IpVersion::V4).await {
         inode_map.extend(tcp_map);
     }
 
-    if let Ok(tcp6_map) = parse_proc_net("/proc/net/tcp6", Protocol::TCP, IpVersion::V6).await {
+    if let Ok(tcp6_map) = parse_proc_net("/proc/net/tcp6", Protocol::Tcp, IpVersion::V6).await {
         inode_map.extend(tcp6_map);
     }
 
-    if let Ok(udp_map) = parse_proc_net("/proc/net/udp", Protocol::UDP, IpVersion::V4).await {
+    if let Ok(udp_map) = parse_proc_net("/proc/net/udp", Protocol::Udp, IpVersion::V4).await {
         inode_map.extend(udp_map);
     }
 
-    if let Ok(udp6_map) = parse_proc_net("/proc/net/udp6", Protocol::UDP, IpVersion::V6).await {
+    if let Ok(udp6_map) = parse_proc_net("/proc/net/udp6", Protocol::Udp, IpVersion::V6).await {
         inode_map.extend(udp6_map);
     }
 

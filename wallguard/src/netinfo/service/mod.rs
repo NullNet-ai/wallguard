@@ -19,16 +19,16 @@ pub struct ServiceInfo {
     program: String,
 }
 
-impl Into<ServiceInfoGrpc> for ServiceInfo {
-    fn into(self) -> ServiceInfoGrpc {
+impl From<ServiceInfo> for ServiceInfoGrpc {
+    fn from(val: ServiceInfo) -> Self {
         ServiceInfoGrpc {
-            protocol: match self.protocol {
+            protocol: match val.protocol {
                 Protocol::Http => ProtocolGrpc::Http.into(),
                 Protocol::Https => ProtocolGrpc::Https.into(),
             },
-            program: self.program,
-            address: self.addr.ip().to_string(),
-            port: self.addr.port().into(),
+            program: val.program,
+            address: val.addr.ip().to_string(),
+            port: val.addr.port().into(),
         }
     }
 }

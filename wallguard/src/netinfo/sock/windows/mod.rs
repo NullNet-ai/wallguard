@@ -10,10 +10,10 @@ use super::{Protocol, SocketInfo};
 
 pub(super) fn get_sockets_info() -> Vec<SocketInfo> {
     let sockets = [
-        (tcp_sockets().unwrap_or_default(), Protocol::TCP),
-        (tcp6_sockets().unwrap_or_default(), Protocol::TCP),
-        (udp_sockets().unwrap_or_default(), Protocol::UDP),
-        (udp6_sockets().unwrap_or_default(), Protocol::UDP),
+        (tcp_sockets().unwrap_or_default(), Protocol::Tcp),
+        (tcp6_sockets().unwrap_or_default(), Protocol::Tcp),
+        (udp_sockets().unwrap_or_default(), Protocol::Udp),
+        (udp6_sockets().unwrap_or_default(), Protocol::Udp),
     ];
 
     let snapshot = snapshot_processes().unwrap_or_default();

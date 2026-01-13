@@ -65,10 +65,10 @@ pub(super) async fn get_sockets_info() -> Vec<SocketInfo> {
         let addr_str = parts[5];
 
         let (protocol, is_ipv6) = match proto_str {
-            "tcp4" | "tcp46" => (Protocol::TCP, false),
-            "tcp6" => (Protocol::TCP, true),
-            "udp4" | "udp46" => (Protocol::UDP, false),
-            "udp6" => (Protocol::UDP, true),
+            "tcp4" | "tcp46" => (Protocol::Tcp, false),
+            "tcp6" => (Protocol::Tcp, true),
+            "udp4" | "udp46" => (Protocol::Udp, false),
+            "udp6" => (Protocol::Udp, true),
             _ => continue,
         };
 

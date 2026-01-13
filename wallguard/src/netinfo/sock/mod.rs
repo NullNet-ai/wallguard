@@ -11,8 +11,8 @@ mod windows;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Protocol {
-    TCP,
-    UDP,
+    Tcp,
+    Udp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
