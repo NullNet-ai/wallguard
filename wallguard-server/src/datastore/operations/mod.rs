@@ -17,6 +17,7 @@ mod login;
 mod obtain_config;
 mod obtain_device;
 mod obtain_installation_code;
+mod obtain_service;
 mod obtain_session;
 mod obtain_ssh_keypair;
 mod redeem_installation_code;

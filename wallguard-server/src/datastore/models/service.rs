@@ -9,6 +9,7 @@ pub struct ServiceInfo {
     pub address: String,
     pub port: u16,
     pub protocol: String,
+    pub program: String,
 }
 
 impl ServiceInfo {
@@ -18,11 +19,22 @@ impl ServiceInfo {
             device_id,
             address: data.address,
             port: data.port as u16,
+            program: data.program,
             protocol: match proto {
                 Ok(ServiceProtocol::Http) => "http".into(),
                 Ok(ServiceProtocol::Https) => "https".into(),
                 _ => "unknown".into(),
             },
         }
+    }
+
+    pub fn pluck() -> Vec<String> {
+        vec![
+            "device_id".into(),
+            "address".into(),
+            "port".into(),
+            "protocol".into(),
+            "program".into(),
+        ]
     }
 }

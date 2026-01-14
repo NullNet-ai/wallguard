@@ -66,6 +66,13 @@ pub async fn proxy_http_request(
         ));
     };
 
+    if !matches!(protocol.to_ascii_lowercase().as_str(), "http" | "https") {
+        return HttpResponse::InternalServerError().json(ErrorJson::from(format!(
+            "Cannot proxy HTTP request to a {} service",
+            protocol,
+        )));
+    }
+
     let Ok(tunnel) = tunneling::establish_tunneled_ui(
         &context,
         &device.id,

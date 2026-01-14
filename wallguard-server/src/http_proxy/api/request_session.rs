@@ -6,7 +6,6 @@ use actix_web::web::Json;
 use nullnet_liberror::Error;
 use serde::Deserialize;
 use serde_json::json;
-use std::net::IpAddr;
 
 use crate::app_context::AppContext;
 use crate::datastore::RemoteAccessSession;
@@ -15,13 +14,9 @@ use crate::datastore::SSHKeypair;
 use crate::http_proxy::utilities::authorization;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 
-// We allow remote access to ANY HTTP/HTTPS web server that the client can relay traffic to.
-// We trust the user to know where they want to tunnel into, which is why this piece of data is included.
 #[derive(Deserialize)]
 struct SessionData {
-    local_addr: String,
-    local_port: u32,
-    protocol: String,
+    service_id: String,
 }
 
 #[derive(Deserialize)]
@@ -66,19 +61,20 @@ pub async fn request_session(
             ));
         };
 
-        if !validate_ip_address(&ex_data.local_addr) {
-            return HttpResponse::InternalServerError().json(ErrorJson::from("Bad local_addr"));
-        }
-
-        if !validate_protocol(&ex_data.protocol) {
-            return HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Unsupported protocol"));
-        }
+        let Ok(Some(service)) = context
+            .datastore
+            .obtain_service(&jwt, &ex_data.service_id, false)
+            .await
+        else {
+            return HttpResponse::InternalServerError().json(ErrorJson::from(
+                "Cannot create UI session: cannot fetch service data",
+            ));
+        };
 
         session.set_ex_data(
-            ex_data.local_addr.clone(),
-            ex_data.local_port,
-            ex_data.protocol.clone(),
+            service.address.clone(),
+            service.port as u32,
+            service.protocol.clone(),
         );
     }
 
@@ -113,12 +109,4 @@ async fn handle_ssh_edgecase(
         }
         Err(err) => Err(err),
     }
-}
-
-fn validate_ip_address(addr: &str) -> bool {
-    addr.parse::<IpAddr>().is_ok()
-}
-
-fn validate_protocol(proto: &str) -> bool {
-    matches!(proto.to_ascii_lowercase().as_str(), "http" | "https")
 }
