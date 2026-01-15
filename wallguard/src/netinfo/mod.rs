@@ -8,7 +8,7 @@ use wallguard_common::protobuf::wallguard_service::ServicesMessage;
 mod service;
 mod sock;
 
-const TIME_INTERVAL: Duration = Duration::from_secs(60);
+const TIME_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
 pub async fn monitor_services(
     interface: WGServer,
