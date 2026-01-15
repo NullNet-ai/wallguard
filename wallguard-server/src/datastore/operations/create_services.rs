@@ -1,31 +1,13 @@
 use crate::datastore::{Datastore, ServiceInfo, db_tables::DBTable};
-use nullnet_libdatastore::{
-    AdvanceFilterBuilder, BatchCreateRequestBuilder, BatchDeleteRequestBuilder,
-};
+use nullnet_libdatastore::BatchCreateRequestBuilder;
 use nullnet_liberror::Error;
 
 impl Datastore {
-    pub async fn udpate_services(
+    pub async fn create_services(
         &self,
         token: &str,
-        device_id: &str,
         services: &[ServiceInfo],
     ) -> Result<(), Error> {
-        let filter = AdvanceFilterBuilder::new()
-            .field("device_id")
-            .values(format!("[\"{device_id}\"]"))
-            .r#type("criteria")
-            .operator("equal")
-            .entity(DBTable::DeviceServices)
-            .build();
-
-        let request = BatchDeleteRequestBuilder::new()
-            .table(DBTable::DeviceServices)
-            .advance_filter(filter)
-            .build();
-
-        self.inner.clone().batch_delete(request, token).await?;
-
         if services.is_empty() {
             return Ok(());
         }

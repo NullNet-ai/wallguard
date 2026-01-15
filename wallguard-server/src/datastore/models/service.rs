@@ -5,6 +5,7 @@ use wallguard_common::protobuf::wallguard_service::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ServiceInfo {
+    pub id: String,
     pub device_id: String,
     pub address: String,
     pub port: u16,
@@ -25,11 +26,13 @@ impl ServiceInfo {
                 Ok(ServiceProtocol::Https) => "https".into(),
                 _ => "unknown".into(),
             },
+            ..Default::default()
         }
     }
 
     pub fn pluck() -> Vec<String> {
         vec![
+            "id".into(),
             "device_id".into(),
             "address".into(),
             "port".into(),
