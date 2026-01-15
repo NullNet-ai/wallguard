@@ -84,10 +84,10 @@ async fn is_https(addr: SocketAddr) -> bool {
 }
 
 async fn detect_protocol(addr: SocketAddr) -> Option<crate::netinfo::service::Protocol> {
-    if is_http(addr).await {
-        Some(crate::netinfo::service::Protocol::Http)
-    } else if is_https(addr).await {
+    if is_https(addr).await {
         Some(crate::netinfo::service::Protocol::Https)
+    } else if is_http(addr).await {
+        Some(crate::netinfo::service::Protocol::Http)
     } else {
         None
     }
