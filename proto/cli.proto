@@ -9,6 +9,7 @@ service WallguardCli {
     rpc GetCapabilities(google.protobuf.Empty) returns (Caps);
     rpc JoinOrg(JoinOrgReq) returns (CommonResponse);
     rpc LeaveOrg(google.protobuf.Empty) returns (CommonResponse);
+    rpc GetVersion(google.protobuf.Empty) returns (Version);
 }
 
 message CommonResponse {
@@ -39,4 +40,8 @@ message Caps {
 
 message JoinOrgReq {
     string installation_code = 1;
+}
+
+message Version {
+    string value = 1;
 }

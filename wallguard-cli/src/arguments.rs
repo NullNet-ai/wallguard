@@ -57,6 +57,9 @@ pub enum Command {
         platform: Platform,
     },
 
+    /// Get agent version
+    Version,
+
     /// Stop the running service
     Stop,
 }

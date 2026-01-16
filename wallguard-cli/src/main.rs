@@ -134,7 +134,13 @@ pub async fn main() -> AnyResult<()> {
                 false => eprintln!("Failed to leave organization: {}", response.message),
             }
         }
+        arguments::Command::Version => {
+            let mut client = cli_connect().await;
 
+            let response = client.get_version(()).await?.into_inner();
+
+            println!("Version: {}", response.value);
+        }
         arguments::Command::Start {
             control_channel_url,
             platform,

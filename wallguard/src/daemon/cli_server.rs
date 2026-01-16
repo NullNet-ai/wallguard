@@ -1,9 +1,11 @@
+use crate::VERSION;
+use crate::daemon::Daemon;
 use wallguard_common::protobuf::wallguard_cli::Caps;
 use wallguard_common::protobuf::wallguard_cli::CommonResponse;
 use wallguard_common::protobuf::wallguard_cli::JoinOrgReq;
 use wallguard_common::protobuf::wallguard_cli::Status;
+use wallguard_common::protobuf::wallguard_cli::Version;
 use wallguard_common::protobuf::wallguard_cli::wallguard_cli_server::WallguardCli;
-use crate::daemon::Daemon;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -89,5 +91,14 @@ impl WallguardCli for CliServer {
         };
 
         Ok(tonic::Response::from(response))
+    }
+
+    async fn get_version(
+        &self,
+        _: tonic::Request<()>,
+    ) -> Result<tonic::Response<Version>, tonic::Status> {
+        Ok(tonic::Response::from(Version {
+            value: VERSION.into(),
+        }))
     }
 }
