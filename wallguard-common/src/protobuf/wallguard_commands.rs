@@ -11,6 +11,8 @@ pub struct AuthorizationRequest {
     pub r#type: ::prost::alloc::string::String,
     #[prost(string, tag = "5")]
     pub target_os: ::prost::alloc::string::String,
+    #[prost(string, tag = "6")]
+    pub version: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Authentication {

@@ -28,6 +28,7 @@ pub async fn await_authorization(
                 category: client_data.category,
                 r#type: client_data.platform.to_string(),
                 target_os: client_data.target_os.to_string(),
+                version: crate::VERSION.into(),
             },
         )),
     };

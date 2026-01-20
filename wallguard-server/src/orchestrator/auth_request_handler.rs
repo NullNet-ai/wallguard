@@ -97,6 +97,7 @@ impl AuthReqHandler {
             device.online = true;
             device.os = auth.target_os;
             device.uuid = auth.uuid.clone();
+            device.version = auth.version;
 
             if self
                 .context
@@ -157,7 +158,19 @@ impl AuthReqHandler {
                 Err(_) => fail_with_status!(outbound, "Failed to obtain device"),
             };
 
-            if let Some(device) = device {
+            if let Some(mut device) = device {
+                device.version = auth.version;
+
+                if self
+                    .context
+                    .datastore
+                    .update_device(&sys_token.jwt, &installation_code.device_id, &device)
+                    .await
+                    .is_err()
+                {
+                    fail_with_status!(outbound, "Failed to update device")
+                }
+
                 Self::add_device_instance(
                     &mut clients,
                     &device,
@@ -181,6 +194,7 @@ impl AuthReqHandler {
                     os: auth.target_os,
                     online: true,
                     organization: installation_code.organization_id.clone(),
+                    version: auth.version,
                     ..Default::default()
                 };
 
