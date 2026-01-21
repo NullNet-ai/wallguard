@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
+#[derive(Debug, Clone, Copy)]
 pub enum DBTable {
     Devices,
     SSHKeys,

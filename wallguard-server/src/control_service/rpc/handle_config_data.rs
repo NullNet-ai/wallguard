@@ -5,7 +5,7 @@ use nullnet_liberror::Error;
 use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration};
-use wallguard_common::protobuf::wallguard_service::ConfigSnapshot;
+use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus};
 
 // @TODO
 // Save & Update records "status": Active, Draft
@@ -16,6 +16,8 @@ impl WallGuardService {
         request: Request<ConfigSnapshot>,
     ) -> Result<Response<()>, Status> {
         let request = request.into_inner();
+
+        let status = request.status();
 
         let Some(configuration) = request.configuration else {
             return Err(Status::internal("No configuration has been provided"));
@@ -46,18 +48,34 @@ impl WallGuardService {
                     .await
                     .map_err(|err| Status::internal(err.to_str()))?;
 
-                Ok(Response::new(()))
-            } else {
-                insert_new_configuration(self.context.datastore.clone(), &token, &configuration)
+                self.context
+                    .datastore
+                    .update_rules_status(&token.jwt, &prev.id, status)
                     .await
                     .map_err(|err| Status::internal(err.to_str()))?;
 
                 Ok(Response::new(()))
-            }
-        } else {
-            insert_new_configuration(self.context.datastore.clone(), &token, &configuration)
+            } else {
+                insert_new_configuration(
+                    self.context.datastore.clone(),
+                    &token,
+                    &configuration,
+                    status,
+                )
                 .await
                 .map_err(|err| Status::internal(err.to_str()))?;
+
+                Ok(Response::new(()))
+            }
+        } else {
+            insert_new_configuration(
+                self.context.datastore.clone(),
+                &token,
+                &configuration,
+                status,
+            )
+            .await
+            .map_err(|err| Status::internal(err.to_str()))?;
 
             Ok(Response::new(()))
         }
@@ -68,6 +86,7 @@ async fn insert_new_configuration(
     datastore: Datastore,
     token: &Token,
     conf: &Configuration,
+    status: ConfigStatus,
 ) -> Result<(), Error> {
     let devcfg = DeviceConfiguration {
         device_id: token.account.device.as_ref().unwrap().id.clone(),
@@ -80,8 +99,8 @@ async fn insert_new_configuration(
     let config_id = datastore.create_config(&token.jwt, &devcfg).await?;
 
     let result = tokio::join!(
-        datastore.create_filter_rules(&token.jwt, &conf.filter_rules, &config_id),
-        datastore.create_nat_rules(&token.jwt, &conf.nat_rules, &config_id),
+        datastore.create_filter_rules(&token.jwt, &conf.filter_rules, &config_id, status),
+        datastore.create_nat_rules(&token.jwt, &conf.nat_rules, &config_id, status),
         create_aliases_inner(datastore.clone(), &token.jwt, &conf.aliases, &config_id),
         datastore.create_interfaces(&token.jwt, &conf.interfaces, &config_id)
     );
