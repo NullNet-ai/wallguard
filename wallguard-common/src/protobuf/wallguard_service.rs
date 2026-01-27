@@ -132,6 +132,7 @@ impl ConfigStatus {
 pub enum ServiceProtocol {
     Http = 0,
     Https = 1,
+    Ssh = 2,
 }
 impl ServiceProtocol {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -142,6 +143,7 @@ impl ServiceProtocol {
         match self {
             Self::Http => "HTTP",
             Self::Https => "HTTPS",
+            Self::Ssh => "SSH",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -149,6 +151,7 @@ impl ServiceProtocol {
         match value {
             "HTTP" => Some(Self::Http),
             "HTTPS" => Some(Self::Https),
+            "SSH" => Some(Self::Ssh),
             _ => None,
         }
     }

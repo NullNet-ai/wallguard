@@ -83,6 +83,7 @@ message ConfigSnapshot {
 enum ServiceProtocol {
   HTTP = 0;
   HTTPS = 1;
+  SSH = 2;
 }
 
 message ServiceInfo {

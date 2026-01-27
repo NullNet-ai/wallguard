@@ -34,6 +34,7 @@ serde_json.workspace = true
 nullnet-liberror.workspace = true
 rustls.workspace = true
 tokio-rustls.workspace = true
+whoami = "2.0.2"
 
 [target.'cfg(not(target_os = "freebsd"))'.dependencies]
 captis = "0.6.1"

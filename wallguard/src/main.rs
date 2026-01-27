@@ -49,28 +49,43 @@ fn check_privileges() {
 
 #[tokio::main]
 async fn main() {
-    check_privileges();
-    env_logger::init();
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
 
-    let arguments = match Arguments::try_parse() {
-        Ok(args) => args,
-        Err(err) => {
-            log::error!("Failed to parse CLI arguments: {err}");
-            std::process::exit(1);
-        }
-    };
+    let s = netinfo::sock::get_sockets_info().await;
+    for s_ in s.iter() {
+        println!("{:?}", s_);
+    }
 
-    Storage::init().await.unwrap();
+    let s = netinfo::service::gather_info(&s).await;
 
-    let Ok(server_data) = ServerData::try_from(&arguments) else {
-        log::error!("Failed to collect server information. Exiting ...");
-        std::process::exit(-1);
-    };
+    for s_ in s.iter() {
+        println!("{:?}", s_);
+    }
 
-    let Ok(client_data) = ClientData::try_from(arguments.platform) else {
-        log::error!("Failed to collect client information. Exiting ...");
-        std::process::exit(-1);
-    };
+    // check_privileges();
+    // env_logger::init();
 
-    Daemon::run(client_data, server_data).await.unwrap()
+    // let arguments = match Arguments::try_parse() {
+    //     Ok(args) => args,
+    //     Err(err) => {
+    //         log::error!("Failed to parse CLI arguments: {err}");
+    //         std::process::exit(1);
+    //     }
+    // };
+
+    // Storage::init().await.unwrap();
+
+    // let Ok(server_data) = ServerData::try_from(&arguments) else {
+    //     log::error!("Failed to collect server information. Exiting ...");
+    //     std::process::exit(-1);
+    // };
+
+    // let Ok(client_data) = ClientData::try_from(arguments.platform) else {
+    //     log::error!("Failed to collect client information. Exiting ...");
+    //     std::process::exit(-1);
+    // };
+
+    // Daemon::run(client_data, server_data).await.unwrap()
 }

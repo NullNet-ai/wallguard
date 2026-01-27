@@ -7,6 +7,7 @@ mod installation_code;
 mod remote_access_session;
 mod service;
 mod ssh_keypair;
+mod tunnel;
 
 pub use alias::*;
 pub use device::*;
@@ -17,3 +18,4 @@ pub use installation_code::*;
 pub use remote_access_session::*;
 pub use service::*;
 pub use ssh_keypair::*;
+pub use tunnel::*;

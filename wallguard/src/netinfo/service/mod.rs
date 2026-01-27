@@ -5,11 +5,13 @@ use wallguard_common::protobuf::wallguard_service::{
 };
 
 mod http;
+mod ssh;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum Protocol {
     Http,
     Https,
+    Ssh,
 }
 
 #[derive(Debug)]
@@ -25,6 +27,7 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
             protocol: match val.protocol {
                 Protocol::Http => ProtocolGrpc::Http.into(),
                 Protocol::Https => ProtocolGrpc::Https.into(),
+                Protocol::Ssh => ProtocolGrpc::Ssh.into(),
             },
             program: val.program,
             address: val.addr.ip().to_string(),
@@ -37,6 +40,7 @@ pub async fn gather_info(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
     let mut retval = vec![];
 
     retval.extend(http::filter(sockets).await);
+    retval.extend(ssh::filter(sockets).await);
 
     retval
 }

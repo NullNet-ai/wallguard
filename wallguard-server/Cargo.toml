@@ -47,8 +47,8 @@ rustls.workspace = true
 serde_json.workspace = true
 nullnet-liberror.workspace = true
 tokio-rustls.workspace = true
+russh.workspace = true
 
-russh = "0.55.0"
 webrtc = "0.14.0"
 rmcp = { version = "0.11.0", features = [
     "server", 
