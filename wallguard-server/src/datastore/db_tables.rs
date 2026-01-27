@@ -23,6 +23,7 @@ pub enum DBTable {
     DeviceServices,
     Heartbeats,
     DeviceTunnels,
+    SshSessions,
 }
 
 impl Display for DBTable {
@@ -49,7 +50,9 @@ impl Display for DBTable {
             DBTable::Heartbeats => "device_heartbeats",
             DBTable::DeviceServices => "device_services",
             DBTable::DeviceTunnels => "device_tunnels",
+            DBTable::SshSessions => "ssh_sessions",
         };
+
         write!(f, "{table_name}")
     }
 }
