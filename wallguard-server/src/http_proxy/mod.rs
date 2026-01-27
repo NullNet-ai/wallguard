@@ -2,6 +2,7 @@ use crate::app_context::AppContext;
 use crate::http_proxy::api::create_alias;
 use crate::http_proxy::api::create_filter_rule;
 use crate::http_proxy::api::create_nat_rule;
+use crate::http_proxy::api::create_tunnel;
 use crate::http_proxy::api::enable_config_monitoring;
 use crate::http_proxy::api::enable_telemetry_monitoring;
 use crate::http_proxy::api::enable_traffic_monitoring;
@@ -39,6 +40,7 @@ pub async fn run_http_proxy(context: AppContext) {
         App::new()
             .app_data(context.clone())
             .wrap(cors)
+            .route("/wallguard/api/v1/tunnel", web::post().to(create_tunnel))
             .route(
                 "/wallguard/api/v1/remote_access",
                 web::post().to(request_session),
