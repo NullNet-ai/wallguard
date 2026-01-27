@@ -5,8 +5,8 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use crate::{token_provider::TokenProvider, wg_server::WGServer};
 use wallguard_common::protobuf::wallguard_service::ServicesMessage;
 
-pub mod service;
-pub mod sock;
+mod service;
+mod sock;
 
 const TIME_INTERVAL: Duration = Duration::from_secs(5 * 60);
 
