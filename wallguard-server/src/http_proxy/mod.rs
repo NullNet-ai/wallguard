@@ -18,7 +18,8 @@ mod api;
 mod config;
 mod proxy;
 mod rd_gateway;
-mod ssh_gateway;
+// mod ssh_gateway;
+pub mod ssh_gateway_v2;
 mod tty_gateway;
 mod utilities;
 
@@ -74,7 +75,7 @@ pub async fn run_http_proxy(context: AppContext) {
             )
             .route(
                 "/wallguard/gateway/ssh",
-                web::to(ssh_gateway::open_ssh_session),
+                web::to(ssh_gateway_v2::open_ssh_session),
             )
             .route(
                 "/wallguard/gateway/tty",

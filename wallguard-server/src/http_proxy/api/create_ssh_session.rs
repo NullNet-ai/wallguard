@@ -7,7 +7,7 @@ use serde_json::json;
 
 use crate::{
     app_context::AppContext,
-    datastore::SshSessionModel,
+    datastore::{SshSessionModel, TunnelType},
     http_proxy::utilities::{authorization, error_json::ErrorJson},
     utilities,
 };
@@ -51,6 +51,10 @@ pub async fn create_ssh_session(
 
     if tunnel.device_id != device.id {
         return HttpResponse::BadRequest().json(ErrorJson::from("Bad device id"));
+    }
+
+    if !matches!(tunnel.tunnel_type, TunnelType::Ssh) {
+        return HttpResponse::BadRequest().json(ErrorJson::from("Wrong tunnel type"));
     }
 
     let Ok(Some(service)) = context
