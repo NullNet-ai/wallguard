@@ -1,3 +1,5 @@
+use std::fmt;
+
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +24,17 @@ impl TryFrom<&str> for SshSessionStatus {
             "terminated" => Ok(SshSessionStatus::Terminated),
             other => Err(format!("Unexpected status {other}")).handle_err(location!()),
         }
+    }
+}
+
+impl fmt::Display for SshSessionStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            SshSessionStatus::Active => "active",
+            SshSessionStatus::Expired => "expired",
+            SshSessionStatus::Terminated => "terminated",
+        };
+        write!(f, "{s}")
     }
 }
 

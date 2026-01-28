@@ -1,20 +1,15 @@
-use std::sync::Arc;
-
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
 use actix_web::rt;
 use actix_web::web::{Data, Payload};
-use tokio::sync::Mutex;
 
 use super::utilities::error_json::ErrorJson;
 use super::utilities::request_handling;
-use super::utilities::tunneling;
 use crate::app_context::AppContext;
 use crate::datastore::SshSessionStatus;
-use crate::http_proxy::ssh_gateway_v2::session::Session;
+pub use crate::http_proxy::ssh_gateway_v2::session::Session;
 use crate::http_proxy::ssh_gateway_v2::websocket_relay::websocket_relay;
-use crate::reverse_tunnel::TunnelAdapter;
 
 mod handler;
 mod internal_relay;
@@ -28,7 +23,7 @@ pub(super) async fn open_ssh_session(
     body: Payload,
 ) -> impl Responder {
     let session_id = match request_handling::extract_session_token(&request) {
-        Ok(token) => token,
+        Ok(session_id) => session_id.to_ascii_uppercase(),
         Err(response) => return response,
     };
 
@@ -62,42 +57,8 @@ pub(super) async fn open_ssh_session(
         return HttpResponse::BadRequest().json(ErrorJson::from("Device is unauthorized"));
     }
 
-    let Ok(tunnel) = tunneling::establish_tunneled_ssh(
-        &context,
-        &device.id,
-        &session.instance_id,
-        &session.public_key,
-    )
-    .await
-    else {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to establish a tunnel"));
-    };
-
-    let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to adapt tunnel transport"));
-    };
-
-    let session_intance = {
-        if let Some(sesh) = context.ssh_sessions_manager.get_by_id(&session_id).await {
-            sesh
-        } else {
-            let Ok(sesh) = Session::new(context.get_ref().clone(), tunnel_adapter, &session).await
-            else {
-                return HttpResponse::InternalServerError()
-                    .json(ErrorJson::from("Failed to establish ssh session"));
-            };
-
-            let sesh = Arc::new(Mutex::new(sesh));
-
-            context
-                .ssh_sessions_manager
-                .add(session_id, sesh.clone())
-                .await;
-
-            sesh
-        }
+    let Some(session_intance) = context.ssh_sessions_manager.get_by_id(&session_id).await else {
+        return HttpResponse::NotFound().json(ErrorJson::from("Session not found"));
     };
 
     let (response, ws_session, stream) = match request_handling::upgrade_to_websocket(request, body)

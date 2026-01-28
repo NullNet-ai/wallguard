@@ -1,14 +1,18 @@
+use std::sync::Arc;
+
 use actix_web::{
     HttpRequest, HttpResponse, Responder,
     web::{Data, Json},
 };
 use serde::Deserialize;
 use serde_json::json;
+use tokio::sync::Mutex;
 
 use crate::{
     app_context::AppContext,
     datastore::{SshSessionModel, TunnelType},
-    http_proxy::utilities::{authorization, error_json::ErrorJson},
+    http_proxy::utilities::{authorization, error_json::ErrorJson, tunneling},
+    reverse_tunnel::TunnelAdapter,
     utilities,
 };
 
@@ -74,7 +78,7 @@ pub async fn create_ssh_session(
             .json(ErrorJson::from("Failed to generate SSH keypair"));
     };
 
-    let session = SshSessionModel {
+    let mut session = SshSessionModel {
         tunnel_id: tunnel.id,
         device_id: tunnel.device_id,
         instance_id: body.instance_id.clone(),
@@ -91,6 +95,41 @@ pub async fn create_ssh_session(
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to create session"));
     };
+
+    session.id = session_id.clone();
+
+    let Ok(tunnel) = tunneling::establish_tunneled_ssh(
+        &context,
+        &device.id,
+        &session.instance_id,
+        &session.public_key,
+    )
+    .await
+    else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to establish a tunnel"));
+    };
+
+    let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to adapt tunnel transport"));
+    };
+
+    let Ok(sesh) = super::super::ssh_gateway_v2::Session::new(
+        context.get_ref().clone(),
+        tunnel_adapter,
+        &session,
+    )
+    .await
+    else {
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to establish ssh session"));
+    };
+
+    context
+        .ssh_sessions_manager
+        .add(session_id.clone(), Arc::new(Mutex::new(sesh)))
+        .await;
 
     HttpResponse::Ok().json(json!({"session_id": session_id}))
 }

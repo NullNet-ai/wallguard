@@ -66,10 +66,14 @@ async fn internal_relay_impl(
         }
     }
 
+    let _ = context.ssh_sessions_manager.remove(&session_id).await;
+
     let Ok(token) = context.sysdev_token_provider.get().await else {
         log::error!("SSH Internal Relay: failed to acquire token");
         return;
     };
+
+    log::warn!("{} {}", session_id, SshSessionStatus::Terminated.to_string());
 
     if context
         .datastore
@@ -79,8 +83,6 @@ async fn internal_relay_impl(
     {
         log::error!("SSH Internal Relay: failed to update session status");
     }
-
-    let _ = context.ssh_sessions_manager.remove(&session_id).await;
 }
 
 async fn from_users_to_channel(

@@ -13,7 +13,7 @@ impl Datastore {
         performed_by_root: bool,
     ) -> Result<(), Error> {
         let body = json!({
-            "session_status": status
+            "session_status": status.to_string()
         })
         .to_string();
 
@@ -24,7 +24,7 @@ impl Datastore {
             .performed_by_root(performed_by_root)
             .build();
 
-        let _ = self.inner.clone().update(request, token).await;
+        let _ = self.inner.clone().update(request, token).await?;
 
         Ok(())
     }
