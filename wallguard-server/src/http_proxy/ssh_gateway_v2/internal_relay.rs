@@ -73,8 +73,6 @@ async fn internal_relay_impl(
         return;
     };
 
-    log::warn!("{} {}", session_id, SshSessionStatus::Terminated.to_string());
-
     if context
         .datastore
         .update_ssh_session_status(&token.jwt, &session_id, SshSessionStatus::Terminated, false)
