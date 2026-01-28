@@ -103,6 +103,7 @@ pub async fn create_ssh_session(
         &device.id,
         &session.instance_id,
         &session.public_key,
+        &session.username,
     )
     .await
     else {

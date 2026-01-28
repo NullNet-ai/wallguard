@@ -9,7 +9,7 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
 /// Variants may contain protocol-specific configuration.
 #[derive(Debug, Clone)]
 enum TunnelType {
-    Ssh(String),
+    Ssh((String, String)),
     Tty,
     // Local Addr, Local Port, Protocol
     UI((String, u32, String)),
@@ -28,12 +28,13 @@ pub async fn establish_tunneled_ssh(
     device_id: &str,
     instance_id: &str,
     public_key: &str,
+    username: &str,
 ) -> Result<TunnelInstance, Error> {
     establish_tunneled_channel(
         context,
         device_id,
         instance_id,
-        TunnelType::Ssh(public_key.into()),
+        TunnelType::Ssh((public_key.into(), username.into())),
     )
     .await
 }
@@ -117,9 +118,9 @@ async fn establish_tunneled_channel(
     let (token, receiver) = context.tunnel.expect_connection().await;
 
     match r#type {
-        TunnelType::Ssh(public_key) => {
+        TunnelType::Ssh((public_key, username)) => {
             client
-                .request_ssh_session(token.clone(), public_key)
+                .request_ssh_session(token.clone(), public_key, username)
                 .await?
         }
         TunnelType::Tty => client.request_tty_session(token.clone()).await?,
