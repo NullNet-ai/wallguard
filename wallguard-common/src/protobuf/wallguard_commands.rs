@@ -73,6 +73,8 @@ pub struct SshSessionData {
     pub tunnel_token: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub public_key: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub username: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UiSessionData {

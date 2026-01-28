@@ -49,6 +49,7 @@ message AuthenticationData {
 message SSHSessionData {
     string tunnel_token = 1;
     string public_key = 2;
+    string username = 3;
 }
 
 message UISessionData {
