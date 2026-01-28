@@ -50,14 +50,17 @@ pub async fn create_tunnel(
         return HttpResponse::BadRequest().json(ErrorJson::from("Wrong service id"));
     }
 
-    if let Ok(false) = context
+    match context
         .datastore
         .does_tunnel_for_service_exist(&jwt, &service.id, false)
         .await
     {
-        return HttpResponse::Conflict()
-            .json(ErrorJson::from("Tunnel for the service already exists"));
-    };
+        Ok(false) => {}
+        _ => {
+            return HttpResponse::Conflict()
+                .json(ErrorJson::from("Tunnel for the service already exists"));
+        }
+    }
 
     let Ok(tunnel_type) = TunnelType::try_from(service.protocol.as_str()) else {
         return HttpResponse::BadRequest().json(ErrorJson::from("Unsupported tunnel type"));
@@ -70,10 +73,10 @@ pub async fn create_tunnel(
         ..Default::default()
     };
 
-    if context.datastore.create_tunnel(&jwt, &model).await.is_err() {
+    let Ok(id) = context.datastore.create_tunnel(&jwt, &model).await else {
         return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Unsupported tunnel type"));
-    }
+            .json(ErrorJson::from("Failed to create tunnel"));
+    };
 
-    HttpResponse::Ok().json(json!({}))
+    HttpResponse::Ok().json(json!({"tunnel_id": id}))
 }

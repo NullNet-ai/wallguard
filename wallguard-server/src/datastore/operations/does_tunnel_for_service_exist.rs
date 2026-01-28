@@ -16,7 +16,7 @@ impl Datastore {
             .values(format!("[\"{service_id}\"]"))
             .r#type("criteria")
             .operator("equal")
-            .entity(DBTable::DeviceServices)
+            .entity(DBTable::DeviceTunnels)
             .build();
 
         let request = GetByFilterRequestBuilder::new()

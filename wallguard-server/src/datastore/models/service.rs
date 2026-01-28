@@ -22,6 +22,7 @@ impl ServiceInfo {
             port: data.port as u16,
             program: data.program,
             protocol: match proto {
+                Ok(ServiceProtocol::Ssh) => "ssh".into(),
                 Ok(ServiceProtocol::Http) => "http".into(),
                 Ok(ServiceProtocol::Https) => "https".into(),
                 _ => "unknown".into(),
