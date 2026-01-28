@@ -5,18 +5,16 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 
 pub async fn add_ssh_key_if_missing(public_key: &str, username: &str) -> std::io::Result<()> {
-    let mut auth_keys_path = PathBuf::from("/");
-
-    if username == "root" {
-        auth_keys_path.push("root");
+    let mut auth_keys_path = if username == "root" {
+        PathBuf::from("/root/.ssh")
     } else {
-        auth_keys_path.push("home");
-        auth_keys_path.push(username);
-    }
+        let mut p = PathBuf::from("/home");
+        p.push(username);
+        p.push(".ssh");
+        p
+    };
 
-    auth_keys_path.push(".ssh");
     fs::create_dir_all(&auth_keys_path).await?;
-
     auth_keys_path.push("authorized_keys");
 
     if fs::metadata(&auth_keys_path).await.is_ok() {

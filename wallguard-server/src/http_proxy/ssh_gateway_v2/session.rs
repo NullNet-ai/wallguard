@@ -1,6 +1,8 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::app_context::AppContext;
+use crate::datastore::SshSessionStatus;
 use crate::http_proxy::ssh_gateway_v2::handler;
 use crate::http_proxy::ssh_gateway_v2::internal_relay::InternalRelay;
 use crate::{datastore::SshSessionModel, reverse_tunnel::TunnelAdapter};
@@ -19,6 +21,7 @@ pub(in crate::http_proxy::ssh_gateway_v2) type UserDataReceiver = mpsc::Receiver
 pub(in crate::http_proxy::ssh_gateway_v2) type UserDataSender = broadcast::Sender<Vec<u8>>;
 pub(in crate::http_proxy::ssh_gateway_v2) type SessionDataReceiver = broadcast::Receiver<Vec<u8>>;
 
+const DEFAULT_TIMEOUT: Duration = Duration::from_mins(15);
 const MEMORY_SIZE: usize = 16392;
 type SessionMemory = Arc<Mutex<Vec<u8>>>;
 
@@ -45,7 +48,7 @@ impl Session {
         let (to_users_sender, to_users_receiver) = broadcast::channel(128);
 
         InternalRelay::new(
-            context,
+            context.clone(),
             data.id.clone(),
             session_reader,
             session_writer,
@@ -56,9 +59,12 @@ impl Session {
 
         let memory: SessionMemory = Default::default();
 
-        tokio::spawn(memory_monitor(
+        tokio::spawn(session_timeout_impl(
             memory.clone(),
             to_users_receiver.resubscribe(),
+            DEFAULT_TIMEOUT,
+            context.clone(),
+            data.id.clone(),
         ));
 
         Ok(Self {
@@ -118,6 +124,35 @@ impl Session {
         let (reader, writer) = tokio::io::split(channel.into_stream());
 
         Ok((reader, writer))
+    }
+}
+
+async fn session_timeout_impl(
+    memory: SessionMemory,
+    receiver: SessionDataReceiver,
+    duration: Duration,
+    context: AppContext,
+    session_id: String,
+) {
+    // Session timeout is handled here to ensure proper cleanup:
+    // When the timeout is reached, the receiver is dropped, which triggers
+    // the internal relay to terminate. However, if a WebSocket connection
+    // is still active, the session remains alive until that connection closes.
+    // New connections are not allowed once the timeout has been hit.
+    tokio::select! {
+        _ = tokio::time::sleep(duration) => {
+            let Ok(token) = context.sysdev_token_provider.get().await else {
+                return;
+            };
+
+            let _ = context
+                .datastore
+                .update_ssh_session_status(&token.jwt, &session_id, SshSessionStatus::Expired, false)
+                .await;
+
+            let _ = context.ssh_sessions_manager.remove(&session_id).await;
+        }
+        _ = memory_monitor(memory, receiver) => {}
     }
 }
 

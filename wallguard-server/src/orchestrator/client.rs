@@ -154,16 +154,18 @@ impl Instance {
         public_key: impl Into<String>,
         username: impl Into<String>,
     ) -> Result<(), Error> {
+        let username = username.into();
         log::info!(
-            "Sending OpenSshSessionCommandto to the client with device ID {}, Instance {}",
+            "Sending OpenSshSessionCommandto to the client with device ID {}, Instance {}, Username {}",
             self.device_id,
-            self.instance_id
+            self.instance_id,
+            username
         );
 
         let ssh_session_data = SshSessionData {
             tunnel_token: tunnel_token.into(),
             public_key: public_key.into(),
-            username: username.into(),
+            username,
         };
 
         let message: ServerMessage = ServerMessage {
