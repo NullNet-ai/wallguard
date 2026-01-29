@@ -14,7 +14,9 @@ impl ExecutableCommand for OpenSshSessionCommand {
     async fn execute(self) -> Result<(), nullnet_liberror::Error> {
         log::debug!("Received OpenSshSessionCommand");
 
-        if let Err(err) = utilities::ssh::add_ssh_key_if_missing(&self.data.public_key).await {
+        if let Err(err) =
+            utilities::ssh::add_ssh_key_if_missing(&self.data.public_key, &self.data.username).await
+        {
             log::error!("Failed to authorize public key: {err}");
             return Err(err).handle_err(location!());
         }

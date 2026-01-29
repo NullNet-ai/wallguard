@@ -40,7 +40,7 @@ impl Datastore {
             .performed_by_root(false)
             .build();
 
-        let _ = self.inner.clone().update(request, token).await;
+        let _ = self.inner.clone().update(request, token).await?;
 
         Ok(())
     }

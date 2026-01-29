@@ -1,7 +1,6 @@
 use crate::app_context::AppContext;
 use crate::datastore::RemoteAccessSession;
 use crate::datastore::RemoteAccessType;
-use crate::datastore::SSHKeypair;
 use crate::http_proxy::utilities::authorization;
 use crate::http_proxy::utilities::error_json::ErrorJson;
 use actix_web::HttpRequest;
@@ -53,22 +52,22 @@ pub fn ensure_session_type(
     }
 }
 
-pub async fn fetch_ssh_keypair(
-    ctx: &AppContext,
-    jwt: &str,
-    device_id: &str,
-) -> Result<SSHKeypair, HttpResponse> {
-    match ctx.datastore.obtain_ssh_keypair(jwt, device_id).await {
-        Ok(Some(keypair)) => Ok(keypair),
-        Ok(None) => {
-            Err(HttpResponse::NotFound().json(ErrorJson::from("No SSH keys have been found")))
-        }
-        Err(_) => {
-            Err(HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Datastore operation failed")))
-        }
-    }
-}
+// pub async fn fetch_ssh_keypair(
+//     ctx: &AppContext,
+//     jwt: &str,
+//     device_id: &str,
+// ) -> Result<SSHKeypair, HttpResponse> {
+//     match ctx.datastore.obtain_ssh_keypair(jwt, device_id).await {
+//         Ok(Some(keypair)) => Ok(keypair),
+//         Ok(None) => {
+//             Err(HttpResponse::NotFound().json(ErrorJson::from("No SSH keys have been found")))
+//         }
+//         Err(_) => {
+//             Err(HttpResponse::InternalServerError()
+//                 .json(ErrorJson::from("Datastore operation failed")))
+//         }
+//     }
+// }
 
 pub fn upgrade_to_websocket(
     request: HttpRequest,

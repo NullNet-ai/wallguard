@@ -2,21 +2,24 @@ use crate::app_context::AppContext;
 use crate::http_proxy::api::create_alias;
 use crate::http_proxy::api::create_filter_rule;
 use crate::http_proxy::api::create_nat_rule;
+use crate::http_proxy::api::create_ssh_session;
+use crate::http_proxy::api::create_tunnel;
 use crate::http_proxy::api::enable_config_monitoring;
 use crate::http_proxy::api::enable_telemetry_monitoring;
 use crate::http_proxy::api::enable_traffic_monitoring;
 use crate::http_proxy::api::remote_access_terminate;
+use crate::http_proxy::api::request_session;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use api::authorize_device;
-use api::request_session;
 use config::HttpProxyConfig;
 
 mod api;
 mod config;
 mod proxy;
 mod rd_gateway;
-mod ssh_gateway;
+// mod ssh_gateway;
+pub mod ssh_gateway_v2;
 mod tty_gateway;
 mod utilities;
 
@@ -39,10 +42,17 @@ pub async fn run_http_proxy(context: AppContext) {
         App::new()
             .app_data(context.clone())
             .wrap(cors)
+            .route("/wallguard/api/v1/tunnel", web::post().to(create_tunnel))
+            .route(
+                "/wallguard/api/v1/ssh_session",
+                web::post().to(create_ssh_session),
+            )
+            // @TODO: REMOVE
             .route(
                 "/wallguard/api/v1/remote_access",
                 web::post().to(request_session),
             )
+            // @TODO: REMOVE
             .route(
                 "/wallguard/api/v1/remote_access",
                 web::delete().to(remote_access_terminate),
@@ -65,7 +75,7 @@ pub async fn run_http_proxy(context: AppContext) {
             )
             .route(
                 "/wallguard/gateway/ssh",
-                web::to(ssh_gateway::open_ssh_session),
+                web::to(ssh_gateway_v2::open_ssh_session),
             )
             .route(
                 "/wallguard/gateway/tty",
