@@ -7,6 +7,7 @@ mod app_context;
 mod control_service;
 mod datastore;
 mod http_proxy;
+mod http_proxy_v2;
 mod mcp;
 mod orchestrator;
 mod reverse_tunnel;

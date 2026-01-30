@@ -18,10 +18,9 @@ mod api;
 mod config;
 mod proxy;
 mod rd_gateway;
-// mod ssh_gateway;
 pub mod ssh_gateway_v2;
 mod tty_gateway;
-mod utilities;
+pub mod utilities;
 
 pub async fn run_http_proxy(context: AppContext) {
     let config = HttpProxyConfig::from_env();

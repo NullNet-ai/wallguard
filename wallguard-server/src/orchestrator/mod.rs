@@ -73,6 +73,15 @@ impl Orchestrator {
         self.clients.lock().await.get(device_id).cloned()
     }
 
+    pub async fn get_any_client_instance(&self, device_id: &str) -> Option<Arc<Mutex<Instance>>> {
+        self.get_client_instances(device_id)
+            .await?
+            .lock()
+            .await
+            .first()
+            .cloned()
+    }
+
     pub async fn get_client(
         &self,
         device_id: &str,
