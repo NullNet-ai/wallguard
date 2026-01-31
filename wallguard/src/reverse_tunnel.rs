@@ -10,6 +10,8 @@ use tokio::{
     net::TcpStream,
 };
 
+use crate::utilities::hash::sha256_digest_bytes;
+
 pub struct TunnelInstance {
     pub(crate) stream: TcpStream,
 }
@@ -59,15 +61,14 @@ impl ReverseTunnel {
     }
 
     pub async fn request_channel(&self, token: &str) -> Result<TunnelInstance, Error> {
+        let digest = sha256_digest_bytes(token);
+
         let mut stream = TcpStream::connect(self.addr)
             .await
             .handle_err(location!())?;
 
-        stream
-            .write_all(token.as_bytes())
-            .await
-            .handle_err(location!())?;
+        stream.write_all(&digest).await.handle_err(location!())?;
 
-        todo!()
+        Ok(TunnelInstance::from(stream))
     }
 }

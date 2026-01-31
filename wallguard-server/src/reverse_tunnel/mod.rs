@@ -1,4 +1,5 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use tokio::io::AsyncWriteExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -75,7 +76,8 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
              */
 
             let Ok(hash) = TokenHash::read_from_stream(&mut stream).await else {
-                log::error!("Faile to read token hash from newely accepter TCP stream");
+                log::error!("Faile to read token hash from newely accepted TCP stream");
+                let _ = stream.shutdown().await;
                 return;
             };
 
@@ -83,7 +85,8 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
 
             match ctx.tunnel.listeners.lock().await.remove(&hash) {
                 Some(channel) => {
-                    if channel.send(tunnel).is_err() {
+                    if let Err(mut tunnel) = channel.send(tunnel) {
+                        let _ = tunnel.shutdown().await;
                         log::error!("Failed to send tunnel instance");
                     }
                 }
