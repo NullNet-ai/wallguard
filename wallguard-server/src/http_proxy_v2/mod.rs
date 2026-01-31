@@ -14,7 +14,7 @@ pub async fn run_http_proxy(context: AppContext) -> Result<(), Error> {
     let mut service = http_proxy_service(&server.configuration, proxy::Proxy::new(context));
 
     let addr_str = format!("0.0.0.0:{}", 16);
-    
+
     service.add_tcp(addr_str.as_str());
     server.add_service(service);
 

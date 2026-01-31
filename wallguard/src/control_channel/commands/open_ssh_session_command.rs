@@ -33,7 +33,8 @@ impl ExecutableCommand for OpenSshSessionCommand {
             }
         };
 
-        let Ok(mut sshd_stream) = TcpStream::connect(format!("127.0.0.1:{}", ports[0])).await else {
+        let Ok(mut sshd_stream) = TcpStream::connect(format!("127.0.0.1:{}", ports[0])).await
+        else {
             return Err("Cant establish sshd connection").handle_err(location!());
         };
 
