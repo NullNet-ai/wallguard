@@ -10,10 +10,10 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
 #[derive(Debug, Clone)]
 enum TunnelType {
     Ssh((String, String)),
-    Tty,
+    _Tty,
     // Local Addr, Local Port, Protocol
     UI((String, u32, String)),
-    RemoteDesktop,
+    _RemoteDesktop,
 }
 
 /// Establishes a tunneled SSH connection for a device using its `SSHKeypair`.
@@ -45,12 +45,12 @@ pub async fn establish_tunneled_ssh(
 /// - `context`: The application context
 /// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
-pub async fn establish_tunneled_tty(
+pub async fn _establish_tunneled_tty(
     context: &AppContext,
     device_id: &str,
     instance_id: &str,
 ) -> Result<TunnelInstance, Error> {
-    establish_tunneled_channel(context, device_id, instance_id, TunnelType::Tty).await
+    establish_tunneled_channel(context, device_id, instance_id, TunnelType::_Tty).await
 }
 
 /// Establishes a tunneled remote desktop connection to the specified device.
@@ -59,12 +59,12 @@ pub async fn establish_tunneled_tty(
 /// - `context`: The application context
 /// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
-pub async fn establish_tunneled_rd(
+pub async fn _establish_tunneled_rd(
     context: &AppContext,
     device_id: &str,
     instance_id: &str,
 ) -> Result<TunnelInstance, Error> {
-    establish_tunneled_channel(context, device_id, instance_id, TunnelType::RemoteDesktop).await
+    establish_tunneled_channel(context, device_id, instance_id, TunnelType::_RemoteDesktop).await
 }
 
 /// Establishes a tunneled UI session using a given protocol string.
@@ -123,8 +123,8 @@ async fn establish_tunneled_channel(
                 .request_ssh_session(token.clone(), public_key, username)
                 .await?
         }
-        TunnelType::Tty => client.request_tty_session(token.clone()).await?,
-        TunnelType::RemoteDesktop => client.request_remote_desktop_session(token.clone()).await?,
+        TunnelType::_Tty => client.request_tty_session(token.clone()).await?,
+        TunnelType::_RemoteDesktop => client.request_remote_desktop_session(token.clone()).await?,
         TunnelType::UI((addr, port, protocol)) => {
             client
                 .request_ui_session(token.clone(), addr, port, protocol)

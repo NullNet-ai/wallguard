@@ -1,59 +1,55 @@
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use prost::bytes::Bytes;
-use std::sync::Arc;
-use tokio::sync::{Mutex, mpsc::Sender};
-use tonic::{Status, Streaming};
-use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
-use wallguard_common::protobuf::wallguard_tunnel::{ClientFrame, DataFrame, ServerFrame};
+use std::io::Result;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
+use tokio::net::TcpStream;
 
-type TunnelWriter = Sender<Result<ServerFrame, Status>>;
-type TunnelReader = Streaming<ClientFrame>;
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TunnelInstance {
-    pub writer: Arc<Mutex<TunnelWriter>>,
-    pub reader: Arc<Mutex<TunnelReader>>,
-    pub(super) authenticated: bool,
+    pub(super) stream: TcpStream,
+}
+
+impl From<TcpStream> for TunnelInstance {
+    fn from(stream: TcpStream) -> Self {
+        Self { stream }
+    }
+}
+
+impl AsyncRead for TunnelInstance {
+    fn poll_read(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<Result<()>> {
+        Pin::new(&mut self.stream).poll_read(cx, buf)
+    }
+}
+
+impl AsyncWrite for TunnelInstance {
+    fn poll_write(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+        data: &[u8],
+    ) -> Poll<Result<usize>> {
+        Pin::new(&mut self.stream).poll_write(cx, data)
+    }
+
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<()>> {
+        Pin::new(&mut self.stream).poll_flush(cx)
+    }
+
+    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<()>> {
+        Pin::new(&mut self.stream).poll_shutdown(cx)
+    }
 }
 
 impl TunnelInstance {
-    pub fn new(reader: TunnelReader, writer: TunnelWriter) -> Self {
-        Self {
-            writer: Arc::new(Mutex::new(writer)),
-            reader: Arc::new(Mutex::new(reader)),
-            authenticated: false,
-        }
+    pub async fn shutdown(&mut self) -> Result<()> {
+        use tokio::io::AsyncWriteExt;
+        self.stream.shutdown().await
     }
 
-    pub async fn read(&self) -> Result<ClientFrame, Error> {
-        self.reader
-            .lock()
-            .await
-            .message()
-            .await
-            .handle_err(location!())?
-            .ok_or("TunnelInstance: Read error, client has sent an empty message")
-            .handle_err(location!())
-    }
-
-    pub async fn write(&self, message: ServerFrame) -> Result<(), Error> {
-        self.writer
-            .lock()
-            .await
-            .send(Ok(message))
-            .await
-            .handle_err(location!())
-    }
-
-    pub fn make_data_frame(bytes: &Bytes) -> ServerFrame {
-        ServerFrame {
-            message: Some(ServerMessage::Data(DataFrame {
-                data: bytes.to_vec(),
-            })),
-        }
-    }
-
-    pub fn is_authenticated(&self) -> bool {
-        self.authenticated
+    pub fn take_stream(self) -> TcpStream {
+        self.stream
     }
 }

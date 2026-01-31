@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use tokio::net::TcpStream;
 use wallguard_common::protobuf::wallguard_commands::UiSessionData;
 
-use crate::{context::Context, control_channel::command::ExecutableCommand, utilities};
+use crate::{context::Context, control_channel::command::ExecutableCommand};
 
 pub struct OpenUiSessionCommand {
     context: Context,
@@ -24,9 +24,9 @@ impl ExecutableCommand for OpenUiSessionCommand {
             .parse()
             .handle_err(location!())?;
 
-        let local_stream = TcpStream::connect(addr).await.handle_err(location!())?;
+        let mut local_stream = TcpStream::connect(addr).await.handle_err(location!())?;
 
-        let Ok(tunnel) = self
+        let Ok(mut tunnel) = self
             .context
             .tunnel
             .request_channel(&self.data.tunnel_token)
@@ -36,7 +36,7 @@ impl ExecutableCommand for OpenUiSessionCommand {
         };
 
         tokio::spawn(async move {
-            let _ = utilities::io::copy_bidirectional_for_tunnel(tunnel, local_stream).await;
+            let _ = tokio::io::copy_bidirectional(&mut tunnel, &mut local_stream).await;
         });
 
         Ok(())

@@ -1,6 +1,6 @@
 use crate::app_context::AppContext;
 use crate::datastore::SshSessionStatus;
-use crate::http_proxy::ssh_gateway_v2::session::{
+use crate::http_api::ssh_gateway_v2::session::{
     ChannelReader, ChannelWriter, UserDataReceiver, UserDataSender,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

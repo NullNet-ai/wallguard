@@ -15,7 +15,7 @@ mod daemon;
 mod data_transmission;
 mod fireparse;
 mod netinfo;
-mod pty;
+// mod pty;
 mod reverse_tunnel;
 mod server_data;
 mod storage;

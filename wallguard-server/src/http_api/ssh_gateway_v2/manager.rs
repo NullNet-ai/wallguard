@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
-use crate::http_proxy::ssh_gateway_v2::session::Session;
+use crate::http_api::ssh_gateway_v2::session::Session;
 
 #[derive(Debug, Default, Clone)]
 pub struct SshSessionsManager {

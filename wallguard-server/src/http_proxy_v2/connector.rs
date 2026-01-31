@@ -2,12 +2,10 @@ use pingora::connectors::L4Connect;
 use pingora::prelude::*;
 use pingora::protocols::l4::socket::SocketAddr;
 use pingora::protocols::l4::stream::Stream;
-use tokio::io::BufStream;
 use tonic::async_trait;
 
 use crate::app_context::AppContext;
 use crate::datastore::ServiceInfo;
-use crate::reverse_tunnel::TunnelAdapter;
 
 #[derive(Debug)]
 pub struct Connector {
@@ -35,7 +33,7 @@ impl L4Connect for Connector {
 
         let instance_id = instance.lock().await.instance_id.clone();
 
-        let Ok(tunnel) = crate::http_proxy::utilities::tunneling::establish_tunneled_ui(
+        let Ok(tunnel) = crate::http_api::utilities::tunneling::establish_tunneled_ui(
             &self.context,
             &self.service.device_id,
             &instance_id,
@@ -50,25 +48,6 @@ impl L4Connect for Connector {
             )));
         };
 
-        if !tunnel.is_authenticated() {
-            return Err(Error::new(ErrorType::Custom("Tunnel is not authenticated")));
-        }
-
-        let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
-            return Err(Error::new(ErrorType::InternalError));
-
-        };
-
-        let s = BufStream::with_capacity(0, 0, tunnel_adapter);
-
-
-        // Stream::from(tunnel_adapter);
-        // Ok(L4Stream::from(socket))
-
-        // Ok(Stream::from(value))
-
-        // BufStream::with_capacity(0, 0, )
-
-        todo!()
+        Ok(Stream::from(tunnel.take_stream()))
     }
 }

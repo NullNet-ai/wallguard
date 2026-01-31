@@ -1,23 +1,24 @@
-use crate::app_context::AppContext;
-use crate::http_proxy::utilities::authorization;
-use crate::http_proxy::utilities::error_json::ErrorJson;
-use actix_web::HttpRequest;
-use actix_web::HttpResponse;
-use actix_web::Responder;
-
-use actix_web::web::Data;
-use actix_web::web::Json;
+use actix_web::{
+    HttpRequest, HttpResponse, Responder,
+    web::{Data, Json},
+};
 use serde::Deserialize;
 use serde_json::json;
+use wallguard_common::protobuf::wallguard_models::Alias;
+
+use crate::{
+    app_context::AppContext,
+    http_api::utilities::{authorization, error_json::ErrorJson},
+};
 
 #[derive(Deserialize)]
-pub(in crate::http_proxy) struct RequestPayload {
+pub(in crate::http_api) struct RequestPayload {
     device_id: String,
     instance_id: String,
-    enable: bool,
+    alias: Alias,
 }
 
-pub async fn enable_config_monitoring(
+pub async fn create_alias(
     request: HttpRequest,
     context: Data<AppContext>,
     body: Json<RequestPayload>,
@@ -39,22 +40,10 @@ pub async fn enable_config_monitoring(
         return HttpResponse::NotFound().json(ErrorJson::from("Device not found"));
     }
 
-    let mut device = device.unwrap();
+    let device = device.unwrap();
 
     if !device.authorized {
         return HttpResponse::BadRequest().json(ErrorJson::from("Device is not authorized yet"));
-    }
-
-    device.sysconf_monitoring = body.enable;
-
-    if context
-        .datastore
-        .update_device(&jwt, &body.device_id, &device)
-        .await
-        .is_err()
-    {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to update device"));
     }
 
     let Some(client) = context
@@ -65,12 +54,7 @@ pub async fn enable_config_monitoring(
         return HttpResponse::NotFound().json(ErrorJson::from("Device is not online"));
     };
 
-    if let Err(err) = client
-        .lock()
-        .await
-        .enable_configuration_monitoring(body.enable)
-        .await
-    {
+    if let Err(err) = client.lock().await.create_alias(body.alias.clone()).await {
         return HttpResponse::InternalServerError().json(ErrorJson::from(err));
     }
 

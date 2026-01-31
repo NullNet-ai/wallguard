@@ -3,9 +3,10 @@ use std::time::Duration;
 
 use crate::app_context::AppContext;
 use crate::datastore::SshSessionStatus;
-use crate::http_proxy::ssh_gateway_v2::handler;
-use crate::http_proxy::ssh_gateway_v2::internal_relay::InternalRelay;
-use crate::{datastore::SshSessionModel, reverse_tunnel::TunnelAdapter};
+use crate::http_api::ssh_gateway_v2::handler;
+use crate::http_api::ssh_gateway_v2::internal_relay::InternalRelay;
+use crate::reverse_tunnel::TunnelInstance;
+use crate::{datastore::SshSessionModel};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use russh::ChannelStream;
 use russh::client::{self, AuthResult, Msg};
@@ -13,13 +14,13 @@ use russh::keys::{PrivateKey, PrivateKeyWithHashAlg, decode_secret_key};
 use tokio::io::{ReadHalf, WriteHalf};
 use tokio::sync::{Mutex, broadcast, mpsc};
 
-pub(in crate::http_proxy::ssh_gateway_v2) type ChannelReader = ReadHalf<ChannelStream<Msg>>;
-pub(in crate::http_proxy::ssh_gateway_v2) type ChannelWriter = WriteHalf<ChannelStream<Msg>>;
+pub(in crate::http_api::ssh_gateway_v2) type ChannelReader = ReadHalf<ChannelStream<Msg>>;
+pub(in crate::http_api::ssh_gateway_v2) type ChannelWriter = WriteHalf<ChannelStream<Msg>>;
 
-pub(in crate::http_proxy::ssh_gateway_v2) type SessionDataSender = mpsc::Sender<Vec<u8>>;
-pub(in crate::http_proxy::ssh_gateway_v2) type UserDataReceiver = mpsc::Receiver<Vec<u8>>;
-pub(in crate::http_proxy::ssh_gateway_v2) type UserDataSender = broadcast::Sender<Vec<u8>>;
-pub(in crate::http_proxy::ssh_gateway_v2) type SessionDataReceiver = broadcast::Receiver<Vec<u8>>;
+pub(in crate::http_api::ssh_gateway_v2) type SessionDataSender = mpsc::Sender<Vec<u8>>;
+pub(in crate::http_api::ssh_gateway_v2) type UserDataReceiver = mpsc::Receiver<Vec<u8>>;
+pub(in crate::http_api::ssh_gateway_v2) type UserDataSender = broadcast::Sender<Vec<u8>>;
+pub(in crate::http_api::ssh_gateway_v2) type SessionDataReceiver = broadcast::Receiver<Vec<u8>>;
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_mins(15);
 const MEMORY_SIZE: usize = 16392;
@@ -35,7 +36,7 @@ pub struct Session {
 impl Session {
     pub async fn new(
         context: AppContext,
-        tunnel: TunnelAdapter,
+        tunnel: TunnelInstance,
         data: &SshSessionModel,
     ) -> Result<Self, Error> {
         let private_key =
@@ -87,7 +88,7 @@ impl Session {
     }
 
     async fn establish_ssh_session(
-        tunnel: TunnelAdapter,
+        tunnel: TunnelInstance,
         username: String,
         private_key: PrivateKey,
     ) -> Result<(ChannelReader, ChannelWriter), Error> {

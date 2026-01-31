@@ -1,19 +1,19 @@
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::collections::HashMap;
 use std::sync::Arc;
+
 use tokio::sync::Mutex;
 use tokio::sync::oneshot;
 use tunnel_token::TokenHash;
 use tunnel_token::TunnelToken;
 
-mod tunnel_adapter;
-mod tunnel_authentication_task;
+mod config;
 mod tunnel_instance;
 mod tunnel_token;
 
-pub use tunnel_adapter::TunnelAdapter;
 pub use tunnel_instance::TunnelInstance;
 
-use crate::reverse_tunnel::tunnel_authentication_task::TunnelAuthenticationTask;
+use crate::app_context::AppContext;
 
 pub type ListenersMap = Arc<Mutex<HashMap<TokenHash, oneshot::Sender<TunnelInstance>>>>;
 
@@ -52,15 +52,50 @@ impl ReverseTunnel {
         let hash: TokenHash = token.clone().into();
         self.listeners.lock().await.remove(&hash).is_some()
     }
+}
 
-    /// Called when a new tunnel connection has been established.
-    ///
-    /// Spawns an asynchronous authentication task for the `TunnelInstance`. If
-    /// authentication succeeds, the tunnel is forwarded to the registered
-    /// listeners. Errors during authentication or forwarding will be handled
-    /// by the task itself.
-    pub fn on_new_tunnel_opened(&self, instance: TunnelInstance) {
-        let task = TunnelAuthenticationTask::new(instance, self.listeners.clone());
-        tokio::spawn(task.authenticate());
+pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
+    let config = config::Config::from_env();
+
+    let listener = tokio::net::TcpListener::bind(config.addr)
+        .await
+        .handle_err(location!())?;
+
+    loop {
+        let Ok((mut stream, _)) = listener.accept().await else {
+            continue;
+        };
+
+        let ctx = context.clone();
+
+        tokio::spawn(async move {
+            /*
+             * TODO
+             * Send Confirmation or Rejection message to the client
+             */
+
+            let Ok(hash) = TokenHash::read_from_stream(&mut stream).await else {
+                log::error!("Faile to read token hash from newely accepter TCP stream");
+                return;
+            };
+
+            let mut tunnel = TunnelInstance::from(stream);
+
+            match ctx.tunnel.listeners.lock().await.remove(&hash) {
+                Some(channel) => {
+                    if channel.send(tunnel).is_err() {
+                        log::error!("Failed to send tunnel instance");
+                    }
+                }
+                None => {
+                    log::warn!(
+                        "Received tunnel connection with unknown token hash: {:?}",
+                        hash
+                    );
+
+                    let _ = tunnel.shutdown().await;
+                }
+            };
+        });
     }
 }

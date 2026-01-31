@@ -1,11 +1,20 @@
+use std::sync::Arc;
+
+use crate::app_context::AppContext;
+use crate::datastore::{ServiceInfo, TunnelType};
+use crate::http_proxy_v2::connector::Connector;
 use pingora::prelude::*;
 use pingora::upstreams::peer::HttpPeer;
 use tonic::async_trait;
-use crate::app_context::AppContext;
-use crate::datastore::{ServiceInfo, TunnelType};
 
 pub struct Proxy {
     context: AppContext,
+}
+
+impl Proxy {
+    pub fn new(context: AppContext) -> Self {
+        Self { context }
+    }
 }
 
 #[async_trait]
@@ -34,18 +43,17 @@ impl ProxyHttp for Proxy {
         }
 
         let address = format!("{}:{}", service.address, service.port);
-        // @TODO
-        let upstream_host = service.address;
 
-        let peer = HttpPeer::new(
+        let mut peer = HttpPeer::new(
             address,
             matches!(tunnel_type, TunnelType::Https),
-            upstream_host,
+            // TODO: SNI
+            service.address.clone(),
         );
 
-        // peer.options.custom_l4
+        peer.options.custom_l4 = Some(Arc::new(Connector::new(self.context.clone(), service)));
 
-        todo!()
+        Ok(Box::new(peer))
     }
 }
 

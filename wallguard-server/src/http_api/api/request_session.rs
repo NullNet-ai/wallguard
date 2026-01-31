@@ -9,8 +9,8 @@ use serde_json::json;
 use crate::app_context::AppContext;
 use crate::datastore::RemoteAccessSession;
 use crate::datastore::RemoteAccessType;
-use crate::http_proxy::utilities::authorization;
-use crate::http_proxy::utilities::error_json::ErrorJson;
+use crate::http_api::utilities::authorization;
+use crate::http_api::utilities::error_json::ErrorJson;
 
 #[derive(Deserialize)]
 struct SessionData {
@@ -76,3 +76,5 @@ pub async fn request_session(
 
     HttpResponse::Created().json(json!({"session_token": session.token}))
 }
+
+// TODO remove

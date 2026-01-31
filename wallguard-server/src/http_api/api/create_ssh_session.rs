@@ -11,13 +11,12 @@ use tokio::sync::Mutex;
 use crate::{
     app_context::AppContext,
     datastore::{SshSessionModel, TunnelType},
-    http_proxy::utilities::{authorization, error_json::ErrorJson, tunneling},
-    reverse_tunnel::TunnelAdapter,
+    http_api::utilities::{authorization, error_json::ErrorJson, tunneling},
     utilities,
 };
 
 #[derive(Deserialize)]
-pub(in crate::http_proxy) struct RequestPayload {
+pub(in crate::http_api) struct RequestPayload {
     tunnel_id: String,
     device_id: String,
     instance_id: String,
@@ -111,17 +110,9 @@ pub async fn create_ssh_session(
             .json(ErrorJson::from("Failed to establish a tunnel"));
     };
 
-    let Ok(tunnel_adapter) = TunnelAdapter::try_from(tunnel) else {
-        return HttpResponse::InternalServerError()
-            .json(ErrorJson::from("Failed to adapt tunnel transport"));
-    };
-
-    let Ok(sesh) = super::super::ssh_gateway_v2::Session::new(
-        context.get_ref().clone(),
-        tunnel_adapter,
-        &session,
-    )
-    .await
+    let Ok(sesh) =
+        super::super::ssh_gateway_v2::Session::new(context.get_ref().clone(), tunnel, &session)
+            .await
     else {
         return HttpResponse::InternalServerError()
             .json(ErrorJson::from("Failed to establish ssh session"));

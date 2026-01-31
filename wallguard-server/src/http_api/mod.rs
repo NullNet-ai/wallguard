@@ -1,14 +1,13 @@
 use crate::app_context::AppContext;
-use crate::http_proxy::api::create_alias;
-use crate::http_proxy::api::create_filter_rule;
-use crate::http_proxy::api::create_nat_rule;
-use crate::http_proxy::api::create_ssh_session;
-use crate::http_proxy::api::create_tunnel;
-use crate::http_proxy::api::enable_config_monitoring;
-use crate::http_proxy::api::enable_telemetry_monitoring;
-use crate::http_proxy::api::enable_traffic_monitoring;
-use crate::http_proxy::api::remote_access_terminate;
-use crate::http_proxy::api::request_session;
+use crate::http_api::api::create_alias;
+use crate::http_api::api::create_filter_rule;
+use crate::http_api::api::create_nat_rule;
+use crate::http_api::api::create_ssh_session;
+use crate::http_api::api::create_tunnel;
+use crate::http_api::api::enable_config_monitoring;
+use crate::http_api::api::enable_telemetry_monitoring;
+use crate::http_api::api::enable_traffic_monitoring;
+
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use api::authorize_device;
@@ -16,13 +15,12 @@ use config::HttpProxyConfig;
 
 mod api;
 mod config;
-mod proxy;
-mod rd_gateway;
+// mod rd_gateway;
 pub mod ssh_gateway_v2;
-mod tty_gateway;
+// mod tty_gateway;
 pub mod utilities;
 
-pub async fn run_http_proxy(context: AppContext) {
+pub async fn run_http_api(context: AppContext) {
     let config = HttpProxyConfig::from_env();
     log::info!("HTTP proxy listening on {}", config.addr);
 
@@ -47,15 +45,15 @@ pub async fn run_http_proxy(context: AppContext) {
                 web::post().to(create_ssh_session),
             )
             // @TODO: REMOVE
-            .route(
-                "/wallguard/api/v1/remote_access",
-                web::post().to(request_session),
-            )
+            // .route(
+            //     "/wallguard/api/v1/remote_access",
+            //     web::post().to(request_session),
+            // )
             // @TODO: REMOVE
-            .route(
-                "/wallguard/api/v1/remote_access",
-                web::delete().to(remote_access_terminate),
-            )
+            // .route(
+            //     "/wallguard/api/v1/remote_access",
+            //     web::delete().to(remote_access_terminate),
+            // )
             .route(
                 "/wallguard/api/v1/authorize_device",
                 web::post().to(authorize_device),
@@ -76,18 +74,17 @@ pub async fn run_http_proxy(context: AppContext) {
                 "/wallguard/gateway/ssh",
                 web::to(ssh_gateway_v2::open_ssh_session),
             )
-            .route(
-                "/wallguard/gateway/tty",
-                web::to(tty_gateway::open_tty_session),
-            )
-            .route(
-                "/wallguard/gateway/rd",
-                web::to(rd_gateway::open_remote_desktop_session),
-            )
+            // .route(
+            //     "/wallguard/gateway/tty",
+            //     web::to(tty_gateway::open_tty_session),
+            // )
+            // .route(
+            //     "/wallguard/gateway/rd",
+            //     web::to(rd_gateway::open_remote_desktop_session),
+            // )
             .route("/wallguard/rule/filter", web::to(create_filter_rule))
             .route("/wallguard/rule/nat", web::to(create_nat_rule))
             .route("/wallguard/alias", web::to(create_alias))
-            .default_service(web::to(proxy::proxy_http_request))
     })
     .bind(config.addr)
     .unwrap()

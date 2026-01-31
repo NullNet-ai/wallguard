@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::http_proxy::ssh_gateway_v2::session::Session as SshSession;
+use crate::http_api::ssh_gateway_v2::session::Session as SshSession;
 use actix_ws::{AggregatedMessage, AggregatedMessageStream, MessageStream, Session as WSSession};
 use futures_util::StreamExt as _;
 use prost::bytes::Bytes;

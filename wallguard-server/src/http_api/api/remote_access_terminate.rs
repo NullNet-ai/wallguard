@@ -3,11 +3,11 @@ use serde::Deserialize;
 
 use crate::{
     app_context::AppContext,
-    http_proxy::utilities::{authorization, error_json::ErrorJson, request_handling},
+    http_api::utilities::{authorization, error_json::ErrorJson, request_handling},
 };
 
 #[derive(Deserialize)]
-pub(in crate::http_proxy) struct RequestPayload {
+pub(in crate::http_api) struct RequestPayload {
     session: String,
 }
 
@@ -42,3 +42,5 @@ pub async fn remote_access_terminate(
 
     HttpResponse::Ok().body("")
 }
+
+// TODO remove

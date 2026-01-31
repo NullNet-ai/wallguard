@@ -8,11 +8,11 @@ use serde_json::json;
 use crate::{
     app_context::AppContext,
     datastore::{TunnelModel, TunnelType},
-    http_proxy::utilities::{authorization, error_json::ErrorJson},
+    http_api::utilities::{authorization, error_json::ErrorJson},
 };
 
 #[derive(Deserialize)]
-pub(in crate::http_proxy) struct RequestPayload {
+pub(in crate::http_api) struct RequestPayload {
     device_id: String,
     service_id: String,
 }

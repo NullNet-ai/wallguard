@@ -4,21 +4,21 @@ use actix_web::{
 };
 use serde::Deserialize;
 use serde_json::json;
-use wallguard_common::protobuf::wallguard_models::NatRule;
+use wallguard_common::protobuf::wallguard_models::FilterRule;
 
 use crate::{
     app_context::AppContext,
-    http_proxy::utilities::{authorization, error_json::ErrorJson},
+    http_api::utilities::{authorization, error_json::ErrorJson},
 };
 
 #[derive(Deserialize)]
-pub(in crate::http_proxy) struct RequestPayload {
+pub(in crate::http_api) struct RequestPayload {
     device_id: String,
     instance_id: String,
-    rule: NatRule,
+    rule: FilterRule,
 }
 
-pub async fn create_nat_rule(
+pub async fn create_filter_rule(
     request: HttpRequest,
     context: Data<AppContext>,
     body: Json<RequestPayload>,
@@ -54,7 +54,12 @@ pub async fn create_nat_rule(
         return HttpResponse::NotFound().json(ErrorJson::from("Device is not online"));
     };
 
-    if let Err(err) = client.lock().await.create_nat_rule(body.rule.clone()).await {
+    if let Err(err) = client
+        .lock()
+        .await
+        .create_filter_rule(body.rule.clone())
+        .await
+    {
         return HttpResponse::InternalServerError().json(ErrorJson::from(err));
     }
 

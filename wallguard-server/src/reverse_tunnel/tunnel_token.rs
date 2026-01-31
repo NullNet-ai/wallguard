@@ -1,4 +1,6 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpStream;
 
 use crate::utilities::hash::sha256_digest_bytes;
 use crate::utilities::random::generate_random_string;
@@ -27,6 +29,26 @@ impl TryFrom<Vec<u8>> for TokenHash {
 impl From<[u8; TOKEN_HASH_SIZE]> for TokenHash {
     fn from(digest: [u8; TOKEN_HASH_SIZE]) -> Self {
         Self { digest }
+    }
+}
+
+impl TokenHash {
+    /// Reads a 32-byte token hash from the beginning of a TCP stream.
+    ///
+    /// This function assumes that the first message received on the stream
+    /// is a fixed-size SHA-256 hash that can be used to identify the reverse tunnel.
+    ///
+    /// # Errors
+    /// Returns an error if reading from the stream fails or fewer than 32 bytes are received.
+    pub async fn read_from_stream(stream: &mut TcpStream) -> Result<Self, Error> {
+        let mut hash = TokenHash::default();
+
+        stream
+            .read_exact(&mut hash.digest)
+            .await
+            .handle_err(location!())?;
+
+        Ok(hash)
     }
 }
 

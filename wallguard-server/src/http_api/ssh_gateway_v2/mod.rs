@@ -8,8 +8,8 @@ use super::utilities::error_json::ErrorJson;
 use super::utilities::request_handling;
 use crate::app_context::AppContext;
 use crate::datastore::SshSessionStatus;
-pub use crate::http_proxy::ssh_gateway_v2::session::Session;
-use crate::http_proxy::ssh_gateway_v2::websocket_relay::websocket_relay;
+pub use crate::http_api::ssh_gateway_v2::session::Session;
+use crate::http_api::ssh_gateway_v2::websocket_relay::websocket_relay;
 
 mod handler;
 mod internal_relay;

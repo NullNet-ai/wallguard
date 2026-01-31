@@ -33,11 +33,11 @@ impl ExecutableCommand for OpenSshSessionCommand {
             }
         };
 
-        let Ok(sshd_stream) = TcpStream::connect(format!("127.0.0.1:{}", ports[0])).await else {
+        let Ok(mut sshd_stream) = TcpStream::connect(format!("127.0.0.1:{}", ports[0])).await else {
             return Err("Cant establish sshd connection").handle_err(location!());
         };
 
-        let Ok(tunnel_stream) = self
+        let Ok(mut tunnel_stream) = self
             .context
             .tunnel
             .request_channel(&self.data.tunnel_token)
@@ -47,7 +47,7 @@ impl ExecutableCommand for OpenSshSessionCommand {
         };
 
         tokio::spawn(async move {
-            let _ = utilities::io::copy_bidirectional_for_tunnel(tunnel_stream, sshd_stream).await;
+            let _ = tokio::io::copy_bidirectional(&mut tunnel_stream, &mut sshd_stream).await;
         });
 
         Ok(())
