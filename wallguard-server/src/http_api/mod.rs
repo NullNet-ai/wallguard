@@ -11,7 +11,7 @@ use crate::http_api::api::enable_traffic_monitoring;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
 use api::authorize_device;
-use config::HttpProxyConfig;
+use config::HttpApiConfig;
 
 mod api;
 mod config;
@@ -21,7 +21,7 @@ pub mod ssh_gateway_v2;
 pub mod utilities;
 
 pub async fn run_http_api(context: AppContext) {
-    let config = HttpProxyConfig::from_env();
+    let config = HttpApiConfig::from_env();
     log::info!("HTTP proxy listening on {}", config.addr);
 
     let context = web::Data::new(context);

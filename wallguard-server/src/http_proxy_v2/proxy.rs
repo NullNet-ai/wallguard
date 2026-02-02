@@ -17,22 +17,30 @@ impl Proxy {
     }
 }
 
+#[derive(Default, Debug)]
+pub struct RequestContext {
+    pub service: Option<ServiceInfo>,
+}
+
 #[async_trait]
 impl ProxyHttp for Proxy {
-    type CTX = ();
+    type CTX = RequestContext;
 
-    fn new_ctx(&self) -> Self::CTX {}
+    fn new_ctx(&self) -> Self::CTX {
+        RequestContext::default()
+    }
 
     async fn upstream_peer(
         &self,
         session: &mut Session,
-        _ctx: &mut Self::CTX,
+        ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
         let Some(tunnel_id) = Proxy::parse_tunnel_id(session).await else {
             return Err(Error::new(ErrorType::Custom("Failed to parse tunnel id")));
         };
 
         let service = self.get_service_info(&tunnel_id).await?;
+        ctx.service = Some(service.clone());
 
         let Ok(tunnel_type) = TunnelType::try_from(service.protocol.as_str()) else {
             return Err(Error::new(ErrorType::InternalError));
@@ -47,22 +55,33 @@ impl ProxyHttp for Proxy {
         let mut peer = HttpPeer::new(
             address,
             matches!(tunnel_type, TunnelType::Https),
-            // TODO: SNI
             service.address.clone(),
         );
 
         peer.options.custom_l4 = Some(Arc::new(Connector::new(self.context.clone(), service)));
 
+        peer.options.verify_cert = false;
+        peer.options.verify_hostname = false;
+
         Ok(Box::new(peer))
+    }
+
+    async fn upstream_request_filter(
+        &self,
+        _session: &mut Session,
+        upstream_request: &mut RequestHeader,
+        ctx: &mut Self::CTX,
+    ) -> Result<()> {
+        if let Some(host) = ctx.service.as_ref().map(|data| data.address.clone()) {
+            upstream_request.insert_header("Host", host)?;
+        }
+
+        Ok(())
     }
 }
 
 impl Proxy {
     async fn parse_tunnel_id(session: &mut Session) -> Option<String> {
-        if !session.read_request().await.unwrap_or(false) {
-            return None;
-        }
-
         let request = session.req_header();
 
         if let Some(domain) = request.uri.host()

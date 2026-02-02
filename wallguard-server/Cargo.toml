@@ -58,7 +58,7 @@ rmcp = { version = "0.11.0", features = [
     ] }
 tokio-util = "0.7.17"
 axum = "0.8.6"
-pingora = {version = "0.6.0", features = ["proxy"] }
+pingora = {version = "0.6.0", features = ["proxy", "openssl"] }
 
 [badges]
 maintenance = { status = "actively-developed" }
