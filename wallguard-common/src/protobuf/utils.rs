@@ -7,7 +7,7 @@ impl Serialize for FilterRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("FilterRule", 25)?;
+        let mut state = serializer.serialize_struct("FilterRule", 26)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("policy", &self.policy)?;
@@ -49,6 +49,7 @@ impl Serialize for FilterRule {
         state.serialize_field("table", &self.table)?;
         state.serialize_field("chain", &self.chain)?;
         state.serialize_field("family", &self.family)?;
+        state.serialize_field("floating", &self.floating)?;
 
         state.end()
     }
@@ -86,6 +87,7 @@ impl<'de> Deserialize<'de> for FilterRule {
             table: Option<String>,
             chain: Option<String>,
             family: Option<String>,
+            floating: Option<bool>,
         }
 
         let raw = RawFilterRule::deserialize(deserializer)?;
@@ -146,6 +148,7 @@ impl<'de> Deserialize<'de> for FilterRule {
             table: raw.table.unwrap_or_default(),
             chain: raw.chain.unwrap_or_default(),
             family: raw.family.unwrap_or_default(),
+            floating: raw.floating.unwrap_or_default(),
         })
     }
 }

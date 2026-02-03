@@ -97,6 +97,7 @@ impl NftablesRulesParser {
                                 table: rule.table.to_string(),
                                 chain: rule.chain.to_string(),
                                 family: nffam2str(rule.family),
+                                floating: false,
                             });
                         }
                     }

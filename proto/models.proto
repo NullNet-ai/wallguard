@@ -40,6 +40,8 @@ message FilterRule {
     string table = 17;
     string chain = 18;
     string family = 19;
+
+    bool floating = 20;
 }
 
 message NatRule {
