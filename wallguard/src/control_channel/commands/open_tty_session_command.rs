@@ -1,12 +1,12 @@
+use std::sync::Arc;
+
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
+
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::pty::{Pty, PtyReader, PtyWriter};
-use crate::reverse_tunnel::{TunnelReader, TunnelWriter};
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use std::sync::Arc;
-use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
-use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
-use wallguard_common::protobuf::wallguard_tunnel::{ClientFrame, DataFrame};
+use crate::reverse_tunnel::TunnelInstance;
 
 pub struct OpenTtySessionCommand {
     context: Context,
@@ -30,9 +30,11 @@ impl ExecutableCommand for OpenTtySessionCommand {
         };
 
         tokio::spawn(async move {
+            let (reader, writer) = tokio::io::split(tunnel);
+
             tokio::select! {
-                _ = stream_to_pty(tunnel.reader, pty.writer) => {},
-                _ = pty_to_stream(tunnel.writer, pty.reader) => {},
+                _ = stream_to_pty(reader, pty.writer) => {},
+                _ = pty_to_stream(writer, pty.reader) => {},
             }
         });
 
@@ -40,33 +42,28 @@ impl ExecutableCommand for OpenTtySessionCommand {
     }
 }
 
-async fn stream_to_pty(reader: TunnelReader, writer: PtyWriter) -> Result<(), Error> {
+async fn stream_to_pty(
+    mut reader: ReadHalf<TunnelInstance>,
+    writer: PtyWriter,
+) -> Result<(), Error> {
     loop {
-        let message = reader
-            .lock()
-            .await
-            .message()
-            .await
-            .handle_err(location!())?
-            .ok_or("End of stream")
-            .handle_err(location!())?
-            .message
-            .ok_or("Unexpected empty message")
-            .handle_err(location!())?;
+        let mut buffer = [0; 4096];
+        let bytes = reader.read(&mut buffer).await.handle_err(location!())?;
 
-        let ServerMessage::Data(data_frame) = message else {
-            return Err("Unexpected message type").handle_err(location!())?;
-        };
+        let message = buffer[..bytes].to_vec();
 
         let writer = Arc::clone(&writer);
-        tokio::task::spawn_blocking(move || writer.lock().unwrap().write_all(&data_frame.data))
+        tokio::task::spawn_blocking(move || writer.lock().unwrap().write_all(&message))
             .await
             .handle_err(location!())?
             .handle_err(location!())?;
     }
 }
 
-async fn pty_to_stream(writer: TunnelWriter, reader: PtyReader) -> Result<(), Error> {
+async fn pty_to_stream(
+    mut writer: WriteHalf<TunnelInstance>,
+    reader: PtyReader,
+) -> Result<(), Error> {
     loop {
         let reader = Arc::clone(&reader);
 
@@ -83,11 +80,7 @@ async fn pty_to_stream(writer: TunnelWriter, reader: PtyReader) -> Result<(), Er
         .handle_err(location!())?;
 
         writer
-            .lock()
-            .await
-            .send(ClientFrame {
-                message: Some(ClientMessage::Data(DataFrame { data })),
-            })
+            .write_all(data.as_slice())
             .await
             .handle_err(location!())?;
     }

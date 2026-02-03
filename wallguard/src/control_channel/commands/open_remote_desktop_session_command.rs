@@ -1,12 +1,9 @@
 use crate::control_channel::command::ExecutableCommand;
 use crate::remote_desktop::RemoteDesktopManager;
-use crate::reverse_tunnel::TunnelWriter;
-use crate::{context::Context, reverse_tunnel::TunnelReader};
+use crate::{context::Context, reverse_tunnel::TunnelInstance};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
 use tokio::sync::mpsc;
-use wallguard_common::protobuf::wallguard_tunnel::client_frame::Message as ClientMessage;
-use wallguard_common::protobuf::wallguard_tunnel::server_frame::Message as ServerMessage;
-use wallguard_common::protobuf::wallguard_tunnel::{ClientFrame, DataFrame};
 
 pub struct OpenRemoteDesktopSessionCommand {
     context: Context,
@@ -45,9 +42,11 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
             let (sender, receiver) = mpsc::channel(64);
             let id = rdm.on_client_connected(sender).await;
 
+            let (reader, writer) = tokio::io::split(tunnel);
+
             tokio::select! {
-                _ = stream_to_system(tunnel.reader, rdm.clone(), id) => {},
-                _ = system_to_stream(tunnel.writer, receiver) => {},
+                _ = stream_to_system(reader, rdm.clone(), id) => {},
+                _ = system_to_stream(writer, receiver) => {},
             }
 
             let _ = rdm.on_client_disconnected(id).await;
@@ -58,29 +57,18 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
 }
 
 async fn stream_to_system(
-    reader: TunnelReader,
+    mut reader: ReadHalf<TunnelInstance>,
     remote_desktop_manager: RemoteDesktopManager,
     client_id: u128,
 ) -> Result<(), Error> {
     loop {
-        let message = reader
-            .lock()
-            .await
-            .message()
-            .await
-            .handle_err(location!())?
-            .ok_or("End of stream")
-            .handle_err(location!())?
-            .message
-            .ok_or("Unexpected empty message")
-            .handle_err(location!())?;
+        let mut buffer = [0; 4096];
+        let bytes = reader.read(&mut buffer).await.handle_err(location!())?;
 
-        let ServerMessage::Data(data_frame) = message else {
-            return Err("Unexpected message type").handle_err(location!())?;
-        };
+        let message = buffer[..bytes].to_vec();
 
         if let Err(err) = remote_desktop_manager
-            .on_client_message(client_id, data_frame.data)
+            .on_client_message(client_id, message)
             .await
         {
             log::error!(
@@ -92,16 +80,12 @@ async fn stream_to_system(
 }
 
 async fn system_to_stream(
-    writer: TunnelWriter,
+    mut writer: WriteHalf<TunnelInstance>,
     mut receiver: mpsc::Receiver<Vec<u8>>,
 ) -> Result<(), Error> {
     while let Some(data) = receiver.recv().await {
         writer
-            .lock()
-            .await
-            .send(ClientFrame {
-                message: Some(ClientMessage::Data(DataFrame { data })),
-            })
+            .write_all(data.as_slice())
             .await
             .handle_err(location!())?;
     }

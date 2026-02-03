@@ -37,7 +37,9 @@ impl Context {
 
         let server = WGServer::new(server_data.grpc_addr);
 
-        let tunnel = ReverseTunnel::new(server_data.grpc_addr);
+        // TODO
+        let tunnel_acceptor_addr = format!("{}:{}", server_data.grpc_addr.ip(), 7777);
+        let tunnel = ReverseTunnel::new(tunnel_acceptor_addr.parse().unwrap());
 
         let dump_dir = DumpDir::new(*DISK_SIZE / 2).await;
 

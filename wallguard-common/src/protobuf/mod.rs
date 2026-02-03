@@ -17,8 +17,4 @@ pub mod wallguard_service;
 #[rustfmt::skip]
 pub mod wallguard_models;
 
-#[allow(clippy::enum_variant_names)]
-#[rustfmt::skip]
-pub mod wallguard_tunnel;
-
 mod utils;

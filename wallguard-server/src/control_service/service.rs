@@ -14,10 +14,6 @@ use wallguard_common::protobuf::wallguard_service::{
     ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, ServicesMessage,
     SystemResourcesData,
 };
-use wallguard_common::protobuf::wallguard_tunnel::reverse_tunnel_server::{
-    ReverseTunnel, ReverseTunnelServer,
-};
-use wallguard_common::protobuf::wallguard_tunnel::{ClientFrame, ServerFrame};
 
 // @TODO: Configure through ENV
 const IP_INFO_CACHE_SIZE: usize = 10_000;
@@ -47,7 +43,6 @@ impl WallGuardService {
     pub async fn serve(self, addr: SocketAddr) -> Result<(), Error> {
         Server::builder()
             .add_service(WallGuardServer::new(self.clone()))
-            .add_service(ReverseTunnelServer::new(self.clone()))
             .serve(addr)
             .await
             .handle_err(location!())?;
@@ -111,14 +106,15 @@ impl WallGuard for WallGuardService {
     }
 }
 
-#[tonic::async_trait]
-impl ReverseTunnel for WallGuardService {
-    type RequestTunnelStream = ReceiverStream<Result<ServerFrame, Status>>;
+// TODO: Remove
+// #[tonic::async_trait]
+// impl ReverseTunnel for WallGuardService {
+//     type RequestTunnelStream = ReceiverStream<Result<ServerFrame, Status>>;
 
-    async fn request_tunnel(
-        &self,
-        request: Request<Streaming<ClientFrame>>,
-    ) -> Result<Response<Self::RequestTunnelStream>, Status> {
-        self.request_tunnel_impl(request).await
-    }
-}
+//     async fn request_tunnel(
+//         &self,
+//         request: Request<Streaming<ClientFrame>>,
+//     ) -> Result<Response<Self::RequestTunnelStream>, Status> {
+//         self.request_tunnel_impl(request).await
+//     }
+// }

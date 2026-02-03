@@ -1,11 +1,10 @@
 const OUTPUT_DIR: &str = "./src/protobuf";
 const INCLUDE_PATHS: [&str; 2] = ["../proto", "/usr/include"];
-const PROTO_FILES: [&str; 5] = [
+const PROTO_FILES: [&str; 4] = [
     "../proto/cli.proto",
     "../proto/models.proto",
     "../proto/commands.proto",
     "../proto/service.proto",
-    "../proto/tunnel.proto",
 ];
 
 fn main() {

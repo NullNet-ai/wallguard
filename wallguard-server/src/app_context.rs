@@ -1,5 +1,5 @@
 use crate::datastore::Datastore;
-use crate::http_proxy::ssh_gateway_v2::manager::SshSessionsManager;
+use crate::http_api::ssh_gateway_v2::manager::SshSessionsManager;
 use crate::orchestrator::Orchestrator;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
