@@ -14,6 +14,13 @@ impl PfSenseRulesParser {
                 .push(XMLNode::Element(Element::new("disabled")));
         }
 
+        if rule.floating {
+            let mut node = Element::new("floating");
+            node.children.push(XMLNode::Text("yes".to_owned()));
+
+            rule_elem.children.push(XMLNode::Element(node));
+        }
+
         let mut type_elem = Element::new("type");
         type_elem.children.push(XMLNode::Text(rule.policy));
         rule_elem.children.push(XMLNode::Element(type_elem));
@@ -231,6 +238,13 @@ impl PfSenseRulesParser {
                 .unwrap_or("".into())
                 .to_string();
 
+            let floating = child
+                .get_child("floating")
+                .and_then(|e| e.get_text())
+                .unwrap_or_default()
+                .to_ascii_lowercase()
+                == "yes";
+
             rules.push(FilterRule {
                 disabled,
                 protocol: format!("{ipprotocol}/{protocol}"),
@@ -260,6 +274,7 @@ impl PfSenseRulesParser {
                 order: index as u32,
                 id,
                 associated_rule_id,
+                floating,
                 ..Default::default()
             });
         }
@@ -483,6 +498,7 @@ mod tests {
                     <destination>
                         <any/>
                     </destination>
+                    <floating>yes</floating>
                 </rule>
             </filter>
             <nat>
@@ -526,6 +542,7 @@ mod tests {
         assert_eq!(frules[0].destination_inversed, false);
         assert_eq!(frules[0].interface, "lan");
         assert_eq!(frules[0].order, 0);
+        assert_eq!(frules[0].floating, true);
 
         assert_eq!(nrules.len(), 1);
 
@@ -706,12 +723,15 @@ mod tests {
             order: 1,
             id: 100,
             associated_rule_id: "qwerty".to_string(),
+            floating: true,
             ..Default::default()
         };
 
         let elem = PfSenseRulesParser::filter_rule_to_element(rule);
 
         assert_eq!(find_child_text(&elem, "ipprotocol").unwrap(), "inet");
+        assert_eq!(find_child_text(&elem, "floating").unwrap(), "yes");
+
         assert!(
             elem.get_child("protocol").is_none(),
             "protocol should be omitted"

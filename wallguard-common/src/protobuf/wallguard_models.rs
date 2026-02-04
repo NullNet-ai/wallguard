@@ -57,6 +57,8 @@ pub struct FilterRule {
     pub chain: ::prost::alloc::string::String,
     #[prost(string, tag = "19")]
     pub family: ::prost::alloc::string::String,
+    #[prost(bool, tag = "20")]
+    pub floating: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NatRule {
