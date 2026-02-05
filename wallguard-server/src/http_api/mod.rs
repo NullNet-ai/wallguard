@@ -1,16 +1,17 @@
 use crate::app_context::AppContext;
+use crate::http_api::api::authorize_device;
 use crate::http_api::api::create_alias;
 use crate::http_api::api::create_filter_rule;
 use crate::http_api::api::create_nat_rule;
 use crate::http_api::api::create_ssh_session;
 use crate::http_api::api::create_tunnel;
+use crate::http_api::api::delete_ssh_session;
 use crate::http_api::api::enable_config_monitoring;
 use crate::http_api::api::enable_telemetry_monitoring;
 use crate::http_api::api::enable_traffic_monitoring;
 
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
-use api::authorize_device;
 use config::HttpApiConfig;
 
 mod api;
@@ -44,16 +45,10 @@ pub async fn run_http_api(context: AppContext) {
                 "/wallguard/api/v1/ssh_session",
                 web::post().to(create_ssh_session),
             )
-            // @TODO: REMOVE
-            // .route(
-            //     "/wallguard/api/v1/remote_access",
-            //     web::post().to(request_session),
-            // )
-            // @TODO: REMOVE
-            // .route(
-            //     "/wallguard/api/v1/remote_access",
-            //     web::delete().to(remote_access_terminate),
-            // )
+            .route(
+                "/wallguard/api/v1/ssh_session",
+                web::delete().to(delete_ssh_session),
+            )
             .route(
                 "/wallguard/api/v1/authorize_device",
                 web::post().to(authorize_device),

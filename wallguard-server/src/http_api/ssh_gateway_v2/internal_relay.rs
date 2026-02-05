@@ -4,6 +4,7 @@ use crate::http_api::ssh_gateway_v2::session::{
     ChannelReader, ChannelWriter, UserDataReceiver, UserDataSender,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::sync::broadcast;
 
 pub(crate) struct InternalRelay {
     context: AppContext,
@@ -16,6 +17,8 @@ pub(crate) struct InternalRelay {
     // Intermediate channels read & write
     data_sender: UserDataSender,
     data_receiver: UserDataReceiver,
+
+    terminate: broadcast::Receiver<()>,
 }
 
 impl InternalRelay {
@@ -26,6 +29,7 @@ impl InternalRelay {
         channel_writer: ChannelWriter,
         data_sender: UserDataSender,
         data_receiver: UserDataReceiver,
+        terminate: broadcast::Receiver<()>,
     ) -> Self {
         Self {
             context,
@@ -34,6 +38,7 @@ impl InternalRelay {
             channel_writer,
             data_sender,
             data_receiver,
+            terminate,
         }
     }
 
@@ -45,6 +50,7 @@ impl InternalRelay {
             self.channel_writer,
             self.data_sender,
             self.data_receiver,
+            self.terminate,
         ));
     }
 }
@@ -56,6 +62,7 @@ async fn internal_relay_impl(
     channel_writer: ChannelWriter,
     data_sender: UserDataSender,
     data_receiver: UserDataReceiver,
+    mut terminate: broadcast::Receiver<()>,
 ) {
     tokio::select! {
         _ = from_users_to_channel(data_receiver, channel_writer) => {
@@ -63,6 +70,9 @@ async fn internal_relay_impl(
         }
         _ = from_channel_to_users(channel_reader, data_sender) => {
             log::debug!("SSH Internal Relay: SSH to Channel relay finished");
+        }
+        _ = terminate.recv() => {
+            log::debug!("SSH Internal Relay: TERM singal received");
         }
     }
 

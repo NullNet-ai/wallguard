@@ -16,7 +16,6 @@ use tokio::sync::{Mutex, broadcast, mpsc};
 
 pub(in crate::http_api::ssh_gateway_v2) type ChannelReader = ReadHalf<ChannelStream<Msg>>;
 pub(in crate::http_api::ssh_gateway_v2) type ChannelWriter = WriteHalf<ChannelStream<Msg>>;
-
 pub(in crate::http_api::ssh_gateway_v2) type SessionDataSender = mpsc::Sender<Vec<u8>>;
 pub(in crate::http_api::ssh_gateway_v2) type UserDataReceiver = mpsc::Receiver<Vec<u8>>;
 pub(in crate::http_api::ssh_gateway_v2) type UserDataSender = broadcast::Sender<Vec<u8>>;
@@ -31,6 +30,7 @@ pub struct Session {
     data_sender: SessionDataSender,
     data_receiver: SessionDataReceiver,
     memory: SessionMemory,
+    signal: broadcast::Sender<()>,
 }
 
 impl Session {
@@ -48,6 +48,8 @@ impl Session {
         let (from_users_sender, from_users_receiver) = mpsc::channel(128);
         let (to_users_sender, to_users_receiver) = broadcast::channel(128);
 
+        let (terminate, _) = broadcast::channel(2);
+
         InternalRelay::new(
             context.clone(),
             data.id.clone(),
@@ -55,6 +57,7 @@ impl Session {
             session_writer,
             to_users_sender,
             from_users_receiver,
+            terminate.subscribe(),
         )
         .spawn();
 
@@ -66,12 +69,14 @@ impl Session {
             DEFAULT_TIMEOUT,
             context.clone(),
             data.id.clone(),
+            terminate.subscribe(),
         ));
 
         Ok(Self {
             data_sender: from_users_sender,
             data_receiver: to_users_receiver,
             memory,
+            signal: terminate,
         })
     }
 
@@ -85,6 +90,10 @@ impl Session {
 
     pub async fn get_memory_snaphot(&self) -> Vec<u8> {
         self.memory.lock().await.clone()
+    }
+
+    pub async fn terminate(&self) {
+        let _ = self.signal.send(());
     }
 
     async fn establish_ssh_session(
@@ -134,6 +143,7 @@ async fn session_timeout_impl(
     duration: Duration,
     context: AppContext,
     session_id: String,
+    mut terminate: broadcast::Receiver<()>,
 ) {
     // Session timeout is handled here to ensure proper cleanup:
     // When the timeout is reached, the receiver is dropped, which triggers
@@ -154,6 +164,7 @@ async fn session_timeout_impl(
             let _ = context.ssh_sessions_manager.remove(&session_id).await;
         }
         _ = memory_monitor(memory, receiver) => {}
+        _ = terminate.recv() => {}
     }
 }
 
