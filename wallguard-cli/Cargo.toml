@@ -8,7 +8,7 @@ license = "AGPL-3.0-only"
 prost.workspace = true
 tonic.workspace = true
 tokio.workspace = true
-clap = {version = "4.5.53", features = ["derive"]}
+clap = {version = "4.5.57", features = ["derive"]}
 anyhow = "1.0.98"
 wallguard-common = { path = "../wallguard-common" }
 sysinfo = "0.37.2"
