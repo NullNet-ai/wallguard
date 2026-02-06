@@ -36,6 +36,7 @@ impl ProxyHttp for Proxy {
         ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
         let Some(tunnel_id) = Proxy::parse_tunnel_id(session).await else {
+            log::error!("PROXY: Failed to parse tunnel ID");
             return Err(Error::new(ErrorType::Custom("Failed to parse tunnel id")));
         };
 
@@ -43,10 +44,12 @@ impl ProxyHttp for Proxy {
         ctx.service = Some(service.clone());
 
         let Ok(tunnel_type) = TunnelType::try_from(service.protocol.as_str()) else {
+            log::error!("PROXY: Failed to parse tunnel type");
             return Err(Error::new(ErrorType::InternalError));
         };
 
         if !matches!(tunnel_type, TunnelType::Http | TunnelType::Https) {
+            log::error!("Wrong tunnel type");
             return Err(Error::new(ErrorType::Custom("Wrong tunnel type")));
         }
 

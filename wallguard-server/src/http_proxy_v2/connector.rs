@@ -28,6 +28,7 @@ impl L4Connect for Connector {
             .get_any_client_instance(&self.service.device_id)
             .await
         else {
+            log::error!("PROXY: - CONNECTOR - Device is offline");
             return Err(Error::new(ErrorType::Custom("Device is offline")));
         };
 
@@ -43,6 +44,7 @@ impl L4Connect for Connector {
         )
         .await
         else {
+                log::error!("PROXY: - CONNECTOR - Failed to establish a tunnel");
             return Err(Error::new(ErrorType::Custom(
                 "Failed to establish a tunnel",
             )));
