@@ -22,6 +22,11 @@ impl Connector {
 #[async_trait]
 impl L4Connect for Connector {
     async fn connect(&self, _addr: &SocketAddr) -> Result<Stream> {
+        log::info!(
+            "PROXY -- CONNECTOR: Connecting to service {:?}",
+            self.service
+        );
+
         let Some(instance) = self
             .context
             .orchestractor
@@ -44,11 +49,13 @@ impl L4Connect for Connector {
         )
         .await
         else {
-                log::error!("PROXY: - CONNECTOR - Failed to establish a tunnel");
+            log::error!("PROXY: - CONNECTOR - Failed to establish a tunnel");
             return Err(Error::new(ErrorType::Custom(
                 "Failed to establish a tunnel",
             )));
         };
+
+        log::info!("PROXY -- CONNECTOR: DONE");
 
         Ok(Stream::from(tunnel.take_stream()))
     }

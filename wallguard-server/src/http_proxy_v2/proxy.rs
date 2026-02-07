@@ -35,6 +35,8 @@ impl ProxyHttp for Proxy {
         session: &mut Session,
         ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
+        log::info!("PROXY: Received request!");
+
         let Some(tunnel_id) = Proxy::parse_tunnel_id(session).await else {
             log::error!("PROXY: Failed to parse tunnel ID");
             return Err(Error::new(ErrorType::Custom("Failed to parse tunnel id")));
@@ -60,6 +62,8 @@ impl ProxyHttp for Proxy {
             matches!(tunnel_type, TunnelType::Https),
             service.address.clone(),
         );
+
+        log::info!("PROXY: Peer constructed {peer:?}");
 
         peer.options.custom_l4 = Some(Arc::new(Connector::new(self.context.clone(), service)));
 
