@@ -80,6 +80,7 @@ impl ProxyHttp for Proxy {
         ctx: &mut Self::CTX,
     ) -> Result<()> {
         if let Some(host) = ctx.service.as_ref().map(|data| data.address.clone()) {
+            log::info!("Seeting header HOST to {host}");
             upstream_request.insert_header("Host", host)?;
         }
 
