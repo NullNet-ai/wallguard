@@ -45,7 +45,7 @@ pub async fn establish_tunneled_ssh(
 /// - `context`: The application context
 /// - `device_id`: The device ID
 /// - `instance_id`: Instance ID
-pub async fn _establish_tunneled_tty(
+pub async fn establish_tunneled_tty(
     context: &AppContext,
     device_id: &str,
     instance_id: &str,

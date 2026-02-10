@@ -1,5 +1,5 @@
 use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, SshSessionModel};
+use crate::datastore::{Datastore, TtySessionModel};
 use crate::utilities::json;
 use nullnet_libdatastore::GetByIdRequestBuilder;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
@@ -10,12 +10,12 @@ impl Datastore {
         token: &str,
         session_id: &str,
         performed_by_root: bool,
-    ) -> Result<Option<SshSessionModel>, Error> {
+    ) -> Result<Option<TtySessionModel>, Error> {
         let request = GetByIdRequestBuilder::new()
-            .table(TtySessionModel::table())
+            .table(DBTable::TtySessions)
             .durability("hard")
             .id(session_id)
-            .pluck(SshSessionModel::pluck())
+            .pluck(TtySessionModel::pluck())
             .performed_by_root(performed_by_root)
             .build();
 
@@ -28,7 +28,7 @@ impl Datastore {
         let json_data = json::parse_string(&response.data)?;
         let data = json::first_element_from_array(&json_data)?;
 
-        let device = serde_json::from_value::<SshSessionModel>(data).handle_err(location!())?;
+        let device = serde_json::from_value::<TtySessionModel>(data).handle_err(location!())?;
         Ok(Some(device))
     }
 }
