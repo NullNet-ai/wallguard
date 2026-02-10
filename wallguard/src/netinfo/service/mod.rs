@@ -5,6 +5,7 @@ use wallguard_common::protobuf::wallguard_service::{
 };
 
 mod http;
+mod pseudo;
 mod ssh;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -12,6 +13,7 @@ pub enum Protocol {
     Http,
     Https,
     Ssh,
+    Tty,
 }
 
 #[derive(Debug)]
@@ -28,6 +30,7 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
                 Protocol::Http => ProtocolGrpc::Http.into(),
                 Protocol::Https => ProtocolGrpc::Https.into(),
                 Protocol::Ssh => ProtocolGrpc::Ssh.into(),
+                Protocol::Tty => todo!(),
             },
             program: val.program,
             address: val.addr.ip().to_string(),
