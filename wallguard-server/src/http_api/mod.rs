@@ -5,8 +5,10 @@ use crate::http_api::api::create_alias;
 use crate::http_api::api::create_filter_rule;
 use crate::http_api::api::create_nat_rule;
 use crate::http_api::api::create_ssh_session;
+use crate::http_api::api::create_tty_session;
 use crate::http_api::api::create_tunnel;
 use crate::http_api::api::delete_ssh_session;
+use crate::http_api::api::delete_tty_session;
 use crate::http_api::api::delete_tunnel;
 use crate::http_api::api::enable_config_monitoring;
 use crate::http_api::api::enable_telemetry_monitoring;
@@ -20,7 +22,7 @@ mod api;
 mod config;
 // mod rd_gateway;
 pub mod ssh_gateway_v2;
-// mod tty_gateway;
+pub mod tty_gateway_v2;
 pub mod utilities;
 
 pub async fn run_http_api(context: AppContext) {
@@ -53,6 +55,14 @@ pub async fn run_http_api(context: AppContext) {
                 web::delete().to(delete_ssh_session),
             )
             .route(
+                "/wallguard/api/v1/tty_session",
+                web::post().to(create_tty_session),
+            )
+            .route(
+                "/wallguard/api/v1/tty_session",
+                web::delete().to(delete_tty_session),
+            )
+            .route(
                 "/wallguard/api/v1/authorize_device",
                 web::post().to(authorize_device),
             )
@@ -72,14 +82,10 @@ pub async fn run_http_api(context: AppContext) {
                 "/wallguard/gateway/ssh",
                 web::to(ssh_gateway_v2::open_ssh_session),
             )
-            // .route(
-            //     "/wallguard/gateway/tty",
-            //     web::to(tty_gateway::open_tty_session),
-            // )
-            // .route(
-            //     "/wallguard/gateway/rd",
-            //     web::to(rd_gateway::open_remote_desktop_session),
-            // )
+            .route(
+                "/wallguard/gateway/tty",
+                web::to(tty_gateway_v2::open_tty_session),
+            )
             .route("/wallguard/rule/filter", web::to(create_filter_rule))
             .route("/wallguard/rule/nat", web::to(create_nat_rule))
             .route("/wallguard/alias", web::to(create_alias))

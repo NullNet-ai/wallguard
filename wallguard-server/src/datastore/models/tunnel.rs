@@ -7,6 +7,7 @@ use crate::datastore::db_tables::DBTable;
 #[serde(rename_all = "lowercase")]
 pub enum TunnelType {
     #[default]
+    Tty,
     Ssh,
     Http,
     Https,
@@ -20,6 +21,7 @@ impl TryFrom<&str> for TunnelType {
             "ssh" => Ok(TunnelType::Ssh),
             "http" => Ok(TunnelType::Http),
             "https" => Ok(TunnelType::Https),
+            "tty" => Ok(TunnelType::Tty),
             other => {
                 Err(format!("Tunnel of type {other} is not supported")).handle_err(location!())
             }

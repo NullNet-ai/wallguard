@@ -1,5 +1,6 @@
 use crate::datastore::Datastore;
 use crate::http_api::ssh_gateway_v2::manager::SshSessionsManager;
+use crate::http_api::tty_gateway_v2::manager::TtySessionsManager;
 use crate::orchestrator::Orchestrator;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
@@ -48,6 +49,7 @@ pub struct AppContext {
     pub sysdev_token_provider: TokenProvider,
 
     pub ssh_sessions_manager: SshSessionsManager,
+    pub tty_sessions_manager: TtySessionsManager,
 }
 
 impl AppContext {
@@ -71,6 +73,7 @@ impl AppContext {
         );
 
         let ssh_sessions_manager = SshSessionsManager::new();
+        let tty_sessions_manager = TtySessionsManager::new();
 
         Ok(Self {
             datastore,
@@ -79,6 +82,7 @@ impl AppContext {
             sysdev_token_provider,
             root_token_provider,
             ssh_sessions_manager,
+            tty_sessions_manager,
         })
     }
 }
