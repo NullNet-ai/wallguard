@@ -29,6 +29,8 @@ mod obtain_tty_session;
 mod obtain_tunnel;
 mod redeem_installation_code;
 mod register_device;
+mod terminate_all_active_ssh_sessions;
+mod terminate_all_active_tty_sessions;
 mod update_config;
 mod update_device;
 mod update_rules_status;

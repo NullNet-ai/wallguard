@@ -28,7 +28,7 @@ impl HttpProxyConfig {
 
 impl Default for HttpProxyConfig {
     fn default() -> Self {
-        let addr = "127.0.0.1:4444".parse().unwrap();
+        let addr = "127.0.0.1:8080".parse().unwrap();
         Self { addr }
     }
 }

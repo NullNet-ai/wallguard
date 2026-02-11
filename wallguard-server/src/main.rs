@@ -3,6 +3,7 @@ use control_service::run_control_service;
 use http_api::run_http_api;
 use http_proxy_v2::run_http_proxy;
 use mcp::run_mcp_server;
+use nullnet_liberror::Error;
 use reverse_tunnel::run_tunnel_acceptor;
 
 mod app_context;
@@ -42,6 +43,10 @@ async fn main() {
         .await
         .expect("Faield to acquire SYSDEV token, check the credentials");
 
+    prepare_records(&app_context)
+        .await
+        .expect("Failed to prepare records");
+
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {},
         _ = run_control_service(app_context.clone()) => {},
@@ -50,4 +55,30 @@ async fn main() {
         _ = run_http_proxy(app_context.clone()) => {}
         _ = run_tunnel_acceptor(app_context.clone()) => {}
     }
+}
+
+async fn prepare_records(context: &AppContext) -> Result<(), Error> {
+    let token = context.sysdev_token_provider.get().await?;
+
+    context
+        .datastore
+        .terminate_all_active_ssh_sessions(&token.jwt, false)
+        .await?;
+
+    context
+        .datastore
+        .terminate_all_active_tty_sessions(&token.jwt, false)
+        .await?;
+
+    context
+        .datastore
+        .update_all_devices_online_status(&token.jwt, false, false)
+        .await?;
+
+    context
+        .datastore
+        .delete_all_device_instances(&token.jwt, false)
+        .await?;
+
+    Ok(())
 }
