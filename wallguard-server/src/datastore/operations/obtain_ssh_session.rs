@@ -1,4 +1,3 @@
-use crate::datastore::db_tables::DBTable;
 use crate::datastore::{Datastore, SshSessionModel};
 use crate::utilities::json;
 use nullnet_libdatastore::GetByIdRequestBuilder;
@@ -12,7 +11,7 @@ impl Datastore {
         performed_by_root: bool,
     ) -> Result<Option<SshSessionModel>, Error> {
         let request = GetByIdRequestBuilder::new()
-            .table(TtySessionModel::table())
+            .table(SshSessionModel::table())
             .durability("hard")
             .id(session_id)
             .pluck(SshSessionModel::pluck())

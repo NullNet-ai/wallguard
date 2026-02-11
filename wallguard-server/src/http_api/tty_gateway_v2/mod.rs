@@ -12,6 +12,7 @@ pub use crate::http_api::tty_gateway_v2::session::Session;
 use crate::http_api::tty_gateway_v2::websocket_relay::websocket_relay;
 
 mod internal_relay;
+pub mod manager;
 mod session;
 mod websocket_relay;
 

@@ -12,7 +12,6 @@ use crate::{
     app_context::AppContext,
     datastore::{TtySessionModel, TunnelType},
     http_api::utilities::{authorization, error_json::ErrorJson, tunneling},
-    utilities,
 };
 
 #[derive(Deserialize)]
@@ -20,7 +19,6 @@ pub(in crate::http_api) struct RequestPayload {
     tunnel_id: String,
     device_id: String,
     instance_id: String,
-    username: String,
 }
 
 pub async fn create_tty_session(
@@ -60,11 +58,12 @@ pub async fn create_tty_session(
         return HttpResponse::BadRequest().json(ErrorJson::from("Wrong tunnel type"));
     }
 
-    let Ok(Some(service)) = context
+    if context
         .datastore
         .obtain_service(&jwt, &tunnel.service_id, false)
         .await
-    else {
+        .is_err()
+    {
         return HttpResponse::NotFound().json(ErrorJson::from("Service not found"));
     };
 

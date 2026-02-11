@@ -45,12 +45,12 @@ pub struct TtySessionModel {
     pub tunnel_id: String,
     pub device_id: String,
     pub instance_id: String,
-    pub session_status: SshSessionStatus,
+    pub session_status: TtySessionStatus,
     // @TODO
     // pub username: String,
 }
 
-impl SshSessionModel {
+impl TtySessionModel {
     pub fn pluck() -> Vec<String> {
         vec![
             "id".into(),

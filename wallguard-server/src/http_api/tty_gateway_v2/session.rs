@@ -6,7 +6,7 @@ use crate::datastore::TtySessionModel;
 use crate::datastore::TtySessionStatus;
 use crate::http_api::tty_gateway_v2::internal_relay::InternalRelay;
 use crate::reverse_tunnel::TunnelInstance;
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_liberror::Error;
 use tokio::io::{ReadHalf, WriteHalf};
 use tokio::sync::{Mutex, broadcast, mpsc};
 
@@ -110,7 +110,7 @@ async fn session_timeout_impl(
 
             let _ = context
                 .datastore
-                .update_tty_session_status(&token.jwt, &session_id, SshSessionStatus::Expired, false)
+                .update_tty_session_status(&token.jwt, &session_id, TtySessionStatus::Expired, false)
                 .await;
 
             let _ = context.tty_sessions_manager.remove(&session_id).await;

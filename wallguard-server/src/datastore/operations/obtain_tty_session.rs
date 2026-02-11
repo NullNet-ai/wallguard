@@ -1,18 +1,17 @@
-use crate::datastore::db_tables::DBTable;
 use crate::datastore::{Datastore, TtySessionModel};
 use crate::utilities::json;
 use nullnet_libdatastore::GetByIdRequestBuilder;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
-    pub async fn obtain_ssh_session(
+    pub async fn obtain_tty_session(
         &self,
         token: &str,
         session_id: &str,
         performed_by_root: bool,
     ) -> Result<Option<TtySessionModel>, Error> {
         let request = GetByIdRequestBuilder::new()
-            .table(DBTable::TtySessions)
+            .table(TtySessionModel::table())
             .durability("hard")
             .id(session_id)
             .pluck(TtySessionModel::pluck())

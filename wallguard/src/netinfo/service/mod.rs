@@ -30,7 +30,7 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
                 Protocol::Http => ProtocolGrpc::Http.into(),
                 Protocol::Https => ProtocolGrpc::Https.into(),
                 Protocol::Ssh => ProtocolGrpc::Ssh.into(),
-                Protocol::Tty => todo!(),
+                Protocol::Tty => ProtocolGrpc::Tty.into(),
             },
             program: val.program,
             address: val.addr.ip().to_string(),
@@ -44,6 +44,7 @@ pub async fn gather_info(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
 
     retval.extend(http::filter(sockets).await);
     retval.extend(ssh::filter(sockets).await);
+    retval.extend(pseudo::filter(sockets));
 
     retval
 }

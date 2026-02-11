@@ -22,7 +22,7 @@ mod api;
 mod config;
 // mod rd_gateway;
 pub mod ssh_gateway_v2;
-mod tty_gateway_v2;
+pub mod tty_gateway_v2;
 pub mod utilities;
 
 pub async fn run_http_api(context: AppContext) {
