@@ -55,6 +55,8 @@ rmcp = { version = "0.11.0", features = [
     ] }
 tokio-util = "0.7.17"
 axum = "0.8.6"
+
+[target.'cfg(target_os = "linux")'.dependencies]
 pingora = {version = "0.6.0", features = ["proxy", "openssl"] }
 
 [badges]
