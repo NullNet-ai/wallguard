@@ -109,10 +109,16 @@ jobs:
         sync_files: true
         run: |
           sudo pkg update
-          sudo pkg install -y cmake llvm libpcap protobuf
+          sudo pkg install -y gmake cmake llvm libpcap protobuf
+
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
           $HOME/.cargo/bin/cargo fmt --all -- --check
+
           $HOME/.cargo/bin/cargo build --verbose
+
           $HOME/.cargo/bin/cargo clippy -- -D warnings
+
           $HOME/.cargo/bin/cargo test -- --nocapture
+          
           $HOME/.cargo/bin/cargo clean
