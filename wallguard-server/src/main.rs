@@ -1,101 +1,27 @@
-use app_context::AppContext;
-use control_service::run_control_service;
-use http_api::run_http_api;
-#[cfg(target_os = "linux")]
-use http_proxy_v2::run_http_proxy;
-use mcp::run_mcp_server;
-use nullnet_liberror::Error;
-use reverse_tunnel::run_tunnel_acceptor;
+cfg_if::cfg_if! {
+    if #[cfg(target_os = "linux")] {
+        mod app_context;
+        mod control_service;
+        mod datastore;
+        mod http_api;
+        mod http_proxy_v2;
+        mod mcp;
+        mod orchestrator;
+        mod reverse_tunnel;
+        mod token_provider;
+        mod traffic_handler;
+        mod utilities;
+        mod linux_main;
 
-mod app_context;
-mod control_service;
-mod datastore;
-mod http_api;
-#[cfg(target_os = "linux")]
-mod http_proxy_v2;
-mod mcp;
-mod orchestrator;
-mod reverse_tunnel;
-mod token_provider;
-mod traffic_handler;
-mod utilities;
-
-#[tokio::main]
-async fn main() {
-    env_logger::init();
-
-    rustls::crypto::ring::default_provider()
-        .install_default()
-        .expect("Failed to install rustls crypto provider");
-
-    let app_context = AppContext::new().await.unwrap_or_else(|err| {
-        log::error!("Failed to initialize application context: {}", err.to_str());
-        std::process::exit(1);
-    });
-
-    app_context
-        .root_token_provider
-        .get()
-        .await
-        .expect("Failed to acquire ROOT token, check the credentials");
-
-    app_context
-        .sysdev_token_provider
-        .get()
-        .await
-        .expect("Faield to acquire SYSDEV token, check the credentials");
-
-    prepare_records(&app_context)
-        .await
-        .expect("Failed to prepare records");
-
-    tokio::select! {
-        _ = tokio::signal::ctrl_c() => {},
-        _ = run_control_service(app_context.clone()) => {},
-        _ = run_http_api(app_context.clone()) => {},
-        _ = run_mcp_server(app_context.clone()) => {}
-        _ = run_http_proxy_wrapper(app_context.clone()) => {}
-        _ = run_tunnel_acceptor(app_context.clone()) => {}
+        #[tokio::main]
+        async fn main() {
+            linux_main::linux_main().await
+        }
     }
 }
 
-async fn run_http_proxy_wrapper(context: AppContext) -> Result<(), Error> {
-    // The `pingora` dependency does not compile on FreeBSD.
-    // Since this server is intended to run **only on Linux**, 
-    // we conditionally compile the actual server logic for Linux.
-    #[cfg(target_os = "linux")]
-    {
-        run_http_proxy(context).await
-    }
 
-    #[cfg(not(target_os = "linux"))]
-    {
-        unreachable!()
-    }
-}
-
-async fn prepare_records(context: &AppContext) -> Result<(), Error> {
-    let token = context.sysdev_token_provider.get().await?;
-
-    context
-        .datastore
-        .terminate_all_active_ssh_sessions(&token.jwt, false)
-        .await?;
-
-    context
-        .datastore
-        .terminate_all_active_tty_sessions(&token.jwt, false)
-        .await?;
-
-    context
-        .datastore
-        .update_all_devices_online_status(&token.jwt, false, false)
-        .await?;
-
-    context
-        .datastore
-        .delete_all_device_instances(&token.jwt, false)
-        .await?;
-
-    Ok(())
+#[cfg(not(target_os = "linux"))]
+fn main() {
+    println!("wallguard-server is Linux-only");
 }
