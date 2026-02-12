@@ -20,7 +20,6 @@ cfg_if::cfg_if! {
     }
 }
 
-
 #[cfg(not(target_os = "linux"))]
 fn main() {
     println!("wallguard-server is Linux-only");
