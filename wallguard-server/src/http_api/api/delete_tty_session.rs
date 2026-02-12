@@ -26,7 +26,7 @@ pub async fn delete_tty_session(
 
     let session = match context
         .datastore
-        .obtain_ssh_session(&jwt, &body.session_id, false)
+        .obtain_tty_session(&jwt, &body.session_id, false)
         .await
     {
         Ok(Some(session)) => session,
