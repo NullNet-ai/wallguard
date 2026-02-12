@@ -30,7 +30,7 @@ pub async fn delete_tunnel(
         .await
     {
         Ok(Some(tunnel)) => tunnel,
-        Ok(None) => return HttpResponse::NotFound().json(json!({})),
+        Ok(None) => return HttpResponse::NoContent().json(json!({})),
         Err(_) => {
             return HttpResponse::InternalServerError()
                 .json(ErrorJson::from("Failed to fetch session"));

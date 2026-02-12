@@ -38,7 +38,7 @@ pub async fn delete_ssh_session(
     };
 
     let Some(session) = context.ssh_sessions_manager.remove(&session.id).await else {
-        return HttpResponse::NotFound().json(json!({}));
+        return HttpResponse::NoContent().json(json!({}));
     };
 
     session.lock().await.terminate().await;
