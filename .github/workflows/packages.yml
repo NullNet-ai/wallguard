@@ -128,9 +128,6 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      matrix:
-        platform:
-        - { name: FreeBSD, os: freebsd, os-version: '14.3', arch: x86_64 }
 
     steps:
       - name: Checkout code
@@ -150,14 +147,14 @@ jobs:
       - name: Install Dependencies and Build FreeBSD package
         uses: cross-platform-actions/action@v0.32.0
         with:
-          operating_system: ${{ matrix.platform.os }}
-          architecture: ${{ matrix.platform.arch }}
-          version: ${{ matrix.platform.os-version }}
+          operating_system: freebsd
+          architecture: x86_64
+          version: 14.3
           cpu_count: 4
           memory: 16G
           environment_variables: VERSION
-          shutdown_vm: false
-          sync_files: runner-to-vm
+          shutdown_vm: true
+          sync_files: true
           run: |
             sudo pkg update
             sudo pkg install -y cmake llvm libpcap protobuf bash
@@ -165,19 +162,6 @@ jobs:
             
             export PATH=$HOME/.cargo/bin:$PATH
             bash ./packbuild.sh freebsd $VERSION
-
-      - name: Sync artifacts back from VM
-        uses: cross-platform-actions/action@v0.32.0
-        with:
-          operating_system: ${{ matrix.platform.os }}
-          architecture: ${{ matrix.platform.arch }}
-          version: ${{ matrix.platform.os-version }}
-          cpu_count: 4
-          memory: 16G
-          environment_variables: VERSION
-          shutdown_vm: true
-          sync_files: vm-to-runner
-          run: echo "Syncing artifacts"
 
       - name: Get existing GitHub release
         id: get_release

@@ -85,14 +85,11 @@ jobs:
 
 
   build-bsd:
-    name: Build & Test (${{ matrix.platform.name }})
+    name: Build & Test FreeBSD
     runs-on: ubuntu-latest
     timeout-minutes: 35
     strategy:
       fail-fast: false
-      matrix:
-        platform:
-        - { name: FreeBSD, os: freebsd, os-version: '14.3', arch: x86_64 }
 
     steps:
     - uses: actions/checkout@main
@@ -102,67 +99,20 @@ jobs:
     - name: Install Dependencies
       uses: cross-platform-actions/action@v0.32.0
       with:
-        operating_system: ${{ matrix.platform.os }}
-        architecture: ${{ matrix.platform.arch }}
-        version: ${{ matrix.platform.os-version }}
-        cpu_count: 4
-        memory: 16G
-        environment_variables:
-        shutdown_vm: false
-        sync_files: runner-to-vm
-        run: |
-          sudo pkg update
-          sudo pkg install -y cmake llvm libpcap protobuf
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-
-    - name: Check Formatting
-      uses: cross-platform-actions/action@v0.32.0
-      with:
-        operating_system: ${{ matrix.platform.os }}
-        architecture: ${{ matrix.platform.arch }}
-        version: ${{ matrix.platform.os-version }}
-        cpu_count: 4
-        memory: 16G
-        environment_variables:
-        shutdown_vm: false
-        sync_files: false
-        run: $HOME/.cargo/bin/cargo fmt --all -- --check
-
-    - name: Build
-      uses: cross-platform-actions/action@v0.32.0
-      with:
-        operating_system: ${{ matrix.platform.os }}
-        architecture: ${{ matrix.platform.arch }}
-        version: ${{ matrix.platform.os-version }}
-        cpu_count: 4
-        memory: 16G
-        environment_variables:
-        shutdown_vm: false
-        sync_files: false
-        run: $HOME/.cargo/bin/cargo build --verbose
-
-    - name: Lint
-      uses: cross-platform-actions/action@v0.32.0
-      with:
-        operating_system: ${{ matrix.platform.os }}
-        architecture: ${{ matrix.platform.arch }}
-        version: ${{ matrix.platform.os-version }}
-        cpu_count: 4
-        memory: 16G
-        environment_variables:
-        shutdown_vm: false
-        sync_files: false
-        run: $HOME/.cargo/bin/cargo clippy -- -D warnings
-
-    - name: Test
-      uses: cross-platform-actions/action@v0.32.0
-      with:
-        operating_system: ${{ matrix.platform.os }}
-        architecture: ${{ matrix.platform.arch }}
-        version: ${{ matrix.platform.os-version }}
+        operating_system: freebsd
+        architecture: x86_64
+        version: 14.3
         cpu_count: 4
         memory: 16G
         environment_variables:
         shutdown_vm: true
-        sync_files: false
-        run: $HOME/.cargo/bin/cargo test -- --nocapture
+        sync_files: true
+        run: |
+          sudo pkg update
+          sudo pkg install -y cmake llvm libpcap protobuf
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          $HOME/.cargo/bin/cargo fmt --all -- --check
+          $HOME/.cargo/bin/cargo build --verbose
+          $HOME/.cargo/bin/cargo clippy -- -D warnings
+          $HOME/.cargo/bin/cargo test -- --nocapture
+          $HOME/.cargo/bin/cargo clean
