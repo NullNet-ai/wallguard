@@ -3,6 +3,8 @@ use std::sync::Arc;
 use crate::app_context::AppContext;
 use crate::datastore::{ServiceInfo, TunnelType};
 use crate::http_proxy_v2::connector::Connector;
+
+use actix_web::http::header::REFERER;
 use pingora::prelude::*;
 use pingora::upstreams::peer::HttpPeer;
 use tonic::async_trait;
@@ -79,9 +81,10 @@ impl ProxyHttp for Proxy {
         upstream_request: &mut RequestHeader,
         ctx: &mut Self::CTX,
     ) -> Result<()> {
+        upstream_request.remove_header(REFERER.as_str());
+
         if let Some(host) = ctx.service.as_ref().map(|data| data.address.clone()) {
-            log::info!("Seeting header HOST to {host}");
-            upstream_request.insert_header("Host", host)?;
+            upstream_request.insert_header("Host", host.as_str())?;
         }
 
         Ok(())
