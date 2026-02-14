@@ -7,7 +7,7 @@ pub struct ControlServiceConfig {
 
 impl Default for ControlServiceConfig {
     fn default() -> Self {
-        let addr = SocketAddr::from_str("127.0.0.1:50051").unwrap();
+        let addr = SocketAddr::from_str("0.0.0.0:50051").unwrap();
         ControlServiceConfig { addr }
     }
 }
