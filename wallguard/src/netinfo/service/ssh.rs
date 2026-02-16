@@ -24,22 +24,26 @@ async fn is_ssh(addr: SocketAddr) -> bool {
     false
 }
 
-pub(super) async fn filter(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
-    let tcp_sockets = sockets
-        .iter()
-        .filter(|s| matches!(s.protocol, crate::netinfo::sock::Protocol::Tcp));
-
+pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut services = Vec::new();
+    let mut remaining = Vec::with_capacity(sockets.len());
 
-    for socket in tcp_sockets {
-        if is_ssh(socket.sockaddr).await {
+    for socket in sockets.drain(..) {
+        if matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
+            && is_ssh(socket.sockaddr).await
+        {
             services.push(ServiceInfo {
                 addr: socket.sockaddr,
                 protocol: Protocol::Ssh,
                 program: socket.process_name.clone(),
             });
+
+            continue;
         }
+
+        remaining.push(socket);
     }
 
+    *sockets = remaining;
     services
 }

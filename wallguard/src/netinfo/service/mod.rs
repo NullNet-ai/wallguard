@@ -39,12 +39,12 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
     }
 }
 
-pub async fn gather_info(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
+pub async fn gather_info(mut sockets: Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut retval = vec![];
 
-    retval.extend(http::filter(sockets).await);
-    retval.extend(ssh::filter(sockets).await);
-    retval.extend(pseudo::filter(sockets));
+    retval.extend(http::filter(&mut sockets).await);
+    retval.extend(ssh::filter(&mut sockets).await);
+    retval.extend(pseudo::filter(&mut sockets));
 
     retval
 }

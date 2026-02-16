@@ -24,31 +24,41 @@ fn create_http_request(addr: SocketAddr) -> String {
 async fn send_and_check_http_response(
     stream: &mut (impl AsyncReadExt + AsyncWriteExt + Unpin),
     request: &str,
-) -> bool {
+) -> Option<i32> {
     if stream.write_all(request.as_bytes()).await.is_err() {
-        return false;
+        return None;
     }
 
-    let mut buf = [0u8; 64];
-    match stream.read(&mut buf).await {
-        Ok(n) if n > 0 => String::from_utf8_lossy(&buf[..n]).starts_with("HTTP/"),
-        _ => false,
+    let mut buf = [0u8; 128];
+
+    let n = match stream.read(&mut buf).await {
+        Ok(n) if n > 0 => n,
+        _ => return None,
+    };
+
+    let response = String::from_utf8_lossy(&buf[..n]);
+
+    let mut parts = response.split_whitespace();
+
+    match (parts.next(), parts.next()) {
+        (Some(http), Some(code)) if http.starts_with("HTTP/") => code.parse::<i32>().ok(),
+        _ => None,
     }
 }
 
-async fn is_http_impl(addr: SocketAddr) -> bool {
+async fn is_http_impl(addr: SocketAddr) -> Option<i32> {
     let Ok(mut stream) = TcpStream::connect(addr).await else {
-        return false;
+        return None;
     };
 
     let request = create_http_request(addr);
     send_and_check_http_response(&mut stream, &request).await
 }
 
-async fn is_http(addr: SocketAddr) -> bool {
+async fn is_http(addr: SocketAddr) -> Option<i32> {
     timeout(TIMEOUT_VALUE, is_http_impl(addr))
         .await
-        .unwrap_or(false)
+        .unwrap_or(None)
 }
 
 fn create_tls_connector() -> TlsConnector {
@@ -63,52 +73,61 @@ fn create_tls_connector() -> TlsConnector {
     TlsConnector::from(Arc::new(config))
 }
 
-async fn is_https_impl(addr: SocketAddr) -> bool {
+async fn is_https_impl(addr: SocketAddr) -> Option<i32> {
     let Ok(stream) = TcpStream::connect(addr).await else {
-        return false;
+        return None;
     };
 
     let connector = create_tls_connector();
     let Ok(mut tls_stream) = connector.connect(ServerName::from(addr.ip()), stream).await else {
-        return false;
+        return None;
     };
 
     let request = create_http_request(addr);
     send_and_check_http_response(&mut tls_stream, &request).await
 }
 
-async fn is_https(addr: SocketAddr) -> bool {
+async fn is_https(addr: SocketAddr) -> Option<i32> {
     timeout(TIMEOUT_VALUE, is_https_impl(addr))
         .await
-        .unwrap_or(false)
+        .unwrap_or(None)
 }
 
-async fn detect_protocol(addr: SocketAddr) -> Option<crate::netinfo::service::Protocol> {
-    if is_https(addr).await {
-        Some(crate::netinfo::service::Protocol::Https)
-    } else if is_http(addr).await {
-        Some(crate::netinfo::service::Protocol::Http)
+async fn detect_protocol(addr: SocketAddr) -> Option<(crate::netinfo::service::Protocol, i32)> {
+    if let Some(retval) = is_http(addr)
+        .await
+        .map(|code| (crate::netinfo::service::Protocol::Http, code))
+    {
+        Some(retval)
     } else {
-        None
+        is_https(addr)
+            .await
+            .map(|code| (crate::netinfo::service::Protocol::Https, code))
     }
 }
 
-pub(super) async fn filter(sockets: &[SocketInfo]) -> Vec<ServiceInfo> {
-    let tcp_sockets = sockets
-        .iter()
-        .filter(|s| matches!(s.protocol, crate::netinfo::sock::Protocol::Tcp));
-
+pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut services = Vec::new();
+    let mut remaining = Vec::with_capacity(sockets.len());
 
-    for socket in tcp_sockets {
-        if let Some(protocol) = detect_protocol(socket.sockaddr).await {
-            services.push(ServiceInfo {
-                addr: socket.sockaddr,
-                protocol,
-                program: socket.process_name.clone(),
-            });
+    for socket in sockets.drain(..) {
+        if matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
+            && let Some((protocol, code)) = detect_protocol(socket.sockaddr).await
+        {
+            if (200..300).contains(&code) {
+                services.push(ServiceInfo {
+                    addr: socket.sockaddr,
+                    protocol,
+                    program: socket.process_name.clone(),
+                });
+            }
+
+            continue;
         }
+
+        remaining.push(socket);
     }
 
+    *sockets = remaining;
     services
 }

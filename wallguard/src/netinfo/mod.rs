@@ -18,7 +18,7 @@ pub async fn monitor_services(
 
     loop {
         let sockets = sock::get_sockets_info().await;
-        let services = service::gather_info(&sockets).await;
+        let services = service::gather_info(sockets).await;
 
         if !services.is_empty() {
             let message = ServicesMessage {
