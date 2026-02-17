@@ -109,18 +109,11 @@ async fn authstream(
         context.datastore.clone(),
     );
 
-    outbound
-        .send(Ok(ServerMessage {
-            message: Some(server_message::Message::UpdateTokenCommand(
-                token_provider.get().await?.jwt.clone(),
-            )),
-        }))
-        .await
-        .handle_err(location!())?;
+    let mut token_update_interval = tokio::time::interval(TOKEN_UPDATE_TIME);
 
     loop {
         tokio::select! {
-            _ = tokio::time::sleep(TOKEN_UPDATE_TIME) => {
+            _ = token_update_interval.tick() => {
                 outbound
                     .send(Ok(ServerMessage {
                         message: Some(server_message::Message::UpdateTokenCommand(
