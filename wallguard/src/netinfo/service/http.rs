@@ -94,15 +94,15 @@ async fn is_https(addr: SocketAddr) -> Option<i32> {
 }
 
 async fn detect_protocol(addr: SocketAddr) -> Option<(crate::netinfo::service::Protocol, i32)> {
-    if let Some(retval) = is_http(addr)
+    if let Some(retval) = is_https(addr)
         .await
-        .map(|code| (crate::netinfo::service::Protocol::Http, code))
+        .map(|code| (crate::netinfo::service::Protocol::Https, code))
     {
         Some(retval)
     } else {
-        is_https(addr)
+        is_http(addr)
             .await
-            .map(|code| (crate::netinfo::service::Protocol::Https, code))
+            .map(|code| (crate::netinfo::service::Protocol::Http, code))
     }
 }
 
