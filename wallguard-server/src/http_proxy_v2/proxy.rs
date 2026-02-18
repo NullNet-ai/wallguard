@@ -81,10 +81,10 @@ impl ProxyHttp for Proxy {
         upstream_request: &mut RequestHeader,
         ctx: &mut Self::CTX,
     ) -> Result<()> {
-        upstream_request.remove_header(REFERER.as_str());
-
-        if let Some(host) = ctx.service.as_ref().map(|data| data.address.clone()) {
-            upstream_request.insert_header("Host", host.as_str())?;
+        if let Some(service) = ctx.service.as_ref() {
+            upstream_request.insert_header("host", service.address.as_str())?;
+            upstream_request
+                .insert_header("referer", format!("{}://localhost/", service.protocol))?;
         }
 
         Ok(())
