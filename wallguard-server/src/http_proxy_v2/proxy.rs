@@ -4,7 +4,6 @@ use crate::app_context::AppContext;
 use crate::datastore::{ServiceInfo, TunnelType};
 use crate::http_proxy_v2::connector::Connector;
 
-use actix_web::http::header::REFERER;
 use pingora::prelude::*;
 use pingora::upstreams::peer::HttpPeer;
 use tonic::async_trait;
