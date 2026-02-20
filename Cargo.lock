@@ -6609,6 +6609,7 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "actix-ws",
+ "async-trait",
  "axum 0.8.6",
  "base64",
  "cfg-if",

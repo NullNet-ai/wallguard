@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde::{Deserialize, Serialize};
 
@@ -26,6 +28,19 @@ impl TryFrom<&str> for TunnelType {
                 Err(format!("Tunnel of type {other} is not supported")).handle_err(location!())
             }
         }
+    }
+}
+
+impl Display for TunnelType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            TunnelType::Tty => "tty",
+            TunnelType::Ssh => "ssh",
+            TunnelType::Http => "http",
+            TunnelType::Https => "https",
+        };
+
+        f.write_str(value)
     }
 }
 

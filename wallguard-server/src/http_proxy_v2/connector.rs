@@ -10,7 +10,7 @@ use crate::datastore::ServiceInfo;
 #[derive(Debug)]
 pub struct Connector {
     context: AppContext,
-    service: ServiceInfo,
+    tunnel: Tunnel,
 }
 
 impl Connector {
