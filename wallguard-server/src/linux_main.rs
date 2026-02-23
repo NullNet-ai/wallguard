@@ -49,16 +49,6 @@ async fn prepare_records(context: &AppContext) -> Result<(), Error> {
 
     context
         .datastore
-        .terminate_all_active_ssh_sessions(&token.jwt, false)
-        .await?;
-
-    context
-        .datastore
-        .terminate_all_active_tty_sessions(&token.jwt, false)
-        .await?;
-
-    context
-        .datastore
         .update_all_devices_online_status(&token.jwt, false, false)
         .await?;
 

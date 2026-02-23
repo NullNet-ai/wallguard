@@ -41,7 +41,7 @@ impl Display for TunnelCreateError {
 }
 
 impl TunnelCreateError {
-    pub fn to_http_status(&self) -> u16 {
+    pub fn to_http_status(self) -> u16 {
         match self {
             Self::DeviceNotFound => 404,
             Self::DeviceNotAuthorized => 401,
@@ -111,7 +111,7 @@ impl TunnelCommonData {
 
         let id = context
             .datastore
-            .create_tunnel(&jwt, &tunnel_data)
+            .create_tunnel(jwt, &tunnel_data)
             .await
             .map_err(|_| TunnelCreateError::DatastoreError)?;
 
