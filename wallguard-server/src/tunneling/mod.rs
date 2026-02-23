@@ -2,34 +2,28 @@ use crate::{
     app_context::AppContext,
     tunneling::{
         http::HttpTunnel,
-        tunnel_common::TunnelCommon,
-        tunnel_common_data::{TunnelCommonData, TunnelCreateError},
+        ssh::SshTunnel,
+        tty::TtyTunnel,
+        tunnel_common::{TunnelCommonData, TunnelCreateError, WallguardTunnel},
     },
 };
-use nullnet_liberror::Error;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
-mod async_io;
 mod command;
-mod http;
-mod ssh;
-mod tty;
-mod tunnel_common;
-mod tunnel_common_data;
-
-pub type ActiveTunnel = Arc<Mutex<Box<dyn TunnelCommon>>>;
+pub mod http;
+pub mod ssh;
+pub mod tty;
+pub mod tunnel_common;
 
 #[derive(Debug, Clone)]
 pub struct TunnelsManager {
-    tunnels: Arc<Mutex<HashMap<String, ActiveTunnel>>>,
-    context: AppContext,
+    tunnels: Arc<Mutex<HashMap<String, WallguardTunnel>>>,
 }
 
 impl TunnelsManager {
-    pub fn new(context: AppContext) -> Self {
+    pub fn new() -> Self {
         Self {
-            context,
             tunnels: Default::default(),
         }
     }
@@ -39,36 +33,41 @@ impl TunnelsManager {
         jwt: &str,
         device_id: &str,
         service_id: &str,
+        context: Arc<AppContext>,
     ) -> Result<String, TunnelCreateError> {
         use crate::datastore::TunnelType;
 
-        let data =
-            TunnelCommonData::create(self.context.clone(), jwt, device_id, service_id).await?;
+        let data = TunnelCommonData::create(context.clone(), jwt, device_id, service_id).await?;
 
         let tunnel_id = data.tunnel_data.id.clone();
 
-        let result = match data.tunnel_data.tunnel_type {
+        let tunnel = match data.tunnel_data.tunnel_type {
             TunnelType::Http | TunnelType::Https => {
-                HttpTunnel::create(self.context.clone(), data).await
+                let tunnel = HttpTunnel::new(context.clone(), data);
+                WallguardTunnel::Http(Arc::new(Mutex::new(tunnel)))
             }
-            TunnelType::Tty => todo!(),
-            TunnelType::Ssh => todo!(),
+            TunnelType::Ssh => {
+                let tunnel = SshTunnel::new(context.clone(), data).await?;
+                WallguardTunnel::Ssh(Arc::new(Mutex::new(tunnel)))
+            }
+            TunnelType::Tty => {
+                let tunnel = TtyTunnel::new(context.clone(), data).await?;
+                WallguardTunnel::Tty(Arc::new(Mutex::new(tunnel)))
+            }
         };
 
-        let Ok(tunnel) = result else {
-            let _ = self.context.datastore.delete_tunnel(jwt, &tunnel_id).await;
-            return Err(TunnelCreateError::CanEstablishATunnel);
-        };
-
-        self.tunnels
-            .lock()
-            .await
-            .insert(tunnel_id.clone(), Arc::new(Mutex::new(Box::new(tunnel))));
+        self.tunnels.lock().await.insert(tunnel_id.clone(), tunnel);
 
         Ok(tunnel_id)
     }
 
-    pub async fn get(&self, tunnel_id: &str) -> Option<ActiveTunnel> {
+    pub async fn get(&self, tunnel_id: &str) -> Option<WallguardTunnel> {
         self.tunnels.lock().await.get(tunnel_id).cloned()
+    }
+
+    pub async fn on_tunnel_terminated(&self, tunnel_id: &str) {
+        if let Some(tunnel) = self.tunnels.lock().await.remove(tunnel_id) {
+            let _ = tunnel.terminate().await;
+        }
     }
 }

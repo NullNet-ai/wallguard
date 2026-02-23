@@ -76,7 +76,7 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
              */
 
             let Ok(hash) = TokenHash::read_from_stream(&mut stream).await else {
-                log::error!("Faile to read token hash from newely accepted TCP stream");
+                log::error!("Failed to read token hash from newely accepted TCP stream");
                 let _ = stream.shutdown().await;
                 return;
             };

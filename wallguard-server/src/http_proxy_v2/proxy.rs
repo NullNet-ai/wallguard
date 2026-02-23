@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::app_context::AppContext;
 use crate::datastore::{ServiceInfo, TunnelType};
 use crate::http_proxy_v2::connector::Connector;
+use crate::tunneling::tunnel_common::WallguardTunnel;
 
 use pingora::prelude::*;
 use pingora::upstreams::peer::HttpPeer;
@@ -36,37 +37,36 @@ impl ProxyHttp for Proxy {
         session: &mut Session,
         ctx: &mut Self::CTX,
     ) -> Result<Box<HttpPeer>> {
-        log::info!("PROXY: Received request!");
-
         let Some(tunnel_id) = Proxy::parse_tunnel_id(session).await else {
-            log::error!("PROXY: Failed to parse tunnel ID");
-            return Err(Error::new(ErrorType::Custom("Failed to parse tunnel id")));
+            return Err(Error::new(ErrorType::HTTPStatus(400)));
         };
 
-        let service = self.get_service_info(&tunnel_id).await?;
-        ctx.service = Some(service.clone());
-
-        let Ok(tunnel_type) = TunnelType::try_from(service.protocol.as_str()) else {
-            log::error!("PROXY: Failed to parse tunnel type");
-            return Err(Error::new(ErrorType::InternalError));
+        let Some(tunnel) = self.context.tunnels_manager.get(&tunnel_id).await else {
+            return Err(Error::new(ErrorType::HTTPStatus(404)));
         };
 
-        if !matches!(tunnel_type, TunnelType::Http | TunnelType::Https) {
-            log::error!("Wrong tunnel type");
-            return Err(Error::new(ErrorType::Custom("Wrong tunnel type")));
-        }
+        let WallguardTunnel::Http(ref http_tunnel) = tunnel else {
+            return Err(Error::new(ErrorType::HTTPStatus(400)));
+        };
 
-        let address = format!("{}:{}", service.address, service.port);
+        let td = http_tunnel.lock().await;
+
+        let address = format!(
+            "{}:{}",
+            td.data.service_data.address, td.data.service_data.port
+        );
 
         let mut peer = HttpPeer::new(
             address,
-            matches!(tunnel_type, TunnelType::Https),
-            service.address.clone(),
+            matches!(td.data.tunnel_data.tunnel_type, TunnelType::Https),
+            td.data.service_data.address.clone(),
         );
 
-        log::info!("PROXY: Peer constructed {peer:?}");
+        ctx.service = Some(td.data.service_data.clone());
 
-        peer.options.custom_l4 = Some(Arc::new(Connector::new(self.context.clone(), service)));
+        drop(td);
+
+        peer.options.custom_l4 = Some(Arc::new(Connector::new(tunnel)));
 
         peer.options.verify_cert = false;
         peer.options.verify_hostname = false;
@@ -111,29 +111,5 @@ impl Proxy {
         }
 
         None
-    }
-
-    async fn get_service_info(&self, tunnel_id: &str) -> Result<ServiceInfo, BError> {
-        let token = self
-            .context
-            .sysdev_token_provider
-            .get()
-            .await
-            .map_err(|_| Error::new(ErrorType::InternalError))?;
-
-        let tunnel = self
-            .context
-            .datastore
-            .obtain_tunnel(&token.jwt, tunnel_id, false)
-            .await
-            .map_err(|_| Error::new(ErrorType::InternalError))?
-            .ok_or(Error::new(ErrorType::Custom("Tunnel Not Found")))?;
-
-        self.context
-            .datastore
-            .obtain_service(&token.jwt, &tunnel.service_id, false)
-            .await
-            .map_err(|_| Error::new(ErrorType::InternalError))?
-            .ok_or(Error::new(ErrorType::Custom("Service Not Found")))
     }
 }
