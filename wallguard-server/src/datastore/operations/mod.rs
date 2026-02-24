@@ -27,3 +27,5 @@ mod register_device;
 mod update_config;
 mod update_device;
 mod update_rules_status;
+mod update_tunnel_accessed;
+mod update_tunnel_status;

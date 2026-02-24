@@ -49,7 +49,17 @@ impl ProxyHttp for Proxy {
             return Err(Error::new(ErrorType::HTTPStatus(400)));
         };
 
-        let td = http_tunnel.lock().await;
+        let mut td = http_tunnel.lock().await;
+
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        td.data.tunnel_data.last_accessed = timestamp;
+
+        self.update_tunnel_record(&td.data.tunnel_data.id, td.data.tunnel_data.last_accessed)
+            .await;
 
         let address = format!(
             "{}:{}",
@@ -111,5 +121,15 @@ impl Proxy {
         }
 
         None
+    }
+
+    async fn update_tunnel_record(&self, tunnel_id: &str, timestamp: u64) {
+        if let Ok(token) = self.context.sysdev_token_provider.get().await {
+            let _ = self
+                .context
+                .datastore
+                .update_tunnel_accessed(&token.jwt, tunnel_id, false, timestamp)
+                .await;
+        }
     }
 }

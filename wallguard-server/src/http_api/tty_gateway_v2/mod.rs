@@ -1,3 +1,6 @@
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
+
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::Responder;
@@ -25,6 +28,29 @@ pub(super) async fn open_tty_session(
     else {
         return HttpResponse::NotFound().json(ErrorJson::from("Tunnel not found"));
     };
+
+    {
+        let mut lock = tty_tunnel.lock().await;
+
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        lock.data.tunnel_data.last_accessed = timestamp;
+
+        if let Ok(token) = context.sysdev_token_provider.get().await {
+            let _ = context
+                .datastore
+                .update_tunnel_accessed(
+                    &token.jwt,
+                    &lock.data.tunnel_data.id,
+                    false,
+                    lock.data.tunnel_data.last_accessed,
+                )
+                .await;
+        }
+    }
 
     let (response, ws_session, stream) = match request_handling::upgrade_to_websocket(request, body)
     {

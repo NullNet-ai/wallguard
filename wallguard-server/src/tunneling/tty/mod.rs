@@ -2,6 +2,7 @@ use nullnet_liberror::Error;
 
 use crate::{
     app_context::AppContext,
+    datastore::TunnelStatus,
     reverse_tunnel::TunnelInstance,
     tunneling::{
         tty::session::{SessionDataReceiver, SessionDataSender},
@@ -66,13 +67,16 @@ impl TtyTunnel {
 
     pub async fn terminate(&self) -> Result<(), Error> {
         self.session.signal().await;
-
         let token = self.context.sysdev_token_provider.get().await?;
 
-        // @TODO: update status
         self.context
             .datastore
-            .delete_tunnel(&token.jwt, &self.data.tunnel_data.id)
+            .update_tunnel_status(
+                &token.jwt,
+                &self.data.tunnel_data.id,
+                TunnelStatus::Terminated,
+                false,
+            )
             .await
     }
 }
