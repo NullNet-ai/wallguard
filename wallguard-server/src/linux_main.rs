@@ -61,5 +61,10 @@ async fn prepare_records(context: &AppContext) -> Result<(), Error> {
         .delete_all_device_instances(&token.jwt, false)
         .await?;
 
+    context
+        .datastore
+        .mark_all_tunnels_terminated(&token.jwt, false)
+        .await?;
+
     Ok(())
 }

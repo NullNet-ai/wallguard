@@ -15,8 +15,6 @@ pub(in crate::http_api) struct RequestPayload {
     tunnel_id: String,
 }
 
-// @TODO
-
 pub async fn delete_tunnel(
     request: HttpRequest,
     context: Data<AppContext>,
@@ -26,20 +24,22 @@ pub async fn delete_tunnel(
         return HttpResponse::Unauthorized().json(ErrorJson::from("Missing Authorization header"));
     };
 
-    let tunnel = match context
+    if context
         .datastore
         .obtain_tunnel(&jwt, &body.tunnel_id, false)
         .await
+        .is_err()
     {
-        Ok(Some(tunnel)) => tunnel,
-        Ok(None) => return HttpResponse::NoContent().json(json!({})),
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .json(ErrorJson::from("Failed to fetch session"));
-        }
+        return HttpResponse::InternalServerError()
+            .json(ErrorJson::from("Failed to fetch session"));
     };
 
-    let Ok(_) = context.datastore.delete_tunnel(&jwt, &tunnel.id).await else {
+    let _ = context
+        .tunnels_manager
+        .on_tunnel_terminated(&body.tunnel_id)
+        .await;
+
+    let Ok(_) = context.datastore.delete_tunnel(&jwt, &body.tunnel_id).await else {
         return HttpResponse::InternalServerError().json(json!({}));
     };
 

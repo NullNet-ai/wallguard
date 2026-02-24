@@ -15,6 +15,7 @@ mod delete_services;
 mod delete_tunnel;
 mod is_ip_info_stored;
 mod login;
+mod mark_all_tunnels_terminated;
 mod obtain_config;
 mod obtain_device;
 mod obtain_installation_code;
