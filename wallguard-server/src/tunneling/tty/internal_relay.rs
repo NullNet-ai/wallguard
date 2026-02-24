@@ -1,14 +1,13 @@
+use std::sync::Arc;
+
+use super::session::{ChannelReader, ChannelWriter, UserDataReceiver, UserDataSender};
 use crate::app_context::AppContext;
-use crate::datastore::TtySessionStatus;
-use crate::http_api::tty_gateway_v2::session::{
-    ChannelReader, ChannelWriter, UserDataReceiver, UserDataSender,
-};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::broadcast;
 
 pub(crate) struct InternalRelay {
-    context: AppContext,
-    session_id: String,
+    context: Arc<AppContext>,
+    tunnel_id: String,
 
     // TTY Channel read & write
     channel_reader: ChannelReader,
@@ -23,8 +22,8 @@ pub(crate) struct InternalRelay {
 
 impl InternalRelay {
     pub fn new(
-        context: AppContext,
-        session_id: String,
+        context: Arc<AppContext>,
+        tunnel_id: String,
         channel_reader: ChannelReader,
         channel_writer: ChannelWriter,
         data_sender: UserDataSender,
@@ -33,7 +32,7 @@ impl InternalRelay {
     ) -> Self {
         Self {
             context,
-            session_id,
+            tunnel_id,
             channel_reader,
             channel_writer,
             data_sender,
@@ -45,7 +44,7 @@ impl InternalRelay {
     pub fn spawn(self) {
         tokio::spawn(internal_relay_impl(
             self.context,
-            self.session_id,
+            self.tunnel_id,
             self.channel_reader,
             self.channel_writer,
             self.data_sender,
@@ -56,8 +55,8 @@ impl InternalRelay {
 }
 
 async fn internal_relay_impl(
-    context: AppContext,
-    session_id: String,
+    context: Arc<AppContext>,
+    tunnel_id: String,
     channel_reader: ChannelReader,
     channel_writer: ChannelWriter,
     data_sender: UserDataSender,
@@ -76,21 +75,10 @@ async fn internal_relay_impl(
         }
     }
 
-    let _ = context.ssh_sessions_manager.remove(&session_id).await;
-
-    let Ok(token) = context.sysdev_token_provider.get().await else {
-        log::error!("TTY Internal Relay: failed to acquire token");
-        return;
-    };
-
-    if context
-        .datastore
-        .update_tty_session_status(&token.jwt, &session_id, TtySessionStatus::Terminated, false)
-        .await
-        .is_err()
-    {
-        log::error!("SSH Internal Relay: failed to update session status");
-    }
+    let _ = context
+        .tunnels_manager
+        .on_tunnel_terminated(&tunnel_id)
+        .await;
 }
 
 async fn from_users_to_channel(

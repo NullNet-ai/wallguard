@@ -34,6 +34,10 @@ pub async fn linux_main() {
         .await
         .expect("Failed to prepare records");
 
+    app_context
+        .tunnels_manager
+        .spawn_timeout_controller(app_context.clone());
+
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {},
         _ = run_control_service(app_context.clone()) => {},
@@ -49,22 +53,17 @@ async fn prepare_records(context: &AppContext) -> Result<(), Error> {
 
     context
         .datastore
-        .terminate_all_active_ssh_sessions(&token.jwt, false)
-        .await?;
-
-    context
-        .datastore
-        .terminate_all_active_tty_sessions(&token.jwt, false)
-        .await?;
-
-    context
-        .datastore
         .update_all_devices_online_status(&token.jwt, false, false)
         .await?;
 
     context
         .datastore
         .delete_all_device_instances(&token.jwt, false)
+        .await?;
+
+    context
+        .datastore
+        .mark_all_tunnels_terminated(&token.jwt, false)
         .await?;
 
     Ok(())

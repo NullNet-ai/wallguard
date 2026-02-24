@@ -10,6 +10,7 @@ cfg_if::cfg_if! {
         mod reverse_tunnel;
         mod token_provider;
         mod traffic_handler;
+        mod tunneling;
         mod utilities;
         mod linux_main;
 

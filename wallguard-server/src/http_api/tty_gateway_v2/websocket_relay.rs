@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::http_api::tty_gateway_v2::session::Session as TtySession;
+use crate::tunneling::tty::TtyTunnel;
 use actix_ws::{AggregatedMessage, AggregatedMessageStream, MessageStream, Session as WSSession};
 use futures_util::StreamExt as _;
 use prost::bytes::Bytes;
@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 pub async fn websocket_relay(
     stream: MessageStream,
     ws_session: WSSession,
-    tty_session: Arc<Mutex<TtySession>>,
+    tty_tunnel: Arc<Mutex<TtyTunnel>>,
 ) {
     let stream = stream
         .aggregate_continuations()
@@ -18,12 +18,12 @@ pub async fn websocket_relay(
     tokio::select! {
         _ = relay_messages_from_user_to_client(
             stream,
-            tty_session.clone(),
+            tty_tunnel.clone(),
             ws_session.clone()
         ) => {
             log::info!("WebSocket → SSH relay ended.");
         }
-        _ = relay_messages_from_ssh_to_client(ws_session, tty_session) => {
+        _ = relay_messages_from_ssh_to_client(ws_session, tty_tunnel) => {
             log::info!("SSH → WebSocket relay ended.");
         }
     }
@@ -31,10 +31,10 @@ pub async fn websocket_relay(
 
 async fn relay_messages_from_user_to_client(
     mut stream: AggregatedMessageStream,
-    tty_session: Arc<Mutex<TtySession>>,
+    tty_tunnel: Arc<Mutex<TtyTunnel>>,
     mut ws_session: WSSession,
 ) {
-    let sender = tty_session.lock().await.get_data_send_channel();
+    let sender = tty_tunnel.lock().await.get_data_send_channel();
 
     while let Some(msg) = stream.next().await {
         match msg {
@@ -64,9 +64,9 @@ async fn relay_messages_from_user_to_client(
 
 async fn relay_messages_from_ssh_to_client(
     mut ws_session: WSSession,
-    tty_session: Arc<Mutex<TtySession>>,
+    tty_tunnel: Arc<Mutex<TtyTunnel>>,
 ) {
-    let lock = tty_session.lock().await;
+    let lock = tty_tunnel.lock().await;
 
     let memory = lock.get_memory_snaphot().await;
     {
