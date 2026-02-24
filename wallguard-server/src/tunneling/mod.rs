@@ -3,6 +3,7 @@ use crate::{
     tunneling::{
         http::HttpTunnel,
         ssh::SshTunnel,
+        timeout_controller::TimeoutController,
         tty::TtyTunnel,
         tunnel_common::{TunnelCommonData, TunnelCreateError, WallguardTunnel},
     },
@@ -13,6 +14,7 @@ use tokio::sync::Mutex;
 mod command;
 pub mod http;
 pub mod ssh;
+mod timeout_controller;
 pub mod tty;
 pub mod tunnel_common;
 
@@ -69,5 +71,31 @@ impl TunnelsManager {
         if let Some(tunnel) = self.tunnels.lock().await.remove(tunnel_id) {
             let _ = tunnel.terminate().await;
         }
+    }
+
+    pub async fn on_service_deleted(&self, service_id: &str) {
+        let mut tunnels = self.tunnels.lock().await;
+
+        let mut ids = Vec::new();
+        for tunnel in tunnels.values() {
+            if tunnel.service_id().await == service_id {
+                ids.push(tunnel.tunnel_id().await);
+            }
+        }
+
+        let removed: Vec<_> = ids
+            .into_iter()
+            .filter_map(|id| tunnels.remove(&id))
+            .collect();
+
+        drop(tunnels);
+
+        for tunnel in removed {
+            let _ = tunnel.terminate().await;
+        }
+    }
+
+    pub fn spawn_timeout_controller(&self, context: AppContext) {
+        TimeoutController::new(self.tunnels.clone()).spawn(context);
     }
 }

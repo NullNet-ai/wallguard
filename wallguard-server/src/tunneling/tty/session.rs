@@ -80,6 +80,10 @@ impl Session {
     pub async fn signal(&self) {
         let _ = self.signal.send(());
     }
+
+    pub fn has_active_terminals(&self) -> bool {
+        self.data_sender.strong_count() > 1
+    }
 }
 
 async fn memory_monitor_impl(

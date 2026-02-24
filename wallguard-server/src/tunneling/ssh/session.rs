@@ -90,6 +90,10 @@ impl Session {
         let _ = self.signal.send(());
     }
 
+    pub fn has_active_terminals(&self) -> bool {
+        self.data_sender.strong_count() > 1
+    }
+
     async fn establish_ssh_session(
         tunnel: TunnelInstance,
         username: String,

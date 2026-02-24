@@ -34,6 +34,10 @@ pub async fn linux_main() {
         .await
         .expect("Failed to prepare records");
 
+    app_context
+        .tunnels_manager
+        .spawn_timeout_controller(app_context.clone());
+
     tokio::select! {
         _ = tokio::signal::ctrl_c() => {},
         _ = run_control_service(app_context.clone()) => {},

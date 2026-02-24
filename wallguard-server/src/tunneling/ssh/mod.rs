@@ -93,4 +93,8 @@ impl SshTunnel {
             )
             .await
     }
+
+    pub fn has_active_terminals(&self) -> bool {
+        self.session.has_active_terminals()
+    }
 }

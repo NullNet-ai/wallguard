@@ -52,6 +52,13 @@ impl WallGuardService {
             .filter(|svc| keys_to_delete.contains(&service_key(svc)))
             .collect();
 
+        for sd in to_delete.iter() {
+            self.context
+                .tunnels_manager
+                .on_service_deleted(&sd.id)
+                .await;
+        }
+
         self.context
             .datastore
             .delete_services(&token.jwt, &to_delete)

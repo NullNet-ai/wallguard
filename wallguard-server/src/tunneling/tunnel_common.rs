@@ -139,4 +139,20 @@ impl WallguardTunnel {
             WallguardTunnel::Tty(tty_tunnel) => tty_tunnel.lock().await.terminate().await,
         }
     }
+
+    pub async fn service_id(&self) -> String {
+        match self {
+            WallguardTunnel::Http(tun) => tun.lock().await.data.service_data.id.clone(),
+            WallguardTunnel::Ssh(tun) => tun.lock().await.data.service_data.id.clone(),
+            WallguardTunnel::Tty(tun) => tun.lock().await.data.service_data.id.clone(),
+        }
+    }
+
+    pub async fn tunnel_id(&self) -> String {
+        match self {
+            WallguardTunnel::Http(tun) => tun.lock().await.data.tunnel_data.id.clone(),
+            WallguardTunnel::Ssh(tun) => tun.lock().await.data.tunnel_data.id.clone(),
+            WallguardTunnel::Tty(tun) => tun.lock().await.data.tunnel_data.id.clone(),
+        }
+    }
 }
