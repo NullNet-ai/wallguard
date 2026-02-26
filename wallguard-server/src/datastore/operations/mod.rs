@@ -12,7 +12,6 @@ mod create_system_resources;
 mod create_tunnel;
 mod delete_device_instance;
 mod delete_services;
-mod delete_tunnel;
 mod is_ip_info_stored;
 mod login;
 mod mark_all_tunnels_terminated;
