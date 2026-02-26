@@ -45,7 +45,7 @@ run_rc_command "$1"
 
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let flags = args.join(" ");
-    create_rcd_script(program, flags).await?;
+    create_rcd_script(program, &flags).await?;
     run_sysrc(&format!("{}_enable=YES", program)).await?;
 
     Ok(())
