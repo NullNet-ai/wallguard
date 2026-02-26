@@ -4,10 +4,6 @@ use tokio::{fs, process::Command};
 
 pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let script_path = format!("/usr/local/etc/rc.d/{}", program);
-    if Path::new(&script_path).exists() {
-        println!("rc.d script already exists: {}", script_path);
-        return Ok(());
-    }
 
     let content = format!(
         r#"#!/bin/sh
@@ -43,6 +39,16 @@ run_rc_command "$1"
     Ok(())
 }
 
+pub async fn remove_rcd_script(program: &str) -> io::Result<()> {
+    let script_path = PathBuf::from("/usr/local/etc/rc.d").join(program);
+
+    if script_path.exists() {
+        fs::remove_file(&script_path).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let flags = args.join(" ");
     create_rcd_script(program, &flags).await?;
@@ -53,7 +59,7 @@ pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
 
 pub async fn disable_service(program: &str) -> io::Result<()> {
     run_sysrc(&format!("{}_enable=NO", program)).await?;
-
+    remove_rcd_script(program).await?;
     Ok(())
 }
 

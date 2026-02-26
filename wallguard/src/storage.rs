@@ -36,9 +36,9 @@ struct ConfigStore {
 pub struct Storage;
 
 static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = config_dir().unwrap_or_else(|| PathBuf::from("."));
-    path.push("wallguard");
-    path
+    config_dir()
+        .unwrap_or_else(|| PathBuf::from("/root/.config"))
+        .join("wallguard")
 });
 
 static STORE: Lazy<Mutex<Option<ConfigStore>>> = Lazy::new(|| Mutex::new(None));
