@@ -57,7 +57,7 @@ pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
 
 pub async fn disable_service(program: &str) -> io::Result<()> {
     run_sysrc(&format!("{}_enable=NO", program)).await?;
-    run_sysrc(&format!("-x {}_flags", program)).await?;
+    run_sysrc(&format!("{}_flags", program)).await?;
 
     Ok(())
 }
