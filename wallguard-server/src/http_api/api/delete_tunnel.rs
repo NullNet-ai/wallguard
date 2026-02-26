@@ -39,9 +39,5 @@ pub async fn delete_tunnel(
         .on_tunnel_terminated(&body.tunnel_id)
         .await;
 
-    let Ok(_) = context.datastore.delete_tunnel(&jwt, &body.tunnel_id).await else {
-        return HttpResponse::InternalServerError().json(json!({}));
-    };
-
     HttpResponse::Ok().json(json!({}))
 }
