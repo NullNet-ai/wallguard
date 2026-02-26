@@ -21,7 +21,7 @@ name="{0}"
 rcvar="${{name}}_enable"
 
 command="/usr/local/bin/{0}"
-command_args="${{{0}_flags}}"
+command_args="${{{0}_flags}} &"
 
 load_rc_config $name
 run_rc_command "$1"

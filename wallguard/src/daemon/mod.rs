@@ -73,16 +73,16 @@ impl Daemon {
                 .await
                 .map_err(|err| err.to_str().to_string())?;
 
-                let _ = crate::autostart::enable_service(
-                    "wallguard",
-                    &[
-                        "--control-channel-url",
-                        lock.server_data.grpc_addr.to_string().as_str(),
-                        "--platform",
-                        lock.client_data.platform.to_string().as_str(),
-                    ],
-                )
-                .await;
+                // let _ = crate::autostart::enable_service(
+                //     "wallguard",
+                //     &[
+                //         "--control-channel-url",
+                //         lock.server_data.grpc_addr.to_string().as_str(),
+                //         "--platform",
+                //         lock.client_data.platform.to_string().as_str(),
+                //     ],
+                // )
+                // .await;
 
                 drop(lock);
 
@@ -108,7 +108,7 @@ impl Daemon {
 
                 control_channel.terminate().await;
 
-                let _ = crate::autostart::disable_service("wallguard").await;
+                // let _ = crate::autostart::disable_service("wallguard").await;
 
                 this.state = DaemonState::Idle;
                 Ok(())
