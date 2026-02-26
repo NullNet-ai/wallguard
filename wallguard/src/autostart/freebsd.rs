@@ -63,11 +63,7 @@ pub async fn disable_service(program: &str) -> io::Result<()> {
 }
 
 async fn run_sysrc(arg: &str) -> io::Result<()> {
-    let output = Command::new("sudo")
-        .arg("/usr/sbin/sysrc")
-        .arg(arg)
-        .output()
-        .await?;
+    let output = Command::new("/usr/sbin/sysrc").arg(arg).output().await?;
 
     if !output.status.success() {
         return Err(io::Error::other(format!(
