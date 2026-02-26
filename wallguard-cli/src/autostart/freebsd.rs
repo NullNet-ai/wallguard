@@ -1,6 +1,7 @@
 use std::io;
 use std::path::Path;
 use tokio::{fs, process::Command};
+use std::path::PathBuf;
 
 pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let script_path = format!("/usr/local/etc/rc.d/{}", program);
