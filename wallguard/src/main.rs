@@ -7,7 +7,6 @@ use crate::storage::Storage;
 use clap::Parser as _;
 
 mod arguments;
-// mod autostart;
 mod client_data;
 mod constants;
 mod context;

@@ -9,6 +9,7 @@ use wallguard_common::protobuf::wallguard_cli::{
 };
 
 mod arguments;
+mod autostart;
 
 type Client = WallguardCliClient<Channel>;
 
@@ -154,6 +155,21 @@ pub async fn main() -> AnyResult<()> {
 
             let control_channel_url = control_channel_url.unwrap_or(DEFAULT_SERVER_URL.into());
 
+            if autostart::enable_service(
+                "wallguard",
+                &[
+                    "--control-channel-url",
+                    control_channel_url.as_str(),
+                    "--platform",
+                    platform.to_string().as_str(),
+                ],
+            )
+            .await
+            .is_err()
+            {
+                eprintln!("WARNING: Failed to register wallguard as a service");
+            }
+
             if Command::new("wallguard")
                 .arg("--control-channel-url")
                 .arg(&control_channel_url)
@@ -178,6 +194,10 @@ pub async fn main() -> AnyResult<()> {
             if !is_agent_running() {
                 eprintln!("WallGuard agent is not running.");
                 std::process::exit(-1);
+            }
+
+            if autostart::disable_service("wallguard").await.is_err() {
+                eprintln!("WARNING: Error occured while trying to unregister wallguard service");
             }
 
             let mut system = System::new();

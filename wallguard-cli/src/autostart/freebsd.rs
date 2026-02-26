@@ -2,7 +2,7 @@ use std::io;
 use std::path::Path;
 use tokio::{fs, process::Command};
 
-pub async fn create_rcd_script(program: &str) -> io::Result<()> {
+pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let script_path = format!("/usr/local/etc/rc.d/{}", program);
     if Path::new(&script_path).exists() {
         println!("rc.d script already exists: {}", script_path);
@@ -21,12 +21,13 @@ name="{0}"
 rcvar="${{name}}_enable"
 
 command="/usr/local/bin/{0}"
-command_args="${{{0}_flags}} &"
+command_user="root"
+command_args="{1} &"
 
 load_rc_config $name
 run_rc_command "$1"
 "#,
-        program
+        program, args
     );
 
     fs::write(&script_path, content).await?;
@@ -43,21 +44,15 @@ run_rc_command "$1"
 }
 
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
-    create_rcd_script(program).await?;
-
     let flags = args.join(" ");
+    create_rcd_script(program, flags).await?;
     run_sysrc(&format!("{}_enable=YES", program)).await?;
-
-    if !flags.is_empty() {
-        run_sysrc(&format!("{}_flags={}", program, flags)).await?;
-    }
 
     Ok(())
 }
 
 pub async fn disable_service(program: &str) -> io::Result<()> {
     run_sysrc(&format!("{}_enable=NO", program)).await?;
-    run_sysrc(&format!("{}_flags", program)).await?;
 
     Ok(())
 }
