@@ -30,7 +30,7 @@ actix-cors = "0.7.1"
 actix-ws = "0.3.0"
 
 futures-util = "0.3.31"
-webpki-roots = "1.0.5"
+webpki-roots = "1.0.6"
 chrono = "0.4.41"
 etherparse = "0.19.0"
 indexmap = "2.12.1"
