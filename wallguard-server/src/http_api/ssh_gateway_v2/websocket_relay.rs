@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::tunneling::ssh::SshTunnel;
+use crate::{app_context::AppContext, datastore::TunnelStatus, tunneling::ssh::SshTunnel};
 use actix_ws::{AggregatedMessage, AggregatedMessageStream, MessageStream, Session as WSSession};
 use futures_util::StreamExt as _;
 use prost::bytes::Bytes;
@@ -10,6 +10,7 @@ pub async fn websocket_relay(
     stream: MessageStream,
     ws_session: WSSession,
     ssh_tunnel: Arc<Mutex<SshTunnel>>,
+    context: Arc<AppContext>,
 ) {
     let stream = stream
         .aggregate_continuations()
@@ -23,8 +24,22 @@ pub async fn websocket_relay(
         ) => {
             log::info!("WebSocket → SSH relay ended.");
         }
-        _ = relay_messages_from_ssh_to_client(ws_session, ssh_tunnel) => {
+        _ = relay_messages_from_ssh_to_client(ws_session, ssh_tunnel.clone()) => {
             log::info!("SSH → WebSocket relay ended.");
+        }
+    }
+
+    let tunnel_lock = ssh_tunnel.lock().await;
+
+    if !tunnel_lock.has_active_terminals() {
+        let tunnel_id = tunnel_lock.data.tunnel_data.id.clone();
+        drop(tunnel_lock);
+
+        if let Ok(token) = context.sysdev_token_provider.get().await {
+            let _ = context
+                .datastore
+                .update_tunnel_status(&token.jwt, &tunnel_id, TunnelStatus::Idle, false)
+                .await;
         }
     }
 }

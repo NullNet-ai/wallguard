@@ -59,8 +59,13 @@ impl TimeoutController {
                         WallguardTunnel::Ssh(ssh_tunnel) => {
                             let tun = ssh_tunnel.lock().await;
 
-                            if tun.data.tunnel_data.last_accessed
-                                < Self::cutoff_timestamp(self.idle_timeout_duration())
+                            let timestamp = if tun.data.tunnel_data.last_accessed != 0 {
+                                tun.data.tunnel_data.last_accessed
+                            } else {
+                                tun.data.tunnel_data.created_timestamp
+                            };
+
+                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())
                                 && !tun.has_active_terminals()
                             {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
@@ -69,8 +74,13 @@ impl TimeoutController {
                         WallguardTunnel::Tty(tty_tunnel) => {
                             let tun = tty_tunnel.lock().await;
 
-                            if tun.data.tunnel_data.last_accessed
-                                < Self::cutoff_timestamp(self.idle_timeout_duration())
+                            let timestamp = if tun.data.tunnel_data.last_accessed != 0 {
+                                tun.data.tunnel_data.last_accessed
+                            } else {
+                                tun.data.tunnel_data.created_timestamp
+                            };
+
+                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())
                                 && !tun.has_active_terminals()
                             {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
@@ -82,6 +92,7 @@ impl TimeoutController {
                 drop(lock);
 
                 for tunnel_id in expired_ids {
+                    log::info!("TimeoutController: terminating {tunnel_id} tunnel");
                     context
                         .tunnels_manager
                         .on_tunnel_terminated(&tunnel_id)

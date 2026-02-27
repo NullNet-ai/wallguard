@@ -49,6 +49,7 @@ impl Display for TunnelType {
 pub enum TunnelStatus {
     #[default]
     Active,
+    Idle,
     Terminated,
 }
 
@@ -57,8 +58,9 @@ impl TryFrom<&str> for TunnelStatus {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_ascii_lowercase().as_str() {
-            "active" => Ok(TunnelStatus::Active),
-            "terminated" => Ok(TunnelStatus::Terminated),
+            "active" => Ok(Self::Active),
+            "idle" => Ok(Self::Idle),
+            "terminated" => Ok(Self::Terminated),
             other => Err(format!("Unexpected tunnel status {other}")).handle_err(location!()),
         }
     }
@@ -67,8 +69,9 @@ impl TryFrom<&str> for TunnelStatus {
 impl Display for TunnelStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
-            TunnelStatus::Active => "active",
-            TunnelStatus::Terminated => "terminated",
+            Self::Active => "active",
+            Self::Terminated => "terminated",
+            Self::Idle => "idle",
         };
 
         f.write_str(value)
@@ -83,6 +86,7 @@ pub struct TunnelModel {
     pub service_id: String,
     pub tunnel_status: TunnelStatus,
     pub last_accessed: u64,
+    pub created_timestamp: u64,
 }
 
 impl TunnelModel {
@@ -94,6 +98,7 @@ impl TunnelModel {
             "service_id".into(),
             "tunnel_status".into(),
             "last_accessed".into(),
+            "created_timestamp".into(),
         ]
     }
 

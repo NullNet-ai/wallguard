@@ -2,7 +2,7 @@ use nullnet_liberror::Error;
 use tokio::sync::Mutex;
 
 use crate::app_context::AppContext;
-use crate::datastore::{ServiceInfo, TunnelModel, TunnelType};
+use crate::datastore::{ServiceInfo, TunnelModel, TunnelStatus, TunnelType};
 use crate::tunneling::http::HttpTunnel;
 use crate::tunneling::ssh::SshTunnel;
 use crate::tunneling::tty::TtyTunnel;
@@ -106,6 +106,14 @@ impl TunnelCommonData {
             device_id: device_id.into(),
             service_id: service_id.into(),
             tunnel_type,
+            tunnel_status: match tunnel_type {
+                TunnelType::Tty | TunnelType::Ssh => TunnelStatus::Idle,
+                _ => TunnelStatus::Active,
+            },
+            created_timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
             ..Default::default()
         };
 

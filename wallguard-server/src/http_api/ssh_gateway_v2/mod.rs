@@ -10,6 +10,7 @@ use actix_web::web::{Data, Payload};
 use super::utilities::error_json::ErrorJson;
 use super::utilities::request_handling;
 use crate::app_context::AppContext;
+use crate::datastore::TunnelStatus;
 use crate::http_api::ssh_gateway_v2::websocket_relay::websocket_relay;
 use crate::tunneling::tunnel_common::WallguardTunnel;
 
@@ -50,6 +51,16 @@ pub(super) async fn open_ssh_session(
                     lock.data.tunnel_data.last_accessed,
                 )
                 .await;
+
+            let _ = context
+                .datastore
+                .update_tunnel_status(
+                    &token.jwt,
+                    &lock.data.tunnel_data.id,
+                    TunnelStatus::Active,
+                    token.account.is_root_account,
+                )
+                .await;
         }
     }
 
@@ -59,7 +70,12 @@ pub(super) async fn open_ssh_session(
         Err(resp) => return resp,
     };
 
-    rt::spawn(websocket_relay(stream, ws_session, ssh_tunnel));
+    rt::spawn(websocket_relay(
+        stream,
+        ws_session,
+        ssh_tunnel,
+        context.into_inner(),
+    ));
 
     response
 }
