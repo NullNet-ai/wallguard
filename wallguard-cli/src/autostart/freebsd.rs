@@ -1,6 +1,6 @@
 use std::io;
-use tokio::{fs, process::Command};
 use std::path::PathBuf;
+use tokio::{fs, process::Command};
 
 pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let script_path = format!("/usr/local/etc/rc.d/{}", program);
@@ -8,7 +8,7 @@ pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let content = format!(
         r#"#!/bin/sh
 # PROVIDE: {0}
-# REQUIRE: DAEMON
+# REQUIRE: NETWORKING
 # KEYWORD: shutdown
 
 . /etc/rc.subr
@@ -17,8 +17,9 @@ name="{0}"
 rcvar="${{name}}_enable"
 
 command="/usr/local/bin/{0}"
-command_user="root"
-command_args="{1} &"
+: ${{{0}_enable:="YES"}}
+
+command_args="{1}"
 
 load_rc_config $name
 run_rc_command "$1"
