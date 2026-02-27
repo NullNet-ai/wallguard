@@ -4,7 +4,8 @@ use tokio::fs::{File, create_dir_all, read_to_string, write};
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 
-use dirs::config_dir;
+// @TODO
+// use dirs::config_dir;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -35,11 +36,7 @@ struct ConfigStore {
 
 pub struct Storage;
 
-static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    config_dir()
-        .unwrap_or_else(|| PathBuf::from("/root/.config"))
-        .join("wallguard")
-});
+static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("/root/.config").join("wallguard"));
 
 static STORE: Lazy<Mutex<Option<ConfigStore>>> = Lazy::new(|| Mutex::new(None));
 
