@@ -19,7 +19,7 @@ rcvar="${{name}}_enable"
 command="/usr/local/bin/{0}"
 : ${{{0}_enable:="YES"}}
 
-command_args="{1}"
+command_args="{1} &"
 
 load_rc_config $name
 run_rc_command "$1"
