@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use tokio::{fs, process::Command};
 
 pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
-    let script_path = format!("/usr/local/etc/rc.d/{}", program);
+    let script_path = format!("/usr/local/etc/rc.d/{}.sh", program);
 
     let content = format!(
         r#"#!/bin/sh
@@ -41,7 +41,8 @@ run_rc_command "$1"
 }
 
 pub async fn remove_rcd_script(program: &str) -> io::Result<()> {
-    let script_path = PathBuf::from("/usr/local/etc/rc.d").join(program);
+    let script_filename = format!("{}.sh", program);
+    let script_path = PathBuf::from("/usr/local/etc/rc.d").join(script_filename);
 
     if script_path.exists() {
         fs::remove_file(&script_path).await?;
@@ -53,27 +54,11 @@ pub async fn remove_rcd_script(program: &str) -> io::Result<()> {
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let flags = args.join(" ");
     create_rcd_script(program, &flags).await?;
-    run_sysrc(&format!("{}_enable=YES", program)).await?;
 
     Ok(())
 }
 
 pub async fn disable_service(program: &str) -> io::Result<()> {
-    run_sysrc(&format!("{}_enable=NO", program)).await?;
     remove_rcd_script(program).await?;
-    Ok(())
-}
-
-async fn run_sysrc(arg: &str) -> io::Result<()> {
-    let output = Command::new("/usr/sbin/sysrc").arg(arg).output().await?;
-
-    if !output.status.success() {
-        return Err(io::Error::other(format!(
-            "sysrc failed for '{}', stderr: {}",
-            arg,
-            String::from_utf8_lossy(&output.stderr)
-        )));
-    }
-
     Ok(())
 }
