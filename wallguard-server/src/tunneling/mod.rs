@@ -37,30 +37,43 @@ impl TunnelsManager {
         service_id: &str,
         context: Arc<AppContext>,
     ) -> Result<String, TunnelCreateError> {
-        use crate::datastore::TunnelType;
-
         let data = TunnelCommonData::create(context.clone(), jwt, device_id, service_id).await?;
 
         let tunnel_id = data.tunnel_data.id.clone();
 
-        let tunnel = match data.tunnel_data.tunnel_type {
-            TunnelType::Http | TunnelType::Https => {
-                let tunnel = HttpTunnel::new(context.clone(), data);
-                WallguardTunnel::Http(Arc::new(Mutex::new(tunnel)))
-            }
-            TunnelType::Ssh => {
-                let tunnel = SshTunnel::new(context.clone(), data).await?;
-                WallguardTunnel::Ssh(Arc::new(Mutex::new(tunnel)))
-            }
-            TunnelType::Tty => {
-                let tunnel = TtyTunnel::new(context.clone(), data).await?;
-                WallguardTunnel::Tty(Arc::new(Mutex::new(tunnel)))
+        let tunnel = match Self::request_inner(data, context.clone()).await {
+            Ok(tunnel) => tunnel,
+            Err(err) => {
+                let _ = context.datastore.delete_tunnel(jwt, &tunnel_id).await;
+                return Err(err);
             }
         };
 
         self.tunnels.lock().await.insert(tunnel_id.clone(), tunnel);
 
         Ok(tunnel_id)
+    }
+
+    async fn request_inner(
+        data: TunnelCommonData,
+        context: Arc<AppContext>,
+    ) -> Result<WallguardTunnel, TunnelCreateError> {
+        use crate::datastore::TunnelType;
+
+        match data.tunnel_data.tunnel_type {
+            TunnelType::Http | TunnelType::Https => {
+                let tunnel = HttpTunnel::new(context, data);
+                Ok(WallguardTunnel::Http(Arc::new(Mutex::new(tunnel))))
+            }
+            TunnelType::Ssh => {
+                let tunnel = SshTunnel::new(context, data).await?;
+                Ok(WallguardTunnel::Ssh(Arc::new(Mutex::new(tunnel))))
+            }
+            TunnelType::Tty => {
+                let tunnel = TtyTunnel::new(context, data).await?;
+                Ok(WallguardTunnel::Tty(Arc::new(Mutex::new(tunnel))))
+            }
+        }
     }
 
     pub async fn get(&self, tunnel_id: &str) -> Option<WallguardTunnel> {

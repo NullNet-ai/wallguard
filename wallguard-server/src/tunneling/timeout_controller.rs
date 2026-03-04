@@ -50,7 +50,23 @@ impl TimeoutController {
                         WallguardTunnel::Http(http_tunnel) => {
                             let tun = http_tunnel.lock().await;
 
-                            if tun.data.tunnel_data.last_accessed
+                            let last_accessed_timestamp =
+                                crate::utilities::time::datetime_to_timestamp(
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_date
+                                        .clone()
+                                        .unwrap_or_default(),
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_time
+                                        .clone()
+                                        .unwrap_or_default(),
+                                )
+                                .unwrap_or_default()
+                                .cast_unsigned();
+
+                            if last_accessed_timestamp
                                 < Self::cutoff_timestamp(self.idle_timeout_duration())
                             {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
@@ -59,10 +75,26 @@ impl TimeoutController {
                         WallguardTunnel::Ssh(ssh_tunnel) => {
                             let tun = ssh_tunnel.lock().await;
 
-                            let timestamp = if tun.data.tunnel_data.last_accessed != 0 {
-                                tun.data.tunnel_data.last_accessed
+                            let last_accessed_timestamp =
+                                crate::utilities::time::datetime_to_timestamp(
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_date
+                                        .clone()
+                                        .unwrap_or_default(),
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_time
+                                        .clone()
+                                        .unwrap_or_default(),
+                                )
+                                .unwrap_or_default()
+                                .cast_unsigned();
+
+                            let timestamp = if last_accessed_timestamp != 0 {
+                                last_accessed_timestamp
                             } else {
-                                tun.data.tunnel_data.created_timestamp
+                                tun.data.created_at
                             };
 
                             if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())
@@ -74,10 +106,26 @@ impl TimeoutController {
                         WallguardTunnel::Tty(tty_tunnel) => {
                             let tun = tty_tunnel.lock().await;
 
-                            let timestamp = if tun.data.tunnel_data.last_accessed != 0 {
-                                tun.data.tunnel_data.last_accessed
+                            let last_accessed_timestamp =
+                                crate::utilities::time::datetime_to_timestamp(
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_date
+                                        .clone()
+                                        .unwrap_or_default(),
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_time
+                                        .clone()
+                                        .unwrap_or_default(),
+                                )
+                                .unwrap_or_default()
+                                .cast_unsigned();
+
+                            let timestamp = if last_accessed_timestamp != 0 {
+                                last_accessed_timestamp
                             } else {
-                                tun.data.tunnel_data.created_timestamp
+                                tun.data.created_at
                             };
 
                             if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())

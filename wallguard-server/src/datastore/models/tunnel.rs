@@ -85,8 +85,8 @@ pub struct TunnelModel {
     pub tunnel_type: TunnelType,
     pub service_id: String,
     pub tunnel_status: TunnelStatus,
-    pub last_accessed: u64,
-    pub created_timestamp: u64,
+    pub last_access_time: Option<String>,
+    pub last_access_date: Option<String>,
 }
 
 impl TunnelModel {
@@ -98,7 +98,8 @@ impl TunnelModel {
             "service_id".into(),
             "tunnel_status".into(),
             "last_accessed".into(),
-            "created_timestamp".into(),
+            "last_access_time".into(),
+            "last_access_date".into(),
         ]
     }
 

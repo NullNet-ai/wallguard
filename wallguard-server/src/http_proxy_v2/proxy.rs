@@ -56,9 +56,11 @@ impl ProxyHttp for Proxy {
             .unwrap()
             .as_secs();
 
-        td.data.tunnel_data.last_accessed = timestamp;
+        let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
+        td.data.tunnel_data.last_access_date = Some(date);
+        td.data.tunnel_data.last_access_time = Some(time);
 
-        self.update_tunnel_record(&td.data.tunnel_data.id, td.data.tunnel_data.last_accessed)
+        self.update_tunnel_record(&td.data.tunnel_data.id, timestamp)
             .await;
 
         let address = format!(

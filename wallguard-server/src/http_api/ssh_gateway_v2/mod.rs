@@ -39,7 +39,9 @@ pub(super) async fn open_ssh_session(
             .unwrap()
             .as_secs();
 
-        lock.data.tunnel_data.last_accessed = timestamp;
+        let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
+        lock.data.tunnel_data.last_access_date = Some(date);
+        lock.data.tunnel_data.last_access_time = Some(time);
 
         if let Ok(token) = context.sysdev_token_provider.get().await {
             let _ = context
@@ -48,7 +50,7 @@ pub(super) async fn open_ssh_session(
                     &token.jwt,
                     &lock.data.tunnel_data.id,
                     false,
-                    lock.data.tunnel_data.last_accessed,
+                    timestamp,
                 )
                 .await;
 

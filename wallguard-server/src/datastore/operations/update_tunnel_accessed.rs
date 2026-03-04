@@ -12,8 +12,10 @@ impl Datastore {
         performed_by_root: bool,
         timestamp: u64,
     ) -> Result<(), Error> {
+        let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
         let body = json!({
-            "last_accessed": timestamp
+            "last_access_time": time,
+            "last_access_date": date
         })
         .to_string();
 

@@ -62,6 +62,7 @@ impl std::error::Error for TunnelCreateError {}
 pub struct TunnelCommonData {
     pub(crate) service_data: ServiceInfo,
     pub(crate) tunnel_data: TunnelModel,
+    pub(crate) created_at: u64,
 }
 
 impl TunnelCommonData {
@@ -110,10 +111,6 @@ impl TunnelCommonData {
                 TunnelType::Tty | TunnelType::Ssh => TunnelStatus::Idle,
                 _ => TunnelStatus::Active,
             },
-            created_timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
             ..Default::default()
         };
 
@@ -128,6 +125,10 @@ impl TunnelCommonData {
         Ok(Self {
             service_data,
             tunnel_data,
+            created_at: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
         })
     }
 }
