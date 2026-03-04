@@ -46,12 +46,7 @@ pub(super) async fn open_ssh_session(
         if let Ok(token) = context.sysdev_token_provider.get().await {
             let _ = context
                 .datastore
-                .update_tunnel_accessed(
-                    &token.jwt,
-                    &lock.data.tunnel_data.id,
-                    false,
-                    timestamp,
-                )
+                .update_tunnel_accessed(&token.jwt, &lock.data.tunnel_data.id, false, timestamp)
                 .await;
 
             let _ = context
