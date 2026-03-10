@@ -7,11 +7,12 @@ impl Serialize for FilterRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("FilterRule", 26)?;
+        let mut state = serializer.serialize_struct("FilterRule", 27)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("policy", &self.policy)?;
         state.serialize_field("protocol", &self.protocol)?;
+        state.serialize_field("ipprotocol", &self.ipprotocol)?;
         state.serialize_field("source_inversed", &self.source_inversed)?;
 
         if let Some(sp) = &self.source_port {
@@ -65,6 +66,7 @@ impl<'de> Deserialize<'de> for FilterRule {
             disabled: bool,
             policy: String,
             protocol: String,
+            ipprotocol: String,
             source_inversed: bool,
             source_port_value: Option<String>,
             source_port_operator: Option<String>,
@@ -132,6 +134,7 @@ impl<'de> Deserialize<'de> for FilterRule {
             disabled: raw.disabled,
             policy: raw.policy,
             protocol: raw.protocol,
+            ipprotocol: raw.ipprotocol,
             source_inversed: raw.source_inversed,
             source_port,
             source_addr,
@@ -158,10 +161,11 @@ impl Serialize for NatRule {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("NatRule", 25)?;
+        let mut state = serializer.serialize_struct("NatRule", 26)?;
 
         state.serialize_field("disabled", &self.disabled)?;
         state.serialize_field("protocol", &self.protocol)?;
+        state.serialize_field("ipprotocol", &self.ipprotocol)?;
         state.serialize_field("source_inversed", &self.source_inversed)?;
 
         if let Some(sp) = &self.source_port {
@@ -214,6 +218,7 @@ impl<'de> Deserialize<'de> for NatRule {
         struct RawNatRule {
             disabled: bool,
             protocol: String,
+            ipprotocol: String,
             source_inversed: bool,
             source_port_value: Option<String>,
             source_port_operator: Option<String>,
@@ -280,6 +285,7 @@ impl<'de> Deserialize<'de> for NatRule {
         Ok(NatRule {
             disabled: raw.disabled,
             protocol: raw.protocol,
+            ipprotocol: raw.ipprotocol,
             source_inversed: raw.source_inversed,
             source_port,
             source_addr,

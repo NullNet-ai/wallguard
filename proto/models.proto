@@ -18,35 +18,37 @@ message FilterRule {
 
     string policy = 2;
     string protocol = 3;
+    string ipprotocol = 4;
 
-    bool source_inversed = 4;
-    PortInfo source_port = 5;
-    AddrInfo source_addr = 6;
-    string source_type = 7;
+    bool source_inversed = 5;
+    PortInfo source_port = 6;
+    AddrInfo source_addr = 7;
+    string source_type = 8;
 
-    bool destination_inversed = 8;
-    PortInfo destination_port = 9;
-    AddrInfo destination_addr = 10;
-    string destination_type = 11;
+    bool destination_inversed = 9;
+    PortInfo destination_port = 10;
+    AddrInfo destination_addr = 11;
+    string destination_type = 12;
 
-    string description = 12;
-    string interface = 13;
+    string description = 13;
+    string interface = 14;
 
-    uint32 id = 14;
-    uint32 order = 15;
+    uint32 id = 15;
+    uint32 order = 16;
 
-    string associated_rule_id = 16;
+    string associated_rule_id = 17;
 
-    string table = 17;
-    string chain = 18;
-    string family = 19;
+    string table = 18;
+    string chain = 19;
+    string family = 20;
 
-    bool floating = 20;
+    bool floating = 21;
 }
 
 message NatRule {
     bool disabled = 1;
-    string protocol = 3;
+    string protocol = 2;
+    string ipprotocol = 3;
 
     bool source_inversed = 4;
     PortInfo source_port = 5;

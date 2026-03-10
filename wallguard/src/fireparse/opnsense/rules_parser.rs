@@ -19,21 +19,17 @@ impl OpnSenseRulesParser {
         type_elem.children.push(XMLNode::Text(rule.policy));
         rule_elem.children.push(XMLNode::Element(type_elem));
 
-        let mut parts = rule.protocol.splitn(2, '/');
-        let ipprotocol = parts.next().unwrap_or("inet46");
-        let protocol = parts.next().unwrap_or("any");
-
         let mut ipproto_elem = Element::new("ipprotocol");
         ipproto_elem
             .children
-            .push(XMLNode::Text(ipprotocol.to_string()));
+            .push(XMLNode::Text(rule.ipprotocol.to_string()));
         rule_elem.children.push(XMLNode::Element(ipproto_elem));
 
-        if protocol != "any" {
+        if rule.protocol != "any" {
             let mut proto_elem = Element::new("protocol");
             proto_elem
                 .children
-                .push(XMLNode::Text(protocol.to_string()));
+                .push(XMLNode::Text(rule.protocol.to_string()));
             rule_elem.children.push(XMLNode::Element(proto_elem));
         }
 
@@ -91,21 +87,17 @@ impl OpnSenseRulesParser {
                 .push(XMLNode::Element(Element::new("disabled")));
         }
 
-        let mut parts = rule.protocol.splitn(2, '/');
-        let ipprotocol = parts.next().unwrap_or("inet46");
-        let protocol = parts.next().unwrap_or("any");
-
         let mut ipproto_elem = Element::new("ipprotocol");
         ipproto_elem
             .children
-            .push(XMLNode::Text(ipprotocol.to_string()));
+            .push(XMLNode::Text(rule.ipprotocol.to_string()));
         rule_elem.children.push(XMLNode::Element(ipproto_elem));
 
-        if protocol != "any" {
+        if rule.protocol != "any" {
             let mut proto_elem = Element::new("protocol");
             proto_elem
                 .children
-                .push(XMLNode::Text(protocol.to_string()));
+                .push(XMLNode::Text(rule.protocol.to_string()));
             rule_elem.children.push(XMLNode::Element(proto_elem));
         }
 
@@ -231,7 +223,8 @@ impl OpnSenseRulesParser {
 
             rules.push(FilterRule {
                 disabled,
-                protocol: format!("{ipprotocol}/{protocol}"),
+                ipprotocol: ipprotocol.to_string(),
+                protocol: protocol.to_string(),
                 policy,
                 description,
                 source_port: Some(PortInfo {
@@ -330,7 +323,8 @@ impl OpnSenseRulesParser {
 
             rules.push(NatRule {
                 disabled,
-                protocol: format!("{ipprotocol}/{protocol}"),
+                ipprotocol: ipprotocol.to_string(),
+                protocol: protocol.to_string(),
                 description,
                 source_port: Some(PortInfo {
                     value: source_port,
