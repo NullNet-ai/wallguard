@@ -72,9 +72,7 @@ impl TimeoutController {
                                 tun.data.created_at
                             };
 
-                            if timestamp
-                                < Self::cutoff_timestamp(self.idle_timeout_duration())
-                            {
+                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration()) {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
                             }
                         }
