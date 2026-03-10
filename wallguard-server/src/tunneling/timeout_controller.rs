@@ -66,7 +66,13 @@ impl TimeoutController {
                                 .unwrap_or_default()
                                 .cast_unsigned();
 
-                            if last_accessed_timestamp
+                            let timestamp = if last_accessed_timestamp != 0 {
+                                last_accessed_timestamp
+                            } else {
+                                tun.data.created_at
+                            };
+
+                            if timestamp
                                 < Self::cutoff_timestamp(self.idle_timeout_duration())
                             {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
