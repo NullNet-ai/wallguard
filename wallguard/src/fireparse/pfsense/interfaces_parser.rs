@@ -19,6 +19,12 @@ impl PfSenseInterfacesParser {
             {
                 let name = interface.name.clone();
 
+                let description = interface
+                    .get_child("descr")
+                    .and_then(|c| c.get_text())
+                    .unwrap_or_default()
+                    .to_string();
+
                 let device = interface
                     .get_child("if")
                     .and_then(|c| c.get_text())
@@ -57,6 +63,7 @@ impl PfSenseInterfacesParser {
                 interfaces.push(NetworkInterface {
                     name,
                     device,
+                    description,
                     addresses,
                 });
             }
@@ -82,10 +89,12 @@ mod tests {
                         <interfaces>
                             <wan>
                                 <if>igb0</if>
+                                <descr><![CDATA[description1]]></descr>
                                 <ipaddr>192.168.1.1</ipaddr>
                             </wan>
                             <lan>
                                 <if>igb1</if>
+                            <descr><![CDATA[description2]]></descr>
                                 <ipaddr>192.168.1.2</ipaddr>
                             </lan>
                         </interfaces>
@@ -97,12 +106,14 @@ mod tests {
         assert_eq!(interfaces.len(), 2);
         assert_eq!(interfaces[0].name, "wan");
         assert_eq!(interfaces[0].device, "igb0");
+        assert_eq!(interfaces[0].description, "description1");
         assert_eq!(interfaces[0].addresses.len(), 1);
         assert_eq!(interfaces[0].addresses[0].address, "192.168.1.1");
         assert_eq!(interfaces[0].addresses[0].version, 4);
 
         assert_eq!(interfaces[1].name, "lan");
         assert_eq!(interfaces[1].device, "igb1");
+        assert_eq!(interfaces[1].description, "description2");
         assert_eq!(interfaces[1].addresses.len(), 1);
         assert_eq!(interfaces[1].addresses[0].address, "192.168.1.2");
         assert_eq!(interfaces[1].addresses[0].version, 4);

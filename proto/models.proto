@@ -83,7 +83,8 @@ message IpAddress {
 message NetworkInterface {
     string name = 1;
     string device = 2;
-    repeated IpAddress addresses = 3;
+    string description = 3;
+    repeated IpAddress addresses = 4;
 }
 
 message SSHConfig {
