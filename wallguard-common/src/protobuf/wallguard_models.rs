@@ -25,47 +25,51 @@ pub struct FilterRule {
     pub policy: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
     pub protocol: ::prost::alloc::string::String,
-    #[prost(bool, tag = "4")]
+    #[prost(string, tag = "4")]
+    pub ipprotocol: ::prost::alloc::string::String,
+    #[prost(bool, tag = "5")]
     pub source_inversed: bool,
-    #[prost(message, optional, tag = "5")]
-    pub source_port: ::core::option::Option<PortInfo>,
     #[prost(message, optional, tag = "6")]
+    pub source_port: ::core::option::Option<PortInfo>,
+    #[prost(message, optional, tag = "7")]
     pub source_addr: ::core::option::Option<AddrInfo>,
-    #[prost(string, tag = "7")]
+    #[prost(string, tag = "8")]
     pub source_type: ::prost::alloc::string::String,
-    #[prost(bool, tag = "8")]
+    #[prost(bool, tag = "9")]
     pub destination_inversed: bool,
-    #[prost(message, optional, tag = "9")]
-    pub destination_port: ::core::option::Option<PortInfo>,
     #[prost(message, optional, tag = "10")]
+    pub destination_port: ::core::option::Option<PortInfo>,
+    #[prost(message, optional, tag = "11")]
     pub destination_addr: ::core::option::Option<AddrInfo>,
-    #[prost(string, tag = "11")]
-    pub destination_type: ::prost::alloc::string::String,
     #[prost(string, tag = "12")]
-    pub description: ::prost::alloc::string::String,
+    pub destination_type: ::prost::alloc::string::String,
     #[prost(string, tag = "13")]
+    pub description: ::prost::alloc::string::String,
+    #[prost(string, tag = "14")]
     pub interface: ::prost::alloc::string::String,
-    #[prost(uint32, tag = "14")]
-    pub id: u32,
     #[prost(uint32, tag = "15")]
+    pub id: u32,
+    #[prost(uint32, tag = "16")]
     pub order: u32,
-    #[prost(string, tag = "16")]
-    pub associated_rule_id: ::prost::alloc::string::String,
     #[prost(string, tag = "17")]
-    pub table: ::prost::alloc::string::String,
+    pub associated_rule_id: ::prost::alloc::string::String,
     #[prost(string, tag = "18")]
-    pub chain: ::prost::alloc::string::String,
+    pub table: ::prost::alloc::string::String,
     #[prost(string, tag = "19")]
+    pub chain: ::prost::alloc::string::String,
+    #[prost(string, tag = "20")]
     pub family: ::prost::alloc::string::String,
-    #[prost(bool, tag = "20")]
+    #[prost(bool, tag = "21")]
     pub floating: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NatRule {
     #[prost(bool, tag = "1")]
     pub disabled: bool,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag = "2")]
     pub protocol: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub ipprotocol: ::prost::alloc::string::String,
     #[prost(bool, tag = "4")]
     pub source_inversed: bool,
     #[prost(message, optional, tag = "5")]
@@ -116,7 +120,9 @@ pub struct NetworkInterface {
     pub name: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub device: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
+    #[prost(string, tag = "3")]
+    pub description: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "4")]
     pub addresses: ::prost::alloc::vec::Vec<IpAddress>,
 }
 #[derive(serde::Serialize, serde::Deserialize)]

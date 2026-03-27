@@ -6,7 +6,6 @@ mod heartbeat;
 mod installation_code;
 mod remote_access_session;
 mod service;
-mod ssh_session;
 mod tunnel;
 
 pub use alias::*;
@@ -17,5 +16,4 @@ pub use heartbeat::*;
 pub use installation_code::*;
 pub use remote_access_session::*;
 pub use service::*;
-pub use ssh_session::*;
 pub use tunnel::*;

@@ -1,8 +1,8 @@
 use crate::datastore::Datastore;
-use crate::http_api::ssh_gateway_v2::manager::SshSessionsManager;
 use crate::orchestrator::Orchestrator;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::token_provider::TokenProvider;
+use crate::tunneling::TunnelsManager;
 
 use nullnet_liberror::Error;
 
@@ -47,7 +47,7 @@ pub struct AppContext {
     pub root_token_provider: TokenProvider,
     pub sysdev_token_provider: TokenProvider,
 
-    pub ssh_sessions_manager: SshSessionsManager,
+    pub tunnels_manager: TunnelsManager,
 }
 
 impl AppContext {
@@ -70,7 +70,7 @@ impl AppContext {
             datastore.clone(),
         );
 
-        let ssh_sessions_manager = SshSessionsManager::new();
+        let tunnels_manager = TunnelsManager::new();
 
         Ok(Self {
             datastore,
@@ -78,7 +78,7 @@ impl AppContext {
             tunnel,
             sysdev_token_provider,
             root_token_provider,
-            ssh_sessions_manager,
+            tunnels_manager,
         })
     }
 }

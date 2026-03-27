@@ -41,11 +41,8 @@ impl NftablesRulesParser {
                         if let Some((addr, port)) = NatHelper::extract(rule) {
                             nat_rules.push(NatRule {
                                 disabled: false,
-                                protocol: format!(
-                                    "{}/{}",
-                                    ip_protocol.unwrap_or("*".into()),
-                                    l4_proto.unwrap_or("*".into())
-                                ),
+                                protocol: l4_proto.unwrap_or("*".into()),
+                                ipprotocol: ip_protocol.unwrap_or("*".into()),
                                 source_inversed: false,
                                 source_port,
                                 source_addr,
@@ -72,11 +69,8 @@ impl NftablesRulesParser {
                             filter_rules.push(FilterRule {
                                 disabled: false,
                                 policy,
-                                protocol: format!(
-                                    "{}/{}",
-                                    ip_protocol.unwrap_or("*".into()),
-                                    l4_proto.unwrap_or("*".into())
-                                ),
+                                protocol: l4_proto.unwrap_or("*".into()),
+                                ipprotocol: ip_protocol.unwrap_or("*".into()),
                                 source_inversed: false,
                                 source_port,
                                 source_addr,

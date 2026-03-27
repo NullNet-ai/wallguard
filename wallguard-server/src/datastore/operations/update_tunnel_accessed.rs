@@ -2,24 +2,26 @@ use nullnet_libdatastore::UpdateRequestBuilder;
 use nullnet_liberror::Error;
 use serde_json::json;
 
-use crate::datastore::{Datastore, SshSessionModel, SshSessionStatus};
+use crate::datastore::{Datastore, TunnelModel};
 
 impl Datastore {
-    pub async fn update_ssh_session_status(
+    pub async fn update_tunnel_accessed(
         &self,
         token: &str,
-        session_id: &str,
-        status: SshSessionStatus,
+        tunnel_id: &str,
         performed_by_root: bool,
+        timestamp: u64,
     ) -> Result<(), Error> {
+        let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
         let body = json!({
-            "session_status": status.to_string()
+            "last_access_time": time,
+            "last_access_date": date
         })
         .to_string();
 
         let request = UpdateRequestBuilder::new()
-            .id(session_id)
-            .table(SshSessionModel::table())
+            .id(tunnel_id)
+            .table(TunnelModel::table())
             .body(body)
             .performed_by_root(performed_by_root)
             .build();

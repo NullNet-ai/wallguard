@@ -1,24 +1,13 @@
-use crate::app_context::AppContext;
 use crate::http_api::utilities::authorization;
 use crate::http_api::utilities::error_json::ErrorJson;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use actix_web::web::Payload;
 use actix_ws::{MessageStream, Session as WSSession};
-use nullnet_libtoken::Token;
-use std::sync::Arc;
 
 pub fn extract_session_token(req: &HttpRequest) -> Result<String, HttpResponse> {
     authorization::extract_proxy_session_token(req).ok_or_else(|| {
         HttpResponse::Unauthorized().json(ErrorJson::from("Session token is missing"))
-    })
-}
-
-pub async fn fetch_token(ctx: &AppContext) -> Result<Arc<Token>, HttpResponse> {
-    ctx.sysdev_token_provider.get().await.map_err(|_| {
-        HttpResponse::InternalServerError().json(ErrorJson::from(
-            "Server error, can't obtain sysdevice token",
-        ))
     })
 }
 

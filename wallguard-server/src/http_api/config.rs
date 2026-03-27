@@ -28,7 +28,7 @@ impl HttpApiConfig {
 
 impl Default for HttpApiConfig {
     fn default() -> Self {
-        let addr = "127.0.0.1:4444".parse().unwrap();
+        let addr = "0.0.0.0:4444".parse().unwrap();
         Self { addr }
     }
 }

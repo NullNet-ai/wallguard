@@ -16,6 +16,12 @@ impl OpnSenseInterfacesParser {
                 if let XMLNode::Element(interface_element) = interface {
                     let name = interface_element.name.clone();
 
+                    let description = interface_element
+                        .get_child("descr")
+                        .and_then(|c| c.get_text())
+                        .unwrap_or_default()
+                        .to_string();
+
                     let device = interface_element
                         .get_child("if")
                         .and_then(|e| e.get_text())
@@ -59,6 +65,7 @@ impl OpnSenseInterfacesParser {
                     interfaces.push(NetworkInterface {
                         name,
                         device,
+                        description,
                         addresses,
                     });
                 }

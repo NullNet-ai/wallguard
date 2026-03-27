@@ -27,22 +27,20 @@ fn parse_sockstat_addr(addr_str: &str, is_ipv6: bool) -> Option<SocketAddr> {
                 .ok()
                 .map(|addr| SocketAddr::V6(SocketAddrV6::new(addr, port, 0, 0)))
         }
+    } else if host == "*" {
+        Some(SocketAddr::V4(SocketAddrV4::new(
+            Ipv4Addr::UNSPECIFIED,
+            port,
+        )))
     } else {
-        if host == "*" {
-            Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::UNSPECIFIED,
-                port,
-            )))
-        } else {
-            host.parse::<Ipv4Addr>()
-                .ok()
-                .map(|addr| SocketAddr::V4(SocketAddrV4::new(addr, port)))
-        }
+        host.parse::<Ipv4Addr>()
+            .ok()
+            .map(|addr| SocketAddr::V4(SocketAddrV4::new(addr, port)))
     }
 }
 
 pub(super) async fn get_sockets_info() -> Vec<SocketInfo> {
-    let Ok(output) = Command::new("sockstat").args(&["-l"]).output().await else {
+    let Ok(output) = Command::new("sockstat").args(["-l"]).output().await else {
         return vec![];
     };
 

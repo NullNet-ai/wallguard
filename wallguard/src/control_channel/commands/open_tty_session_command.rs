@@ -50,6 +50,10 @@ async fn stream_to_pty(
         let mut buffer = [0; 4096];
         let bytes = reader.read(&mut buffer).await.handle_err(location!())?;
 
+        if bytes == 0 {
+            break;
+        }
+
         let message = buffer[..bytes].to_vec();
 
         let writer = Arc::clone(&writer);
@@ -58,6 +62,8 @@ async fn stream_to_pty(
             .handle_err(location!())?
             .handle_err(location!())?;
     }
+
+    Ok(())
 }
 
 async fn pty_to_stream(
@@ -79,9 +85,15 @@ async fn pty_to_stream(
         .handle_err(location!())?
         .handle_err(location!())?;
 
+        if data.is_empty() {
+            break;
+        }
+
         writer
             .write_all(data.as_slice())
             .await
             .handle_err(location!())?;
     }
+
+    Ok(())
 }
