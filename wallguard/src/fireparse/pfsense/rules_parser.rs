@@ -418,7 +418,8 @@ mod tests {
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0].disabled, false);
         assert_eq!(rules[0].policy, "pass");
-        assert_eq!(rules[0].protocol, "inet/any");
+        assert_eq!(rules[0].protocol, "any");
+        assert_eq!(rules[0].ipprotocol, "inet");
         assert_eq!(rules[0].description, "Default allow LAN to any rule");
         assert_eq!(rules[0].source_addr.as_ref().unwrap().value, "lan");
         assert_eq!(rules[0].source_port.as_ref().unwrap().value, "*");
@@ -461,7 +462,8 @@ mod tests {
 
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0].disabled, false);
-        assert_eq!(rules[0].protocol, "inet6/tcp");
+        assert_eq!(rules[0].ipprotocol, "inet6");
+        assert_eq!(rules[0].protocol, "tcp");
         assert_eq!(rules[0].description, "NAT Rule");
         assert_eq!(rules[0].source_addr.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].source_port.as_ref().unwrap().value, "*");
@@ -524,7 +526,8 @@ mod tests {
         // Verify the first rule (Filter)
         assert_eq!(frules[0].disabled, true);
         assert_eq!(frules[0].policy, "pass");
-        assert_eq!(frules[0].protocol, "inet/any");
+        assert_eq!(frules[0].protocol, "any");
+        assert_eq!(frules[0].ipprotocol, "inet");
         assert_eq!(frules[0].description, "Allow LAN");
         assert_eq!(frules[0].source_addr.as_ref().unwrap().value, "lan");
         assert_eq!(frules[0].source_port.as_ref().unwrap().value, "*");
@@ -542,7 +545,8 @@ mod tests {
 
         // Verify the second rule (NAT)
         assert_eq!(nrules[0].disabled, true);
-        assert_eq!(nrules[0].protocol, "inet/tcp");
+        assert_eq!(nrules[0].protocol, "tcp");
+        assert_eq!(nrules[0].ipprotocol, "inet");
         assert_eq!(nrules[0].description, "NAT Rule");
         assert_eq!(nrules[0].source_addr.as_ref().unwrap().value, "*");
         assert_eq!(nrules[0].source_port.as_ref().unwrap().value, "*");
@@ -583,7 +587,8 @@ mod tests {
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0].disabled, false);
         assert_eq!(rules[0].policy, "reject");
-        assert_eq!(rules[0].protocol, "inet/any");
+        assert_eq!(rules[0].protocol, "any");
+        assert_eq!(rules[0].ipprotocol, "inet");
         assert_eq!(rules[0].description, "Block traffic");
         assert_eq!(rules[0].source_addr.as_ref().unwrap().value, "*");
         assert_eq!(rules[0].source_port.as_ref().unwrap().value, "*");
@@ -635,7 +640,8 @@ mod tests {
         let rule = FilterRule {
             disabled: true,
             policy: "block".to_string(),
-            protocol: "inet/tcp".to_string(),
+            ipprotocol: "inet".to_string(),
+            protocol: "tcp".to_string(),
             description: "Block SSH".to_string(),
             source_addr: Some(AddrInfo {
                 value: "*".to_string(),
@@ -691,7 +697,8 @@ mod tests {
         let rule = FilterRule {
             disabled: false,
             policy: "pass".to_string(),
-            protocol: "inet/any".to_string(),
+            ipprotocol: "inet".to_string(),
+            protocol: "any".to_string(),
             description: "".to_string(),
             source_addr: Some(AddrInfo {
                 value: "*".to_string(),
