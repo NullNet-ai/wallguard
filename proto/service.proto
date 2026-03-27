@@ -85,6 +85,7 @@ enum ServiceProtocol {
   HTTPS = 1;
   SSH = 2;
   TTY = 3;
+  RD = 4;
 }
 
 message ServiceInfo {

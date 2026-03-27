@@ -138,6 +138,35 @@ impl TimeoutController {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
                             }
                         }
+                        WallguardTunnel::RemoteDesktop(rd_tunnel) => {
+                            let tun = rd_tunnel.lock().await;
+
+                            let last_accessed_timestamp =
+                                crate::utilities::time::datetime_to_timestamp(
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_date
+                                        .clone()
+                                        .unwrap_or_default(),
+                                    &tun.data
+                                        .tunnel_data
+                                        .last_access_time
+                                        .clone()
+                                        .unwrap_or_default(),
+                                )
+                                .unwrap_or_default()
+                                .cast_unsigned();
+
+                            let timestamp = if last_accessed_timestamp != 0 {
+                                last_accessed_timestamp
+                            } else {
+                                tun.data.created_at
+                            };
+
+                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration()) {
+                                expired_ids.push(tun.data.tunnel_data.id.clone());
+                            }
+                        }
                     };
                 }
 

@@ -120,7 +120,9 @@ pub struct NetworkInterface {
     pub name: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
     pub device: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag = "3")]
+    #[prost(string, tag = "3")]
+    pub description: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "4")]
     pub addresses: ::prost::alloc::vec::Vec<IpAddress>,
 }
 #[derive(serde::Serialize, serde::Deserialize)]

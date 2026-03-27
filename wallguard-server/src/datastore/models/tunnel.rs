@@ -13,6 +13,7 @@ pub enum TunnelType {
     Ssh,
     Http,
     Https,
+    Rd,
 }
 
 impl TryFrom<&str> for TunnelType {
@@ -24,6 +25,7 @@ impl TryFrom<&str> for TunnelType {
             "http" => Ok(TunnelType::Http),
             "https" => Ok(TunnelType::Https),
             "tty" => Ok(TunnelType::Tty),
+            "rd" => Ok(TunnelType::Rd),
             other => {
                 Err(format!("Tunnel of type {other} is not supported")).handle_err(location!())
             }
@@ -38,6 +40,7 @@ impl Display for TunnelType {
             TunnelType::Ssh => "ssh",
             TunnelType::Http => "http",
             TunnelType::Https => "https",
+            TunnelType::Rd => "rd",
         };
 
         f.write_str(value)

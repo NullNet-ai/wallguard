@@ -4,6 +4,7 @@ use tokio::sync::Mutex;
 use crate::app_context::AppContext;
 use crate::datastore::{ServiceInfo, TunnelModel, TunnelStatus, TunnelType};
 use crate::tunneling::http::HttpTunnel;
+use crate::tunneling::rd::RemoteDesktopTunnel;
 use crate::tunneling::ssh::SshTunnel;
 use crate::tunneling::tty::TtyTunnel;
 use std::fmt::{Display, Formatter};
@@ -138,6 +139,7 @@ pub enum WallguardTunnel {
     Http(Arc<Mutex<HttpTunnel>>),
     Ssh(Arc<Mutex<SshTunnel>>),
     Tty(Arc<Mutex<TtyTunnel>>),
+    RemoteDesktop(Arc<Mutex<RemoteDesktopTunnel>>),
 }
 
 impl WallguardTunnel {
@@ -146,6 +148,7 @@ impl WallguardTunnel {
             WallguardTunnel::Http(http_tunnel) => http_tunnel.lock().await.terminate().await,
             WallguardTunnel::Ssh(ssh_tunnel) => ssh_tunnel.lock().await.terminate().await,
             WallguardTunnel::Tty(tty_tunnel) => tty_tunnel.lock().await.terminate().await,
+            WallguardTunnel::RemoteDesktop(rd_tunnel) => rd_tunnel.lock().await.terminate().await,
         }
     }
 
@@ -154,6 +157,7 @@ impl WallguardTunnel {
             WallguardTunnel::Http(tun) => tun.lock().await.data.service_data.id.clone(),
             WallguardTunnel::Ssh(tun) => tun.lock().await.data.service_data.id.clone(),
             WallguardTunnel::Tty(tun) => tun.lock().await.data.service_data.id.clone(),
+            WallguardTunnel::RemoteDesktop(tun) => tun.lock().await.data.service_data.id.clone(),
         }
     }
 
@@ -162,6 +166,7 @@ impl WallguardTunnel {
             WallguardTunnel::Http(tun) => tun.lock().await.data.tunnel_data.id.clone(),
             WallguardTunnel::Ssh(tun) => tun.lock().await.data.tunnel_data.id.clone(),
             WallguardTunnel::Tty(tun) => tun.lock().await.data.tunnel_data.id.clone(),
+            WallguardTunnel::RemoteDesktop(tun) => tun.lock().await.data.tunnel_data.id.clone(),
         }
     }
 }
