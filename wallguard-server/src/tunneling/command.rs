@@ -57,7 +57,7 @@ pub async fn establish_tunneled_tty(
     establish_tunneled_channel(context, device_id, &instance_id, TunnelType::Tty).await
 }
 
-pub async fn _establish_tunneled_rd(
+pub async fn establish_tunneled_rd(
     context: &AppContext,
     device_id: &str,
 ) -> Result<TunnelInstance, Error> {

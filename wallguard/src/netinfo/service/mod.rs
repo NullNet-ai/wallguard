@@ -14,6 +14,7 @@ pub enum Protocol {
     Https,
     Ssh,
     Tty,
+    Rd,
 }
 
 #[derive(Debug)]
@@ -31,6 +32,7 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
                 Protocol::Https => ProtocolGrpc::Https.into(),
                 Protocol::Ssh => ProtocolGrpc::Ssh.into(),
                 Protocol::Tty => ProtocolGrpc::Tty.into(),
+                Protocol::Rd => ProtocolGrpc::Rd.into(),
             },
             program: val.program,
             address: val.addr.ip().to_string(),
@@ -44,7 +46,7 @@ pub async fn gather_info(mut sockets: Vec<SocketInfo>) -> Vec<ServiceInfo> {
 
     retval.extend(http::filter(&mut sockets).await);
     retval.extend(ssh::filter(&mut sockets).await);
-    retval.extend(pseudo::filter(&mut sockets));
+    retval.extend(pseudo::filter(&mut sockets).await);
 
     retval
 }

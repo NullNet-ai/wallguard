@@ -67,6 +67,10 @@ async fn stream_to_system(
 
         let message = buffer[..bytes].to_vec();
 
+        if message.is_empty() {
+            break;
+        }
+
         if let Err(err) = remote_desktop_manager
             .on_client_message(client_id, message)
             .await
@@ -77,6 +81,8 @@ async fn stream_to_system(
             );
         }
     }
+
+    Ok(())
 }
 
 async fn system_to_stream(
