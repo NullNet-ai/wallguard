@@ -1,0 +1,14 @@
+[package]
+name    = "wg-shared"
+version = "0.1.0"
+edition = "2021"
+
+# Compiles to both native and wasm32-unknown-unknown.
+# No I/O, no tokio, no tonic.
+
+[dependencies]
+serde      = { workspace = true }
+serde_json = { workspace = true }
+uuid       = { workspace = true }
+time       = { workspace = true }
+thiserror  = { workspace = true }

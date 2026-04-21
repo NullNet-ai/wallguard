@@ -1,0 +1,4 @@
+/* WallGuard UI — plain CSS, no runtime framework.
+   Full styles added in Phase 9b. */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; }

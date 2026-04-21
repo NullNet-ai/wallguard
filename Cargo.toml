@@ -1,0 +1,136 @@
+[workspace]
+members = [
+    "crates/wg-shared",
+    "crates/wg-agent",
+    "crates/wg-cli",
+    "crates/wg-server",
+    "crates/wg-ui",
+    "crates/wg-testkit",
+]
+# wg-ui is wasm32-only; built by trunk, not cargo directly.
+default-members = [
+    "crates/wg-shared",
+    "crates/wg-agent",
+    "crates/wg-cli",
+    "crates/wg-server",
+    "crates/wg-testkit",
+]
+resolver = "2"
+
+# ---------------------------------------------------------------------------
+# Workspace-level dependency declarations.
+# Crates inherit these with `dep.workspace = true`.
+# Versions here are the single source of truth for the whole workspace.
+# ---------------------------------------------------------------------------
+
+[workspace.dependencies]
+
+# --- async runtime ---
+tokio        = { version = "1",    features = ["full"] }
+tokio-stream = { version = "0.1" }
+
+# --- gRPC / protobuf ---
+tonic       = { version = "0.12", features = ["tls"] }
+prost       = { version = "0.13" }
+prost-types = { version = "0.13" }
+
+# --- QUIC ---
+quinn = { version = "0.11" }
+
+# --- TLS ---
+rustls           = { version = "0.23" }
+rustls-pki-types = { version = "1" }
+
+# --- PKI / cert generation ---
+rcgen = { version = "0.13", features = ["pem"] }
+
+# --- HTTP ---
+axum  = { version = "0.7", features = ["ws", "macros"] }
+tower = { version = "0.4" }
+hyper = { version = "1",   features = ["full"] }
+
+# --- database ---
+sqlx = { version = "0.8", features = [
+    "runtime-tokio-rustls",
+    "postgres", "uuid", "time", "json", "migrate",
+] }
+
+# --- auth ---
+argon2       = { version = "0.5" }
+jsonwebtoken = { version = "9" }
+
+# --- serialization ---
+serde      = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+toml       = { version = "0.8" }
+
+# --- IDs / time ---
+uuid = { version = "1", features = ["v4", "serde"] }
+time = { version = "0.3", features = ["serde"] }
+
+# --- structured logging ---
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+
+# --- metrics ---
+metrics                     = { version = "0.23" }
+metrics-exporter-prometheus = { version = "0.15" }
+
+# --- distributed tracing ---
+opentelemetry         = { version = "0.27" }
+opentelemetry-otlp    = { version = "0.27" }
+opentelemetry_sdk     = { version = "0.27" }
+tracing-opentelemetry = { version = "0.28" }
+
+# --- error handling ---
+anyhow    = { version = "1" }
+thiserror = { version = "2" }
+
+# --- misc ---
+rand       = { version = "0.8" }
+rust-embed = { version = "8", features = ["debug-embed"] }
+clap       = { version = "4", features = ["derive"] }
+tempfile   = { version = "3" }
+bytes      = { version = "1" }
+
+# --- SSH / PTY ---
+russh        = { version = "0.57" }
+russh-keys   = { version = "0.57" }
+portable-pty = { version = "0.8" }
+
+# --- firewall config formats (Phase 12) ---
+xmltree  = { version = "0.10" }
+nftables = { version = "0.7" }
+
+# --- testing ---
+proptest              = { version = "1" }
+testcontainers        = { version = "0.23" }
+testcontainers-modules = { version = "0.11", features = ["postgres"] }
+
+# --- remote desktop (remote-desktop feature, Phase 8) ---
+enigo    = { version = "0.2" }
+openh264 = { version = "0.6" }
+# captis = { ... }
+# TODO: verify crate source for screen capture backend (captis or alternative).
+# Must support FreeBSD X11 for the runtime detection path.
+
+# --- nullnet internal crates (verify sources before Phase 7) ---
+# nullnet-traffic-monitor = { git = "https://github.com/NullNet-ai/nullnet-traffic-monitor" }
+# nullnet-libresmon       = { git = "https://github.com/NullNet-ai/nullnet-libresmon" }
+
+# ---------------------------------------------------------------------------
+# Build profiles
+# ---------------------------------------------------------------------------
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+codegen-units = 1
+strip         = "debuginfo"
+
+# Run with: cargo test --profile test-abort
+# Any .unwrap() / .expect() reached in tests aborts the process immediately,
+# making panics visible rather than caught by the test harness.
+[profile.test-abort]
+inherits = "test"
+panic    = "abort"

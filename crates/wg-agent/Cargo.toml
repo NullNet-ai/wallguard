@@ -1,0 +1,53 @@
+[package]
+name    = "wg-agent"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "wg-agent"
+path = "src/main.rs"
+
+[features]
+# Enables screen capture, H.264 encoding, and keyboard/mouse injection.
+# Omit this feature for headless firewall appliance builds.
+# Remote desktop capability is also gated at runtime by a display probe
+# (see crates/wg-agent/src/capabilities.rs), so the feature may be compiled
+# in on FreeBSD without forcing the capability to be advertised.
+remote-desktop = [
+    "dep:enigo",
+    "dep:openh264",
+    # "dep:captis",  # TODO: add once crate source is confirmed
+]
+
+[dependencies]
+wg-shared  = { path = "../wg-shared" }
+
+tokio      = { workspace = true }
+tonic      = { workspace = true }
+prost      = { workspace = true }
+prost-types = { workspace = true }
+
+serde      = { workspace = true }
+serde_json = { workspace = true }
+toml       = { workspace = true }
+uuid       = { workspace = true }
+time       = { workspace = true }
+
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+anyhow    = { workspace = true }
+thiserror = { workspace = true }
+rand      = { workspace = true }
+bytes     = { workspace = true }
+
+# Remote-desktop optional deps
+enigo    = { workspace = true, optional = true }
+openh264 = { workspace = true, optional = true }
+
+# TODO (Phase 7): uncomment once sources are verified
+# nullnet-traffic-monitor = { workspace = true }
+# nullnet-libresmon       = { workspace = true }
+
+[build-dependencies]
+tonic-build = { version = "0.12" }
