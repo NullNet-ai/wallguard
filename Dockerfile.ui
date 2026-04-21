@@ -1,0 +1,19 @@
+# Standalone WASM UI build — used for CI caching and independent deployment.
+# The server Dockerfile imports the dist/ output from this image.
+
+FROM rust:1.82-slim AS builder
+
+RUN rustup target add wasm32-unknown-unknown && \
+    cargo install trunk --locked
+
+WORKDIR /build
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ crates/
+COPY proto/  proto/
+
+WORKDIR /build/crates/wg-ui
+RUN trunk build --release
+
+# Export stage: only the compiled assets
+FROM scratch AS dist
+COPY --from=builder /build/crates/wg-ui/dist/ /dist/

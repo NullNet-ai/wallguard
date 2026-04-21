@@ -1,0 +1,66 @@
+services:
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_DB:       wallguard
+      POSTGRES_USER:     wallguard
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    environment:
+      DATABASE_URL:              postgres://wallguard:dev_password@postgres:5432/wallguard
+      CONTROL_SERVICE_ADDR:      0.0.0.0:50051
+      HTTP_API_ADDR:             0.0.0.0:4444
+      REVERSE_TUNNEL_QUIC_ADDR:  0.0.0.0:7777
+      REVERSE_TUNNEL_TCP_ADDR:   0.0.0.0:7778
+      TLS_CA_CERT_PATH:          /etc/wallguard-server/ca.crt
+      TLS_CA_KEY_PATH:           /etc/wallguard-server/ca.key
+      TLS_SERVER_CERT_PATH:      /etc/wallguard-server/server.crt
+      TLS_SERVER_KEY_PATH:       /etc/wallguard-server/server.key
+      RUST_LOG:                  info,wg_server=debug
+      LOG_FORMAT:                pretty
+    ports:
+      - "4444:4444"       # HTTP API + Web UI
+      - "50051:50051"     # gRPC control channel (TCP + mTLS)
+      - "7777:7777/udp"   # QUIC reverse tunnel
+      - "7778:7778"       # TCP reverse tunnel fallback
+      - "9090:9090"       # Prometheus metrics
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./dev-certs:/etc/wallguard-server:ro
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./dev/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9091:9090"
+    depends_on:
+      - server
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: dev_password
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
