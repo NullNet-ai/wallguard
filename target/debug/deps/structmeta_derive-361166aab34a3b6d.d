@@ -1,0 +1,10 @@
+/home/anton/Desktop/wallguard/target/debug/deps/structmeta_derive-361166aab34a3b6d.d: /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/lib.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/syn_utils.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/parse.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/struct_meta.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/to_tokens.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/to_tokens_attribute.rs
+
+/home/anton/Desktop/wallguard/target/debug/deps/libstructmeta_derive-361166aab34a3b6d.so: /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/lib.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/syn_utils.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/parse.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/struct_meta.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/to_tokens.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/to_tokens_attribute.rs
+
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/lib.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/syn_utils.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/parse.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/struct_meta.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/to_tokens.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/structmeta-derive-0.3.0/src/to_tokens_attribute.rs:

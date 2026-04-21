@@ -114,6 +114,9 @@ openh264 = { version = "0.6" }
 # TODO: verify crate source for screen capture backend (captis or alternative).
 # Must support FreeBSD X11 for the runtime detection path.
 
+# --- build tooling ---
+protoc-bin-vendored = { version = "3" }  # ships a pre-built protoc; used in build.rs
+
 # --- nullnet internal crates (verify sources before Phase 7) ---
 # nullnet-traffic-monitor = { git = "https://github.com/NullNet-ai/nullnet-traffic-monitor" }
 # nullnet-libresmon       = { git = "https://github.com/NullNet-ai/nullnet-libresmon" }

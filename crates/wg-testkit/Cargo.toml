@@ -29,4 +29,5 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [build-dependencies]
-tonic-build = { version = "0.12" }
+tonic-build         = { version = "0.12" }
+protoc-bin-vendored = { workspace = true }

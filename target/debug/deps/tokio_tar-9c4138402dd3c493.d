@@ -1,0 +1,12 @@
+/home/anton/Desktop/wallguard/target/debug/deps/tokio_tar-9c4138402dd3c493.d: /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/lib.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/archive.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/builder.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/entry.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/entry_type.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/error.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/header.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/pax.rs
+
+/home/anton/Desktop/wallguard/target/debug/deps/libtokio_tar-9c4138402dd3c493.rmeta: /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/lib.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/archive.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/builder.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/entry.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/entry_type.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/error.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/header.rs /home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/pax.rs
+
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/lib.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/archive.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/builder.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/entry.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/entry_type.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/error.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/header.rs:
+/home/anton/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-tar-0.3.1/src/pax.rs:
