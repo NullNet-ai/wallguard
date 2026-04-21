@@ -12,3 +12,6 @@ serde_json = { workspace = true }
 uuid       = { workspace = true }
 time       = { workspace = true }
 thiserror  = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

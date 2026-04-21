@@ -1,3 +1,4 @@
-pub mod types;
+pub mod api;
 pub mod capabilities;
 pub mod pki;
+pub mod types;
