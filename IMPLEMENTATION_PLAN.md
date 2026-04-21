@@ -6,48 +6,54 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 0 — Workspace Skeleton
+## Phase 0 — Workspace Skeleton ✅
 
-- [ ] `Cargo.toml` workspace root: all member crates, shared `[profile.*]`, `panic = "abort"` for `test-abort` profile
-- [ ] `crates/wg-shared/Cargo.toml` — no I/O, no tokio, compiles to both native and `wasm32`
-- [ ] `crates/wg-agent/Cargo.toml` — all agent deps; `[features] remote-desktop = ["dep:captis", "dep:openh264", "dep:enigo"]`
-- [ ] `crates/wg-cli/Cargo.toml`
-- [ ] `crates/wg-server/Cargo.toml`
-- [ ] `crates/wg-ui/Cargo.toml` — Leptos + wasm32 target
-- [ ] `crates/wg-testkit/Cargo.toml`
-- [ ] `proto/` — five `.proto` files: `provisioning.proto`, `control.proto`, `data.proto`, `models.proto`, `cli.proto` (stubs; firewall message types added in Phase 10)
-- [ ] `build.rs` in each crate that generates protobuf code via `tonic-build`
-- [ ] `migrations/` directory created; migration files added per phase
-- [ ] `.github/workflows/ci.yml` skeleton (fmt, clippy, test, buf, trunk, docker build)
-- [ ] `docker-compose.yml` (TimescaleDB, server, prometheus, grafana)
-- [ ] `Dockerfile.server` and `Dockerfile.ui` multi-stage build stubs
-
----
-
-## Phase 1 — `wg-shared`: Foundation Types
-
-- [ ] `wg-shared/src/types.rs` — `Device`, `DeviceStatus`, `TunnelSession`, `AgentFailure`, `Organization`, `User`; `serde` derives; compiles to both native and wasm32
-- [ ] `wg-shared/src/pki.rs` — `parse_device_id_from_cert(pem)` helper; `write_secret_file(path, data)` (mode 0600 set at `open()` time)
-- [ ] `wg-shared/src/capabilities.rs` — `FirewallKind` enum, `Feature` enum, `derive_capabilities()` skeleton (firewall-specific entries added in Phase 10)
-- [ ] Protobuf schema: `control.proto` — `Hello`, `Welcome`, `VersionRejected`, `DeviceSettings`, `Heartbeat`, `HeartbeatAck`, `MonitoringStatus`, `AgentFailure`, `CommandResult`, `SetMonitoring`, `ThrottleMonitoring`, tunnel-open commands (`OpenSshTunnel`, `OpenTtyTunnel`, `OpenHttpTunnel`, `OpenRemoteDesktopTunnel`), `ShutdownImminent`, `RenewCertificateRequest/Response`; firewall commands stubbed as reserved fields
-- [ ] Protobuf schema: `provisioning.proto` — `EnrollRequest` / `EnrollResponse`
-- [ ] Protobuf schema: `data.proto` — telemetry batch RPCs
-- [ ] Protobuf schema: `cli.proto` — `StatusRequest/Response`, `GracefulRestart`
+- [x] `Cargo.toml` workspace root: all member crates, shared `[profile.*]`, `panic = "abort"` for `test-abort` profile
+- [x] `crates/wg-shared/Cargo.toml` — no I/O, no tokio, compiles to both native and `wasm32`
+- [x] `crates/wg-agent/Cargo.toml` — agent deps; `[features] remote-desktop = ["dep:openh264", "dep:enigo"]` (captis TBD)
+- [x] `crates/wg-cli/Cargo.toml`
+- [x] `crates/wg-server/Cargo.toml`
+- [x] `crates/wg-ui/Cargo.toml` — Leptos + wasm32 target; excluded from `default-members`
+- [x] `crates/wg-testkit/Cargo.toml`
+- [x] `proto/` — five `.proto` files: `provisioning.proto`, `control.proto`, `data.proto`, `models.proto`, `cli.proto`
+- [x] `build.rs` in each gRPC crate via `tonic-build` + `protoc-bin-vendored` (no system protoc needed)
+- [x] `migrations/` directory created; migration files added per phase
+- [x] `.github/workflows/ci.yml` skeleton (fmt, clippy, test, buf, trunk, docker build)
+- [x] `.github/workflows/release.yml` — cross-compile agent + push server image
+- [x] `docker-compose.yml` (TimescaleDB, server, prometheus, grafana)
+- [x] `Dockerfile.server` and `Dockerfile.ui` multi-stage build stubs
+- [x] `.gitignore` (target/, dist/, dev-certs/, *.pem, *.key)
+- [x] `buf.yaml` for proto breaking-change detection
 
 ---
 
-## Phase 2 — Infrastructure & Dev Environment
+## Phase 1 — `wg-shared`: Foundation Types ✅
 
-- [ ] `scripts/dev-certs.sh` — `rcgen`-based script generating dev Root CA, Intermediate CA, and server cert; output to `dev-certs/`
-- [ ] `docker-compose.yml` filled in: TimescaleDB (`timescale/timescaledb:latest-pg16`), `wg-server`, Prometheus, Grafana with correct ports and volume mounts
-- [ ] `migrations/001_initial_schema.sql` — all relational tables from §11.2 **except** `firewall_rules` and `config_snapshots` (deferred to Phase 10)
-- [ ] `migrations/002_timescale_hypertables.sql` — `CREATE EXTENSION IF NOT EXISTS timescaledb`; hypertables for `packets`, `resource_metrics`, `device_monitoring_status`
-- [ ] `migrations/003_timescale_aggregates.sql` — `packets_5m` continuous aggregate
-- [ ] `migrations/004_retention_policies.sql` — retention policies (packets 30d, resource_metrics 90d, monitoring status 90d)
-- [ ] `migrations/005_rls_policies.sql` — Row-Level Security `org_id` policies
-- [ ] `db/pool.rs` in `wg-server` — `PgPool` from `DATABASE_URL`; run `sqlx::migrate!` at startup; exit on failure
-- [ ] `Dockerfile.server` complete multi-stage build; `Dockerfile.ui` WASM build stage
-- [ ] `scripts/seed.sh` — create first org + owner user
+- [x] `wg-shared/src/types.rs` — `Organization`, `User`, `Role` (with `PartialOrd`/`Ord` and capability-check helpers), `Device`, `DeviceStatus`, `MonitoringStatus`, `TunnelSession`, `AgentFailure`, `InstallationCode`, `FirewallRule`, `ConfigDrift`; `serde` derives; compiles to both native and wasm32
+- [x] `wg-shared/src/pki.rs` — `parse_device_id_from_cert(pem)` stub (full impl Phase 3); `write_secret_file(path, data)` gated `#[cfg(unix)]` with mode-0600 test
+- [x] `wg-shared/src/capabilities.rs` — `FirewallKind`, `Feature` enums; `derive_capabilities(firewall, remote_desktop_available)` (runtime probe replaces compile-time FreeBSD exclusion); `negotiate()`; `PROTOCOL_VERSION = 2`; 7 unit tests
+- [x] `wg-shared/src/api.rs` — HTTP API request/response types shared between server and UI: auth, pagination `Page<T>`, `ApiErrorResponse`, device/tunnel/user types, SSE event structs
+- [x] Protobuf schema: `control.proto` — complete §6.4 schema: `Hello/Welcome/VersionRejected`, heartbeat, `MonitoringStatus`, `AgentFailure`, `CommandResult`, all tunnel-open commands, firewall commands (stubs), `ShutdownImminent`, `RenewCertificateRequest/Response`
+- [x] Protobuf schema: `provisioning.proto` — `EnrollRequest` / `EnrollResponse`
+- [x] Protobuf schema: `data.proto` — `UploadPackets` + `UploadResourceMetrics` streaming RPCs
+- [x] Protobuf schema: `cli.proto` — `StatusRequest/Response`, `GracefulRestartRequest/Response`
+
+---
+
+## Phase 2 — Infrastructure & Dev Environment ✅
+
+- [x] `scripts/dev-certs.sh` — openssl-based 3-tier PKI (Root CA → Intermediate CA → server leaf with SANs); output to `dev-certs/` (gitignored)
+- [x] `docker-compose.yml` — TimescaleDB (`timescale/timescaledb:latest-pg16`), `wg-server`, Prometheus, Grafana with correct ports, healthcheck, volume mounts
+- [x] `migrations/001_initial_schema.sql` — `CREATE EXTENSION timescaledb` + all 13 relational tables; `firewall_rules` / `config_snapshots` deferred to Phase 12
+- [x] `migrations/002_timescale_hypertables.sql` — `packets` (1h chunks), `resource_metrics` (4h), `device_monitoring_status` (1d) hypertables
+- [x] `migrations/003_timescale_aggregates.sql` — `packets_5m` continuous aggregate + auto-refresh policy
+- [x] `migrations/004_retention_policies.sql` — 30d packets, 90d metrics/status
+- [x] `migrations/005_rls_policies.sql` — `current_org_id()` helper + RLS on all 7 tenant tables
+- [x] `db/pool.rs` in `wg-server` — `create_pool()`: `PgPoolOptions` (max 20, 5s timeout) + `sqlx::migrate!`; typed `Error` enum; caller exits on failure
+- [x] `Dockerfile.server` — 3-stage: UI WASM build → server binary → minimal runtime image
+- [x] `Dockerfile.ui` — standalone WASM build for CI caching
+- [x] `scripts/seed.sh` — first org + owner user via psql or `docker compose exec`
+- [x] `dev/prometheus.yml` — scrape config for docker-compose stack
 
 ---
 
@@ -185,7 +191,8 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 - [ ] Serve `wg-ui` WASM via `rust-embed`; `Cache-Control: immutable` on hashed assets; `no-cache` on `index.html`
 
 ### 9b — `wg-ui`
-- [ ] `Trunk.toml` and `index.html`
+- [x] `Trunk.toml` and `index.html` — stub in place
+- [x] `public/style.css` — plain CSS stub in place
 - [ ] `app.rs` — root component; `leptos_router` for all pages
 - [ ] `api/` — type-safe client modules (`auth.rs`, `devices.rs`, `tunnels.rs`, `failures.rs`, `users.rs`) using `reqwest` wasm + `wg-shared` types; JWT stored in `localStorage`
 - [ ] `pages/login.rs`
@@ -198,7 +205,6 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 - [ ] `components/remote_desktop.rs` — WebSocket + WebCodecs H.264 decoder
 - [ ] `components/packet_chart.rs`, `device_card.rs`, `status_badge.rs`
 - [ ] `pages/settings.rs`, `pages/settings/users.rs`
-- [ ] `public/style.css` — plain CSS, no runtime framework
 
 ### 9c — `wg-cli`
 - [ ] `wg-cli status` — connect to Unix socket; pretty-print `StatusResponse`
@@ -211,7 +217,7 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ## Phase 10 — Observability
 
-- [ ] Both agent and server: `tracing-subscriber` JSON in production, pretty in dev; `with_current_span(true)`, `FmtSpan::CLOSE`
+- [x] `wg-server/src/main.rs` — `tracing-subscriber` JSON/pretty from `LOG_FORMAT` env var (partial; full span hierarchy comes with Phase 6)
 - [ ] Server span hierarchy: `request{}` → `connection{}` → `command{}` / `tunnel{}`; `device_id` attached at connection establishment
 - [ ] All server metrics from §13.2: `wg_connected_agents_total`, `wg_active_tunnels_total`, `wg_commands_sent_total`, `wg_rpc_duration_seconds`, `wg_agent_degraded`, etc.
 - [ ] All agent metrics from §13.2: `wg_agent_capture_queue_depth`, `wg_agent_packets_sent_total`, `wg_agent_reconnect_attempts_total`, etc.; Prometheus endpoint optional (`metrics_port = 0` disables)
@@ -239,9 +245,9 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 - [ ] Add `Feature::ConfigMonitoring` to `derive_capabilities()` when `firewall != FirewallKind::None`
 
 ### 12b — Rule Protocol
-- [ ] `models.proto` — `FilterRule`, `NatRule`, `Alias`, `Rule` union; `CreateFilterRule`, `CreateNatRule`, `CreateAlias`, `DeleteRule`, `ApplyRuleSet`, `RequestConfigSnapshot`, `ConfigSnapshot` messages
-- [ ] Add these to `ServerMessage` / `ClientMessage` oneof in `control.proto`
-- [ ] `wg-shared/src/types.rs` — `FirewallRule` type
+- [x] `models.proto` — `FilterRule`, `NatRule`, `Alias`, `Rule` union stubs; `CreateFilterRule`, `CreateNatRule`, `CreateAlias`, `DeleteRule`, `ApplyRuleSet`, `RequestConfigSnapshot`, `ConfigSnapshot` in `control.proto`
+- [x] `ServerMessage` / `ClientMessage` oneof in `control.proto` — firewall commands already included
+- [x] `wg-shared/src/types.rs` — `FirewallRule`, `FirewallRuleType`, `ConfigDrift` types
 
 ### 12c — Agent Rule Application
 - [ ] Agent: handle `CreateFilterRule`, `CreateNatRule`, `CreateAlias`, `DeleteRule`, `ApplyRuleSet` commands; dispatch through `fireparse_for(kind)`; return `CommandResult { applied_digest }` or `FAILURE`
@@ -313,9 +319,10 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ## Phase 14 — CI / CD & Production Infrastructure
 
-- [ ] `ci.yml` complete: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`, `cargo test --profile test-abort`, `cargo nextest run -p wg-testkit`, `buf breaking`, `trunk build --release -p wg-ui`, `docker build -f Dockerfile.server .`
-- [ ] `release.yml`: cross-compile agent to `x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`, `x86_64-unknown-freebsd`; release archives; push `ghcr.io/.../wallguard-server` image
-- [ ] `Dockerfile.server` complete: stage 1 WASM UI via `trunk`; stage 2 server binary; stage 3 minimal final image
+- [x] `ci.yml` skeleton in place — fmt, clippy, unit tests, integration (nextest), buf, trunk, docker
+- [x] `release.yml` skeleton — cross-compile agent (linux musl x86_64/aarch64), server image push
+- [x] `Dockerfile.server` — 3-stage multi-stage build stub
+- [x] `Dockerfile.ui` — standalone WASM build stage
 - [ ] `helm/wallguard/` chart: Deployment (2+ replicas, anti-affinity), Services (ClusterIP gRPC, LoadBalancer API/QUIC-UDP/TCP-tunnel), ConfigMap, Secrets, optional TimescaleDB StatefulSet
 - [ ] `helm/wallguard/values.yaml` — all values from §15.2
 - [ ] Kubernetes rolling update: `ShutdownImminent` + 2+ replicas ensures zero-downtime deploys
