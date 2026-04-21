@@ -1,5 +1,0 @@
-cargo:rerun-if-changed=../../proto/provisioning.proto
-cargo:rerun-if-changed=../../proto/control.proto
-cargo:rerun-if-changed=../../proto/data.proto
-cargo:rerun-if-changed=../../proto/cli.proto
-cargo:rerun-if-changed=../../proto/
