@@ -1,0 +1,26 @@
+syntax = "proto3";
+package wallguard.models;
+
+// ---------------------------------------------------------------------------
+// Shared domain types referenced by control.proto and data.proto.
+// Firewall rule types (FilterRule, NatRule, Alias) are stubs in Phase 0;
+// full definitions added in Phase 12.
+// ---------------------------------------------------------------------------
+
+// Stub for firewall rule types. Full definition in Phase 12.
+message FilterRule { string id = 1; }
+message NatRule    { string id = 1; }
+message Alias      { string id = 1; }
+
+message Rule {
+  oneof rule {
+    FilterRule filter = 1;
+    NatRule    nat    = 2;
+    Alias      alias  = 3;
+  }
+}
+
+// Parameter type for the RestartNetworkInterface named command.
+message RestartInterfaceParams {
+  string interface_name = 1;
+}

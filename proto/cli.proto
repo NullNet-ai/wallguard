@@ -1,0 +1,49 @@
+syntax = "proto3";
+package wallguard.cli;
+
+import "control.proto";
+
+// ---------------------------------------------------------------------------
+// CLI ↔ Agent protocol — served over a Unix domain socket.
+// Socket path:  /run/wallguard/agent.sock
+// Socket mode:  0600 (root:root)
+// The kernel enforces access control; no application-layer auth needed.
+// ---------------------------------------------------------------------------
+
+service AgentControl {
+  // Returns the current daemon state and monitoring status.
+  rpc Status(StatusRequest) returns (StatusResponse);
+
+  // Triggers a graceful restart: finish in-flight commands (max 10s) then exit.
+  // Used by `wg-cli upgrade` and the package post-install script.
+  rpc GracefulRestart(GracefulRestartRequest) returns (GracefulRestartResponse);
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  DaemonState                       state             = 1;
+  string                            device_id         = 2;  // empty if not enrolled
+  string                            server_url        = 3;
+  string                            agent_version     = 4;
+  wallguard.control.MonitoringStatus monitoring_status = 5;
+  uint64                            uptime_secs       = 6;
+}
+
+enum DaemonState {
+  DAEMON_STATE_PROVISIONING = 0;
+  DAEMON_STATE_IDLE         = 1;
+  DAEMON_STATE_CONNECTING   = 2;
+  DAEMON_STATE_CONNECTED    = 3;
+}
+
+message GracefulRestartRequest {
+  // Maximum time (ms) to wait for in-flight commands before forcing exit.
+  // Defaults to 10000 if not set.
+  uint32 drain_timeout_ms = 1;
+}
+
+message GracefulRestartResponse {
+  bool   accepted        = 1;
+  string message         = 2;
+}

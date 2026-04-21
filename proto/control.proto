@@ -1,0 +1,281 @@
+syntax = "proto3";
+package wallguard.control;
+
+import "models.proto";
+
+// ---------------------------------------------------------------------------
+// Control channel — bidirectional streaming between agent and server.
+// Requires mTLS; the server extracts device identity from the TLS peer cert.
+//
+// Usage:
+//   service Control { rpc Channel(stream ClientMessage) returns (stream ServerMessage); }
+//
+// Message flow:
+//   1. Agent connects (mTLS handshake with device cert).
+//   2. Agent sends Hello; server replies Welcome (or VersionRejected).
+//   3. Both sides send Heartbeat / HeartbeatAck every 10s.
+//   4. Server sends commands; agent responds with CommandResult.
+// ---------------------------------------------------------------------------
+
+service Control {
+  rpc Channel(stream ClientMessage) returns (stream ServerMessage);
+}
+
+// ---------------------------------------------------------------------------
+// Enumerations
+// ---------------------------------------------------------------------------
+
+enum FirewallKind {
+  FIREWALL_KIND_NONE     = 0;
+  FIREWALL_KIND_PFSENSE  = 1;
+  FIREWALL_KIND_OPNSENSE = 2;
+  FIREWALL_KIND_NFTABLES = 3;
+}
+
+// Capabilities declared by the agent at handshake time.
+// Derived by derive_capabilities(FirewallKind) + runtime display probe.
+// The server computes the intersection with its own config → negotiated_features.
+enum Feature {
+  NETWORK_MONITORING   = 0;
+  TELEMETRY_MONITORING = 1;
+  CONFIG_MONITORING    = 2;
+  SSH_TUNNEL           = 3;
+  TTY_TUNNEL           = 4;
+  HTTP_TUNNEL          = 5;
+  NAMED_COMMANDS       = 6;
+  // Advertised only when compiled with remote-desktop feature AND the runtime
+  // display probe succeeds. Works on FreeBSD if a display server is available.
+  REMOTE_DESKTOP       = 7;
+}
+
+enum FailureSeverity { WARNING = 0; ERROR = 1; FATAL = 2; }
+
+enum FailureCategory {
+  MONITORING   = 0;
+  TUNNEL       = 1;
+  DISK_BUFFER  = 2;
+  FIREPARSE    = 3;
+  AGENT_CRASH  = 4;
+  CONNECTIVITY = 5;
+  SYSTEM       = 6;
+}
+
+enum CommandStatus { SUCCESS = 0; FAILURE = 1; TIMEOUT = 2; }
+
+enum NamedCommand {
+  RELOAD_FIREWALL_RULES     = 0;
+  RESTART_NETWORK_INTERFACE = 1;
+  FLUSH_CONNECTION_TRACKING = 2;
+  SHOW_ARP_TABLE            = 3;
+  SHOW_ROUTING_TABLE        = 4;
+  SHOW_ACTIVE_CONNECTIONS   = 5;
+}
+
+// ---------------------------------------------------------------------------
+// Handshake
+// ---------------------------------------------------------------------------
+
+message Hello {
+  uint32           protocol_version       = 1;
+  uint32           min_compatible_version = 2;
+  repeated Feature supported_features     = 3;
+  string           agent_version          = 4;
+  FirewallKind     firewall_kind          = 5;  // display only; never used for capability decisions
+}
+
+message Welcome {
+  uint32           protocol_version    = 1;
+  repeated Feature negotiated_features = 2;  // intersection of Hello.supported_features and server config
+  DeviceSettings   initial_settings    = 3;  // delivered atomically with handshake
+  string           server_version      = 4;
+}
+
+message VersionRejected {
+  uint32 min_required_version = 1;
+  string message              = 2;
+  // Agent receiving this stops retrying. A human upgrade is required.
+}
+
+message DeviceSettings {
+  bool  traffic_monitoring_enabled  = 1;
+  bool  telemetry_monitoring_enabled = 2;
+  bool  config_monitoring_enabled   = 3;
+  float packet_sampling_rate        = 4;  // 1.0 = full rate
+}
+
+// ---------------------------------------------------------------------------
+// Heartbeat (bidirectional — both sides send; both sides ack)
+// ---------------------------------------------------------------------------
+
+message Heartbeat {
+  uint64           seq               = 1;
+  uint64           sent_at_unix_ms   = 2;
+  MonitoringStatus monitoring_status = 3;  // populated by agent only; server leaves empty
+}
+
+message HeartbeatAck {
+  uint64 ack_seq          = 1;
+  uint64 acked_at_unix_ms = 2;
+}
+
+message MonitoringStatus {
+  uint32 packet_queue_depth    = 1;
+  uint64 disk_buffer_bytes     = 2;
+  uint64 disk_buffer_max_bytes = 3;
+  uint64 packets_dropped_total = 4;
+  uint64 packets_sent_total    = 5;
+  bool   degraded              = 6;
+  uint32 active_tunnel_count   = 7;
+}
+
+// ---------------------------------------------------------------------------
+// Failure reporting (agent → server, background failures only)
+// ---------------------------------------------------------------------------
+
+message AgentFailure {
+  string          failure_id  = 1;  // UUID v4; stable across replays; used for dedup
+  FailureSeverity severity    = 2;
+  FailureCategory category    = 3;
+  string          message     = 4;
+  string          context     = 5;  // JSON with category-specific fields
+  uint64          occurred_at = 6;  // Unix ms at time of occurrence, not delivery
+  bool            is_replay   = 7;  // true when sent from local buffer after reconnect
+}
+
+// ---------------------------------------------------------------------------
+// Command result (agent → server, one per command)
+// ---------------------------------------------------------------------------
+
+message CommandResult {
+  string        command_id         = 1;
+  CommandStatus status             = 2;
+  string        error_message      = 3;
+  string        applied_digest     = 4;  // SHA-256 of resulting firewall config
+  string        output             = 5;  // named command stdout (max 64 KiB)
+  uint64        applied_at_unix_ms = 6;
+}
+
+// ---------------------------------------------------------------------------
+// Server → Agent commands
+// ---------------------------------------------------------------------------
+
+message SetMonitoring {
+  string command_id        = 1;
+  bool   traffic_enabled   = 2;
+  bool   telemetry_enabled = 3;
+  bool   config_enabled    = 4;
+}
+
+message ThrottleMonitoring {
+  float packet_sampling_rate = 1;
+}
+
+message OpenSshTunnel {
+  string command_id  = 1;
+  string tunnel_id   = 2;
+  string public_key  = 3;
+  string username    = 4;
+}
+
+message OpenTtyTunnel {
+  string command_id = 1;
+  string tunnel_id  = 2;
+}
+
+message OpenHttpTunnel {
+  string command_id  = 1;
+  string tunnel_id   = 2;
+  string target_host = 3;
+  uint32 target_port = 4;
+}
+
+message OpenRemoteDesktopTunnel {
+  string command_id  = 1;
+  string tunnel_id   = 2;
+  uint32 width       = 3;
+  uint32 height      = 4;
+  uint32 target_fps  = 5;
+  uint32 target_kbps = 6;
+}
+
+// Firewall commands — stubs in Phase 0; full implementation in Phase 12.
+message CreateFilterRule { string command_id = 1; wallguard.models.FilterRule rule  = 2; }
+message CreateNatRule    { string command_id = 1; wallguard.models.NatRule    rule  = 2; }
+message CreateAlias      { string command_id = 1; wallguard.models.Alias      alias = 2; }
+message DeleteRule       { string command_id = 1; string                      rule_id = 2; }
+
+message ApplyRuleSet {
+  string                     command_id      = 1;
+  repeated wallguard.models.Rule rules       = 2;
+  string                     rollback_digest = 3;
+}
+
+message ExecuteNamedCommand {
+  string       command_id = 1;
+  NamedCommand command    = 2;
+  oneof params {
+    wallguard.models.RestartInterfaceParams restart_interface = 3;
+  }
+}
+
+message RequestConfigSnapshot { string command_id = 1; }
+
+message RenewCertificateRequest {}
+
+message ShutdownImminent {
+  uint32 reconnect_after_ms = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Agent → Server messages
+// ---------------------------------------------------------------------------
+
+message ConfigSnapshot {
+  string command_id    = 1;
+  string digest        = 2;
+  bytes  configuration = 3;  // serialized firewall config
+}
+
+message RenewCertificateResponse {
+  string csr_pem = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Stream multiplexers
+// ---------------------------------------------------------------------------
+
+message ServerMessage {
+  oneof message {
+    Welcome                   welcome                    = 1;
+    VersionRejected           version_rejected           = 2;
+    HeartbeatAck              heartbeat_ack              = 3;
+    Heartbeat                 server_heartbeat           = 4;
+    SetMonitoring             set_monitoring             = 5;
+    ThrottleMonitoring        throttle_monitoring        = 6;
+    OpenSshTunnel             open_ssh_tunnel            = 7;
+    OpenTtyTunnel             open_tty_tunnel            = 8;
+    OpenHttpTunnel            open_http_tunnel           = 9;
+    OpenRemoteDesktopTunnel   open_remote_desktop_tunnel = 10;
+    CreateFilterRule          create_filter_rule         = 11;
+    CreateNatRule             create_nat_rule            = 12;
+    CreateAlias               create_alias               = 13;
+    DeleteRule                delete_rule                = 14;
+    ApplyRuleSet              apply_rule_set             = 15;
+    ExecuteNamedCommand       execute_named_command      = 16;
+    RequestConfigSnapshot     request_config_snapshot    = 17;
+    RenewCertificateRequest   renew_certificate_request  = 18;
+    ShutdownImminent          shutdown_imminent          = 19;
+  }
+}
+
+message ClientMessage {
+  oneof message {
+    Hello                    hello                      = 1;
+    Heartbeat                heartbeat                  = 2;
+    HeartbeatAck             heartbeat_ack              = 3;
+    CommandResult            command_result             = 4;
+    ConfigSnapshot           config_snapshot            = 5;
+    AgentFailure             agent_failure              = 6;
+    RenewCertificateResponse renew_certificate_response = 7;
+  }
+}

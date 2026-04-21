@@ -1,0 +1,71 @@
+syntax = "proto3";
+package wallguard.data;
+
+// ---------------------------------------------------------------------------
+// Data service — streaming telemetry upload from agent to server.
+// Requires mTLS with device certificate (same as the Control service).
+// Runs on the same gRPC endpoint (:50051) as Control and Provisioning.
+// ---------------------------------------------------------------------------
+
+service DataService {
+  // Agent streams packet batches; server inserts into TimescaleDB.
+  // The stream stays open for the lifetime of the connection.
+  rpc UploadPackets(stream PacketBatch) returns (stream BatchAck);
+
+  // Agent streams resource metrics (CPU, mem, disk, load).
+  rpc UploadResourceMetrics(stream ResourceMetricsBatch) returns (stream BatchAck);
+}
+
+// ---------------------------------------------------------------------------
+// Packet telemetry
+// ---------------------------------------------------------------------------
+
+message PacketBatch {
+  uint64            batch_id = 1;  // monotonically increasing per agent session
+  repeated Packet   packets  = 2;
+}
+
+message Packet {
+  uint64 timestamp_ms = 1;
+  string src_ip       = 2;
+  string dst_ip       = 3;
+  uint32 src_port     = 4;
+  uint32 dst_port     = 5;
+  uint32 protocol     = 6;  // IANA protocol number
+  uint32 bytes        = 7;
+  Direction direction = 8;
+}
+
+enum Direction {
+  DIRECTION_UNKNOWN = 0;
+  DIRECTION_IN      = 1;
+  DIRECTION_OUT     = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Resource metrics
+// ---------------------------------------------------------------------------
+
+message ResourceMetricsBatch {
+  uint64                   batch_id = 1;
+  repeated ResourceMetrics metrics  = 2;
+}
+
+message ResourceMetrics {
+  uint64 timestamp_ms    = 1;
+  float  cpu_percent     = 2;
+  uint64 mem_used_bytes  = 3;
+  uint64 mem_total_bytes = 4;
+  uint64 disk_used_bytes = 5;
+  uint64 disk_total_bytes = 6;
+  float  load_1m         = 7;
+  float  load_5m         = 8;
+}
+
+// ---------------------------------------------------------------------------
+// Acknowledgment
+// ---------------------------------------------------------------------------
+
+message BatchAck {
+  uint64 batch_id = 1;
+}
