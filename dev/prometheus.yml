@@ -1,0 +1,19 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  - job_name: wallguard-server
+    static_configs:
+      - targets: ['server:9090']
+    metrics_path: /metrics
+
+  # Optional: scrape individual agents when their Prometheus endpoint is enabled
+  # (metrics_port = 9090 in agent config.toml).
+  # In production use service-discovery instead of static targets.
+  #
+  # - job_name: wallguard-agents
+  #   static_configs:
+  #     - targets: ['agent-host:9090']
+  #   metrics_path: /metrics
