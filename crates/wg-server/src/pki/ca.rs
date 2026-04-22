@@ -47,6 +47,54 @@ impl Ca {
         let signed = csr.signed_by(&self.cert, &self.key)?;
         Ok((signed.pem(), device_id, org_id))
     }
+
+    /// Sign a device CSR during enrollment, overriding the subject O with the
+    /// authoritative `org_id` obtained from the validated installation code.
+    ///
+    /// The agent sends `O=org:pending` (it doesn't know its org_id yet); the
+    /// server replaces it with the real value.  Device UUID is extracted from
+    /// the CSR's CN and returned alongside the signed cert PEM.
+    ///
+    /// Cert validity: 1 year from signing time.
+    pub fn sign_enrollment_csr(
+        &self,
+        csr_pem: &str,
+        org_id:  Uuid,
+    ) -> Result<(String, Uuid, time::OffsetDateTime), CaError> {
+        let mut csr = CertificateSigningRequestParams::from_pem(csr_pem)?;
+
+        let device_id = extract_device_id_from_cn(&csr.params.distinguished_name)?;
+
+        // Override the DN with the authoritative values.
+        let mut dn = rcgen::DistinguishedName::new();
+        dn.push(DnType::CommonName,       format!("device:{device_id}"));
+        dn.push(DnType::OrganizationName, format!("org:{org_id}"));
+        csr.params.distinguished_name = dn;
+
+        let now      = time::OffsetDateTime::now_utc();
+        let not_after = now + time::Duration::days(365);
+        csr.params.not_before = now;
+        csr.params.not_after  = not_after;
+
+        let signed = csr.signed_by(&self.cert, &self.key)?;
+        Ok((signed.pem(), device_id, not_after))
+    }
+}
+
+/// Extract only the device UUID from CN, without requiring O to be present.
+fn extract_device_id_from_cn(dn: &rcgen::DistinguishedName) -> Result<Uuid, CaError> {
+    for (dn_type, value) in dn.iter() {
+        if *dn_type == DnType::CommonName {
+            let s = dn_value_str(value)
+                .ok_or_else(|| CaError::InvalidSubject("non-UTF8 CN".into()))?;
+            let raw = s.strip_prefix("device:").ok_or_else(|| {
+                CaError::InvalidSubject(format!("CN must be 'device:<uuid>', got '{s}'"))
+            })?;
+            return Uuid::parse_str(raw)
+                .map_err(|_| CaError::InvalidSubject(format!("CN UUID invalid: '{raw}'")));
+        }
+    }
+    Err(CaError::InvalidSubject("CN missing".into()))
 }
 
 /// Extract `device:<uuid>` from CN and `org:<uuid>` from O.
@@ -154,5 +202,30 @@ mod tests {
             format!("notanorg"),
         );
         assert!(matches!(ca.sign_csr(&csr_pem), Err(CaError::InvalidSubject(_))));
+    }
+
+    #[test]
+    fn sign_enrollment_csr_overrides_org() {
+        let ca        = make_test_ca();
+        let device_id = Uuid::new_v4();
+        let real_org  = Uuid::new_v4();
+        // Client sends O=org:pending.
+        let csr_pem   = make_csr(format!("device:{device_id}"), "org:pending".to_string());
+
+        let (cert_pem, got_device, _expires) =
+            ca.sign_enrollment_csr(&csr_pem, real_org).unwrap();
+
+        assert_eq!(got_device, device_id);
+        assert!(cert_pem.contains("CERTIFICATE"));
+    }
+
+    #[test]
+    fn enrollment_rejects_invalid_cn() {
+        let ca      = make_test_ca();
+        let csr_pem = make_csr("notadevice".to_string(), "org:pending".to_string());
+        assert!(matches!(
+            ca.sign_enrollment_csr(&csr_pem, Uuid::new_v4()),
+            Err(CaError::InvalidSubject(_))
+        ));
     }
 }
