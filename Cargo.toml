@@ -42,7 +42,7 @@ rustls           = { version = "0.23" }
 rustls-pki-types = { version = "1" }
 
 # --- PKI / cert generation ---
-rcgen = { version = "0.13", features = ["pem"] }
+rcgen = { version = "0.13", features = ["pem", "x509-parser"] }
 
 # --- HTTP ---
 axum  = { version = "0.7", features = ["ws", "macros"] }
