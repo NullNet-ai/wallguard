@@ -76,12 +76,12 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 4 — Device Provisioning
+## Phase 4 — Device Provisioning ✅
 
-- [ ] `grpc/provisioning.rs` — `Provisioning` gRPC service on `:50051`; no client cert required; validate + atomically mark installation code used (transaction); sign CSR via PKI; create `Device` row; write audit log entry
-- [ ] `wg-cli enroll` — generate Ed25519 keypair; build CSR (`CN=device:<uuid>`, `O=org:<pending>`); connect to Provisioning service (server cert vs pinned CA); send `EnrollRequest`; write `device.key` (0600), `device.crt` (0644), `ca.crt` (0644), `config.toml`
-- [ ] `installation_codes` API — `POST /api/v1/installation-codes`, `GET /api/v1/installation-codes` (admin+)
-- [ ] Integration test: `enrollment_flow` — CSR signing, cert file permissions, agent connects with issued cert
+- [x] `grpc/provisioning.rs` — `Provisioning` gRPC service on `:50051`; no client cert required; validate + atomically mark installation code used (transaction); sign CSR via PKI (`sign_enrollment_csr` overrides O with real org_id); create `Device` row + `device_certificates` audit row
+- [x] `wg-cli enroll` — generate Ed25519 keypair; build CSR (`CN=device:<uuid>`, `O=org:pending`); connect to Provisioning service (server cert vs pinned CA); send `EnrollRequest`; write `device.key` (0600), `device.crt` (0644), `ca.crt` (0644), `config.toml`
+- [x] `installation_codes` API — `POST /api/v1/installation-codes`, `GET /api/v1/installation-codes` (Admin+); axum router with auth + request-id middleware; `AppError` type
+- [ ] Integration test: `enrollment_flow` — CSR signing, cert file permissions, agent connects with issued cert (deferred to Phase 13 integration test suite)
 
 ---
 
