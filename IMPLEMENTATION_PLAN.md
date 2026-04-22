@@ -57,22 +57,22 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 3 — Security Foundation
+## Phase 3 — Security Foundation ✅
 
 ### 3a — PKI / CA
-- [ ] `pki/ca.rs` — load Intermediate CA cert+key; `sign_csr(csr_pem) -> (cert_pem, device_id)`; validate `CN=device:<uuid>` and `O=org:<org_id>` format
+- [x] `pki/ca.rs` — load Intermediate CA cert+key; `sign_csr(csr_pem) -> (cert_pem, device_id)`; validate `CN=device:<uuid>` and `O=org:<org_id>` format
 
 ### 3b — Auth
-- [ ] `auth/password.rs` — `hash_password` / `verify_password` (argon2id, m=64MiB, t=3, p=4)
-- [ ] `auth/jwt.rs` — `issue_jwt` / `validate_jwt`; load/generate signing key from `server_secrets` table; check `revoked_tokens` on every validation
-- [ ] `auth/refresh.rs` — issue + rotate refresh tokens; `POST /api/v1/auth/refresh`
-- [ ] `auth/api_key.rs` — generate raw key; store `argon2(key)` in `api_keys`; validate on request
-- [ ] Unit tests: valid JWT accepted; expired rejected; revoked rejected; role mismatch rejected
+- [x] `auth/password.rs` — `hash_password` / `verify_password` (argon2id, m=64MiB, t=3, p=4)
+- [x] `auth/jwt.rs` — `JwtService::issue` / `validate`; load/generate signing key from `server_secrets` table; check `revoked_tokens` on every validation
+- [x] `auth/refresh.rs` — issue + rotate refresh tokens (jti-prefixed 96-hex-char tokens, 30d TTL)
+- [x] `auth/api_key.rs` — generate raw key (`wg_<id_hex>_<secret_hex>`); store `argon2(key)` in `api_keys`; validate on request
+- [x] Unit tests: valid JWT accepted; expired rejected; wrong-key rejected; unique JTI per issue; role mismatch → 403; CA CSR sign + reject
 
 ### 3c — RBAC Middleware
-- [ ] `middleware/auth.rs` — extract JWT or API key; attach `RequestContext { user_id, org_id, role }`
-- [ ] `middleware/rbac.rs` — `ctx.require_role(Role)` helper used by handlers
-- [ ] `middleware/request_id.rs` — inject `X-Request-Id`; propagate to all log spans
+- [x] `middleware/auth.rs` — extract JWT or API key; attach `RequestContext { user_id, org_id, role }`
+- [x] `middleware/rbac.rs` — `ctx.require_role(Role)` helper used by handlers
+- [x] `middleware/request_id.rs` — inject `X-Request-Id`; propagate to all log spans
 
 ---
 
