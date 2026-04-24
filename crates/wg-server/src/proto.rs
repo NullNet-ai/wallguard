@@ -9,3 +9,6 @@ pub mod models {
 pub mod control {
     tonic::include_proto!("wallguard.control");
 }
+pub mod data {
+    tonic::include_proto!("wallguard.data");
+}

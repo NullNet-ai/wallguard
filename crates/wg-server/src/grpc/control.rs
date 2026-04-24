@@ -9,6 +9,7 @@ use uuid::Uuid;
 use wg_shared::capabilities::{MIN_AGENT_PROTOCOL_VERSION, PROTOCOL_VERSION};
 
 use crate::connection_registry::{DeviceConnection, DeviceId};
+use crate::grpc::extract_device_id;
 use crate::heartbeat::{self, HeartbeatState};
 use crate::proto::control::{
     client_message, control_server::Control, server_message,
@@ -18,23 +19,6 @@ use crate::proto::control::{
 use crate::AppState;
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(10);
-
-// ---------------------------------------------------------------------------
-// Peer-cert extraction
-// ---------------------------------------------------------------------------
-
-fn extract_device_id(request: &Request<Streaming<ClientMessage>>) -> Option<DeviceId> {
-    let certs = request.peer_certs()?;
-    let der   = certs.first()?.as_ref();
-    extract_device_id_from_der(der)
-}
-
-fn extract_device_id_from_der(der: &[u8]) -> Option<DeviceId> {
-    use x509_parser::prelude::*;
-    let (_, cert) = X509Certificate::from_der(der).ok()?;
-    let cn = cert.subject().iter_common_name().next()?.as_str().ok()?;
-    Uuid::parse_str(cn.strip_prefix("device:")?).ok()
-}
 
 // ---------------------------------------------------------------------------
 // gRPC service

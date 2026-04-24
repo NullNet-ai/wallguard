@@ -41,6 +41,7 @@ rand        = { workspace = true }
 rust-embed  = { workspace = true }
 rcgen       = { workspace = true }
 x509-parser = { workspace = true }
+metrics     = { workspace = true }
 
 [build-dependencies]
 tonic-build         = { version = "0.12" }

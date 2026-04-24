@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
 use clap::Parser;
@@ -14,10 +15,14 @@ use wg_shared::types::Feature;
 mod backoff;
 mod capabilities;
 mod config;
+mod disk_buffer;
 mod failure_buffer;
 mod panic_hook;
+mod pipeline;
 mod platform;
 mod state;
+
+use disk_buffer::DiskBuffer;
 
 use backoff::Backoff;
 use config::Config;
@@ -39,6 +44,9 @@ mod proto {
     // wallguard.cli.rs uses `super::control::MonitoringStatus`
     pub mod cli {
         tonic::include_proto!("wallguard.cli");
+    }
+    pub mod data {
+        tonic::include_proto!("wallguard.data");
     }
 }
 
@@ -124,6 +132,27 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let (state_tx, state_rx) = watch::channel(DaemonState::Provisioning);
 
+    // Packet pipeline shared state.
+    let disk_buf     = Arc::new(DiskBuffer::new(
+        config.transmission.disk_buffer_path.clone(),
+        config.transmission.disk_buffer_max_bytes,
+        config.transmission.disk_min_free_bytes,
+    ));
+    let sampling_rate = Arc::new(AtomicU32::new(1.0f32.to_bits())); // 100%
+
+    // Packet pipeline channels.
+    let (cap_tx, cap_rx) = mpsc::channel::<proto::data::Packet>(config.transmission.packet_queue_depth);
+    let (batch_tx, batch_rx) = mpsc::channel::<proto::data::PacketBatch>(32);
+
+    // Spawn pipeline tasks.
+    pipeline::capture::spawn(cap_tx);
+    tokio::spawn(pipeline::batch::run_batcher(
+        cap_rx, batch_tx, sampling_rate.clone(), shutdown_tx.subscribe(),
+    ));
+    tokio::spawn(pipeline::transmit::run_transmitter(
+        batch_rx, config.clone(), disk_buf.clone(), shutdown_tx.subscribe(),
+    ));
+
     // Signal handler task — converts SIGTERM / SIGINT into the shutdown channel.
     let sig_tx = shutdown_tx.clone();
     tokio::spawn(async move {
@@ -151,7 +180,10 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
         tokio::spawn(async move { run_cli_server(cfg, rx, tx).await })
     };
 
-    run_state_machine(config, features, state_tx, shutdown_tx.subscribe()).await?;
+    run_state_machine(
+        config, features, state_tx, shutdown_tx.subscribe(),
+        disk_buf, sampling_rate,
+    ).await?;
 
     // Stop CLI server.
     let _ = shutdown_tx.send(());
@@ -180,13 +212,15 @@ fn init_tracing(config: &Config) {
 // ---------------------------------------------------------------------------
 
 async fn run_state_machine(
-    config:      Arc<Config>,
-    features:    Vec<Feature>,
-    state_tx:    watch::Sender<DaemonState>,
+    config:       Arc<Config>,
+    features:     Vec<Feature>,
+    state_tx:     watch::Sender<DaemonState>,
     mut shutdown: broadcast::Receiver<()>,
+    disk_buf:     Arc<DiskBuffer>,
+    sampling:     Arc<AtomicU32>,
 ) -> anyhow::Result<()> {
-    let buf     = failure_buffer::BUFFER.get().expect("buffer must be initialised");
-    let mut bo  = Backoff::new(
+    let buf    = failure_buffer::BUFFER.get().expect("buffer must be initialised");
+    let mut bo = Backoff::new(
         config.agent.reconnect_base_s as f64,
         config.agent.reconnect_max_s  as f64,
         2.0,
@@ -202,7 +236,7 @@ async fn run_state_machine(
                 info!("shutdown signal — stopping state machine");
                 break;
             }
-            next = step(&state, &config, &features, buf, &mut bo) => next,
+            next = step(&state, &config, &features, buf, &mut bo, &disk_buf, &sampling) => next,
         };
 
         state = next;
@@ -225,16 +259,14 @@ async fn step(
     features: &[Feature],
     buf:      &'static FailureBuffer,
     bo:       &mut Backoff,
+    disk_buf: &Arc<DiskBuffer>,
+    sampling: &Arc<AtomicU32>,
 ) -> DaemonState {
     match state {
         DaemonState::Provisioning    => step_provisioning(config).await,
         DaemonState::Idle(reason)    => step_idle(reason).await,
-        DaemonState::Connecting      => step_connecting(config, features, buf, bo).await,
-        DaemonState::Connected { .. } => {
-            // Connected state is entered and exited within step_connecting;
-            // if we somehow land here, go back to Connecting.
-            DaemonState::Connecting
-        }
+        DaemonState::Connecting      => step_connecting(config, features, buf, bo, disk_buf, sampling).await,
+        DaemonState::Connected { .. } => DaemonState::Connecting,
     }
 }
 
@@ -267,6 +299,8 @@ async fn step_connecting(
     features: &[Feature],
     buf:      &'static FailureBuffer,
     bo:       &mut Backoff,
+    disk_buf: &Arc<DiskBuffer>,
+    sampling: &Arc<AtomicU32>,
 ) -> DaemonState {
     info!(server = %config.server.name, "connecting …");
 
@@ -283,7 +317,7 @@ async fn step_connecting(
         Ok(ConnectResult::Connected(cs)) => {
             bo.reset();
             info!("connected; running connected loop");
-            run_connected_loop(cs, config, buf).await
+            run_connected_loop(cs, config, buf, disk_buf, sampling).await
         }
     }
 }
@@ -373,9 +407,11 @@ async fn try_connect(
 // ---------------------------------------------------------------------------
 
 async fn run_connected_loop(
-    cs:     ConnectSuccess,
-    config: &Config,
-    buf:    &'static FailureBuffer,
+    cs:       ConnectSuccess,
+    config:   &Config,
+    buf:      &'static FailureBuffer,
+    disk_buf: &Arc<DiskBuffer>,
+    sampling: &Arc<AtomicU32>,
 ) -> DaemonState {
     let ConnectSuccess { out_tx, mut in_stream, .. } = cs;
 
@@ -396,11 +432,16 @@ async fn run_connected_loop(
                 }
                 hb_seq += 1;
                 in_flight.insert(hb_seq);
+                let status = MonitoringStatus {
+                    disk_buffer_bytes:     disk_buf.used_bytes(),
+                    disk_buffer_max_bytes: config.transmission.disk_buffer_max_bytes,
+                    ..Default::default()
+                };
                 let msg = ClientMessage {
                     message: Some(client_message::Message::Heartbeat(Heartbeat {
                         seq:               hb_seq,
                         sent_at_unix_ms:   unix_ms_now(),
-                        monitoring_status: Some(MonitoringStatus::default()),
+                        monitoring_status: Some(status),
                     })),
                 };
                 if out_tx.send(msg).await.is_err() {
@@ -420,7 +461,7 @@ async fn run_connected_loop(
                         return DaemonState::Connecting;
                     }
                     Ok(Some(msg)) => {
-                        if !handle_server_msg(msg, &out_tx, &mut in_flight).await {
+                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling).await {
                             return DaemonState::Connecting;
                         }
                     }
@@ -428,7 +469,6 @@ async fn run_connected_loop(
             }
         }
     }
-
 }
 
 /// Returns `false` if the caller should reconnect immediately.
@@ -436,6 +476,7 @@ async fn handle_server_msg(
     msg:       ServerMessage,
     out_tx:    &mpsc::Sender<ClientMessage>,
     in_flight: &mut HashSet<u64>,
+    sampling:  &Arc<AtomicU32>,
 ) -> bool {
     use server_message::Message as M;
 
@@ -461,13 +502,20 @@ async fn handle_server_msg(
             return false;
         }
 
-        // ── Monitoring control (Phase 7 stub) ─────────────────────────────────
+        // ── Monitoring control ────────────────────────────────────────────────
         Some(M::SetMonitoring(cmd)) => {
-            info!(command_id = %cmd.command_id, "set_monitoring (Phase 7 stub)");
+            info!(
+                command_id       = %cmd.command_id,
+                traffic_enabled  = cmd.traffic_enabled,
+                telemetry_enabled = cmd.telemetry_enabled,
+                "set_monitoring"
+            );
             let _ = out_tx.send(cmd_result(&cmd.command_id, CommandStatus::Success, "")).await;
         }
-        Some(M::ThrottleMonitoring(_)) => {
-            // No response expected; monitoring rate updated in Phase 7.
+        Some(M::ThrottleMonitoring(t)) => {
+            let rate = t.packet_sampling_rate.clamp(0.0, 1.0);
+            sampling.store(rate.to_bits(), Ordering::Relaxed);
+            info!(rate, "packet sampling rate updated");
         }
 
         // ── Tunnels (Phase 8 stubs) ───────────────────────────────────────────

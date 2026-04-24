@@ -125,14 +125,14 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 7 — Data Transmission Pipeline
+## Phase 7 — Data Transmission Pipeline ✅
 
-- [ ] `pipeline/capture.rs` — libpcap capture task via `nullnet-traffic-monitor`; bounded channel cap=50_000; drop + metric on full
-- [ ] `pipeline/batch.rs` — accumulate until 1_000 packets or 500ms; apply `Arc<AtomicU32>` sampling rate from `ThrottleMonitoring`
-- [ ] `pipeline/transmit.rs` — send batch via Data gRPC; on failure → `DiskBuffer`; on reconnect → drain buffer before live data resumes
-- [ ] `disk_buffer.rs` — `try_write()`: check available space; 256 MiB cap; 512 MiB minimum free guard; `{id:016x}.bin` filenames; never panics
-- [ ] `grpc/data.rs` (server) — receive batches; bulk-insert into `packets` hypertable; emit counter metrics
-- [ ] Unit tests: `DiskBuffer` write/full/low-disk/never-panics; pipeline backpressure
+- [x] `pipeline/capture.rs` — bounded channel cap=50_000; stub pending `nullnet-traffic-monitor`; drop + metric on full
+- [x] `pipeline/batch.rs` — accumulate until 1_000 packets or 500ms; apply `Arc<AtomicU32>` sampling rate from `ThrottleMonitoring`
+- [x] `pipeline/transmit.rs` — send batch via Data gRPC; on failure → `DiskBuffer`; on reconnect → drain buffer before live data resumes
+- [x] `disk_buffer.rs` — `try_write()`: check available space (statvfs); 256 MiB cap; 512 MiB minimum free guard; `{id:016x}.bin` filenames; never panics
+- [x] `grpc/data.rs` (server) — receive batches; bulk-insert into `packets` hypertable; emit counter metrics
+- [x] Unit tests: `DiskBuffer` write/full/low-disk/never-panics; pipeline backpressure (6 tests)
 
 ---
 

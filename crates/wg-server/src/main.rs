@@ -27,6 +27,7 @@ use crate::{
     connection_registry::ConnectionRegistry,
     grpc::{
         control::{ControlServer, ControlService},
+        data::{DataServer, DataSvc},
         provisioning::{ProvisioningServer, ProvisioningService},
     },
     middleware::{auth::auth_middleware, request_id::request_id_middleware},
@@ -160,14 +161,16 @@ async fn main() {
         .client_ca_root(Certificate::from_pem(&ca_cert_pem));
 
     let control_svc = ControlServer::new(ControlService { state: state.clone() });
+    let data_svc    = DataServer::new(DataSvc { pool: pool.clone() });
 
     let control_addr: SocketAddr = format!("[::]:{control_port}").parse().unwrap();
     tokio::spawn(async move {
-        tracing::info!(port = control_port, "Control gRPC listening (mTLS)");
+        tracing::info!(port = control_port, "Control+Data gRPC listening (mTLS)");
         if let Err(e) = TonicServer::builder()
             .tls_config(control_tls)
             .expect("invalid mTLS config")
             .add_service(control_svc)
+            .add_service(data_svc)
             .serve(control_addr)
             .await
         {
