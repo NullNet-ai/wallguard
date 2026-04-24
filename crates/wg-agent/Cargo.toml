@@ -22,10 +22,11 @@ remote-desktop = [
 [dependencies]
 wg-shared  = { path = "../wg-shared" }
 
-tokio      = { workspace = true }
-tonic      = { workspace = true }
-prost      = { workspace = true }
-prost-types = { workspace = true }
+tokio        = { workspace = true }
+tokio-stream = { workspace = true }
+tonic        = { workspace = true }
+prost        = { workspace = true }
+prost-types  = { workspace = true }
 
 serde      = { workspace = true }
 serde_json = { workspace = true }
@@ -40,6 +41,7 @@ anyhow    = { workspace = true }
 thiserror = { workspace = true }
 rand      = { workspace = true }
 bytes     = { workspace = true }
+clap      = { workspace = true }
 
 # Remote-desktop optional deps
 enigo    = { workspace = true, optional = true }
@@ -48,6 +50,10 @@ openh264 = { workspace = true, optional = true }
 # TODO (Phase 7): uncomment once sources are verified
 # nullnet-traffic-monitor = { workspace = true }
 # nullnet-libresmon       = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tempfile = { workspace = true }
 
 [build-dependencies]
 tonic-build         = { version = "0.12" }

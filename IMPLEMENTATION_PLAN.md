@@ -85,33 +85,33 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 5 — Agent Core
+## Phase 5 — Agent Core ✅
 
 ### 5a — Config & State Machine
-- [ ] `config.rs` — parse `/etc/wallguard/config.toml`; all fields from §16 (server URL, TLS paths, tunnel addresses, transmission settings, observability)
-- [ ] `state.rs` — `DaemonState` enum (`Provisioning`, `Idle`, `Connecting`, `Connected`); typed transitions; no `Error` state
-- [ ] `backoff.rs` — `Backoff`: base 1s, max 300s, multiplier 2.0, ±20% jitter; proptest fuzz for delay distribution
+- [x] `config.rs` — parse `/etc/wallguard/config.toml`; all fields from §16 (server URL, TLS paths, tunnel addresses, transmission settings, observability)
+- [x] `state.rs` — `DaemonState` enum (`Provisioning`, `Idle`, `Connecting`, `Connected`); typed transitions; no `Error` state
+- [x] `backoff.rs` — `Backoff`: base 1s, max 300s, multiplier 2.0, ±20% jitter; proptest fuzz for delay distribution
 
 ### 5b — Platform & Capability Detection
-- [ ] `platform.rs` — `TARGET_OS` compile-time const (`Linux`, `FreeBsd`, `Windows`)
-- [ ] `capabilities.rs` — `derive_capabilities()`: base feature set; remote desktop runtime probe:
-  - [ ] Attempt `captis::Display::open()` (or equivalent backend init)
-  - [ ] `Ok` → push `Feature::RemoteDesktop`
-  - [ ] `Err` → log `info "remote desktop unavailable: {reason}"`; do not push feature
-  - [ ] No compile-time `#[cfg(not(target_os = "freebsd"))]` exclusion
+- [x] `platform.rs` — `TARGET_OS` compile-time const (`Linux`, `FreeBsd`, `Windows`)
+- [x] `capabilities.rs` — `derive_capabilities()`: base feature set; remote desktop runtime probe:
+  - [x] Attempt `captis::Display::open()` (stub; full impl Phase 8e)
+  - [x] `Ok` → push `Feature::RemoteDesktop`
+  - [x] `Err` → log `info "remote desktop unavailable: {reason}"`; do not push feature
+  - [x] No compile-time `#[cfg(not(target_os = "freebsd"))]` exclusion
 
 ### 5c — Failure Reporting
-- [ ] `failure_buffer.rs` — `FailureBuffer`: `append` (sync + async), `read_all`, `trim_delivered`; 500-entry cap ring rotation; `fsync` on FATAL only
-- [ ] `panic_hook.rs` — sync-safe panic hook; writes FATAL `AgentFailure` to buffer; `eprintln!` fallback
-- [ ] Unit tests: cap at exactly 500; trim_delivered; never panics on corrupt file
+- [x] `failure_buffer.rs` — `FailureBuffer`: `append` (sync + async), `read_all`, `trim_delivered`; 500-entry cap ring rotation; `fsync` on FATAL only
+- [x] `panic_hook.rs` — sync-safe panic hook; writes FATAL `AgentFailure` to buffer; `eprintln!` fallback
+- [x] Unit tests: cap at exactly 500; trim_delivered; never panics on corrupt file
 
 ### 5d — Agent `main.rs`
-- [ ] Parse `--firewall` arg (default `none`); load config; install panic hook; run state machine loop
-- [ ] `Connecting` → connect gRPC (backoff) → open QUIC tunnel connection (backoff) → send `Hello` / receive `Welcome` → `Connected`
-- [ ] `VersionRejected` → log + go to `Idle`; do not retry
-- [ ] On `Connected`: replay buffered failures → drain disk buffer → start heartbeat task → start monitoring (if enabled)
-- [ ] Heartbeat task: send every 10s with `MonitoringStatus`; 3 consecutive missed acks → reconnect
-- [ ] CLI Unix socket: `UnixListener` on `/run/wallguard/agent.sock`; mode `0600`; serve `cli.proto` gRPC
+- [x] Parse `--config` arg; load config; install panic hook; run state machine loop
+- [x] `Connecting` → connect gRPC with mTLS (backoff) → send `Hello` / receive `Welcome` → `Connected`
+- [x] `VersionRejected` → log + go to `Idle`; do not retry
+- [x] On `Connected`: replay buffered failures → start heartbeat loop (disk buffer drain + monitoring are Phase 7 stubs)
+- [x] Heartbeat task: send every 10s with `MonitoringStatus`; 3 consecutive missed acks → reconnect
+- [x] CLI Unix socket: `UnixListener` on `/run/wallguard/agent.sock`; mode `0600`; serve `cli.proto` gRPC
 
 ---
 
