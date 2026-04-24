@@ -37,9 +37,10 @@ tracing-subscriber = { workspace = true }
 anyhow    = { workspace = true }
 thiserror = { workspace = true }
 
-rand       = { workspace = true }
-rust-embed = { workspace = true }
-rcgen      = { workspace = true }
+rand        = { workspace = true }
+rust-embed  = { workspace = true }
+rcgen       = { workspace = true }
+x509-parser = { workspace = true }
 
 [build-dependencies]
 tonic-build         = { version = "0.12" }

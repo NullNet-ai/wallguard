@@ -115,13 +115,13 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 6 — Server Control Channel
+## Phase 6 — Server Control Channel ✅
 
-- [ ] `grpc/control.rs` — bidirectional streaming; extract `device_id` from TLS peer cert CN; call `on_new_connection()`
-- [ ] `connection_registry.rs` — `ConnectionMap: Arc<RwLock<HashMap<DeviceId, DeviceConnection>>>`; on duplicate `DeviceId` → signal stale connection shutdown → replace immediately
-- [ ] `command_tracker.rs` — pending command map keyed by `command_id`; background sweeper every 5s sends `TIMEOUT` to commands older than 30s; resolves to HTTP 200 / 422 / 504 correctly
-- [ ] `heartbeat.rs` — server sends heartbeats every 10s; per-device 3-miss threshold; update `MonitoringStatus` in registry; write to `device_monitoring_status` (throttled once/min)
-- [ ] Graceful shutdown: on `SIGTERM` → broadcast `ShutdownImminent { reconnect_after_ms: 3000 }` → wait ≤5s for tunnel close → send `TIMEOUT` to all pending commands → exit
+- [x] `grpc/control.rs` — bidirectional streaming; extract `device_id` from TLS peer cert CN; call `on_new_connection()`
+- [x] `connection_registry.rs` — `ConnectionMap: Arc<RwLock<HashMap<DeviceId, DeviceConnection>>>`; on duplicate `DeviceId` → signal stale connection shutdown → replace immediately
+- [x] `command_tracker.rs` — pending command map keyed by `command_id`; background sweeper every 5s sends `TIMEOUT` to commands older than 30s; resolves to HTTP 200 / 422 / 504 correctly
+- [x] `heartbeat.rs` — server sends heartbeats every 10s; per-device 3-miss threshold; update `MonitoringStatus` in registry; write to `device_monitoring_status` (throttled once/min)
+- [x] Graceful shutdown: on `SIGTERM` → broadcast `ShutdownImminent { reconnect_after_ms: 3000 }` → wait ≤5s for tunnel close → send `TIMEOUT` to all pending commands → exit
 
 ---
 
