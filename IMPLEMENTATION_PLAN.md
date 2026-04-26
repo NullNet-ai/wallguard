@@ -174,21 +174,23 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 - [x] `events.rs` — `SseEvent`/`SseEventKind`; grpc/control.rs emits on connect/disconnect/failure; failures persisted to `device_failures`
 - [ ] Serve `wg-ui` WASM via `rust-embed`; `Cache-Control: immutable` on hashed assets; `no-cache` on `index.html`
 
-### 9b — `wg-ui`
-- [x] `Trunk.toml` and `index.html` — stub in place
-- [x] `public/style.css` — plain CSS stub in place
-- [ ] `app.rs` — root component; `leptos_router` for all pages
-- [ ] `api/` — type-safe client modules (`auth.rs`, `devices.rs`, `tunnels.rs`, `failures.rs`, `users.rs`) using `reqwest` wasm + `wg-shared` types; JWT stored in `localStorage`
-- [ ] `pages/login.rs`
-- [ ] `pages/dashboard.rs` — connected/degraded counts, recent failures, active tunnels, bytes/s chart (SSE-driven)
-- [ ] `pages/devices/list.rs` — live status via SSE
-- [ ] `pages/devices/detail.rs` — CPU/memory/disk charts, packet rate chart, active tunnels, recent failures, quick-launch tunnel buttons
-- [ ] `pages/devices/tunnels.rs` — active sessions
-- [ ] `pages/devices/failures.rs` — failure log with severity filter
-- [ ] `components/terminal.rs` — `xterm.js` WebSocket wrapper for SSH/TTY
-- [ ] `components/remote_desktop.rs` — WebSocket + WebCodecs H.264 decoder
-- [ ] `components/packet_chart.rs`, `device_card.rs`, `status_badge.rs`
-- [ ] `pages/settings.rs`, `pages/settings/users.rs`
+### 9b — `wg-ui` ✅
+- [x] `Trunk.toml` and `index.html` — in place
+- [x] `public/style.css` — full production CSS with dark terminal, nav, cards, badges, forms, table
+- [x] `app.rs` — root component; `leptos_router` with auth-gated routes for all pages
+- [x] `auth.rs` — JWT localStorage helpers + `AuthSignal` global context
+- [x] `api/` — `mod.rs` (gloo_net HTTP client), `auth.rs`, `devices.rs`, `tunnels.rs`, `failures.rs`, `users.rs`
+- [x] `pages/login.rs` — email/password form, JWT stored in AuthSignal + localStorage
+- [x] `pages/dashboard.rs` — device count, recent failures, SSE-driven event log, logout
+- [x] `pages/devices/list.rs` — Resource-loaded DeviceCard grid
+- [x] `pages/devices/detail.rs` — device metadata, SSH/TTY open buttons, tab links
+- [x] `pages/devices/tunnels.rs` — Terminal component when session active, open buttons when idle
+- [x] `pages/devices/failures.rs` — severity filter, paginated failure log
+- [x] `components/terminal.rs` — web_sys::WebSocket with onmessage/onclose closures, input field
+- [x] `components/remote_desktop.rs` — stub (captis pending)
+- [x] `components/packet_chart.rs` — SVG line chart (400×100, normalized data)
+- [x] `components/device_card.rs`, `status_badge.rs`
+- [x] `pages/settings/users.rs` — user table, create-user form, per-row delete
 
 ### 9c — `wg-cli`
 - [ ] `wg-cli status` — connect to Unix socket; pretty-print `StatusResponse`

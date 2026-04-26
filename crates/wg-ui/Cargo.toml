@@ -24,6 +24,7 @@ uuid       = { version = "1",    features = ["v4", "serde", "js"] }
 
 web-sys = { version = "0.3", features = [
     "Window", "Document", "Element",
+    "Storage",
     "WebSocket", "MessageEvent", "CloseEvent",
     "EventSource",
     "VideoDecoder", "VideoDecoderConfig", "VideoDecoderInit",
@@ -36,3 +37,4 @@ gloo-timers = { version = "0.3" }
 js-sys      = { version = "0.3" }
 wasm-bindgen        = { version = "0.2" }
 wasm-bindgen-futures = { version = "0.4" }
+futures = { version = "0.3", default-features = false, features = ["std"] }

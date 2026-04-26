@@ -1,16 +1,12 @@
-// wg-ui — WallGuard web UI (Leptos / WASM).
-// Phase 0 stub. Full UI implemented in Phase 9b.
-// Build with: trunk build --release
-// Do not build with plain cargo — this crate targets wasm32.
+mod api;
+mod app;
+mod auth;
+mod components;
+mod pages;
 
-use leptos::*;
-
-#[component]
-pub fn App() -> impl IntoView {
-    view! { <p>"WallGuard UI (stub)"</p> }
-}
+use app::App;
 
 #[wasm_bindgen::prelude::wasm_bindgen(start)]
 pub fn main() {
-    leptos::mount_to_body(App);
+    leptos::mount::mount_to_body(App);
 }
