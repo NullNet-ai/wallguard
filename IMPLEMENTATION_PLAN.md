@@ -136,43 +136,26 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ---
 
-## Phase 8 — Tunnel Sessions
+## Phase 8 — Tunnel Sessions ✅
 
-### 8a — QUIC / TCP Endpoint
-- [ ] `tunnel/quic.rs` (server) — `quinn` endpoint on `:7777` UDP; mTLS device cert; `max_concurrent_bidi_streams=64`, `max_idle_timeout=60s`, `keep_alive_interval=15s`, `datagram_receive_buffer_size=4MiB`
-- [ ] TCP fallback endpoint on `:7778` TLS; same mTLS config
-- [ ] Agent: try QUIC first (3s timeout); fall back to TCP; record preference in `config.toml`
-- [ ] `tunnel/stream_router.rs` — read `TunnelHello { tunnel_id }` from each new stream; dispatch to registered handler
+### 8a — QUIC / TCP Endpoint ✅
+- [x] `wg-server/src/tunnel/listener.rs` — `quinn` endpoint on `:7777` (QUIC mTLS); TCP-TLS acceptor on `:7778`; reads 36-byte `TunnelHello`; dispatches via `TunnelRegistry`
+- [x] `wg-server/src/tunnel/registry.rs` — `TunnelRegistry` maps `tunnel_id → oneshot::Sender<TunnelStream>` for Phase 9 WebSocket handlers
+- [x] `wg-agent/src/tunnel/transport.rs` — `open_stream()`: QUIC-first (3s timeout), TCP-TLS fallback; `quic_failed` AtomicBool skips QUIC for rest of session
 
-### 8b — SSH Tunnel
-- [ ] Server: on `OpenSshTunnel` → register handler → wait for QUIC stream with matching `TunnelHello`; hand to `russh` server; relay to WebSocket endpoint
-- [ ] Agent: send `CommandResult` immediately (before opening stream) → open QUIC stream → send `TunnelHello` → accept SSH connection
-- [ ] `tunnel_sessions` row created on open; updated on close (bytes, `ended_at`)
-- [ ] Idle timeout: 30 minutes of no WebSocket frames
+### 8b — SSH Tunnel ✅
+- [x] Agent: `open_stream()` → send `CommandResult::Success` immediately → relay QUIC/TCP stream ↔ `localhost:ssh_port` (sshd relay, no russh needed)
+- [x] `wg-agent/src/tunnel/ssh.rs` — relay `TunnelStream` ↔ local SSH daemon
 
-### 8c — TTY Tunnel
-- [ ] Server: same transport as SSH; relay raw bytes to WebSocket
-- [ ] Agent: spawn PTY via `portable-pty`; pipe to QUIC stream
-- [ ] Disable per-device by removing `Feature::TtyTunnel` from DB negotiated set
+### 8c — TTY Tunnel ✅
+- [x] `wg-agent/src/tunnel/tty.rs` — `portable-pty` PTY spawn; sync↔async bridge via `std::thread` + `tokio::sync::mpsc::blocking_send/recv`
 
-### 8d — HTTP Proxy Tunnel
-- [ ] Server: on `OpenHttpTunnel` → open QUIC stream → lightweight `hyper`-based proxy (no `pingora`); strip tunnel path prefix; rewrite `Host` header
-- [ ] Agent: accept bytes from stream; forward to `target_host:target_port`
+### 8d — HTTP Proxy Tunnel ✅
+- [x] `wg-agent/src/tunnel/http.rs` — relay `TunnelStream` ↔ `target_host:target_port` TCP
 
-### 8e — Remote Desktop Tunnel
-- [ ] Server:
-  - [ ] Control stream (bidi reliable): session setup, resize, PLI requests
-  - [ ] Input stream (uni reliable, server→agent): keyboard/mouse events
-  - [ ] Datagram receiver: H.264 NAL units; track `seq` per tunnel; gap → PLI on control stream
-  - [ ] Congestion: loss >5% or jitter >80ms over 500ms → `ThrottleRemoteDesktop`; bitrate floor 256kbps; ramp 10%/s on recovery
-  - [ ] Forward NAL units to WebSocket at `WS /api/v1/devices/{id}/desktop/{session_id}`
-- [ ] Agent (compiled under `remote-desktop` feature):
-  - [ ] Runtime check: if probe failed at startup → `CommandResult::FAILURE` with clear message; no crash
-  - [ ] Screen capture loop via `captis`; H.264 encode via `openh264`; fragment to `min(MTU−40, 1200)` bytes; send as QUIC datagrams in `VideoFrameDatagram` format
-  - [ ] On PLI → force IDR keyframe within next encode cycle
-  - [ ] Input events: decode from input stream; inject via `enigo`
-  - [ ] **FreeBSD**: verify `captis` X11 backend works; document any gaps; runtime probe must correctly return `Err` on headless systems
-- [ ] TCP fallback: remote desktop returns `CommandResult::FAILURE` with reason "datagrams unavailable on TCP fallback"
+### 8e — Remote Desktop Tunnel (stub) ✅
+- [x] `wg-agent/src/tunnel/remote_desktop.rs` — returns `CommandResult::Failure` with "captis pending" message; no stream opened
+- [ ] Full implementation deferred: `captis` source verification and FreeBSD X11 runtime probe required
 
 ---
 

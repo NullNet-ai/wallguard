@@ -9,6 +9,7 @@ mod middleware;
 mod pki;
 pub(crate) mod proto;
 mod routes;
+mod tunnel;
 
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
@@ -33,6 +34,7 @@ use crate::{
     middleware::{auth::auth_middleware, request_id::request_id_middleware},
     proto::control::{server_message, ServerMessage, ShutdownImminent},
     routes::installation_codes,
+    tunnel::TunnelRegistry,
 };
 
 // ---------------------------------------------------------------------------
@@ -41,12 +43,13 @@ use crate::{
 
 #[derive(Clone)]
 pub struct AppState {
-    pub pool:        PgPool,
-    pub ca:          Arc<Ca>,
-    pub jwt:         JwtService,
-    pub ca_cert_pem: String,
-    pub registry:    ConnectionRegistry,
-    pub tracker:     CommandTracker,
+    pub pool:           PgPool,
+    pub ca:             Arc<Ca>,
+    pub jwt:            JwtService,
+    pub ca_cert_pem:    String,
+    pub registry:       ConnectionRegistry,
+    pub tracker:        CommandTracker,
+    pub tunnel_registry: TunnelRegistry,
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +82,8 @@ async fn main() {
     let prov_port: u16    = env_port("GRPC_PORT",         50051);
     let control_port: u16 = env_port("CONTROL_GRPC_PORT", 50052);
     let http_port: u16    = env_port("HTTP_PORT",         8080);
+    let quic_port: u16    = env_port("QUIC_PORT",         7777);
+    let tcp_port: u16     = env_port("TCP_TLS_PORT",      7778);
 
     // ── Database ──────────────────────────────────────────────────────────────
     let pool = db::create_pool(&database_url).await.unwrap_or_else(|e| {
@@ -117,18 +122,30 @@ async fn main() {
     });
 
     // ── Shared state ──────────────────────────────────────────────────────────
-    let registry = ConnectionRegistry::new();
-    let tracker  = CommandTracker::new();
-    let sweeper  = tracker.start_sweeper();
+    let registry        = ConnectionRegistry::new();
+    let tracker         = CommandTracker::new();
+    let tunnel_registry = TunnelRegistry::new();
+    let sweeper         = tracker.start_sweeper();
 
     let state = AppState {
         pool: pool.clone(),
         ca:   ca.clone(),
         jwt,
-        ca_cert_pem: ca_cert_pem.clone(),
-        registry:    registry.clone(),
-        tracker:     tracker.clone(),
+        ca_cert_pem:     ca_cert_pem.clone(),
+        registry:        registry.clone(),
+        tracker:         tracker.clone(),
+        tunnel_registry: tunnel_registry.clone(),
     };
+
+    // ── Tunnel listeners (QUIC :7777 + TCP-TLS :7778) ────────────────────────
+    tunnel::listener::spawn_listeners(
+        tunnel_registry,
+        ca_cert_pem.clone(),
+        server_cert.clone(),
+        server_key.clone(),
+        quic_port,
+        tcp_port,
+    );
 
     // ── Provisioning gRPC (server-TLS only, port 50051) ───────────────────────
     let prov_tls_config = ServerTlsConfig::new()

@@ -20,6 +20,7 @@ use crate::proto_conv::{
     cmd_result, failure_entry_to_proto, make_hello, proto_to_shared_feature, unix_ms_now,
 };
 use crate::state::DaemonState;
+use crate::tunnel;
 
 pub struct ConnectSuccess {
     pub negotiated_features: Vec<Feature>,
@@ -90,12 +91,14 @@ pub async fn try_connect(
 
 pub async fn run_connected_loop(
     cs:       ConnectSuccess,
-    config:   &Config,
+    config:   &Arc<Config>,
     buf:      &'static FailureBuffer,
     disk_buf: &Arc<DiskBuffer>,
     sampling: &Arc<AtomicU32>,
 ) -> DaemonState {
     let ConnectSuccess { out_tx, mut in_stream, .. } = cs;
+
+    let tunnel_ctx = Arc::new(tunnel::TunnelContext::new(config.clone()));
 
     replay_failures(&out_tx, buf).await;
 
@@ -142,7 +145,7 @@ pub async fn run_connected_loop(
                         return DaemonState::Connecting;
                     }
                     Ok(Some(msg)) => {
-                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling).await {
+                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling, &tunnel_ctx).await {
                             return DaemonState::Connecting;
                         }
                     }
@@ -177,10 +180,11 @@ async fn replay_failures(out_tx: &mpsc::Sender<ClientMessage>, buf: &FailureBuff
 
 /// Returns `false` if the caller should reconnect immediately.
 async fn handle_server_msg(
-    msg:       ServerMessage,
-    out_tx:    &mpsc::Sender<ClientMessage>,
-    in_flight: &mut HashSet<u64>,
-    sampling:  &Arc<AtomicU32>,
+    msg:        ServerMessage,
+    out_tx:     &mpsc::Sender<ClientMessage>,
+    in_flight:  &mut HashSet<u64>,
+    sampling:   &Arc<AtomicU32>,
+    tunnel_ctx: &Arc<tunnel::TunnelContext>,
 ) -> bool {
     use server_message::Message as M;
 
@@ -219,22 +223,84 @@ async fn handle_server_msg(
             info!(rate, "packet sampling rate updated");
         }
 
-        // Tunnel stubs (Phase 8)
         Some(M::OpenSshTunnel(cmd)) => {
-            let _ = out_tx.send(cmd_result(&cmd.command_id, CommandStatus::Failure,
-                "SSH tunnel not yet available (Phase 8)")).await;
+            let ctx  = tunnel_ctx.clone();
+            let out  = out_tx.clone();
+            let port = tunnel_ctx.config.agent.ssh_port;
+            tokio::spawn(async move {
+                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
+                    Err(e) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Failure,
+                            &format!("SSH tunnel open failed: {e:#}"),
+                        )).await;
+                    }
+                    Ok(stream) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Success, "",
+                        )).await;
+                        if let Err(e) = tunnel::ssh::run_ssh_tunnel(stream, port).await {
+                            tracing::debug!(command_id = %cmd.command_id, "SSH tunnel closed: {e}");
+                        }
+                    }
+                }
+            });
         }
+
         Some(M::OpenTtyTunnel(cmd)) => {
-            let _ = out_tx.send(cmd_result(&cmd.command_id, CommandStatus::Failure,
-                "TTY tunnel not yet available (Phase 8)")).await;
+            let ctx   = tunnel_ctx.clone();
+            let out   = out_tx.clone();
+            let shell = tunnel_ctx.config.agent.tty_shell.clone();
+            tokio::spawn(async move {
+                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
+                    Err(e) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Failure,
+                            &format!("TTY tunnel open failed: {e:#}"),
+                        )).await;
+                    }
+                    Ok(stream) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Success, "",
+                        )).await;
+                        if let Err(e) = tunnel::tty::run_tty_tunnel(stream, &shell).await {
+                            tracing::debug!(command_id = %cmd.command_id, "TTY tunnel closed: {e}");
+                        }
+                    }
+                }
+            });
         }
+
         Some(M::OpenHttpTunnel(cmd)) => {
-            let _ = out_tx.send(cmd_result(&cmd.command_id, CommandStatus::Failure,
-                "HTTP tunnel not yet available (Phase 8)")).await;
+            let ctx         = tunnel_ctx.clone();
+            let out         = out_tx.clone();
+            let target_host = cmd.target_host.clone();
+            let target_port = cmd.target_port as u16;
+            tokio::spawn(async move {
+                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
+                    Err(e) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Failure,
+                            &format!("HTTP tunnel open failed: {e:#}"),
+                        )).await;
+                    }
+                    Ok(stream) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Success, "",
+                        )).await;
+                        if let Err(e) = tunnel::http::run_http_tunnel(stream, &target_host, target_port).await {
+                            tracing::debug!(command_id = %cmd.command_id, "HTTP tunnel closed: {e}");
+                        }
+                    }
+                }
+            });
         }
+
         Some(M::OpenRemoteDesktopTunnel(cmd)) => {
-            let _ = out_tx.send(cmd_result(&cmd.command_id, CommandStatus::Failure,
-                "remote desktop not yet available (Phase 8)")).await;
+            let _ = out_tx.send(cmd_result(
+                &cmd.command_id, CommandStatus::Failure,
+                "remote desktop: captis screen capture backend pending (Phase 8)",
+            )).await;
         }
 
         // Firewall stubs (Phase 12)

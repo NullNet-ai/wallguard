@@ -52,6 +52,12 @@ pub struct AgentConfig {
     pub reconnect_base_s:     u64,
     #[serde(default = "default_reconnect_max")]
     pub reconnect_max_s:      u64,
+    /// Local SSH daemon port for SSH tunnel relay (default 22).
+    #[serde(default = "default_ssh_port")]
+    pub ssh_port:             u16,
+    /// Shell spawned for TTY tunnels (default /bin/sh).
+    #[serde(default = "default_tty_shell")]
+    pub tty_shell:            String,
 }
 
 impl Default for AgentConfig {
@@ -60,6 +66,8 @@ impl Default for AgentConfig {
             heartbeat_interval_s: default_heartbeat_interval(),
             reconnect_base_s:     default_reconnect_base(),
             reconnect_max_s:      default_reconnect_max(),
+            ssh_port:             default_ssh_port(),
+            tty_shell:            default_tty_shell(),
         }
     }
 }
@@ -67,6 +75,8 @@ impl Default for AgentConfig {
 fn default_heartbeat_interval() -> u64 { 10 }
 fn default_reconnect_base()     -> u64 { 1 }
 fn default_reconnect_max()      -> u64 { 300 }
+fn default_ssh_port()           -> u16 { 22 }
+fn default_tty_shell()          -> String { "/bin/sh".to_string() }
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ObservabilityConfig {

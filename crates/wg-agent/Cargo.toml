@@ -45,6 +45,14 @@ clap      = { workspace = true }
 libc      = { workspace = true }
 metrics   = { workspace = true }
 
+# --- tunnel transport ---
+quinn            = { workspace = true }
+rustls           = { workspace = true }
+rustls-pki-types = { workspace = true }
+tokio-rustls     = { workspace = true }
+rustls-pemfile   = { workspace = true }
+portable-pty     = { workspace = true }
+
 # Remote-desktop optional deps
 enigo    = { workspace = true, optional = true }
 openh264 = { workspace = true, optional = true }

@@ -21,6 +21,7 @@ mod proto;
 mod proto_conv;
 mod state;
 mod state_machine;
+mod tunnel;
 
 use config::Config;
 use disk_buffer::DiskBuffer;
