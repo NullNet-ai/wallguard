@@ -2,6 +2,7 @@ pub mod auth;
 pub mod devices;
 pub mod failures;
 pub mod sse;
+pub mod static_files;
 pub mod tunnels;
 pub mod users;
 pub mod ws;
@@ -35,5 +36,7 @@ pub fn build_router(state: AppState) -> Router<AppState> {
         .route("/api/v1/auth/login",   post(auth::login))
         .route("/api/v1/auth/refresh", post(auth::refresh_token));
 
-    protected.merge(public)
+    protected
+        .merge(public)
+        .fallback(static_files::handler)
 }

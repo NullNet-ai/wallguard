@@ -172,7 +172,7 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 - [x] `api/ws.rs` — `WS /api/v1/devices/{id}/tunnels/ssh/{session_id}`, `.../tty/{session_id}`; bidirectional relay via TunnelRegistry
 - [x] `GET /metrics` on `:9090` — Prometheus export via `metrics-exporter-prometheus`
 - [x] `events.rs` — `SseEvent`/`SseEventKind`; grpc/control.rs emits on connect/disconnect/failure; failures persisted to `device_failures`
-- [ ] Serve `wg-ui` WASM via `rust-embed`; `Cache-Control: immutable` on hashed assets; `no-cache` on `index.html`
+- [x] Serve `wg-ui` WASM via `rust-embed`; `Cache-Control: immutable` on hashed assets; `no-cache` on `index.html`
 
 ### 9b — `wg-ui` ✅
 - [x] `Trunk.toml` and `index.html` — in place
