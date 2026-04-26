@@ -2,6 +2,7 @@ use std::pin::Pin;
 use std::time::Duration;
 
 use tokio::sync::{broadcast, mpsc};
+use serde_json;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt as _;
 use tonic::{Request, Response, Status, Streaming};
@@ -9,12 +10,13 @@ use uuid::Uuid;
 use wg_shared::capabilities::{MIN_AGENT_PROTOCOL_VERSION, PROTOCOL_VERSION};
 
 use crate::connection_registry::{DeviceConnection, DeviceId};
+use crate::events::{SseEvent, SseEventKind};
 use crate::grpc::extract_device_id;
 use crate::heartbeat::{self, HeartbeatState};
 use crate::proto::control::{
     client_message, control_server::Control, server_message,
-    ClientMessage, CommandResult, CommandStatus, DeviceSettings, Heartbeat, HeartbeatAck,
-    ServerMessage, VersionRejected, Welcome,
+    ClientMessage, CommandResult, CommandStatus, DeviceSettings, FailureCategory, FailureSeverity,
+    Heartbeat, HeartbeatAck, ServerMessage, VersionRejected, Welcome,
 };
 use crate::AppState;
 
@@ -93,6 +95,10 @@ async fn run_connection(
     };
 
     tracing::info!(%device_id, %org_id, "connected");
+    let _ = state.sse_tx.send(SseEvent {
+        org_id,
+        kind: SseEventKind::DeviceConnected { device_id },
+    });
 
     // ── 2. Message loop ────────────────────────────────────────────────────
     let mut hb_timer = tokio::time::interval(HEARTBEAT_INTERVAL);
@@ -128,13 +134,18 @@ async fn run_connection(
                     Ok(None)  => { tracing::info!(%device_id, "agent disconnected"); break; }
                     Ok(Some(msg)) => {
                         handle_client_msg(
-                            msg, device_id, &out_tx, &mut hb, state,
+                            msg, device_id, org_id, &out_tx, &mut hb, state,
                         ).await;
                     }
                 }
             }
         }
     }
+
+    let _ = state.sse_tx.send(SseEvent {
+        org_id,
+        kind: SseEventKind::DeviceDisconnected { device_id },
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -220,6 +231,7 @@ async fn handshake(
 async fn handle_client_msg(
     msg:       ClientMessage,
     device_id: DeviceId,
+    org_id:    Uuid,
     out_tx:    &mpsc::Sender<ServerMessage>,
     hb:        &mut HeartbeatState,
     state:     &AppState,
@@ -257,15 +269,65 @@ async fn handle_client_msg(
 
         // ── Failures (buffered replay or live) ────────────────────────────
         Some(M::AgentFailure(failure)) => {
+            let severity_str = match FailureSeverity::try_from(failure.severity)
+                .unwrap_or(FailureSeverity::Warning)
+            {
+                FailureSeverity::Warning => "warning",
+                FailureSeverity::Error   => "error",
+                FailureSeverity::Fatal   => "fatal",
+            };
+            let category_str = match FailureCategory::try_from(failure.category)
+                .unwrap_or(FailureCategory::Monitoring)
+            {
+                FailureCategory::Monitoring   => "monitoring",
+                FailureCategory::Tunnel       => "tunnel",
+                FailureCategory::DiskBuffer   => "disk_buffer",
+                FailureCategory::Fireparse    => "fireparse",
+                FailureCategory::AgentCrash   => "agent_crash",
+                FailureCategory::Connectivity => "connectivity",
+                FailureCategory::System       => "system",
+            };
             tracing::info!(
                 %device_id,
                 failure_id = %failure.failure_id,
-                severity   = failure.severity,
+                severity   = severity_str,
                 is_replay  = failure.is_replay,
                 "{}",
                 failure.message,
             );
-            // Phase 9: persist to agent_failures table.
+            let failure_id = Uuid::parse_str(&failure.failure_id)
+                .unwrap_or_else(|_| Uuid::new_v4());
+            let occurred_at = time::OffsetDateTime::from_unix_timestamp_nanos(
+                failure.occurred_at as i128 * 1_000_000,
+            )
+            .unwrap_or_else(|_| time::OffsetDateTime::now_utc());
+            let context_val: Option<serde_json::Value> =
+                serde_json::from_str(&failure.context).ok();
+            sqlx::query(
+                r#"INSERT INTO device_failures
+                    (failure_id, device_id, severity, category, message, context, occurred_at, is_replay)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                   ON CONFLICT (failure_id) DO NOTHING"#,
+            )
+            .bind(failure_id)
+            .bind(device_id)
+            .bind(severity_str)
+            .bind(category_str)
+            .bind(&failure.message)
+            .bind(context_val)
+            .bind(occurred_at)
+            .bind(failure.is_replay)
+            .execute(&state.pool)
+            .await
+            .ok();
+            let _ = state.sse_tx.send(SseEvent {
+                org_id,
+                kind: SseEventKind::NewFailure {
+                    device_id,
+                    failure_id,
+                    severity: severity_str.to_string(),
+                },
+            });
         }
 
         // ── Certificate renewal (Phase 11) ────────────────────────────────

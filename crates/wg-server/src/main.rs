@@ -1,8 +1,10 @@
+mod api;
 mod auth;
 mod command_tracker;
 mod connection_registry;
 mod db;
 mod error;
+pub(crate) mod events;
 mod grpc;
 mod heartbeat;
 mod middleware;
@@ -23,9 +25,12 @@ use pki::Ca;
 use sqlx::PgPool;
 use tonic::transport::{Certificate, Identity, Server as TonicServer, ServerTlsConfig};
 
+use tokio::sync::broadcast;
+
 use crate::{
     command_tracker::CommandTracker,
     connection_registry::ConnectionRegistry,
+    events::SseEvent,
     grpc::{
         control::{ControlServer, ControlService},
         data::{DataServer, DataSvc},
@@ -43,13 +48,14 @@ use crate::{
 
 #[derive(Clone)]
 pub struct AppState {
-    pub pool:           PgPool,
-    pub ca:             Arc<Ca>,
-    pub jwt:            JwtService,
-    pub ca_cert_pem:    String,
-    pub registry:       ConnectionRegistry,
-    pub tracker:        CommandTracker,
+    pub pool:            PgPool,
+    pub ca:              Arc<Ca>,
+    pub jwt:             JwtService,
+    pub ca_cert_pem:     String,
+    pub registry:        ConnectionRegistry,
+    pub tracker:         CommandTracker,
     pub tunnel_registry: TunnelRegistry,
+    pub sse_tx:          broadcast::Sender<SseEvent>,
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +132,7 @@ async fn main() {
     let tracker         = CommandTracker::new();
     let tunnel_registry = TunnelRegistry::new();
     let sweeper         = tracker.start_sweeper();
+    let (sse_tx, _)     = broadcast::channel::<SseEvent>(256);
 
     let state = AppState {
         pool: pool.clone(),
@@ -135,6 +142,7 @@ async fn main() {
         registry:        registry.clone(),
         tracker:         tracker.clone(),
         tunnel_registry: tunnel_registry.clone(),
+        sse_tx:          sse_tx.clone(),
     };
 
     // ── Tunnel listeners (QUIC :7777 + TCP-TLS :7778) ────────────────────────
@@ -195,14 +203,39 @@ async fn main() {
         }
     });
 
+    // ── Metrics (Prometheus :9090) ─────────────────────────────────────────────
+    let metrics_port: u16 = env_port("METRICS_PORT", 9090);
+    {
+        let prom_handle = metrics_exporter_prometheus::PrometheusBuilder::new()
+            .install_recorder()
+            .unwrap_or_else(|e| {
+                tracing::error!("Prometheus recorder init failed: {e}");
+                std::process::exit(1)
+            });
+        let metrics_app = Router::new().route(
+            "/metrics",
+            get(move || { let h = prom_handle.clone(); async move { h.render() } }),
+        );
+        let metrics_addr: SocketAddr = format!("[::]:{metrics_port}").parse().unwrap();
+        tokio::spawn(async move {
+            let listener = tokio::net::TcpListener::bind(metrics_addr).await
+                .unwrap_or_else(|e| {
+                    tracing::error!("cannot bind metrics port {metrics_port}: {e}");
+                    std::process::exit(1)
+                });
+            tracing::info!(port = metrics_port, "Prometheus metrics listening");
+            let _ = axum::serve(listener, metrics_app).await;
+        });
+    }
+
     // ── HTTP (port 8080) ──────────────────────────────────────────────────────
-    let protected = Router::new()
+    let legacy = Router::new()
         .route("/api/v1/installation-codes", post(installation_codes::create_installation_code))
         .route("/api/v1/installation-codes", get(installation_codes::list_installation_codes))
-        .layer(axum_middleware::from_fn_with_state(state.clone(), auth_middleware));
+        .route_layer(axum_middleware::from_fn_with_state(state.clone(), auth_middleware));
 
-    let app = Router::new()
-        .merge(protected)
+    let app = api::build_router(state.clone())
+        .merge(legacy)
         .layer(axum_middleware::from_fn(request_id_middleware))
         .with_state(state.clone());
 

@@ -161,16 +161,17 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ## Phase 9 — HTTP API & Web UI
 
-### 9a — HTTP API
-- [ ] `api/router.rs` — `axum::Router`; `AuthMiddleware` + `RbacMiddleware` on all non-auth routes; error format `{ error: { code, message, request_id } }`
-- [ ] `api/auth.rs` — `POST /login`, `POST /refresh`, `POST /logout`
-- [ ] `api/devices.rs` — `GET /devices`, `GET /devices/{id}`, `GET /devices/{id}/status`
-- [ ] `api/tunnels.rs` — `POST /devices/{id}/tunnels/ssh`, `.../tty`, `.../http`, `.../desktop`
-- [ ] `api/failures.rs` — `GET /devices/{id}/failures`
-- [ ] `api/users.rs` — `GET/POST/DELETE /users` (admin+)
-- [ ] `api/sse.rs` — `GET /api/v1/events` SSE stream; events: `device_status`, `device_connected`, `device_disconnected`, `new_failure`
-- [ ] WebSocket endpoints: `WS /api/v1/devices/{id}/ssh/{session_id}`, `.../tty/{session_id}`, `.../desktop/{session_id}`
-- [ ] `GET /metrics` on `:9090` — Prometheus export
+### 9a — HTTP API ✅
+- [x] `api/mod.rs` — `build_router(state)` assembles all routes; auth middleware via `route_layer`
+- [x] `api/auth.rs` — `POST /login`, `POST /refresh`, `POST /logout`
+- [x] `api/devices.rs` — `GET /devices`, `GET /devices/{id}`, `GET /devices/{id}/status`
+- [x] `api/tunnels.rs` — `POST /devices/{id}/tunnels/ssh`, `.../tty`, `.../http`
+- [x] `api/failures.rs` — `GET /devices/{id}/failures`
+- [x] `api/users.rs` — `GET/POST/DELETE /users` (admin+)
+- [x] `api/sse.rs` — `GET /api/v1/events` SSE stream; org-scoped; `device_connected`, `device_disconnected`, `new_failure`
+- [x] `api/ws.rs` — `WS /api/v1/devices/{id}/tunnels/ssh/{session_id}`, `.../tty/{session_id}`; bidirectional relay via TunnelRegistry
+- [x] `GET /metrics` on `:9090` — Prometheus export via `metrics-exporter-prometheus`
+- [x] `events.rs` — `SseEvent`/`SseEventKind`; grpc/control.rs emits on connect/disconnect/failure; failures persisted to `device_failures`
 - [ ] Serve `wg-ui` WASM via `rust-embed`; `Cache-Control: immutable` on hashed assets; `no-cache` on `index.html`
 
 ### 9b — `wg-ui`

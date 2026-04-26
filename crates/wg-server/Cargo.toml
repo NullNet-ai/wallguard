@@ -41,7 +41,8 @@ rand        = { workspace = true }
 rust-embed  = { workspace = true }
 rcgen       = { workspace = true }
 x509-parser = { workspace = true }
-metrics     = { workspace = true }
+metrics                     = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
 
 # --- tunnel transport ---
 quinn            = { workspace = true }
