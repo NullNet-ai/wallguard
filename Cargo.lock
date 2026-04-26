@@ -5647,6 +5647,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "hyper-util",
  "prost",
  "protoc-bin-vendored",
  "rand 0.8.6",
@@ -5661,6 +5662,7 @@ dependencies = [
  "toml 0.8.23",
  "tonic",
  "tonic-build",
+ "tower 0.4.13",
  "tracing",
  "tracing-subscriber",
  "uuid",

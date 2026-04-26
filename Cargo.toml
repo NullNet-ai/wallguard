@@ -45,9 +45,10 @@ rustls-pki-types = { version = "1" }
 rcgen = { version = "0.13", features = ["pem", "x509-parser"] }
 
 # --- HTTP ---
-axum  = { version = "0.7", features = ["ws", "macros"] }
-tower = { version = "0.4" }
-hyper = { version = "1",   features = ["full"] }
+axum       = { version = "0.7", features = ["ws", "macros"] }
+tower      = { version = "0.4" }
+hyper      = { version = "1",   features = ["full"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
 
 # --- database ---
 sqlx = { version = "0.8", features = [

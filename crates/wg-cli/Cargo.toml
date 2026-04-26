@@ -13,6 +13,8 @@ wg-shared = { path = "../wg-shared" }
 tokio        = { workspace = true }
 tonic        = { workspace = true }
 prost        = { workspace = true }
+tower        = { workspace = true }
+hyper-util   = { workspace = true }
 
 clap       = { workspace = true }
 serde      = { workspace = true }

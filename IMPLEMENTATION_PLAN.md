@@ -192,12 +192,12 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 - [x] `components/device_card.rs`, `status_badge.rs`
 - [x] `pages/settings/users.rs` — user table, create-user form, per-row delete
 
-### 9c — `wg-cli`
-- [ ] `wg-cli status` — connect to Unix socket; pretty-print `StatusResponse`
-- [ ] `wg-cli autostart enable/disable`:
-  - [ ] Linux: write + enable systemd unit; poll `wg-cli status` up to 10s
-  - [ ] FreeBSD: write + enable rc.d script
-- [ ] `wg-cli upgrade` — send `GracefulRestart` via Unix socket; wait max 10s for clean exit
+### 9c — `wg-cli` ✅
+- [x] `wg-cli status` — connect to Unix socket; pretty-print `StatusResponse`
+- [x] `wg-cli autostart enable/disable`:
+  - [x] Linux: write + enable systemd unit; poll `wg-cli status` up to 10s
+  - [x] FreeBSD: write + enable rc.d script
+- [x] `wg-cli upgrade` — send `GracefulRestart` via Unix socket; wait max 10s for clean exit
 
 ---
 
