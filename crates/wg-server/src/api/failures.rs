@@ -26,6 +26,90 @@ pub struct FailuresResponse {
 }
 
 // ---------------------------------------------------------------------------
+// GET /api/v1/failures  — org-wide recent failures (dashboard overview)
+// ---------------------------------------------------------------------------
+
+pub async fn list_failures_org(
+    State(state): State<AppState>,
+    Extension(ctx): Extension<RequestContext>,
+    Query(q): Query<FailuresQuery>,
+) -> Result<Json<FailuresResponse>, AppError> {
+    let limit  = q.limit.unwrap_or(20).clamp(1, 200);
+    let offset = q.offset.unwrap_or(0).max(0);
+
+    if let Some(ref sev) = q.severity {
+        match sev.as_str() {
+            "warning" | "error" | "fatal" => {}
+            _ => return Err(AppError::BadRequest(format!("invalid severity: {sev}"))),
+        }
+    }
+
+    type Row = (
+        Uuid,
+        Uuid,
+        String,
+        String,
+        String,
+        Option<serde_json::Value>,
+        time::OffsetDateTime,
+        Option<time::OffsetDateTime>,
+        bool,
+    );
+
+    let rows = sqlx::query_as::<_, Row>(
+        r#"
+        SELECT df.failure_id, df.device_id, df.severity, df.category,
+               df.message, df.context, df.occurred_at, df.received_at, df.is_replay
+        FROM   device_failures df
+        JOIN   devices d ON d.id = df.device_id
+        WHERE  d.org_id = $1
+          AND  ($2::text IS NULL OR df.severity = $2)
+        ORDER  BY df.occurred_at DESC
+        LIMIT  $3 OFFSET $4
+        "#,
+    )
+    .bind(ctx.org_id)
+    .bind(&q.severity)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&state.pool)
+    .await?;
+
+    let total: i64 = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(*)
+        FROM   device_failures df
+        JOIN   devices d ON d.id = df.device_id
+        WHERE  d.org_id = $1
+          AND  ($2::text IS NULL OR df.severity = $2)
+        "#,
+    )
+    .bind(ctx.org_id)
+    .bind(&q.severity)
+    .fetch_one(&state.pool)
+    .await?;
+
+    let items = rows
+        .into_iter()
+        .map(|(failure_id, dev_id, sev, cat, msg, ctx_json, occurred_at, received_at, is_replay)| {
+            AgentFailure {
+                failure_id,
+                device_id:   dev_id,
+                severity:    parse_severity(&sev),
+                category:    parse_category(&cat),
+                message:     msg,
+                context:     ctx_json,
+                occurred_at: occurred_at.unix_timestamp() * 1000,
+                received_at: received_at.map(|t| t.unix_timestamp() * 1000),
+                is_replay,
+            }
+        })
+        .collect();
+
+    Ok(Json(FailuresResponse { items, total }))
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/v1/devices/{device_id}/failures
 // ---------------------------------------------------------------------------
 

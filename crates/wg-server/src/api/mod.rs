@@ -20,6 +20,7 @@ pub fn build_router(state: AppState) -> Router<AppState> {
         .route("/api/v1/devices",                                    get(devices::list))
         .route("/api/v1/devices/:id",                               get(devices::get_one))
         .route("/api/v1/devices/:id/status",                        get(devices::status))
+        .route("/api/v1/failures",                                   get(failures::list_failures_org))
         .route("/api/v1/devices/:id/failures",                      get(failures::list_failures))
         .route("/api/v1/devices/:id/tunnels/ssh",                   post(tunnels::open_ssh))
         .route("/api/v1/devices/:id/tunnels/tty",                   post(tunnels::open_tty))
