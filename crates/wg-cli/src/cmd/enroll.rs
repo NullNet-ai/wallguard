@@ -62,8 +62,10 @@ pub async fn run(args: EnrollArgs) -> anyhow::Result<()> {
     // -----------------------------------------------------------------------
     // 3. Connect to the Provisioning gRPC service with server-cert verification.
     // -----------------------------------------------------------------------
-    let tls = build_tls_config(args.ca_cert.as_deref(), &args.server)?;
-    let channel = Channel::from_shared(args.server.clone())?
+    // tonic requires https:// to negotiate TLS; normalize grpc:// aliases.
+    let endpoint_url = normalize_scheme(&args.server);
+    let tls = build_tls_config(args.ca_cert.as_deref(), &endpoint_url)?;
+    let channel = Channel::from_shared(endpoint_url)?
         .tls_config(tls)?
         .connect()
         .await?;
@@ -147,11 +149,24 @@ fn build_tls_config(
     Ok(tls)
 }
 
+/// Convert grpc:// / grpc+tls:// to https:// so tonic uses TLS.
+fn normalize_scheme(url: &str) -> String {
+    for prefix in &["grpc+tls://", "grpc://"] {
+        if let Some(rest) = url.strip_prefix(prefix) {
+            return format!("https://{rest}");
+        }
+    }
+    url.to_owned()
+}
+
 fn url_host(url: &str) -> Option<&str> {
-    // Very small parser: strip scheme, take everything before the next '/' or ':'.
-    let after_scheme = url.strip_prefix("https://").or_else(|| url.strip_prefix("http://"))?;
-    let host_port    = after_scheme.split('/').next()?;
-    // Strip port if present.
+    // Strip any known scheme, then take the host before '/' or ':'.
+    let after_scheme = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .or_else(|| url.strip_prefix("grpc+tls://"))
+        .or_else(|| url.strip_prefix("grpc://"))?;
+    let host_port = after_scheme.split('/').next()?;
     let host = host_port.rsplit_once(':').map(|(h, _)| h).unwrap_or(host_port);
     Some(host)
 }
