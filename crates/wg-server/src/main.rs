@@ -66,6 +66,10 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() {
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .expect("failed to install rustls crypto provider");
+
     // ── Tracing ──────────────────────────────────────────────────────────────
     let log_format = std::env::var("LOG_FORMAT").unwrap_or_else(|_| "pretty".into());
     let _tracer_provider = telemetry::init(&log_format);
