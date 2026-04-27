@@ -13,22 +13,19 @@ and CLI are the three operator-facing surfaces.
 
 | Tool | Version | Install |
 |------|---------|---------|
-| Rust toolchain | ≥ 1.82 | [rustup.rs](https://rustup.rs) |
+| Rust toolchain | ≥ 1.85 | [rustup.rs](https://rustup.rs) |
 | `wasm32-unknown-unknown` target | — | `rustup target add wasm32-unknown-unknown` |
 | `trunk` (WASM bundler) | latest | `cargo install trunk --locked` |
-| `openssl` | ≥ 1.1.1 | system package |
-| Docker + Compose | — | for TimescaleDB |
+| Docker + Compose | — | for TimescaleDB (Option A) or Postgres only (Option B) |
 
 ### Option A — Docker Compose (quickest path)
 
 Runs TimescaleDB, wg-server (with embedded UI), Prometheus, and Grafana.
+On first start the server auto-generates dev TLS certificates and seeds an
+initial admin user — no manual setup required.
 
 ```bash
-# 1. Generate the three-tier dev PKI (written to dev-certs/)
-bash scripts/dev-certs.sh
-
-# 2. Start everything
-docker compose up
+sudo docker compose up
 ```
 
 The server is reachable at:
@@ -50,13 +47,7 @@ recompile cycles.
 docker compose up -d postgres
 ```
 
-**Step 2 — Generate dev PKI**
-
-```bash
-bash scripts/dev-certs.sh        # writes dev-certs/
-```
-
-**Step 3 — Build the web UI**
+**Step 2 — Build the web UI**
 
 The server embeds the WASM bundle at compile time via `rust-embed`.  Build it
 once before building the server; rebuild whenever the UI changes.
@@ -67,9 +58,11 @@ trunk build           # or: trunk build --release
 cd -
 ```
 
-**Step 4 — Run wg-server**
+**Step 3 — Run wg-server**
 
-Migrations run automatically on startup.
+Migrations run automatically on startup.  Dev TLS certificates are generated
+and written to `dev-certs/` on first run if they do not already exist.
+An initial admin user is seeded if the database is empty.
 
 ```bash
 DATABASE_URL=postgres://wallguard:dev_password@localhost:5432/wallguard \
@@ -81,14 +74,13 @@ RUST_LOG=info,wg_server=debug \
 cargo run -p wg-server
 ```
 
-**Step 5 — Seed the first user**
-
-```bash
-bash scripts/seed.sh
-# prints: email=admin@wallguard.local  password=password123
+The server prints the seeded credentials to the log on first run:
+```
+Email    : admin@wallguard.local
+Password : password123
 ```
 
-**Step 6 — Enroll a device**
+**Step 4 — Enroll a device**
 
 Log in to the web UI, create an installation code, then on the device:
 
@@ -101,7 +93,7 @@ sudo cargo run -p wg-cli -- enroll \
 The agent config is written to `/etc/wallguard/config.toml` and device
 certificates are written to `/etc/wallguard/`.
 
-**Step 7 — Run the agent**
+**Step 5 — Run the agent**
 
 ```bash
 sudo cargo run -p wg-agent

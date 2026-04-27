@@ -21,28 +21,37 @@ services:
       context: .
       dockerfile: Dockerfile.server
     environment:
-      DATABASE_URL:              postgres://wallguard:dev_password@postgres:5432/wallguard
-      CONTROL_SERVICE_ADDR:      0.0.0.0:50051
-      HTTP_API_ADDR:             0.0.0.0:4444
-      REVERSE_TUNNEL_QUIC_ADDR:  0.0.0.0:7777
-      REVERSE_TUNNEL_TCP_ADDR:   0.0.0.0:7778
-      TLS_CA_CERT_PATH:          /etc/wallguard-server/ca.crt
-      TLS_CA_KEY_PATH:           /etc/wallguard-server/ca.key
-      TLS_SERVER_CERT_PATH:      /etc/wallguard-server/server.crt
-      TLS_SERVER_KEY_PATH:       /etc/wallguard-server/server.key
-      RUST_LOG:                  info,wg_server=debug
-      LOG_FORMAT:                pretty
+      DATABASE_URL:      postgres://wallguard:dev_password@postgres:5432/wallguard
+      # TLS — paths inside the container; certs are generated on first run if absent.
+      CA_CERT_PATH:      /etc/wallguard-server/ca.crt
+      CA_KEY_PATH:       /etc/wallguard-server/ca.key
+      SERVER_CERT_PATH:  /etc/wallguard-server/server.crt
+      SERVER_KEY_PATH:   /etc/wallguard-server/server.key
+      # SERVER_NAME must match the Docker service name so the generated SAN is valid.
+      SERVER_NAME:       wallguard-server
+      # Ports (override defaults only where we want non-standard values)
+      HTTP_PORT:         "4444"
+      GRPC_PORT:         "50051"     # device provisioning
+      CONTROL_GRPC_PORT: "50052"     # agent control channel (mTLS)
+      QUIC_PORT:         "7777"
+      TCP_TLS_PORT:      "7778"
+      METRICS_PORT:      "9090"
+      RUST_LOG:          info,wg_server=debug
+      LOG_FORMAT:        pretty
     ports:
       - "4444:4444"       # HTTP API + Web UI
-      - "50051:50051"     # gRPC control channel (TCP + mTLS)
+      - "50051:50051"     # Device provisioning gRPC
+      - "50052:50052"     # Agent control gRPC (mTLS)
       - "7777:7777/udp"   # QUIC reverse tunnel
-      - "7778:7778"       # TCP reverse tunnel fallback
+      - "7778:7778"       # TCP-TLS reverse tunnel fallback
       - "9090:9090"       # Prometheus metrics
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./dev-certs:/etc/wallguard-server:ro
+      # Writable bind-mount so the server can write generated certs on first run.
+      # The host directory is created by Docker if it does not exist.
+      - ./dev-certs:/etc/wallguard-server
 
   prometheus:
     image: prom/prometheus:latest

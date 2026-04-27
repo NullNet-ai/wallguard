@@ -3,6 +3,7 @@ mod auth;
 mod command_tracker;
 mod connection_registry;
 mod db;
+mod dev_setup;
 mod error;
 pub(crate) mod events;
 mod grpc;
@@ -82,11 +83,23 @@ async fn main() {
     let quic_port: u16    = env_port("QUIC_PORT",         7777);
     let tcp_port: u16     = env_port("TCP_TLS_PORT",      7778);
 
+    // ── Dev PKI bootstrap (no-op if certs already exist) ─────────────────────
+    dev_setup::ensure_dev_pki(
+        &ca_cert_path,
+        &ca_key_path,
+        &server_cert_path,
+        &server_key_path,
+        &server_name,
+    );
+
     // ── Database ──────────────────────────────────────────────────────────────
     let pool = db::create_pool(&database_url).await.unwrap_or_else(|e| {
         tracing::error!("{e}");
         std::process::exit(1);
     });
+
+    // ── First-run seed (no-op if any users exist) ─────────────────────────────
+    dev_setup::ensure_initial_user(&pool).await;
 
     // ── PKI ───────────────────────────────────────────────────────────────────
     let ca_cert_pem = std::fs::read_to_string(&ca_cert_path).unwrap_or_else(|e| {

@@ -1,5 +1,5 @@
 # Stage 1: build the WASM UI bundle
-FROM rust:1.82-slim AS ui-builder
+FROM rust:1.85-slim AS ui-builder
 
 RUN rustup target add wasm32-unknown-unknown && \
     cargo install trunk --locked
@@ -9,11 +9,11 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 COPY proto/  proto/
 
-RUN trunk build --release
 WORKDIR /build/crates/wg-ui
+RUN trunk build --release
 
 # Stage 2: build the server binary
-FROM rust:1.82-slim AS server-builder
+FROM rust:1.85-slim AS server-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev \
