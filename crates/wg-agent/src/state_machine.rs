@@ -111,6 +111,7 @@ async fn step_connecting(
         Err(e) => {
             let delay = bo.next();
             warn!("connection failed: {e:#} — retry in {delay:?}");
+            metrics::counter!("wg_agent_reconnect_attempts_total").increment(1);
             tokio::time::sleep(delay).await;
             DaemonState::Connecting
         }

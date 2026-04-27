@@ -118,8 +118,11 @@ async fn run_session(
 
             batch = rx.recv() => {
                 let Some(batch) = batch else { return };
+                let packet_count = batch.packets.len() as u64;
                 match stream_tx.try_send(batch) {
-                    Ok(()) => {}
+                    Ok(()) => {
+                        metrics::counter!("wg_agent_packets_sent_total").increment(packet_count);
+                    }
                     Err(mpsc::error::TrySendError::Full(b)) => {
                         // Internal upload buffer full — overflow to disk.
                         if !disk_buf.try_write(&b.encode_to_vec()) {

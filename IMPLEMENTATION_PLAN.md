@@ -204,10 +204,10 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 ## Phase 10 — Observability
 
 - [x] `wg-server/src/main.rs` — `tracing-subscriber` JSON/pretty from `LOG_FORMAT` env var (partial; full span hierarchy comes with Phase 6)
-- [ ] Server span hierarchy: `request{}` → `connection{}` → `command{}` / `tunnel{}`; `device_id` attached at connection establishment
-- [ ] All server metrics from §13.2: `wg_connected_agents_total`, `wg_active_tunnels_total`, `wg_commands_sent_total`, `wg_rpc_duration_seconds`, `wg_agent_degraded`, etc.
-- [ ] All agent metrics from §13.2: `wg_agent_capture_queue_depth`, `wg_agent_packets_sent_total`, `wg_agent_reconnect_attempts_total`, etc.; Prometheus endpoint optional (`metrics_port = 0` disables)
-- [ ] OTLP tracing: `trace_id` (W3C) embedded in `command_id` prefix; `opentelemetry-otlp` export when `OTLP_ENDPOINT` set; no-op when empty
+- [x] Server span hierarchy: `request{}` → `connection{}` → `command{}` / `tunnel{}`; `device_id` attached at connection establishment
+- [x] All server metrics from §13.2: `wg_connected_agents_total`, `wg_active_tunnels_total`, `wg_commands_sent_total`, `wg_rpc_duration_seconds`, `wg_agent_degraded`, etc.
+- [x] All agent metrics from §13.2: `wg_agent_capture_queue_depth`, `wg_agent_packets_sent_total`, `wg_agent_reconnect_attempts_total`, etc.; Prometheus endpoint optional (`metrics_port = 0` disables)
+- [x] OTLP tracing: `trace_id` (W3C) embedded in `command_id` prefix; `opentelemetry-otlp` export when `OTLP_ENDPOINT` set; no-op when empty
 
 ---
 

@@ -90,6 +90,14 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
         "wg-agent starting"
     );
 
+    if config.observability.metrics_port != 0 {
+        metrics_exporter_prometheus::PrometheusBuilder::new()
+            .with_http_listener(([0, 0, 0, 0], config.observability.metrics_port))
+            .install()
+            .unwrap_or_else(|e| tracing::warn!("metrics endpoint failed: {e}"));
+        tracing::info!(port = config.observability.metrics_port, "agent metrics endpoint listening");
+    }
+
     let rd_available = capabilities::probe_remote_desktop().await;
     let features     = wg_shared::capabilities::derive_capabilities(
         config.device.firewall_kind,

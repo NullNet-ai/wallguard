@@ -9,6 +9,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
+    api::tunnels::new_command_id,
     middleware::auth::RequestContext,
     proto::control::{server_message, OpenSshTunnel, OpenTtyTunnel, ServerMessage},
     tunnel::TunnelStream,
@@ -35,7 +36,7 @@ async fn handle_ssh(socket: WebSocket, device_id: Uuid, session_id: Uuid, state:
     // Send OpenSshTunnel command to the agent.
     let msg = ServerMessage {
         message: Some(server_message::Message::OpenSshTunnel(OpenSshTunnel {
-            command_id: Uuid::new_v4().to_string(),
+            command_id: new_command_id(),
             tunnel_id:  session_id.to_string(),
             public_key: String::new(),
             username:   String::new(),
@@ -83,7 +84,7 @@ async fn handle_tty(socket: WebSocket, device_id: Uuid, session_id: Uuid, state:
     // Send OpenTtyTunnel command to the agent.
     let msg = ServerMessage {
         message: Some(server_message::Message::OpenTtyTunnel(OpenTtyTunnel {
-            command_id: Uuid::new_v4().to_string(),
+            command_id: new_command_id(),
             tunnel_id:  session_id.to_string(),
         })),
     };
@@ -116,6 +117,8 @@ async fn handle_tty(socket: WebSocket, device_id: Uuid, session_id: Uuid, state:
 async fn relay_ws(mut socket: WebSocket, mut stream: TunnelStream, pool: PgPool, session_id: Uuid) {
     use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
 
+    metrics::gauge!("wg_active_tunnels_total").increment(1.0);
+
     let mut buf = vec![0u8; 8192];
     loop {
         tokio::select! {
@@ -143,6 +146,8 @@ async fn relay_ws(mut socket: WebSocket, mut stream: TunnelStream, pool: PgPool,
             }
         }
     }
+
+    metrics::gauge!("wg_active_tunnels_total").decrement(1.0);
 
     // Close tunnel session in DB.
     sqlx::query("UPDATE tunnel_sessions SET status='closed', ended_at=NOW() WHERE id=$1")

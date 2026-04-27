@@ -2,7 +2,9 @@ use axum::{
     extract::{Extension, Path, State},
     Json,
 };
+use opentelemetry::trace::TraceContextExt;
 use serde::{Deserialize, Serialize};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use uuid::Uuid;
 use wg_shared::types::Role;
 
@@ -37,6 +39,16 @@ pub struct OpenHttpRequest {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+pub(crate) fn new_command_id() -> String {
+    let trace_id = tracing::Span::current()
+        .context()
+        .span()
+        .span_context()
+        .trace_id()
+        .to_string();
+    format!("{trace_id}:{}", uuid::Uuid::new_v4())
+}
 
 async fn check_device_and_connected(
     state:     &AppState,

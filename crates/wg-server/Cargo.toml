@@ -33,6 +33,10 @@ bytes      = { workspace = true }
 
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
+opentelemetry         = { workspace = true }
+opentelemetry-otlp    = { workspace = true }
+opentelemetry_sdk     = { workspace = true }
+tracing-opentelemetry = { workspace = true }
 
 anyhow    = { workspace = true }
 thiserror = { workspace = true }

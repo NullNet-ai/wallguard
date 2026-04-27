@@ -43,7 +43,8 @@ rand      = { workspace = true }
 bytes     = { workspace = true }
 clap      = { workspace = true }
 libc      = { workspace = true }
-metrics   = { workspace = true }
+metrics                     = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
 
 # --- tunnel transport ---
 quinn            = { workspace = true }

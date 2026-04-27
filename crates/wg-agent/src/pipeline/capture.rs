@@ -11,6 +11,7 @@ use crate::proto::data::Packet;
 pub fn spawn(tx: mpsc::Sender<Packet>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let _tx = tx; // keep sender alive so pipeline channel stays open
+        metrics::gauge!("wg_agent_capture_queue_depth").set(0.0);
         std::future::pending::<()>().await
     })
 }

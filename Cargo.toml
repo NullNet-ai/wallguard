@@ -80,7 +80,7 @@ metrics-exporter-prometheus = { version = "0.15" }
 # --- distributed tracing ---
 opentelemetry         = { version = "0.27" }
 opentelemetry-otlp    = { version = "0.27" }
-opentelemetry_sdk     = { version = "0.27" }
+opentelemetry_sdk     = { version = "0.27", features = ["rt-tokio"] }
 tracing-opentelemetry = { version = "0.28" }
 
 # --- error handling ---

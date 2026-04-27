@@ -6,6 +6,7 @@ use serde_json;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt as _;
 use tonic::{Request, Response, Status, Streaming};
+use tracing::Instrument;
 use uuid::Uuid;
 use wg_shared::capabilities::{MIN_AGENT_PROTOCOL_VERSION, PROTOCOL_VERSION};
 
@@ -63,11 +64,12 @@ impl Control for ControlService {
         let in_st   = request.into_inner();
         let mut shutdown_rx = shutdown_tx.subscribe();
 
+        let span = tracing::info_span!("connection", device_id = %device_id);
         tokio::spawn(async move {
             run_connection(device_id, in_st, out_tx, &mut shutdown_rx, &state).await;
             state.registry.remove(&device_id).await;
             tracing::info!(%device_id, "connection closed");
-        });
+        }.instrument(span));
 
         let out_stream = ReceiverStream::new(out_rx).map(Ok);
         Ok(Response::new(Box::pin(out_stream)))
@@ -95,6 +97,7 @@ async fn run_connection(
     };
 
     tracing::info!(%device_id, %org_id, "connected");
+    metrics::gauge!("wg_connected_agents_total").increment(1.0);
     let _ = state.sse_tx.send(SseEvent {
         org_id,
         kind: SseEventKind::DeviceConnected { device_id },
@@ -142,6 +145,7 @@ async fn run_connection(
         }
     }
 
+    metrics::gauge!("wg_connected_agents_total").decrement(1.0);
     let _ = state.sse_tx.send(SseEvent {
         org_id,
         kind: SseEventKind::DeviceDisconnected { device_id },
@@ -238,6 +242,9 @@ async fn handle_client_msg(
 ) {
     use client_message::Message as M;
 
+    let span = tracing::debug_span!("command", device_id = %device_id);
+    let _g = span.enter();
+
     match msg.message {
         // ── Heartbeat (agent → server) ────────────────────────────────────
         Some(M::Heartbeat(agent_hb)) => {
@@ -320,6 +327,8 @@ async fn handle_client_msg(
             .execute(&state.pool)
             .await
             .ok();
+            metrics::counter!("wg_agent_failures_total", "severity" => severity_str.to_string())
+                .increment(1);
             let _ = state.sse_tx.send(SseEvent {
                 org_id,
                 kind: SseEventKind::NewFailure {
@@ -356,6 +365,12 @@ async fn handle_client_msg(
 async fn resolve_command_result(result: &CommandResult, state: &AppState) {
     use crate::command_tracker::CommandOutcome;
 
+    let status_label = match CommandStatus::try_from(result.status).unwrap_or(CommandStatus::Failure) {
+        CommandStatus::Success => "success",
+        CommandStatus::Failure => "failure",
+        CommandStatus::Timeout => "timeout",
+    };
+
     let outcome = match CommandStatus::try_from(result.status).unwrap_or(CommandStatus::Failure) {
         CommandStatus::Success => CommandOutcome::Success {
             output:         result.output.clone(),
@@ -367,6 +382,7 @@ async fn resolve_command_result(result: &CommandResult, state: &AppState) {
         CommandStatus::Timeout => CommandOutcome::Timeout,
     };
 
+    metrics::counter!("wg_commands_resolved_total", "status" => status_label).increment(1);
     state.tracker.resolve(&result.command_id, outcome).await;
 }
 

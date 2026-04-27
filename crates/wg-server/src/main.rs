@@ -11,6 +11,7 @@ mod middleware;
 mod pki;
 pub(crate) mod proto;
 mod routes;
+mod telemetry;
 mod tunnel;
 
 use std::{net::SocketAddr, sync::Arc, time::Duration};
@@ -66,17 +67,7 @@ pub struct AppState {
 async fn main() {
     // ── Tracing ──────────────────────────────────────────────────────────────
     let log_format = std::env::var("LOG_FORMAT").unwrap_or_else(|_| "pretty".into());
-    let subscriber = tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info,wg_server=debug".into()),
-        )
-        .with_target(true);
-    if log_format == "json" {
-        subscriber.json().init();
-    } else {
-        subscriber.init();
-    }
+    let _tracer_provider = telemetry::init(&log_format);
 
     // ── Configuration ─────────────────────────────────────────────────────────
     let database_url      = require_env("DATABASE_URL");
@@ -257,6 +248,9 @@ async fn main() {
     }
 
     sweeper.abort();
+    if let Some(provider) = _tracer_provider {
+        let _ = provider.shutdown();
+    }
     tracing::info!("wg-server stopped");
 }
 
