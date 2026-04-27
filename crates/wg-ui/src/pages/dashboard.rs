@@ -64,7 +64,8 @@ pub fn Dashboard() -> impl IntoView {
                 <h1 class="page-title">"WallGuard"</h1>
                 <nav class="page-nav">
                     <a href="/devices">"Devices"</a>
-                    <a href="/settings/users">"Settings"</a>
+                    <a href="/settings/install-codes">"Install Codes"</a>
+                    <a href="/settings/users">"Users"</a>
                 </nav>
                 <button class="btn btn-ghost" on:click=on_logout>
                     "Logout"

@@ -7,7 +7,7 @@ use crate::pages::{
     dashboard::Dashboard,
     devices::{detail::DeviceDetail, list::DeviceList},
     login::Login,
-    settings::users::UsersPage,
+    settings::{install_codes::InstallCodesPage, users::UsersPage},
 };
 
 /// Root application component.
@@ -77,6 +77,15 @@ pub fn App() -> impl IntoView {
                         view! { <Redirect path="/login"/> }.into_any()
                     } else {
                         view! { <UsersPage/> }.into_any()
+                    }
+                }/>
+
+                // Installation codes (auth-gated)
+                <Route path=path!("/settings/install-codes") view=move || {
+                    if token.get().is_none() {
+                        view! { <Redirect path="/login"/> }.into_any()
+                    } else {
+                        view! { <InstallCodesPage/> }.into_any()
                     }
                 }/>
 

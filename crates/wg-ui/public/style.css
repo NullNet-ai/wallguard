@@ -1069,6 +1069,101 @@ label, .label {
 }
 
 /* ------------------------------------------------------------
+   Installation codes page
+   ------------------------------------------------------------ */
+
+.install-code-form .form-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.install-code-form .form-row .form-group {
+  flex: 0 0 auto;
+}
+
+.install-code-form input[type="number"] {
+  width: 120px;
+}
+
+.code-result {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius);
+}
+
+.code-result-label {
+  margin: 0 0 .5rem;
+  font-size: .85rem;
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.code-display {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .5rem;
+}
+
+.code-value {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--text);
+  background: transparent;
+}
+
+.code-mono {
+  font-family: var(--font-mono);
+  font-size: .9rem;
+  letter-spacing: .05em;
+  background: var(--bg);
+  padding: .15rem .4rem;
+  border-radius: var(--radius-sm);
+}
+
+.codes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+}
+
+.codes-table th {
+  text-align: left;
+  padding: .5rem .75rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.code-row td {
+  padding: .65rem .75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.text-muted { color: var(--text-muted); font-size: .875rem; }
+
+.badge {
+  display: inline-block;
+  padding: .2rem .55rem;
+  border-radius: var(--radius-sm);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.badge-success { background: #dcfce7; color: #15803d; }
+.badge-muted   { background: #f1f5f9; color: var(--text-muted); }
+
+/* ------------------------------------------------------------
    Responsive
    ------------------------------------------------------------ */
 @media (max-width: 768px) {
