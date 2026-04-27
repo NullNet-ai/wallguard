@@ -45,6 +45,7 @@ clap      = { workspace = true }
 libc      = { workspace = true }
 metrics                     = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
+rcgen                       = { workspace = true }
 
 # --- tunnel transport ---
 quinn            = { workspace = true }

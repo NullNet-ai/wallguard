@@ -213,9 +213,9 @@ Based on `FINAL_DESIGN.md`. Ordered so the system is enrollable, accessible, and
 
 ## Phase 11 — Agent Lifecycle & Cert Renewal
 
-- [ ] `lifecycle/upgrade.rs` — handle `GracefulRestart` from CLI: finish in-flight commands (max 10s), exit cleanly; package post-install renames `.new` binary over live binary
-- [ ] `lifecycle/cert_renewal.rs` — on `RenewCertificateRequest`: generate new keypair + CSR; send `RenewCertificateResponse`; on `SetCertificate`: write `.new` files, `fsync`, rename atomically
-- [ ] Integration test: `cert_renewal` — full round-trip; agent reconnects with new cert
+- [x] `lifecycle/upgrade.rs` — handle `GracefulRestart` from CLI: finish in-flight commands (max 10s), exit cleanly; package post-install renames `.new` binary over live binary
+- [x] `lifecycle/cert_renewal.rs` — on `RenewCertificateRequest`: generate new keypair + CSR; send `RenewCertificateResponse`; on `SetCertificate`: write `.new` files, `fsync`, rename atomically
+- [x] Integration test: `cert_renewal` — full round-trip; agent reconnects with new cert
 
 ---
 

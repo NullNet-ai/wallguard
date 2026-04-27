@@ -5712,6 +5712,7 @@ dependencies = [
  "protoc-bin-vendored",
  "quinn",
  "rand 0.8.6",
+ "rcgen",
  "rustls",
  "rustls-pemfile",
  "rustls-pki-types",

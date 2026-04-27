@@ -222,6 +222,11 @@ message RequestConfigSnapshot { string command_id = 1; }
 
 message RenewCertificateRequest {}
 
+message SetCertificate {
+  string cert_pem = 1;  // new signed device certificate (PEM)
+  string ca_pem   = 2;  // updated CA certificate (PEM)
+}
+
 message ShutdownImminent {
   uint32 reconnect_after_ms = 1;
 }
@@ -265,6 +270,7 @@ message ServerMessage {
     RequestConfigSnapshot     request_config_snapshot    = 17;
     RenewCertificateRequest   renew_certificate_request  = 18;
     ShutdownImminent          shutdown_imminent          = 19;
+    SetCertificate            set_certificate            = 20;
   }
 }
 

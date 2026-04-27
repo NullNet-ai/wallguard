@@ -104,12 +104,16 @@ impl AgentControl for CliServer {
         &self,
         req: tonic::Request<GracefulRestartRequest>,
     ) -> Result<tonic::Response<GracefulRestartResponse>, tonic::Status> {
-        let timeout_ms = req.into_inner().drain_timeout_ms;
-        info!(timeout_ms, "graceful restart requested via CLI");
-        let _ = self.shutdown_tx.send(());
+        let timeout_ms   = req.into_inner().drain_timeout_ms;
+        let shutdown_tx  = self.shutdown_tx.clone();
+        info!(timeout_ms, "graceful restart requested — draining in-flight commands");
+        tokio::spawn(async move {
+            crate::lifecycle::upgrade::drain(timeout_ms).await;
+            let _ = shutdown_tx.send(());
+        });
         Ok(tonic::Response::new(GracefulRestartResponse {
             accepted: true,
-            message:  "shutdown initiated".to_string(),
+            message:  "draining and shutting down".to_string(),
         }))
     }
 }

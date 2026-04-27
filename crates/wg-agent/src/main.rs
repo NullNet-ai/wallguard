@@ -14,6 +14,7 @@ mod config;
 mod control_channel;
 mod disk_buffer;
 mod failure_buffer;
+mod lifecycle;
 mod panic_hook;
 mod pipeline;
 mod platform;

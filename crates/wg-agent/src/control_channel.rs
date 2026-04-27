@@ -14,7 +14,7 @@ use crate::disk_buffer::DiskBuffer;
 use crate::failure_buffer::FailureBuffer;
 use crate::proto::control::{
     client_message, control_client::ControlClient, server_message, ClientMessage, CommandStatus,
-    Heartbeat, HeartbeatAck, MonitoringStatus, ServerMessage,
+    Heartbeat, HeartbeatAck, MonitoringStatus, RenewCertificateResponse, ServerMessage,
 };
 use crate::proto_conv::{
     cmd_result, failure_entry_to_proto, make_hello, proto_to_shared_feature, unix_ms_now,
@@ -106,6 +106,7 @@ pub async fn run_connected_loop(
     let mut hb_timer = tokio::time::interval(hb_interval);
     let mut hb_seq   = 0u64;
     let mut in_flight: HashSet<u64> = HashSet::new();
+    let mut pending_cert_key: Option<String> = None;
 
     loop {
         tokio::select! {
@@ -145,7 +146,7 @@ pub async fn run_connected_loop(
                         return DaemonState::Connecting;
                     }
                     Ok(Some(msg)) => {
-                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling, &tunnel_ctx).await {
+                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling, &tunnel_ctx, &mut pending_cert_key).await {
                             return DaemonState::Connecting;
                         }
                     }
@@ -180,11 +181,12 @@ async fn replay_failures(out_tx: &mpsc::Sender<ClientMessage>, buf: &FailureBuff
 
 /// Returns `false` if the caller should reconnect immediately.
 async fn handle_server_msg(
-    msg:        ServerMessage,
-    out_tx:     &mpsc::Sender<ClientMessage>,
-    in_flight:  &mut HashSet<u64>,
-    sampling:   &Arc<AtomicU32>,
-    tunnel_ctx: &Arc<tunnel::TunnelContext>,
+    msg:             ServerMessage,
+    out_tx:          &mpsc::Sender<ClientMessage>,
+    in_flight:       &mut HashSet<u64>,
+    sampling:        &Arc<AtomicU32>,
+    tunnel_ctx:      &Arc<tunnel::TunnelContext>,
+    pending_cert_key: &mut Option<String>,
 ) -> bool {
     use server_message::Message as M;
 
@@ -228,6 +230,7 @@ async fn handle_server_msg(
             let out  = out_tx.clone();
             let port = tunnel_ctx.config.agent.ssh_port;
             tokio::spawn(async move {
+                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
                 match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
                     Err(e) => {
                         let _ = out.send(cmd_result(
@@ -252,6 +255,7 @@ async fn handle_server_msg(
             let out   = out_tx.clone();
             let shell = tunnel_ctx.config.agent.tty_shell.clone();
             tokio::spawn(async move {
+                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
                 match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
                     Err(e) => {
                         let _ = out.send(cmd_result(
@@ -277,6 +281,7 @@ async fn handle_server_msg(
             let target_host = cmd.target_host.clone();
             let target_port = cmd.target_port as u16;
             tokio::spawn(async move {
+                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
                 match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
                     Err(e) => {
                         let _ = out.send(cmd_result(
@@ -333,9 +338,43 @@ async fn handle_server_msg(
                 "config snapshots not yet available (Phase 12)")).await;
         }
 
-        // Cert renewal stub (Phase 11)
         Some(M::RenewCertificateRequest(_)) => {
-            warn!("cert renewal requested (Phase 11 stub) — ignoring");
+            let device_id = tunnel_ctx.config.device.id.clone();
+            match crate::lifecycle::cert_renewal::generate_csr(&device_id) {
+                Ok((key_pem, csr_pem)) => {
+                    info!("generated CSR for cert renewal");
+                    *pending_cert_key = Some(key_pem);
+                    let _ = out_tx.send(ClientMessage {
+                        message: Some(client_message::Message::RenewCertificateResponse(
+                            RenewCertificateResponse { csr_pem },
+                        )),
+                    }).await;
+                }
+                Err(e) => warn!("cert renewal: CSR generation failed: {e:#}"),
+            }
+        }
+
+        Some(M::SetCertificate(cmd)) => {
+            match pending_cert_key.take() {
+                None => warn!("received SetCertificate without a pending CSR — ignoring"),
+                Some(key_pem) => {
+                    let cfg = &tunnel_ctx.config.tls;
+                    match crate::lifecycle::cert_renewal::install_cert(
+                        &cmd.cert_pem,
+                        &cmd.ca_pem,
+                        &key_pem,
+                        &cfg.device_cert,
+                        &cfg.ca_cert,
+                        &cfg.device_key,
+                    ) {
+                        Ok(_) => {
+                            info!("new certificate installed — reconnecting with renewed cert");
+                            return false;
+                        }
+                        Err(e) => warn!("cert renewal: install failed: {e:#}"),
+                    }
+                }
+            }
         }
 
         Some(M::Welcome(_)) | Some(M::VersionRejected(_)) => {
