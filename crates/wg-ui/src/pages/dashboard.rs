@@ -11,14 +11,12 @@ pub fn Dashboard() -> impl IntoView {
     let token = use_context::<AuthSignal>().expect("auth context");
     let navigate = use_navigate();
 
-    let devices_resource = Resource::new(
-        || (),
-        |_| async { crate::api::devices::list().await },
+    let devices_resource = LocalResource::new(
+        || async { crate::api::devices::list().await },
     );
 
-    let failures_resource = Resource::new(
-        || (),
-        |_| async {
+    let failures_resource = LocalResource::new(
+        || async {
             crate::api::get::<crate::api::failures::FailuresResponse>(
                 "/api/v1/failures?offset=0&limit=20",
             )
@@ -65,8 +63,8 @@ pub fn Dashboard() -> impl IntoView {
             <header class="page-header">
                 <h1 class="page-title">"WallGuard"</h1>
                 <nav class="page-nav">
-                    <A href="/devices">"Devices"</A>
-                    <A href="/settings/users">"Settings"</A>
+                    <a href="/devices">"Devices"</a>
+                    <a href="/settings/users">"Settings"</a>
                 </nav>
                 <button class="btn btn-ghost" on:click=on_logout>
                     "Logout"
@@ -80,53 +78,40 @@ pub fn Dashboard() -> impl IntoView {
                     <div class="stat-card">
                         <div class="stat-label">"Connected Devices"</div>
                         <Suspense fallback=|| view! { <div class="stat-value">"—"</div> }>
-                            {move || {
-                                devices_resource.get().map(|result| {
-                                    match result {
-                                        Ok(resp) => {
-                                            let connected = resp.items.iter()
-                                                .filter(|d| {
-                                                    d.last_seen_at
-                                                        .map(|ts| {
-                                                            let now_approx = js_sys::Date::now() as i64;
-                                                            now_approx - ts < 120_000
-                                                        })
-                                                        .unwrap_or(false)
-                                                })
-                                                .count();
-                                            let total = resp.items.len();
-                                            view! {
-                                                <div class="stat-value">
-                                                    {format!("{connected} / {total}")}
-                                                </div>
-                                            }.into_any()
-                                        }
-                                        Err(e) => view! {
-                                            <div class="stat-value stat-error">{e}</div>
-                                        }.into_any(),
+                            {move || Suspend::new(async move {
+                                match devices_resource.await {
+                                    Ok(resp) => {
+                                        let connected = resp.items.iter()
+                                            .filter(|d| d.last_seen_at
+                                                .map(|ts| js_sys::Date::now() as i64 - ts < 120_000)
+                                                .unwrap_or(false))
+                                            .count();
+                                        let total = resp.items.len();
+                                        view! {
+                                            <div class="stat-value">{format!("{connected} / {total}")}</div>
+                                        }.into_any()
                                     }
-                                })
-                            }}
+                                    Err(e) => view! {
+                                        <div class="stat-value stat-error">{e}</div>
+                                    }.into_any(),
+                                }
+                            })}
                         </Suspense>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-label">"Recent Failures"</div>
                         <Suspense fallback=|| view! { <div class="stat-value">"—"</div> }>
-                            {move || {
-                                failures_resource.get().map(|result| {
-                                    match result {
-                                        Ok(resp) => view! {
-                                            <div class="stat-value">
-                                                {format!("{}", resp.total)}
-                                            </div>
-                                        }.into_any(),
-                                        Err(e) => view! {
-                                            <div class="stat-value stat-error">{e}</div>
-                                        }.into_any(),
-                                    }
-                                })
-                            }}
+                            {move || Suspend::new(async move {
+                                match failures_resource.await {
+                                    Ok(resp) => view! {
+                                        <div class="stat-value">{format!("{}", resp.total)}</div>
+                                    }.into_any(),
+                                    Err(e) => view! {
+                                        <div class="stat-value stat-error">{e}</div>
+                                    }.into_any(),
+                                }
+                            })}
                         </Suspense>
                     </div>
 
@@ -171,44 +156,39 @@ pub fn Dashboard() -> impl IntoView {
                     </div>
 
                     <Suspense fallback=|| view! { <p>"Loading devices..."</p> }>
-                        {move || {
-                            devices_resource.get().map(|result| {
-                                match result {
-                                    Ok(resp) => {
-                                        let items = resp.items.into_iter().take(5).collect::<Vec<_>>();
-                                        view! {
-                                            <ul class="device-summary-list">
-                                                <For
-                                                    each=move || items.clone()
-                                                    key=|d| d.id
-                                                    children=|device| {
-                                                        let connected = device.last_seen_at
-                                                            .map(|ts| {
-                                                                let now_approx = js_sys::Date::now() as i64;
-                                                                now_approx - ts < 120_000
-                                                            })
-                                                            .unwrap_or(false);
-                                                        let id = device.id;
-                                                        view! {
-                                                            <li class="device-summary-item">
-                                                                <span class="device-name">
-                                                                    {device.display_name.clone()}
-                                                                </span>
-                                                                <crate::components::StatusBadge connected=connected/>
-                                                                <A href=format!("/devices/{id}")>"Details"</A>
-                                                            </li>
-                                                        }
+                        {move || Suspend::new(async move {
+                            match devices_resource.await {
+                                Ok(resp) => {
+                                    let items = resp.items.into_iter().take(5).collect::<Vec<_>>();
+                                    view! {
+                                        <ul class="device-summary-list">
+                                            <For
+                                                each=move || items.clone()
+                                                key=|d| d.id
+                                                children=|device| {
+                                                    let connected = device.last_seen_at
+                                                        .map(|ts| js_sys::Date::now() as i64 - ts < 120_000)
+                                                        .unwrap_or(false);
+                                                    let id = device.id;
+                                                    view! {
+                                                        <li class="device-summary-item">
+                                                            <span class="device-name">
+                                                                {device.display_name.clone()}
+                                                            </span>
+                                                            <crate::components::StatusBadge connected=connected/>
+                                                            <a href=format!("/devices/{id}")>"Details"</a>
+                                                        </li>
                                                     }
-                                                />
-                                            </ul>
-                                        }.into_any()
-                                    }
-                                    Err(e) => view! {
-                                        <p class="error-text">{e}</p>
-                                    }.into_any(),
+                                                }
+                                            />
+                                        </ul>
+                                    }.into_any()
                                 }
-                            })
-                        }}
+                                Err(e) => view! {
+                                    <p class="error-text">{e}</p>
+                                }.into_any(),
+                            }
+                        })}
                     </Suspense>
                 </section>
             </main>

@@ -148,12 +148,12 @@ pub fn DeviceTunnels() -> impl IntoView {
 
                         <div class="tunnel-footer">
                             {move || device_id().map(|id| view! {
-                                <A
+                                <a
                                     href=format!("/devices/{id}/tunnels")
                                     class="btn btn-ghost btn-sm"
                                 >
                                     "Close Session"
-                                </A>
+                                </a>
                             })}
                         </div>
                     </div>

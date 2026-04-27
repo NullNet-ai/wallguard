@@ -40,31 +40,27 @@ pub fn DeviceDetail() -> impl IntoView {
             .and_then(|s| Uuid::parse_str(&s).ok())
     };
 
-    let device_resource = Resource::new(
-        move || device_id(),
-        |id| async move {
-            match id {
-                Some(id) => crate::api::devices::get(id).await,
-                None => Err("Invalid device ID".to_string()),
-            }
-        },
-    );
+    let device_resource = LocalResource::new(move || async move {
+        match device_id() {
+            Some(id) => crate::api::devices::get(id).await,
+            None => Err("Invalid device ID".to_string()),
+        }
+    });
 
-    let status_resource = Resource::new(
-        move || device_id(),
-        |id| async move {
-            match id {
-                Some(id) => crate::api::devices::status(id).await,
-                None => Err("Invalid device ID".to_string()),
-            }
-        },
-    );
+    let status_resource = LocalResource::new(move || async move {
+        match device_id() {
+            Some(id) => crate::api::devices::status(id).await,
+            None => Err("Invalid device ID".to_string()),
+        }
+    });
 
     let tunnel_error = RwSignal::new(Option::<String>::None);
 
-    let open_ssh = {
+    // Wrap in StoredValue so the handlers are Copy and can be captured by
+    // multiple reactive/children closures without making the outer closure FnOnce.
+    let open_ssh = StoredValue::new({
         let navigate = navigate.clone();
-        move |_| {
+        move |_: leptos::ev::MouseEvent| {
             let Some(id) = device_id() else { return };
             let nav = navigate.clone();
             tunnel_error.set(None);
@@ -80,11 +76,11 @@ pub fn DeviceDetail() -> impl IntoView {
                 }
             });
         }
-    };
+    });
 
-    let open_tty = {
+    let open_tty = StoredValue::new({
         let navigate = navigate.clone();
-        move |_| {
+        move |_: leptos::ev::MouseEvent| {
             let Some(id) = device_id() else { return };
             let nav = navigate.clone();
             tunnel_error.set(None);
@@ -100,7 +96,7 @@ pub fn DeviceDetail() -> impl IntoView {
                 }
             });
         }
-    };
+    });
 
     view! {
         <div class="page">
@@ -111,18 +107,16 @@ pub fn DeviceDetail() -> impl IntoView {
 
             <main class="page-content">
                 <Suspense fallback=|| view! { <p class="loading">"Loading device..."</p> }>
-                    {move || {
-                        let dev_result = device_resource.get();
-                        let status_result = status_resource.get();
+                    {move || Suspend::new(async move {
+                        let dev_result    = device_resource.await;
+                        let status_result = status_resource.await;
 
-                        dev_result.map(|result| {
-                            match result {
-                                Err(e) => view! {
-                                    <div class="error-banner"><p>{e}</p></div>
-                                }.into_any(),
-                                Ok(device) => {
-                                    let connected = status_result
-                                        .and_then(|r| r.ok())
+                        match dev_result {
+                            Err(e) => view! {
+                                <div class="error-banner"><p>{e}</p></div>
+                            }.into_any(),
+                            Ok(device) => {
+                                    let connected = status_result.ok()
                                         .map(|s| s.connected)
                                         .unwrap_or_else(|| {
                                             device.last_seen_at
@@ -188,18 +182,23 @@ pub fn DeviceDetail() -> impl IntoView {
                                             </div>
 
                                             <div class="detail-actions">
-                                                <Show
-                                                    when=move || device.features.contains(&Feature::SshTunnel)
-                                                    fallback=|| view! {}
-                                                >
-                                                    <button
-                                                        class="btn btn-primary"
-                                                        on:click=open_ssh.clone()
-                                                        disabled=move || !connected
-                                                    >
-                                                        "Open SSH"
-                                                    </button>
-                                                </Show>
+                                                {
+                                                    let features = device.features.clone();
+                                                    view! {
+                                                        <Show
+                                                            when=move || features.contains(&Feature::SshTunnel)
+                                                            fallback=|| view! {}
+                                                        >
+                                                            <button
+                                                                class="btn btn-primary"
+                                                                on:click=move |e| open_ssh.update_value(|f| f(e))
+                                                                disabled=move || !connected
+                                                            >
+                                                                "Open SSH"
+                                                            </button>
+                                                        </Show>
+                                                    }
+                                                }
 
                                                 <Show
                                                     when=move || device.features.contains(&Feature::TtyTunnel)
@@ -207,7 +206,7 @@ pub fn DeviceDetail() -> impl IntoView {
                                                 >
                                                     <button
                                                         class="btn btn-secondary"
-                                                        on:click=open_tty.clone()
+                                                        on:click=move |e| open_tty.update_value(|f| f(e))
                                                         disabled=move || !connected
                                                     >
                                                         "Open TTY"
@@ -235,9 +234,8 @@ pub fn DeviceDetail() -> impl IntoView {
                                         </div>
                                     }.into_any()
                                 }
-                            }
-                        })
-                    }}
+                        }
+                    })}
                 </Suspense>
             </main>
         </div>

@@ -3,7 +3,7 @@ use uuid::Uuid;
 use wg_shared::types::Role;
 use super::ApiResult;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserInfo {
     pub id:    Uuid,
     pub email: String,

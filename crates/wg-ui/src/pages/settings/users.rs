@@ -7,59 +7,50 @@ use crate::api::users::CreateUserRequest;
 
 #[component]
 pub fn UsersPage() -> impl IntoView {
-    let users_resource = Resource::new(
-        || (),
-        |_| async { crate::api::users::list().await },
+    let users_resource = LocalResource::new(
+        || async { crate::api::users::list().await },
     );
 
-    let form_email = RwSignal::new(String::new());
-    let form_name = RwSignal::new(String::new());
-    let form_role = RwSignal::new("viewer".to_string());
+    let form_email    = RwSignal::new(String::new());
+    let form_name     = RwSignal::new(String::new());
+    let form_role     = RwSignal::new("viewer".to_string());
     let form_password = RwSignal::new(String::new());
-    let form_error = RwSignal::new(Option::<String>::None);
-    let form_loading = RwSignal::new(false);
+    let form_error    = RwSignal::new(Option::<String>::None);
+    let form_loading  = RwSignal::new(false);
 
-    let on_create = {
-        let users_resource = users_resource;
-        move |ev: leptos::ev::SubmitEvent| {
-            ev.prevent_default();
+    let on_create = move |ev: leptos::ev::SubmitEvent| {
+        ev.prevent_default();
 
-            let email = form_email.get();
-            let name = form_name.get();
-            let password = form_password.get();
-            let role = match form_role.get().as_str() {
-                "owner" => Role::Owner,
-                "admin" => Role::Admin,
-                "operator" => Role::Operator,
-                _ => Role::Viewer,
-            };
+        let email    = form_email.get();
+        let name     = form_name.get();
+        let password = form_password.get();
+        let role = match form_role.get().as_str() {
+            "owner"    => Role::Owner,
+            "admin"    => Role::Admin,
+            "operator" => Role::Operator,
+            _          => Role::Viewer,
+        };
 
-            form_error.set(None);
-            form_loading.set(true);
+        form_error.set(None);
+        form_loading.set(true);
 
-            spawn_local(async move {
-                let req = CreateUserRequest {
-                    email,
-                    name,
-                    password,
-                    role,
-                };
-                match crate::api::users::create(req).await {
-                    Ok(_) => {
-                        form_email.set(String::new());
-                        form_name.set(String::new());
-                        form_password.set(String::new());
-                        form_role.set("viewer".to_string());
-                        form_loading.set(false);
-                        users_resource.refetch();
-                    }
-                    Err(e) => {
-                        form_error.set(Some(e));
-                        form_loading.set(false);
-                    }
+        spawn_local(async move {
+            let req = CreateUserRequest { email, name, password, role };
+            match crate::api::users::create(req).await {
+                Ok(_) => {
+                    form_email.set(String::new());
+                    form_name.set(String::new());
+                    form_password.set(String::new());
+                    form_role.set("viewer".to_string());
+                    form_loading.set(false);
+                    users_resource.refetch();
                 }
-            });
-        }
+                Err(e) => {
+                    form_error.set(Some(e));
+                    form_loading.set(false);
+                }
+            }
+        });
     };
 
     view! {
@@ -74,72 +65,70 @@ pub fn UsersPage() -> impl IntoView {
                     <h3 class="section-subtitle">"Users"</h3>
 
                     <Suspense fallback=|| view! { <p class="loading">"Loading users..."</p> }>
-                        {move || {
-                            users_resource.get().map(|result| {
-                                match result {
-                                    Err(e) => view! {
-                                        <div class="error-banner"><p>{e}</p></div>
-                                    }.into_any(),
-                                    Ok(resp) => {
-                                        if resp.items.is_empty() {
-                                            view! {
-                                                <p class="empty-state">"No users found."</p>
-                                            }.into_any()
-                                        } else {
-                                            let items = resp.items;
-                                            view! {
-                                                <table class="users-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>"Name"</th>
-                                                            <th>"Email"</th>
-                                                            <th>"Role"</th>
-                                                            <th>"Actions"</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <For
-                                                            each=move || items.clone()
-                                                            key=|u| u.id
-                                                            children=move |user| {
-                                                                let user_id: Uuid = user.id;
-                                                                view! {
-                                                                    <tr class="user-row">
-                                                                        <td>{user.name.clone()}</td>
-                                                                        <td>{user.email.clone()}</td>
-                                                                        <td>
-                                                                            <span class=format!(
-                                                                                "role-badge role-{}",
-                                                                                format!("{:?}", user.role).to_lowercase()
-                                                                            )>
-                                                                                {format!("{:?}", user.role)}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td>
-                                                                            <button
-                                                                                class="btn btn-sm btn-danger"
-                                                                                on:click=move |_| {
-                                                                                    spawn_local(async move {
-                                                                                        let _ = crate::api::users::delete(user_id).await;
-                                                                                        users_resource.refetch();
-                                                                                    });
-                                                                                }
-                                                                            >
-                                                                                "Delete"
-                                                                            </button>
-                                                                        </td>
-                                                                    </tr>
-                                                                }
+                        {move || Suspend::new(async move {
+                            match users_resource.await {
+                                Err(e) => view! {
+                                    <div class="error-banner"><p>{e}</p></div>
+                                }.into_any(),
+                                Ok(resp) => {
+                                    if resp.items.is_empty() {
+                                        view! {
+                                            <p class="empty-state">"No users found."</p>
+                                        }.into_any()
+                                    } else {
+                                        let items = resp.items;
+                                        view! {
+                                            <table class="users-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>"Name"</th>
+                                                        <th>"Email"</th>
+                                                        <th>"Role"</th>
+                                                        <th>"Actions"</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <For
+                                                        each=move || items.clone()
+                                                        key=|u| u.id
+                                                        children=move |user| {
+                                                            let user_id: Uuid = user.id;
+                                                            view! {
+                                                                <tr class="user-row">
+                                                                    <td>{user.name.clone()}</td>
+                                                                    <td>{user.email.clone()}</td>
+                                                                    <td>
+                                                                        <span class=format!(
+                                                                            "role-badge role-{}",
+                                                                            format!("{:?}", user.role).to_lowercase()
+                                                                        )>
+                                                                            {format!("{:?}", user.role)}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <button
+                                                                            class="btn btn-sm btn-danger"
+                                                                            on:click=move |_| {
+                                                                                spawn_local(async move {
+                                                                                    let _ = crate::api::users::delete(user_id).await;
+                                                                                    users_resource.refetch();
+                                                                                });
+                                                                            }
+                                                                        >
+                                                                            "Delete"
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
                                                             }
-                                                        />
-                                                    </tbody>
-                                                </table>
-                                            }.into_any()
-                                        }
+                                                        }
+                                                    />
+                                                </tbody>
+                                            </table>
+                                        }.into_any()
                                     }
                                 }
-                            })
-                        }}
+                            }
+                        })}
                     </Suspense>
                 </section>
 
@@ -159,7 +148,6 @@ pub fn UsersPage() -> impl IntoView {
                                     required
                                 />
                             </div>
-
                             <div class="form-group">
                                 <label for="new-name">"Name"</label>
                                 <input
@@ -171,7 +159,6 @@ pub fn UsersPage() -> impl IntoView {
                                     required
                                 />
                             </div>
-
                             <div class="form-group">
                                 <label for="new-role">"Role"</label>
                                 <select
@@ -184,7 +171,6 @@ pub fn UsersPage() -> impl IntoView {
                                     <option value="owner">"Owner"</option>
                                 </select>
                             </div>
-
                             <div class="form-group">
                                 <label for="new-password">"Password"</label>
                                 <input

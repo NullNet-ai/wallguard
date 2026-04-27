@@ -30,8 +30,8 @@ fn fmt_ts(ms: i64) -> String {
 fn severity_class(s: FailureSeverity) -> &'static str {
     match s {
         FailureSeverity::Warning => "severity-warning",
-        FailureSeverity::Error => "severity-error",
-        FailureSeverity::Fatal => "severity-fatal",
+        FailureSeverity::Error   => "severity-error",
+        FailureSeverity::Fatal   => "severity-fatal",
     }
 }
 
@@ -49,15 +49,13 @@ pub fn DeviceFailures() -> impl IntoView {
     let severity_filter = RwSignal::new(Option::<String>::None);
     let offset = RwSignal::new(0u32);
 
-    let failures_resource = Resource::new(
-        move || (device_id(), offset.get(), severity_filter.get()),
-        |(id, off, sev)| async move {
-            match id {
-                Some(id) => crate::api::failures::list(id, off, sev.as_deref()).await,
-                None => Err("Invalid device ID".to_string()),
-            }
-        },
-    );
+    let failures_resource = LocalResource::new(move || async move {
+        let (id, off, sev) = (device_id(), offset.get(), severity_filter.get());
+        match id {
+            Some(id) => crate::api::failures::list(id, off, sev.as_deref()).await,
+            None => Err("Invalid device ID".to_string()),
+        }
+    });
 
     let on_severity_change = move |ev: leptos::ev::Event| {
         let val = event_target_value(&ev);
@@ -77,10 +75,7 @@ pub fn DeviceFailures() -> impl IntoView {
             <main class="page-content">
                 <div class="filter-bar">
                     <label for="severity-filter">"Severity"</label>
-                    <select
-                        id="severity-filter"
-                        on:change=on_severity_change
-                    >
+                    <select id="severity-filter" on:change=on_severity_change>
                         <option value="">"All"</option>
                         <option value="warning">"Warning"</option>
                         <option value="error">"Error"</option>
@@ -89,94 +84,90 @@ pub fn DeviceFailures() -> impl IntoView {
                 </div>
 
                 <Suspense fallback=|| view! { <p class="loading">"Loading failures..."</p> }>
-                    {move || {
-                        failures_resource.get().map(|result| {
-                            match result {
-                                Err(e) => view! {
-                                    <div class="error-banner"><p>{e}</p></div>
-                                }.into_any(),
-                                Ok(resp) => {
-                                    if resp.items.is_empty() {
-                                        view! {
-                                            <p class="empty-state">"No failures found."</p>
-                                        }.into_any()
-                                    } else {
-                                        let total = resp.total;
-                                        let items = resp.items;
-                                        let current_offset = offset.get();
+                    {move || Suspend::new(async move {
+                        match failures_resource.await {
+                            Err(e) => view! {
+                                <div class="error-banner"><p>{e}</p></div>
+                            }.into_any(),
+                            Ok(resp) => {
+                                if resp.items.is_empty() {
+                                    view! {
+                                        <p class="empty-state">"No failures found."</p>
+                                    }.into_any()
+                                } else {
+                                    let total = resp.total;
+                                    let items = resp.items;
+                                    let current_offset = offset.get();
 
-                                        view! {
-                                            <div class="failures-list">
-                                                <For
-                                                    each=move || items.clone()
-                                                    key=|f| f.failure_id
-                                                    children=|failure| {
-                                                        let sev_cls = severity_class(failure.severity);
-                                                        let ts = fmt_ts(failure.occurred_at);
-                                                        view! {
-                                                            <div class=format!("failure-row {sev_cls}")>
-                                                                <div class="failure-header">
-                                                                    <span class=format!("severity-badge {sev_cls}")>
-                                                                        {format!("{:?}", failure.severity)}
-                                                                    </span>
-                                                                    <span class="failure-category">
-                                                                        {format!("{:?}", failure.category)}
-                                                                    </span>
-                                                                    <span class="failure-time">{ts}</span>
-                                                                    <Show
-                                                                        when=move || failure.is_replay
-                                                                        fallback=|| view! {}
-                                                                    >
-                                                                        <span class="replay-badge">"replay"</span>
-                                                                    </Show>
-                                                                </div>
-                                                                <div class="failure-message">
-                                                                    {failure.message.clone()}
-                                                                </div>
+                                    view! {
+                                        <div class="failures-list">
+                                            <For
+                                                each=move || items.clone()
+                                                key=|f| f.failure_id
+                                                children=|failure| {
+                                                    let sev_cls = severity_class(failure.severity);
+                                                    let ts = fmt_ts(failure.occurred_at);
+                                                    view! {
+                                                        <div class=format!("failure-row {sev_cls}")>
+                                                            <div class="failure-header">
+                                                                <span class=format!("severity-badge {sev_cls}")>
+                                                                    {format!("{:?}", failure.severity)}
+                                                                </span>
+                                                                <span class="failure-category">
+                                                                    {format!("{:?}", failure.category)}
+                                                                </span>
+                                                                <span class="failure-time">{ts}</span>
+                                                                <Show
+                                                                    when=move || failure.is_replay
+                                                                    fallback=|| view! {}
+                                                                >
+                                                                    <span class="replay-badge">"replay"</span>
+                                                                </Show>
                                                             </div>
-                                                        }
+                                                            <div class="failure-message">
+                                                                {failure.message.clone()}
+                                                            </div>
+                                                        </div>
                                                     }
-                                                />
-                                            </div>
+                                                }
+                                            />
+                                        </div>
 
-                                            <div class="pagination">
-                                                <button
-                                                    class="btn btn-sm btn-ghost"
-                                                    disabled=move || current_offset == 0
-                                                    on:click=move |_| {
-                                                        offset.update(|o| {
-                                                            *o = o.saturating_sub(PAGE_SIZE)
-                                                        });
-                                                    }
-                                                >
-                                                    "← Prev"
-                                                </button>
-                                                <span class="page-info">
-                                                    {format!(
-                                                        "{} – {} of {}",
-                                                        current_offset + 1,
-                                                        (current_offset + PAGE_SIZE).min(total as u32),
-                                                        total,
-                                                    )}
-                                                </span>
-                                                <button
-                                                    class="btn btn-sm btn-ghost"
-                                                    disabled=move || {
-                                                        (current_offset + PAGE_SIZE) >= total as u32
-                                                    }
-                                                    on:click=move |_| {
-                                                        offset.update(|o| *o += PAGE_SIZE);
-                                                    }
-                                                >
-                                                    "Next →"
-                                                </button>
-                                            </div>
-                                        }.into_any()
-                                    }
+                                        <div class="pagination">
+                                            <button
+                                                class="btn btn-sm btn-ghost"
+                                                disabled=move || current_offset == 0
+                                                on:click=move |_| {
+                                                    offset.update(|o| *o = o.saturating_sub(PAGE_SIZE));
+                                                }
+                                            >
+                                                "← Prev"
+                                            </button>
+                                            <span class="page-info">
+                                                {format!(
+                                                    "{} – {} of {}",
+                                                    current_offset + 1,
+                                                    (current_offset + PAGE_SIZE).min(total as u32),
+                                                    total,
+                                                )}
+                                            </span>
+                                            <button
+                                                class="btn btn-sm btn-ghost"
+                                                disabled=move || {
+                                                    (current_offset + PAGE_SIZE) >= total as u32
+                                                }
+                                                on:click=move |_| {
+                                                    offset.update(|o| *o += PAGE_SIZE);
+                                                }
+                                            >
+                                                "Next →"
+                                            </button>
+                                        </div>
+                                    }.into_any()
                                 }
                             }
-                        })
-                    }}
+                        }
+                    })}
                 </Suspense>
             </main>
         </div>
