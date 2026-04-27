@@ -21,8 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
-COPY crates/ crates/
-COPY proto/  proto/
+COPY crates/     crates/
+COPY proto/      proto/
+COPY migrations/ migrations/
 # Embed the compiled WASM assets into the server binary
 COPY --from=ui-builder /build/crates/wg-ui/dist/ crates/wg-ui/dist/
 
