@@ -2,6 +2,7 @@ services:
 
   postgres:
     image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb-wallguard
     environment:
       POSTGRES_DB:       wallguard
       POSTGRES_USER:     wallguard
@@ -17,6 +18,7 @@ services:
       retries: 10
 
   server:
+    container_name: server-wallguard
     build:
       context: .
       dockerfile: Dockerfile.server
@@ -54,6 +56,7 @@ services:
       - ./dev-certs:/etc/wallguard-server
 
   prometheus:
+    container_name: prometheus-wallguard
     image: prom/prometheus:latest
     volumes:
       - ./dev/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -63,6 +66,7 @@ services:
       - server
 
   grafana:
+    container_name: grafana-wallguard
     image: grafana/grafana:latest
     environment:
       GF_SECURITY_ADMIN_PASSWORD: dev_password
