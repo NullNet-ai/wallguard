@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WallGuard</title>
   <link data-trunk rel="css" href="public/style.css" />
+  <!-- xterm.js — loaded synchronously so window.wgTerminal is ready before WASM runs -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-attach@0.9.0/lib/xterm-addon-attach.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+  <link data-trunk rel="copy-file" href="public/terminal.js"/>
+  <script src="/terminal.js"></script>
 </head>
 <body>
   <!-- trunk injects the WASM module here -->
