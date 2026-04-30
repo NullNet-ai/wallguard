@@ -2,6 +2,7 @@ use leptos::prelude::*;
 use leptos_router::hooks::{use_navigate, use_params_map};
 use uuid::Uuid;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::closure::Closure;
 use wasm_bindgen_futures::spawn_local;
 
 use wg_shared::types::Feature;
@@ -261,7 +262,10 @@ pub fn DeviceDetail() -> impl IntoView {
                                                 <Suspense fallback=|| view! { <p class="loading">"Scanning..."</p> }>
                                                     {move || Suspend::new(async move {
                                                         match services_resource.await {
-                                                            Err(_) | Ok(ref v) if v.is_empty() => view! {
+                                                            Err(_) => view! {
+                                                                <p class="empty-state">"No HTTP services detected yet."</p>
+                                                            }.into_any(),
+                                                            Ok(ref v) if v.is_empty() => view! {
                                                                 <p class="empty-state">"No HTTP services detected yet."</p>
                                                             }.into_any(),
                                                             Ok(services) => view! {
@@ -297,7 +301,7 @@ pub fn DeviceDetail() -> impl IntoView {
                                                                                                     }
                                                                                                     let _ = ws_url;
                                                                                                 }
-                                                                                                Err(e) => tracing::error!("HTTP tunnel failed: {e}"),
+                                                                                                Err(e) => leptos::logging::error!("HTTP tunnel failed: {e}"),
                                                                                             }
                                                                                         });
                                                                                     }
