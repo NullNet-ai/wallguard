@@ -25,13 +25,19 @@ pub struct RequestContext {
 /// Axum middleware: extract a `Bearer` JWT or an API key from the
 /// `Authorization` header and attach a [`RequestContext`] extension.
 ///
+/// For WebSocket upgrades (which cannot set custom headers), the token may
+/// also be supplied as a `?token=<jwt>` query parameter.
+///
 /// Returns `401` if no valid credential is present.
 pub async fn auth_middleware(
     State(state): State<AppState>,
     mut request: Request,
     next: Next,
 ) -> Response {
-    let Some(token) = bearer_token(request.headers()) else {
+    let token = bearer_token(request.headers())
+        .or_else(|| query_token(request.uri().query()));
+
+    let Some(token) = token else {
         return unauthorized("missing or malformed Authorization header");
     };
 
@@ -64,6 +70,12 @@ pub async fn auth_middleware(
 fn bearer_token(headers: &axum::http::HeaderMap) -> Option<&str> {
     let val = headers.get(header::AUTHORIZATION)?.to_str().ok()?;
     val.strip_prefix("Bearer ")
+}
+
+/// Extract a token from `?token=<value>` — used by WebSocket connections
+/// which cannot set the Authorization header.
+fn query_token(query: Option<&str>) -> Option<&str> {
+    query?.split('&').find_map(|kv| kv.strip_prefix("token="))
 }
 
 fn unauthorized(msg: &str) -> Response {

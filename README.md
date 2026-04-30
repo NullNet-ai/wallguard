@@ -13,7 +13,7 @@ and CLI are the three operator-facing surfaces.
 
 | Tool | Version | Install |
 |------|---------|---------|
-| Rust toolchain | ≥ 1.85 | [rustup.rs](https://rustup.rs) |
+| Rust toolchain | ≥ 1.88 | [rustup.rs](https://rustup.rs) |
 | `wasm32-unknown-unknown` target | — | `rustup target add wasm32-unknown-unknown` |
 | `trunk` (WASM bundler) | latest | `cargo install trunk --locked` |
 | Docker + Compose | — | for TimescaleDB (Option A) or Postgres only (Option B) |
@@ -25,7 +25,7 @@ On first start the server auto-generates dev TLS certificates and seeds an
 initial admin user — no manual setup required.
 
 ```bash
-sudo docker compose up
+docker compose up --build
 ```
 
 The server is reachable at:
@@ -33,8 +33,15 @@ The server is reachable at:
 - Agent provisioning gRPC — localhost:50051
 - Agent control gRPC (mTLS) — localhost:50052
 - QUIC reverse tunnel — localhost:7777 (UDP)
+- TCP-TLS reverse tunnel — localhost:7778
 - Prometheus metrics — http://localhost:9090
 - Grafana — http://localhost:3000  (admin / dev_password)
+
+Default admin credentials (printed in server logs on first run):
+```
+Email    : admin@wallguard.local
+Password : password123
+```
 
 ### Option B — bare-metal local dev
 
@@ -54,7 +61,7 @@ once before building the server; rebuild whenever the UI changes.
 
 ```bash
 cd crates/wg-ui
-trunk build           # or: trunk build --release
+trunk build
 cd -
 ```
 
@@ -74,12 +81,6 @@ RUST_LOG=info,wg_server=debug \
 cargo run -p wg-server
 ```
 
-The server prints the seeded credentials to the log on first run:
-```
-Email    : admin@wallguard.local
-Password : password123
-```
-
 **Step 4 — Enroll a device**
 
 Log in to the web UI, create an installation code, then on the device:
@@ -87,21 +88,30 @@ Log in to the web UI, create an installation code, then on the device:
 ```bash
 sudo cargo run -p wg-cli -- enroll \
     --server grpc://localhost:50051 \
-    --install-code <CODE>
+    --code <CODE>
 ```
 
-The agent config is written to `/etc/wallguard/config.toml` and device
-certificates are written to `/etc/wallguard/`.
+The agent config and device certificates are written to `/etc/wallguard/`.
+The server address in `config.toml` is taken from `--server` by default.
+If the agent needs to reach the server at a different address than the one
+used for provisioning (e.g. a public IP vs. an internal hostname), pass
+`--connect-address <HOST_OR_IP>`.
+
+> **Debug builds** (`cargo build` / `cargo run` without `--release`) skip TLS
+> server certificate verification automatically, so you can enroll against the
+> dev self-signed certificate without passing `--ca-cert`.
 
 **Step 5 — Run the agent**
 
 ```bash
 sudo cargo run -p wg-agent
-# or with a custom config:
+# or with a custom config path:
 sudo cargo run -p wg-agent -- --config /etc/wallguard/config.toml
 ```
 
-### wg-server environment variables
+---
+
+## wg-server environment variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
@@ -110,6 +120,7 @@ sudo cargo run -p wg-agent -- --config /etc/wallguard/config.toml
 | `CA_KEY_PATH` | yes | — | Intermediate CA private key (PEM) — used to sign device certs |
 | `SERVER_CERT_PATH` | yes | — | Server TLS leaf certificate (PEM) |
 | `SERVER_KEY_PATH` | yes | — | Server TLS private key (PEM) |
+| `SERVER_NAME` | no | `localhost` | CN / SAN for the generated dev certificate |
 | `HTTP_PORT` | no | `8080` | HTTP API + embedded web UI |
 | `GRPC_PORT` | no | `50051` | Device provisioning gRPC (plain TLS) |
 | `CONTROL_GRPC_PORT` | no | `50052` | Agent control channel gRPC (mTLS) |

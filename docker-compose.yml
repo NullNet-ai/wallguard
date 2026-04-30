@@ -1,8 +1,13 @@
+networks:
+  wg:
+    driver: bridge
+
 services:
 
   postgres:
     image: timescale/timescaledb:latest-pg16
     container_name: timescaledb-wallguard
+    networks: [wg]
     environment:
       POSTGRES_DB:       wallguard
       POSTGRES_USER:     wallguard
@@ -19,6 +24,7 @@ services:
 
   server:
     container_name: server-wallguard
+    networks: [wg]
     build:
       context: .
       dockerfile: Dockerfile.server
@@ -29,8 +35,8 @@ services:
       CA_KEY_PATH:       /etc/wallguard-server/ca.key
       SERVER_CERT_PATH:  /etc/wallguard-server/server.crt
       SERVER_KEY_PATH:   /etc/wallguard-server/server.key
-      # SERVER_NAME must match the Docker service name so the generated SAN is valid.
-      SERVER_NAME:       wallguard-server
+      # SERVER_NAME is used as the CN/SAN in the generated dev server cert.
+      SERVER_NAME:       localhost
       # Ports (override defaults only where we want non-standard values)
       HTTP_PORT:         "4444"
       GRPC_PORT:         "50051"     # device provisioning
@@ -57,6 +63,7 @@ services:
 
   prometheus:
     container_name: prometheus-wallguard
+    networks: [wg]
     image: prom/prometheus:latest
     volumes:
       - ./dev/prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -67,6 +74,7 @@ services:
 
   grafana:
     container_name: grafana-wallguard
+    networks: [wg]
     image: grafana/grafana:latest
     environment:
       GF_SECURITY_ADMIN_PASSWORD: dev_password

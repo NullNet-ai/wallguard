@@ -25,8 +25,6 @@ pub struct ProvisioningService {
     pub ca:          Arc<Ca>,
     /// PEM of the Intermediate CA returned to agents for pinning.
     pub ca_cert_pem: String,
-    /// Canonical server hostname written into the agent config.toml.
-    pub server_name: String,
 }
 
 #[tonic::async_trait]
@@ -132,7 +130,6 @@ impl Provisioning for ProvisioningService {
             device_id:       device_id.to_string(),
             device_cert_pem: cert_pem,
             ca_cert_pem:     self.ca_cert_pem.clone(),
-            server_name:     self.server_name.clone(),
         }))
     }
 }

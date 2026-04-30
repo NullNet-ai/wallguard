@@ -171,7 +171,6 @@ async fn main() {
         pool:        pool.clone(),
         ca:          ca.clone(),
         ca_cert_pem: ca_cert_pem.clone(),
-        server_name: server_name.clone(),
     });
 
     let prov_addr: SocketAddr = format!("[::]:{prov_port}").parse().unwrap();

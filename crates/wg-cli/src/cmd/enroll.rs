@@ -2,9 +2,95 @@ use std::path::PathBuf;
 
 use clap::Args;
 use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, PKCS_ED25519};
-use tonic::transport::{Certificate, Channel, ClientTlsConfig};
+use tonic::transport::Channel;
+#[cfg(not(debug_assertions))]
+use tonic::transport::{Certificate, ClientTlsConfig};
 use uuid::Uuid;
 use wg_shared::pki::write_secret_file;
+
+// ---------------------------------------------------------------------------
+// Debug-only: skip server cert verification (self-signed dev PKI)
+// ---------------------------------------------------------------------------
+
+#[cfg(debug_assertions)]
+mod debug_tls {
+    use std::future::Future;
+    use std::pin::Pin;
+    use std::sync::Arc;
+    use std::task::{Context, Poll};
+
+    use hyper_util::rt::TokioIo;
+    use tokio::net::TcpStream;
+    use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
+    use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
+    use rustls::{DigitallySignedStruct, Error, SignatureScheme};
+
+    #[derive(Debug)]
+    pub struct NoCertVerifier;
+
+    impl ServerCertVerifier for NoCertVerifier {
+        fn verify_server_cert(&self, _: &CertificateDer<'_>, _: &[CertificateDer<'_>],
+            _: &ServerName<'_>, _: &[u8], _: UnixTime) -> Result<ServerCertVerified, Error> {
+            Ok(ServerCertVerified::assertion())
+        }
+        fn verify_tls12_signature(&self, _: &[u8], _: &CertificateDer<'_>,
+            _: &DigitallySignedStruct) -> Result<HandshakeSignatureValid, Error> {
+            Ok(HandshakeSignatureValid::assertion())
+        }
+        fn verify_tls13_signature(&self, _: &[u8], _: &CertificateDer<'_>,
+            _: &DigitallySignedStruct) -> Result<HandshakeSignatureValid, Error> {
+            Ok(HandshakeSignatureValid::assertion())
+        }
+        fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+            rustls::crypto::aws_lc_rs::default_provider()
+                .signature_verification_algorithms.supported_schemes()
+        }
+    }
+
+    pub type Io = TokioIo<tokio_rustls::client::TlsStream<TcpStream>>;
+
+    #[derive(Clone)]
+    pub struct Connector {
+        tls:         tokio_rustls::TlsConnector,
+        server_name: rustls_pki_types::ServerName<'static>,
+    }
+
+    impl Connector {
+        pub fn new(server_name: &str) -> anyhow::Result<Self> {
+            let mut cfg = rustls::ClientConfig::builder()
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(NoCertVerifier))
+                .with_no_client_auth();
+            cfg.alpn_protocols.push(b"h2".to_vec());
+            let server_name = rustls_pki_types::ServerName::try_from(server_name.to_string())
+                .map_err(|e| anyhow::anyhow!("invalid server name '{server_name}': {e}"))?;
+            Ok(Self { tls: tokio_rustls::TlsConnector::from(Arc::new(cfg)), server_name })
+        }
+    }
+
+    impl tower::Service<tonic::transport::Uri> for Connector {
+        type Response = Io;
+        type Error   = anyhow::Error;
+        type Future  = Pin<Box<dyn Future<Output = Result<Io, anyhow::Error>> + Send>>;
+
+        fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, uri: tonic::transport::Uri) -> Self::Future {
+            let tls         = self.tls.clone();
+            let server_name = self.server_name.clone();
+            Box::pin(async move {
+                let host = uri.host().unwrap_or_default();
+                let port = uri.port_u16().unwrap_or(443);
+                let tcp  = TcpStream::connect((host, port)).await
+                    .map_err(|e| anyhow::anyhow!("TCP connect {host}:{port}: {e}"))?;
+                Ok(TokioIo::new(tls.connect(server_name, tcp).await
+                    .map_err(|e| anyhow::anyhow!("TLS handshake: {e}"))?))
+            })
+        }
+    }
+}
 
 mod proto {
     tonic::include_proto!("wallguard.provisioning");
@@ -34,6 +120,12 @@ pub struct EnrollArgs {
     /// If omitted, uses system root CAs (not recommended for production).
     #[arg(long)]
     pub ca_cert: Option<PathBuf>,
+
+    /// Override the server address written to config.toml.
+    /// Useful when the server is behind NAT or Docker and its advertised name
+    /// isn't reachable from this host (e.g. --connect-address 127.0.0.1).
+    #[arg(long)]
+    pub connect_address: Option<String>,
 }
 
 pub async fn run(args: EnrollArgs) -> anyhow::Result<()> {
@@ -64,11 +156,27 @@ pub async fn run(args: EnrollArgs) -> anyhow::Result<()> {
     // -----------------------------------------------------------------------
     // tonic requires https:// to negotiate TLS; normalize grpc:// aliases.
     let endpoint_url = normalize_scheme(&args.server);
-    let tls = build_tls_config(args.ca_cert.as_deref(), &endpoint_url)?;
-    let channel = Channel::from_shared(endpoint_url)?
-        .tls_config(tls)?
-        .connect()
-        .await?;
+
+    #[cfg(debug_assertions)]
+    let channel = {
+        tracing::warn!("TLS server certificate verification DISABLED — debug build only");
+        let host = url_host(&endpoint_url).unwrap_or("localhost");
+        let connector = debug_tls::Connector::new(host)?;
+        // Use http:// so tonic doesn't require its own TLS config — our
+        // connector handles TLS internally.
+        let http_url = endpoint_url.replacen("https://", "http://", 1);
+        Channel::from_shared(http_url)?
+            .connect_with_connector(connector)
+            .await?
+    };
+    #[cfg(not(debug_assertions))]
+    let channel = {
+        let tls = build_tls_config(args.ca_cert.as_deref(), &endpoint_url)?;
+        Channel::from_shared(endpoint_url)?
+            .tls_config(tls)?
+            .connect()
+            .await?
+    };
 
     let mut client = ProvisioningClient::new(channel);
 
@@ -108,9 +216,12 @@ pub async fn run(args: EnrollArgs) -> anyhow::Result<()> {
 
     // config.toml
     let cfg_path = args.out_dir.join("config.toml");
+    let connect_addr = args.connect_address.as_deref()
+        .or_else(|| url_host(&args.server))
+        .unwrap_or("localhost");
     let cfg_toml = build_config_toml(
         &resp.device_id,
-        &resp.server_name,
+        connect_addr,
         &args.out_dir,
         &args.firewall,
     );
@@ -132,6 +243,7 @@ pub async fn run(args: EnrollArgs) -> anyhow::Result<()> {
 // Helpers
 // ---------------------------------------------------------------------------
 
+#[cfg(not(debug_assertions))]
 fn build_tls_config(
     ca_cert_path: Option<&std::path::Path>,
     server_url:   &str,

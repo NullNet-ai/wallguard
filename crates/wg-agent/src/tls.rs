@@ -185,7 +185,10 @@ pub async fn build_grpc_channel(
 ) -> anyhow::Result<tonic::transport::Channel> {
     let rustls_cfg = build_rustls_client_config(config)?;
     let connector  = no_verify_connector::Connector::new(rustls_cfg, &config.server.name)?;
-    tonic::transport::Channel::from_shared(uri)?
+    // Use http:// so tonic doesn't require its own TLS config — our connector
+    // handles TLS internally.
+    let http_uri = uri.replacen("https://", "http://", 1);
+    tonic::transport::Channel::from_shared(http_uri)?
         .connect_timeout(Duration::from_secs(10))
         .connect_with_connector(connector)
         .await

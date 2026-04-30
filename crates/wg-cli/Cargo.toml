@@ -27,6 +27,7 @@ rcgen      = { workspace = true }
 
 rustls           = { workspace = true }
 rustls-pki-types = { workspace = true }
+tokio-rustls     = { workspace = true }
 
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }

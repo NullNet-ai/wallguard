@@ -212,9 +212,10 @@ async fn handle_server_msg(
         }
 
         Some(M::OpenSshTunnel(cmd)) => {
-            let ctx  = tunnel_ctx.clone();
-            let out  = out_tx.clone();
-            let port = tunnel_ctx.config.agent.ssh_port;
+            let ctx      = tunnel_ctx.clone();
+            let out      = out_tx.clone();
+            let port     = tunnel_ctx.config.agent.ssh_port;
+            let username = cmd.username.clone();
             tokio::spawn(async move {
                 let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
                 match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
@@ -228,7 +229,7 @@ async fn handle_server_msg(
                         let _ = out.send(cmd_result(
                             &cmd.command_id, CommandStatus::Success, "",
                         )).await;
-                        if let Err(e) = tunnel::ssh::run_ssh_tunnel(stream, port).await {
+                        if let Err(e) = tunnel::ssh::run_ssh_tunnel(stream, port, &username).await {
                             tracing::debug!(command_id = %cmd.command_id, "SSH tunnel closed: {e}");
                         }
                     }

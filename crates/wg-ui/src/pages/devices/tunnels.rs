@@ -47,11 +47,15 @@ pub fn DeviceTunnels() -> impl IntoView {
             spawn_local(async move {
                 match crate::api::tunnels::open_ssh(id).await {
                     Ok(resp) => {
+                        let ws_url = match crate::auth::get_token() {
+                            Some(t) => format!("{}?token={}", resp.ws_url, t),
+                            None    => resp.ws_url.clone(),
+                        };
                         nav(
                             &format!(
                                 "/devices/{id}/tunnels?session={}&type=ssh&ws={}",
                                 resp.session_id,
-                                js_sys::encode_uri_component(&resp.ws_url),
+                                js_sys::encode_uri_component(&ws_url),
                             ),
                             Default::default(),
                         );
@@ -71,11 +75,15 @@ pub fn DeviceTunnels() -> impl IntoView {
             spawn_local(async move {
                 match crate::api::tunnels::open_tty(id).await {
                     Ok(resp) => {
+                        let ws_url = match crate::auth::get_token() {
+                            Some(t) => format!("{}?token={}", resp.ws_url, t),
+                            None    => resp.ws_url.clone(),
+                        };
                         nav(
                             &format!(
                                 "/devices/{id}/tunnels?session={}&type=tty&ws={}",
                                 resp.session_id,
-                                js_sys::encode_uri_component(&resp.ws_url),
+                                js_sys::encode_uri_component(&ws_url),
                             ),
                             Default::default(),
                         );

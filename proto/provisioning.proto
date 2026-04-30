@@ -39,7 +39,4 @@ message EnrollResponse {
 
   // PEM-encoded Intermediate CA certificate the agent should pin.
   string ca_cert_pem    = 3;
-
-  // Canonical server hostname to use for subsequent connections.
-  string server_name    = 4;
 }

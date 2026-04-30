@@ -126,7 +126,8 @@ async fn relay_ws(mut socket: WebSocket, mut stream: TunnelStream, pool: PgPool,
                 match result {
                     Ok(0) | Err(_) => break,
                     Ok(n) => {
-                        if socket.send(Message::Binary(buf[..n].to_vec())).await.is_err() {
+                        let text = String::from_utf8_lossy(&buf[..n]).into_owned();
+                        if socket.send(Message::Text(text)).await.is_err() {
                             break;
                         }
                     }
