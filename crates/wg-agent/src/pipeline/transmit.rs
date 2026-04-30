@@ -4,7 +4,7 @@ use std::time::Duration;
 use prost::Message;
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::{Certificate, Channel, ClientTlsConfig, Identity};
+use tonic::transport::Channel;
 use tracing::{info, warn};
 
 use crate::config::Config;
@@ -43,20 +43,7 @@ pub async fn run_transmitter(
 }
 
 async fn connect(config: &Config) -> anyhow::Result<DataServiceClient<Channel>> {
-    let cert = std::fs::read_to_string(&config.tls.device_cert)?;
-    let key  = std::fs::read_to_string(&config.tls.device_key)?;
-    let ca   = std::fs::read_to_string(&config.tls.ca_cert)?;
-
-    let tls = ClientTlsConfig::new()
-        .domain_name(&config.server.name)
-        .identity(Identity::from_pem(&cert, &key))
-        .ca_certificate(Certificate::from_pem(ca));
-
-    let channel = Channel::from_shared(config.grpc_endpoint())?
-        .tls_config(tls)?
-        .connect_timeout(Duration::from_secs(10))
-        .connect()
-        .await?;
+    let channel = crate::tls::build_grpc_channel(config, config.grpc_endpoint()).await?;
 
     Ok(DataServiceClient::new(channel))
 }

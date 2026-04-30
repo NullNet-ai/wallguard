@@ -22,6 +22,7 @@ mod proto;
 mod proto_conv;
 mod state;
 mod state_machine;
+mod tls;
 mod tunnel;
 
 use config::Config;

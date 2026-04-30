@@ -47,13 +47,15 @@ metrics                     = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
 rcgen                       = { workspace = true }
 
-# --- tunnel transport ---
+# --- tunnel transport + gRPC TLS ---
 quinn            = { workspace = true }
 rustls           = { workspace = true }
 rustls-pki-types = { workspace = true }
 tokio-rustls     = { workspace = true }
 rustls-pemfile   = { workspace = true }
 portable-pty     = { workspace = true }
+tower            = { workspace = true }
+hyper-util       = { workspace = true }
 
 # Remote-desktop optional deps
 enigo    = { workspace = true, optional = true }

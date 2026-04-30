@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tokio_rustls::TlsConnector;
 use tracing::warn;
 
@@ -68,7 +67,7 @@ async fn get_or_create_quic_conn(ctx: &TunnelContext) -> anyhow::Result<quinn::C
 async fn quic_connect(config: &crate::config::Config) -> anyhow::Result<quinn::Connection> {
     use quinn::crypto::rustls::QuicClientConfig;
 
-    let tls_cfg  = build_rustls_client_config(config)?;
+    let tls_cfg  = crate::tls::build_rustls_client_config(config)?;
     let quic_cfg = QuicClientConfig::try_from(tls_cfg)
         .map_err(|e| anyhow::anyhow!("QUIC crypto: {e}"))?;
 
@@ -118,7 +117,7 @@ async fn open_tcp_stream(ctx: &TunnelContext, tunnel_id: &str) -> anyhow::Result
 
     let tcp = tokio::net::TcpStream::connect(addr).await?;
 
-    let tls_cfg = build_rustls_client_config(config)?;
+    let tls_cfg = crate::tls::build_rustls_client_config(config)?;
     let connector = TlsConnector::from(Arc::new(tls_cfg));
 
     let server_name = rustls_pki_types::ServerName::try_from(config.server.name.as_str())
@@ -137,34 +136,3 @@ async fn open_tcp_stream(ctx: &TunnelContext, tunnel_id: &str) -> anyhow::Result
     })
 }
 
-// ---------------------------------------------------------------------------
-// TLS client config (shared by both paths)
-// ---------------------------------------------------------------------------
-
-fn build_rustls_client_config(
-    config: &crate::config::Config,
-) -> anyhow::Result<rustls::ClientConfig> {
-    let cert_pem = std::fs::read_to_string(&config.tls.device_cert)?;
-    let key_pem  = std::fs::read_to_string(&config.tls.device_key)?;
-    let ca_pem   = std::fs::read_to_string(&config.tls.ca_cert)?;
-
-    let certs: Vec<CertificateDer<'static>> = rustls_pemfile::certs(
-        &mut std::io::Cursor::new(cert_pem.as_bytes()),
-    ).collect::<Result<Vec<_>, _>>()?;
-
-    let key: PrivateKeyDer<'static> = rustls_pemfile::private_key(
-        &mut std::io::Cursor::new(key_pem.as_bytes()),
-    )?.ok_or_else(|| anyhow::anyhow!("no private key in device cert"))?;
-
-    let mut root_store = rustls::RootCertStore::empty();
-    for cert in rustls_pemfile::certs(&mut std::io::Cursor::new(ca_pem.as_bytes())) {
-        root_store.add(cert?)?;
-    }
-
-    let cfg = rustls::ClientConfig::builder()
-        .with_root_certificates(root_store)
-        .with_client_auth_cert(certs, key)
-        .map_err(|e| anyhow::anyhow!("client auth cert: {e}"))?;
-
-    Ok(cfg)
-}
