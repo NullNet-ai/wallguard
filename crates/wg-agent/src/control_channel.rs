@@ -13,7 +13,8 @@ use crate::disk_buffer::DiskBuffer;
 use crate::failure_buffer::FailureBuffer;
 use crate::proto::control::{
     client_message, control_client::ControlClient, server_message, ClientMessage, CommandStatus,
-    Heartbeat, HeartbeatAck, MonitoringStatus, RenewCertificateResponse, ServerMessage,
+    Heartbeat, HeartbeatAck, HttpServicesUpdate, MonitoringStatus, RenewCertificateResponse,
+    ServerMessage,
 };
 use crate::proto_conv::{
     cmd_result, failure_entry_to_proto, make_hello, proto_to_shared_feature, unix_ms_now,
@@ -94,8 +95,23 @@ pub async fn run_connected_loop(
     let mut in_flight: HashSet<u64> = HashSet::new();
     let mut pending_cert_key: Option<String> = None;
 
+    let mut scan_timer = tokio::time::interval(Duration::from_secs(30));
+
     loop {
         tokio::select! {
+            _ = scan_timer.tick() => {
+                let cfg = config.clone();
+                let tx  = out_tx.clone();
+                tokio::spawn(async move {
+                    let services = crate::http_scanner::scan(&cfg).await;
+                    let _ = tx.send(ClientMessage {
+                        message: Some(client_message::Message::HttpServicesUpdate(
+                            HttpServicesUpdate { services },
+                        )),
+                    }).await;
+                });
+            }
+
             _ = hb_timer.tick() => {
                 if in_flight.len() >= 3 {
                     warn!("3 consecutive heartbeat acks missed — reconnecting");

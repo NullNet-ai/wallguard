@@ -245,6 +245,16 @@ message RenewCertificateResponse {
   string csr_pem = 1;
 }
 
+message HttpService {
+  uint32 port   = 1;
+  string scheme = 2;
+  string title  = 3;
+}
+
+message HttpServicesUpdate {
+  repeated HttpService services = 1;
+}
+
 // ---------------------------------------------------------------------------
 // Stream multiplexers
 // ---------------------------------------------------------------------------
@@ -283,5 +293,6 @@ message ClientMessage {
     ConfigSnapshot           config_snapshot            = 5;
     AgentFailure             agent_failure              = 6;
     RenewCertificateResponse renew_certificate_response = 7;
+    HttpServicesUpdate       http_services_update       = 8;
   }
 }

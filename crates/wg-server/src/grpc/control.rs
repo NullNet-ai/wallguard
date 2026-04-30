@@ -349,6 +349,15 @@ async fn handle_client_msg(
             tracing::info!(%device_id, digest = %snap.digest, "config snapshot received (Phase 12 stub)");
         }
 
+        // ── HTTP service advertisement ─────────────────────────────────────
+        Some(M::HttpServicesUpdate(update)) => {
+            state.registry.update_http_services(device_id, update.services).await;
+            let _ = state.sse_tx.send(SseEvent {
+                org_id,
+                kind: SseEventKind::HttpServicesUpdated { device_id },
+            });
+        }
+
         // Hello only valid at handshake time.
         Some(M::Hello(_)) => {
             tracing::warn!(%device_id, "duplicate Hello ignored");

@@ -5,7 +5,7 @@ use std::time::Instant;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use uuid::Uuid;
 
-use crate::proto::control::ServerMessage;
+use crate::proto::control::{HttpService, ServerMessage};
 
 pub type DeviceId = Uuid;
 
@@ -28,12 +28,16 @@ pub struct DeviceConnection {
 
 #[derive(Clone)]
 pub struct ConnectionRegistry {
-    inner: Arc<RwLock<HashMap<DeviceId, DeviceConnection>>>,
+    inner:         Arc<RwLock<HashMap<DeviceId, DeviceConnection>>>,
+    http_services: Arc<RwLock<HashMap<DeviceId, Vec<HttpService>>>>,
 }
 
 impl ConnectionRegistry {
     pub fn new() -> Self {
-        Self { inner: Arc::new(RwLock::new(HashMap::new())) }
+        Self {
+            inner:         Arc::new(RwLock::new(HashMap::new())),
+            http_services: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     /// Insert a new connection. Signals any existing connection for this
@@ -50,6 +54,7 @@ impl ConnectionRegistry {
     /// Remove a connection (called when its task exits).
     pub async fn remove(&self, device_id: &DeviceId) {
         self.inner.write().await.remove(device_id);
+        self.http_services.write().await.remove(device_id);
     }
 
     /// Send a message to a specific device. Returns `false` if the device is
@@ -78,5 +83,20 @@ impl ConnectionRegistry {
     /// Returns device IDs for all currently connected devices.
     pub async fn connected_device_ids(&self) -> Vec<DeviceId> {
         self.inner.read().await.keys().cloned().collect()
+    }
+
+    /// Update the list of HTTP services advertised by a device.
+    pub async fn update_http_services(&self, device_id: DeviceId, services: Vec<HttpService>) {
+        self.http_services.write().await.insert(device_id, services);
+    }
+
+    /// Return the HTTP services last reported by a device, or an empty list.
+    pub async fn get_http_services(&self, device_id: &DeviceId) -> Vec<HttpService> {
+        self.http_services
+            .read()
+            .await
+            .get(device_id)
+            .cloned()
+            .unwrap_or_default()
     }
 }

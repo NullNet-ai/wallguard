@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod devices;
 pub mod failures;
+pub mod http_services;
 pub mod install_codes;
 pub mod tunnels;
 pub mod users;

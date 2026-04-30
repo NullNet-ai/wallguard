@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use leptos_router::hooks::{use_navigate, use_params_map};
 use uuid::Uuid;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 
 use wg_shared::types::Feature;
@@ -53,6 +54,38 @@ pub fn DeviceDetail() -> impl IntoView {
             None => Err("Invalid device ID".to_string()),
         }
     });
+
+    let refresh_services: RwSignal<u32> = RwSignal::new(0);
+
+    let services_resource = LocalResource::new(move || async move {
+        let _ = refresh_services.get();
+        match device_id() {
+            Some(id) => crate::api::http_services::list(id).await,
+            None => Err("Invalid device ID".to_string()),
+        }
+    });
+
+    // SSE subscription: listen for http_services_updated events and refresh when
+    // the event data contains the current device ID.
+    {
+        let device_id_str = device_id().map(|id| id.to_string()).unwrap_or_default();
+        if let Ok(es) = web_sys::EventSource::new("/api/v1/events") {
+            let refresh = refresh_services;
+            let closure = Closure::<dyn Fn(web_sys::MessageEvent)>::new(move |ev: web_sys::MessageEvent| {
+                let data = ev.data().as_string().unwrap_or_default();
+                if data.contains(&device_id_str) {
+                    refresh.update(|n| *n += 1);
+                }
+            });
+            let et: &web_sys::EventTarget = es.as_ref();
+            let _ = et.add_event_listener_with_callback(
+                "http_services_updated",
+                closure.as_ref().unchecked_ref(),
+            );
+            closure.forget();
+            std::mem::forget(es);
+        }
+    }
 
     let tunnel_error = RwSignal::new(Option::<String>::None);
 
@@ -222,6 +255,65 @@ pub fn DeviceDetail() -> impl IntoView {
                                                     <p>{move || tunnel_error.get().unwrap_or_default()}</p>
                                                 </div>
                                             </Show>
+
+                                            <div class="http-services">
+                                                <h4 class="section-title">"HTTP Services"</h4>
+                                                <Suspense fallback=|| view! { <p class="loading">"Scanning..."</p> }>
+                                                    {move || Suspend::new(async move {
+                                                        match services_resource.await {
+                                                            Err(_) | Ok(ref v) if v.is_empty() => view! {
+                                                                <p class="empty-state">"No HTTP services detected yet."</p>
+                                                            }.into_any(),
+                                                            Ok(services) => view! {
+                                                                <div class="http-services-list">
+                                                                    {services.into_iter().map(|svc| {
+                                                                        let label = if svc.title.is_empty() {
+                                                                            format!("{}:{}", svc.scheme, svc.port)
+                                                                        } else {
+                                                                            format!("{} ({}:{})", svc.title, svc.scheme, svc.port)
+                                                                        };
+                                                                        let port = svc.port as u16;
+                                                                        let scheme = svc.scheme.clone();
+                                                                        let connected_copy = connected;
+                                                                        view! {
+                                                                            <div class="http-service-row">
+                                                                                <span class="service-label">{label}</span>
+                                                                                <button
+                                                                                    class="btn btn-sm btn-secondary"
+                                                                                    on:click=move |_| {
+                                                                                        let Some(dev_id) = device_id() else { return };
+                                                                                        let scheme = scheme.clone();
+                                                                                        wasm_bindgen_futures::spawn_local(async move {
+                                                                                            match crate::api::tunnels::open_http(dev_id, "127.0.0.1", port).await {
+                                                                                                Ok(resp) => {
+                                                                                                    let token = crate::auth::get_token().unwrap_or_default();
+                                                                                                    let ws_url = format!("{}?token={}", resp.ws_url, token);
+                                                                                                    // Open in new tab for HTTP proxy
+                                                                                                    if let Some(window) = web_sys::window() {
+                                                                                                        let _ = window.open_with_url_and_target(
+                                                                                                            &format!("{}://localhost:{}", scheme, port),
+                                                                                                            "_blank",
+                                                                                                        );
+                                                                                                    }
+                                                                                                    let _ = ws_url;
+                                                                                                }
+                                                                                                Err(e) => tracing::error!("HTTP tunnel failed: {e}"),
+                                                                                            }
+                                                                                        });
+                                                                                    }
+                                                                                    disabled=move || !connected_copy
+                                                                                >
+                                                                                    "Open"
+                                                                                </button>
+                                                                            </div>
+                                                                        }
+                                                                    }).collect::<Vec<_>>()}
+                                                                </div>
+                                                            }.into_any(),
+                                                        }
+                                                    })}
+                                                </Suspense>
+                                            </div>
 
                                             <nav class="detail-tabs">
                                                 <a class="tab-link" href=format!("/devices/{id}/failures")>

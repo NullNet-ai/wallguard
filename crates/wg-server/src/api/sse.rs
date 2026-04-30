@@ -20,9 +20,10 @@ pub async fn handler(
                 return None;
             }
             let kind_name = match &event.kind {
-                crate::events::SseEventKind::DeviceConnected { .. }    => "device_connected",
-                crate::events::SseEventKind::DeviceDisconnected { .. } => "device_disconnected",
-                crate::events::SseEventKind::NewFailure { .. }         => "new_failure",
+                crate::events::SseEventKind::DeviceConnected { .. }     => "device_connected",
+                crate::events::SseEventKind::DeviceDisconnected { .. }  => "device_disconnected",
+                crate::events::SseEventKind::NewFailure { .. }          => "new_failure",
+                crate::events::SseEventKind::HttpServicesUpdated { .. } => "http_services_updated",
             };
             let data = serde_json::to_string(&event.kind).unwrap_or_default();
             Some(Ok::<_, Infallible>(Event::default().event(kind_name).data(data)))

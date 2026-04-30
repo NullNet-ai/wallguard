@@ -12,6 +12,7 @@ mod capabilities;
 mod cli_server;
 mod config;
 mod control_channel;
+mod http_scanner;
 mod disk_buffer;
 mod failure_buffer;
 mod lifecycle;
