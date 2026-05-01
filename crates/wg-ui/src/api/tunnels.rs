@@ -17,6 +17,14 @@ struct HttpTunnelRequest<'a> {
     target_port: u16,
 }
 
+#[derive(Serialize)]
+struct RdpRequest {
+    width:       u32,
+    height:      u32,
+    target_fps:  u32,
+    target_kbps: u32,
+}
+
 /// POST /api/v1/devices/{device_id}/tunnels/ssh
 pub async fn open_ssh(device_id: Uuid) -> ApiResult<TunnelResponse> {
     super::post(
@@ -44,6 +52,21 @@ pub async fn open_http(
     super::post(
         &format!("/api/v1/devices/{device_id}/tunnels/http"),
         &HttpTunnelRequest { target_host, target_port },
+    )
+    .await
+}
+
+/// POST /api/v1/devices/{device_id}/tunnels/rdp
+pub async fn open_rdp(
+    device_id:   Uuid,
+    width:       u32,
+    height:      u32,
+    target_fps:  u32,
+    target_kbps: u32,
+) -> ApiResult<TunnelResponse> {
+    super::post(
+        &format!("/api/v1/devices/{device_id}/tunnels/rdp"),
+        &RdpRequest { width, height, target_fps, target_kbps },
     )
     .await
 }

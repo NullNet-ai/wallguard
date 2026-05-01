@@ -132,6 +132,32 @@ pub fn DeviceDetail() -> impl IntoView {
         }
     });
 
+    let open_rdp = StoredValue::new({
+        let navigate = navigate.clone();
+        move |_: leptos::ev::MouseEvent| {
+            let Some(id) = device_id() else { return };
+            let nav = navigate.clone();
+            tunnel_error.set(None);
+            const W: u32 = 1280;
+            const H: u32 = 720;
+            spawn_local(async move {
+                match crate::api::tunnels::open_rdp(id, W, H, 30, 4000).await {
+                    Ok(resp) => {
+                        let ws_url = match crate::auth::get_token() {
+                            Some(t) => format!("{}?token={}", resp.ws_url, t),
+                            None    => resp.ws_url.clone(),
+                        };
+                        nav(
+                            &format!("/devices/{id}/tunnels?session={}&type=rdp&w={W}&h={H}&ws={}", resp.session_id, js_sys::encode_uri_component(&ws_url)),
+                            Default::default(),
+                        );
+                    }
+                    Err(e) => tunnel_error.set(Some(format!("Remote desktop failed: {e}"))),
+                }
+            });
+        }
+    });
+
     view! {
         <div class="page">
             <header class="page-header">
@@ -234,18 +260,41 @@ pub fn DeviceDetail() -> impl IntoView {
                                                     }
                                                 }
 
-                                                <Show
-                                                    when=move || device.features.contains(&Feature::TtyTunnel)
-                                                    fallback=|| view! {}
-                                                >
-                                                    <button
-                                                        class="btn btn-secondary"
-                                                        on:click=move |e| open_tty.update_value(|f| f(e))
-                                                        disabled=move || !connected
-                                                    >
-                                                        "Open TTY"
-                                                    </button>
-                                                </Show>
+                                                {
+                                                    let features = device.features.clone();
+                                                    view! {
+                                                        <Show
+                                                            when=move || features.contains(&Feature::TtyTunnel)
+                                                            fallback=|| view! {}
+                                                        >
+                                                            <button
+                                                                class="btn btn-secondary"
+                                                                on:click=move |e| open_tty.update_value(|f| f(e))
+                                                                disabled=move || !connected
+                                                            >
+                                                                "Open TTY"
+                                                            </button>
+                                                        </Show>
+                                                    }
+                                                }
+
+                                                {
+                                                    let features = device.features.clone();
+                                                    view! {
+                                                        <Show
+                                                            when=move || features.contains(&Feature::RemoteDesktop)
+                                                            fallback=|| view! {}
+                                                        >
+                                                            <button
+                                                                class="btn btn-secondary"
+                                                                on:click=move |e| open_rdp.update_value(|f| f(e))
+                                                                disabled=move || !connected
+                                                            >
+                                                                "Remote Desktop"
+                                                            </button>
+                                                        </Show>
+                                                    }
+                                                }
                                             </div>
 
                                             <Show
