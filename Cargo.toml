@@ -117,12 +117,10 @@ proptest              = { version = "1" }
 testcontainers        = { version = "0.23" }
 testcontainers-modules = { version = "0.11", features = ["postgres"] }
 
-# --- remote desktop (remote-desktop feature, Phase 8) ---
+# --- remote desktop (remote-desktop feature) ---
 enigo    = { version = "0.2" }
-openh264 = { version = "0.6" }
-# captis = { ... }
-# TODO: verify crate source for screen capture backend (captis or alternative).
-# Must support FreeBSD X11 for the runtime detection path.
+openh264 = { version = "0.9" }
+x11rb    = { version = "0.13" }
 
 # --- build tooling ---
 protoc-bin-vendored = { version = "3" }  # ships a pre-built protoc; used in build.rs

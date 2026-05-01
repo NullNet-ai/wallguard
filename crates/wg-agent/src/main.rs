@@ -9,6 +9,10 @@ use tracing::{error, info};
 
 mod backoff;
 mod capabilities;
+#[cfg(feature = "remote-desktop")]
+mod capture;
+#[cfg(feature = "remote-desktop")]
+mod encode;
 mod cli_server;
 mod config;
 mod control_channel;
