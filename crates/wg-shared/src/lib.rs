@@ -1,4 +1,5 @@
 pub mod api;
 pub mod capabilities;
 pub mod pki;
+pub mod rdp;
 pub mod types;

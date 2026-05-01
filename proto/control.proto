@@ -198,6 +198,10 @@ message OpenRemoteDesktopTunnel {
   uint32 target_kbps = 6;
 }
 
+message CloseRemoteDesktopTunnel {
+  string session_id = 1;
+}
+
 // Firewall commands — stubs in Phase 0; full implementation in Phase 12.
 message CreateFilterRule { string command_id = 1; wallguard.models.FilterRule rule  = 2; }
 message CreateNatRule    { string command_id = 1; wallguard.models.NatRule    rule  = 2; }
@@ -278,9 +282,10 @@ message ServerMessage {
     ApplyRuleSet              apply_rule_set             = 15;
     ExecuteNamedCommand       execute_named_command      = 16;
     RequestConfigSnapshot     request_config_snapshot    = 17;
-    RenewCertificateRequest   renew_certificate_request  = 18;
-    ShutdownImminent          shutdown_imminent          = 19;
-    SetCertificate            set_certificate            = 20;
+    RenewCertificateRequest      renew_certificate_request       = 18;
+    ShutdownImminent             shutdown_imminent               = 19;
+    SetCertificate               set_certificate                 = 20;
+    CloseRemoteDesktopTunnel     close_remote_desktop_tunnel     = 21;
   }
 }
 

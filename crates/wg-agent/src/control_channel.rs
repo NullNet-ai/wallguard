@@ -305,10 +305,42 @@ async fn handle_server_msg(
         }
 
         Some(M::OpenRemoteDesktopTunnel(cmd)) => {
-            let _ = out_tx.send(cmd_result(
-                &cmd.command_id, CommandStatus::Failure,
-                "remote desktop: captis screen capture backend pending (Phase 8)",
-            )).await;
+            let ctx = tunnel_ctx.clone();
+            let out = out_tx.clone();
+            tokio::spawn(async move {
+                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
+                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
+                    Err(e) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Failure,
+                            &format!("RDP tunnel open failed: {e:#}"),
+                        )).await;
+                    }
+                    Ok(stream) => {
+                        let _ = out.send(cmd_result(
+                            &cmd.command_id, CommandStatus::Success, "",
+                        )).await;
+                        if let Err(e) = tunnel::remote_desktop::run_remote_desktop_tunnel(
+                            stream,
+                            cmd.width,
+                            cmd.height,
+                            cmd.target_fps,
+                            cmd.target_kbps,
+                        ).await {
+                            tracing::debug!(
+                                command_id = %cmd.command_id,
+                                "RDP session closed: {e:#}"
+                            );
+                        }
+                    }
+                }
+            });
+        }
+
+        Some(M::CloseRemoteDesktopTunnel(cmd)) => {
+            // The server closes the QUIC stream when it processes this message;
+            // the agent's read loop detects EOF and tears the session down.
+            tracing::debug!(session_id = %cmd.session_id, "CloseRemoteDesktopTunnel received");
         }
 
         // Firewall stubs (Phase 12)
