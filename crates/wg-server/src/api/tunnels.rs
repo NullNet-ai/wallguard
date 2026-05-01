@@ -36,6 +36,26 @@ pub struct OpenHttpRequest {
     pub target_port: u16,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OpenRdpRequest {
+    pub width:       u32,
+    pub height:      u32,
+    pub target_fps:  u32,
+    pub target_kbps: u32,
+}
+
+// ---------------------------------------------------------------------------
+// RDP pending session params (stored after POST, consumed by WS handler)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct RdpSessionParams {
+    pub width:       u32,
+    pub height:      u32,
+    pub target_fps:  u32,
+    pub target_kbps: u32,
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -167,5 +187,37 @@ pub async fn open_http(
     Ok(Json(TunnelCreatedResponse {
         session_id,
         ws_url: format!("/api/v1/devices/{device_id}/tunnels/http/{session_id}"),
+    }))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/devices/:id/tunnels/rdp
+// ---------------------------------------------------------------------------
+
+pub async fn open_rdp(
+    State(state):    State<AppState>,
+    Extension(ctx):  Extension<RequestContext>,
+    Path(device_id): Path<Uuid>,
+    Json(body):      Json<OpenRdpRequest>,
+) -> Result<Json<TunnelCreatedResponse>, AppError> {
+    if !ctx.role.satisfies(Role::Operator) {
+        return Err(AppError::Forbidden);
+    }
+
+    check_device_and_connected(&state, device_id, ctx.org_id).await?;
+
+    let session_id = Uuid::new_v4();
+    insert_tunnel_session(&state, session_id, device_id, "rdp", ctx.user_id).await?;
+
+    state.pending_rdp.lock().await.insert(session_id, RdpSessionParams {
+        width:       body.width,
+        height:      body.height,
+        target_fps:  body.target_fps,
+        target_kbps: body.target_kbps,
+    });
+
+    Ok(Json(TunnelCreatedResponse {
+        session_id,
+        ws_url: format!("/api/v1/devices/{device_id}/tunnels/rdp/{session_id}"),
     }))
 }

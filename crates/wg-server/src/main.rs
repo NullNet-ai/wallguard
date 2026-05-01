@@ -58,6 +58,7 @@ pub struct AppState {
     pub tracker:         CommandTracker,
     pub tunnel_registry: TunnelRegistry,
     pub sse_tx:          broadcast::Sender<SseEvent>,
+    pub pending_rdp:     Arc<tokio::sync::Mutex<std::collections::HashMap<uuid::Uuid, crate::api::tunnels::RdpSessionParams>>>,
 }
 
 // ---------------------------------------------------------------------------
@@ -151,6 +152,7 @@ async fn main() {
         tracker:         tracker.clone(),
         tunnel_registry: tunnel_registry.clone(),
         sse_tx:          sse_tx.clone(),
+        pending_rdp:     Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new())),
     };
 
     // ── Tunnel listeners (QUIC :7777 + TCP-TLS :7778) ────────────────────────
