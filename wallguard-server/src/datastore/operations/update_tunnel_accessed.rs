@@ -13,20 +13,26 @@ impl Datastore {
         timestamp: u64,
     ) -> Result<(), Error> {
         let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
-        let body = json!({
-            "last_access_time": time,
-            "last_access_date": date
-        })
-        .to_string();
 
-        let request = UpdateRequestBuilder::new()
-            .id(tunnel_id)
-            .table(TunnelModel::table())
-            .body(body)
-            .performed_by_root(performed_by_root)
-            .build();
+        let update_type = if performed_by_root { "root" } else { "" };
 
-        let _ = self.inner.clone().update(request, token).await?;
+        let request = UpdateDeviceTunnelsRequest {
+            device_tunnel: Some(DeviceTunnels {
+                last_access_time: Some(time.to_string()),
+                last_access_date: Some(date.to_string()),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id: tunnel_id.to_string(),
+                table: DBTable::DeviceTunnels.into(),
+                r#type: update_type.to_string(),
+            }),
+            query: Some(UpdateQuery {
+                pluck: "".to_string()
+            }),
+        };
+
+        let _ = self.inner.update_device_tunnels(request).await.handle_err(location!())?;
 
         Ok(())
     }
