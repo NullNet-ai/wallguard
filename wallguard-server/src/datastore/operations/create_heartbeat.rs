@@ -1,8 +1,9 @@
-use nullnet_libdatastore::CreateRequestBuilder;
-use nullnet_liberror::Error;
-use serde_json::json;
-
-use crate::datastore::{Datastore, HeartbeatModel};
+use crate::datastore::{
+    Datastore, HeartbeatModel,
+    db_tables::DBTable,
+    generated::{CreateDeviceHeartbeatsRequest, CreateParams, CreateQuery, DeviceHeartbeats},
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn create_heartbeat(
@@ -10,15 +11,27 @@ impl Datastore {
         token: &str,
         heartbeat: &HeartbeatModel,
     ) -> Result<(), Error> {
-        let json = json!(heartbeat);
+        let request = CreateDeviceHeartbeatsRequest {
+            device_heartbeats: Some(DeviceHeartbeats {
+                device_id: Some(heartbeat.device_id.clone()),
+                ..Default::default()
+            }),
+            params: Some(CreateParams {
+                table: DBTable::Heartbeats.into(),
+                r#type: String::new(),
+            }),
+            query: Some(CreateQuery {
+                pluck: String::new(),
+                ..Default::default()
+            }),
+        };
 
-        let request = CreateRequestBuilder::new()
-            .pluck(HeartbeatModel::pluck())
-            .table(HeartbeatModel::table())
-            .record(json.to_string())
-            .build();
-
-        let _ = self.inner.clone().create(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .create_device_heartbeats(request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

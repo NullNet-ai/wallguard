@@ -1,7 +1,11 @@
-use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, ServiceInfo};
-use crate::utilities;
-use nullnet_libdatastore::{AdvanceFilterBuilder, GetByFilterRequestBuilder};
+use crate::datastore::{
+    Datastore, ServiceInfo,
+    db_tables::DBTable,
+    generated::{
+        AggregationFilterParams, AggregationFilterRequest, FilterCriteria, FilterOperator,
+        aggregation_filter_request,
+    },
+};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
@@ -11,43 +15,42 @@ impl Datastore {
         device_id: &str,
         performed_by_root: bool,
     ) -> Result<Option<Vec<ServiceInfo>>, Error> {
-        let filter = AdvanceFilterBuilder::new()
-            .field("device_id")
-            .values(format!("[\"{device_id}\"]"))
-            .r#type("criteria")
-            .operator("equal")
-            .entity(DBTable::DeviceServices)
-            .build();
+        let request = AggregationFilterRequest {
+            params: Some(AggregationFilterParams {
+                r#type: if performed_by_root {
+                    "root".to_string()
+                } else {
+                    String::new()
+                },
+            }),
+            body: Some(aggregation_filter_request::AggregationFilterBody {
+                entity: DBTable::DeviceServices.into(),
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("device_id".to_string()),
+                    entity: Some(DBTable::DeviceServices.into()),
+                    operator: Some(FilterOperator::Equal as i32),
+                    values: vec![format!("\"{}\"", device_id)],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }),
+        };
 
-        let request = GetByFilterRequestBuilder::new()
-            .table(DBTable::DeviceServices)
-            .plucks(ServiceInfo::pluck())
-            .advance_filter(filter)
-            .performed_by_root(performed_by_root)
-            .build();
-
-        let response = self.inner.clone().get_by_filter(request, token).await?;
+        let response = self
+            .inner
+            .clone()
+            .aggregation_filter(request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
 
         if response.count == 0 {
             return Ok(None);
         }
 
-        let json_data = utilities::json::parse_string(&response.data)?;
-
-        let services_array = json_data
-            .as_array()
-            .ok_or("Unexpected data format")
-            .handle_err(location!())?;
-
-        let mut services = Vec::with_capacity(services_array.len());
-
-        for value in services_array {
-            let service = serde_json::from_value::<ServiceInfo>(value.clone())
-                .map_err(|e| format!("Failed to deserialize ServiceInfo: {}", e))
-                .handle_err(location!())?;
-
-            services.push(service);
-        }
+        let services: Vec<ServiceInfo> =
+            serde_json::from_str(&response.data).handle_err(location!())?;
 
         Ok(Some(services))
     }

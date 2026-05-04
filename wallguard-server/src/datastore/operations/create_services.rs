@@ -1,6 +1,12 @@
-use crate::datastore::{Datastore, ServiceInfo, db_tables::DBTable};
-use nullnet_libdatastore::BatchCreateRequestBuilder;
-use nullnet_liberror::Error;
+use crate::datastore::{
+    Datastore, ServiceInfo,
+    db_tables::DBTable,
+    generated::{
+        BatchInsertDeviceServicesRequest, BatchInsertParams, BatchInsertQuery, DeviceServices,
+        batch_insert_device_services_request,
+    },
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn create_services(
@@ -12,19 +18,37 @@ impl Datastore {
             return Ok(());
         }
 
-        let records: Vec<serde_json::Value> = services
+        let records: Vec<DeviceServices> = services
             .iter()
-            .map(|record| serde_json::to_value(record).unwrap())
+            .map(|svc| DeviceServices {
+                device_id: Some(svc.device_id.clone()),
+                address: Some(svc.address.clone()),
+                port: Some(svc.port as i32),
+                protocol: Some(svc.protocol.clone()),
+                program: Some(svc.program.clone()),
+                ..Default::default()
+            })
             .collect();
 
-        let request = BatchCreateRequestBuilder::new()
-            .table(DBTable::DeviceServices)
-            .durability("hard")
-            .entity_prefix("SI")
-            .records(serde_json::to_string(&serde_json::Value::Array(records)).unwrap())
-            .build();
+        let request = BatchInsertDeviceServicesRequest {
+            params: Some(BatchInsertParams {
+                table: DBTable::DeviceServices.into(),
+                r#type: String::new(),
+            }),
+            query: Some(BatchInsertQuery {
+                pluck: String::new(),
+            }),
+            body: Some(batch_insert_device_services_request::BatchBody {
+                device_services: records,
+            }),
+        };
 
-        self.inner.clone().batch_create(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .batch_insert_device_services(request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

@@ -1,8 +1,12 @@
-use crate::datastore::Datastore;
-use crate::datastore::db_tables::DBTable;
-use nullnet_libdatastore::BatchCreateRequestBuilder;
+use crate::datastore::{
+    Datastore,
+    db_tables::DBTable,
+    generated::{
+        BatchInsertParams, BatchInsertQuery, BatchInsertSystemResourcesRequest, SystemResources,
+        batch_insert_system_resources_request,
+    },
+};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use serde_json::json;
 use wallguard_common::protobuf::wallguard_service::SystemResource;
 
 impl Datastore {
@@ -12,30 +16,49 @@ impl Datastore {
         resources: Vec<SystemResource>,
         device_id: String,
     ) -> Result<(), Error> {
-        // Inject the device ID manually.
-        // TODO: Move this logic to the agent.
-        // The agent should use `libtoken` to parse the JWT and extract the device ID.
-        let mapped_values: Vec<serde_json::Value> = resources
-            .iter()
-            .map(|res| {
-                let mut json = json!(res);
-                json["device_id"] = json!(device_id);
-                json
+        if resources.is_empty() {
+            return Ok(());
+        }
+
+        let records: Vec<SystemResources> = resources
+            .into_iter()
+            .map(|res| SystemResources {
+                timestamp: Some(res.timestamp),
+                num_cpus: Some(res.num_cpus as i32),
+                global_cpu_usage: Some(res.global_cpu_usage.to_string()),
+                cpu_usages: Some(res.cpu_usages),
+                total_memory: Some(res.total_memory.to_string()),
+                used_memory: Some(res.used_memory.to_string()),
+                total_disk_space: Some(res.total_disk_space.to_string()),
+                available_disk_space: Some(res.available_disk_space.to_string()),
+                read_bytes: Some(res.read_bytes.to_string()),
+                written_bytes: Some(res.written_bytes.to_string()),
+                temperatures: Some(res.temperatures),
+                device_id: Some(device_id.clone()),
+                ..Default::default()
             })
             .collect();
 
-        let records = serde_json::to_string(&mapped_values).handle_err(location!())?;
+        let request = BatchInsertSystemResourcesRequest {
+            params: Some(BatchInsertParams {
+                table: DBTable::SystemResources.into(),
+                r#type: String::new(),
+            }),
+            query: Some(BatchInsertQuery {
+                pluck: String::new(),
+            }),
+            body: Some(batch_insert_system_resources_request::BatchBody {
+                system_resources: records,
+            }),
+        };
 
-        let request = BatchCreateRequestBuilder::new()
-            .table(DBTable::SystemResources)
-            .entity_prefix("SR")
-            .records(records)
-            .build();
-
-        self.inner
+        let _ = self
+            .inner
             .clone()
-            .batch_create(request, token)
+            .batch_insert_system_resources(request)
             .await
-            .map(|_| ())
+            .handle_err(location!())?;
+
+        Ok(())
     }
 }

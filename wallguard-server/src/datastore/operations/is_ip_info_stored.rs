@@ -1,27 +1,41 @@
-use crate::datastore::Datastore;
-use crate::datastore::db_tables::DBTable;
-use nullnet_libdatastore::AdvanceFilterBuilder;
-use nullnet_libdatastore::GetByFilterRequestBuilder;
-use nullnet_liberror::Error;
+use crate::datastore::{
+    Datastore,
+    db_tables::DBTable,
+    generated::{
+        AggregationFilterParams, AggregationFilterRequest, FilterCriteria, FilterOperator,
+        aggregation_filter_request,
+    },
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn is_ip_info_stored(&self, ip: &str, token: &str) -> Result<bool, Error> {
-        let filter = AdvanceFilterBuilder::new()
-            .field("ip")
-            .values(format!("[\"{ip}\"]"))
-            .r#type("criteria")
-            .operator("equal")
-            .entity(DBTable::IpInfos)
-            .build();
+        let request = AggregationFilterRequest {
+            params: Some(AggregationFilterParams {
+                r#type: String::new(),
+            }),
+            body: Some(aggregation_filter_request::AggregationFilterBody {
+                entity: DBTable::IpInfos.into(),
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("ip".to_string()),
+                    entity: Some(DBTable::IpInfos.into()),
+                    operator: Some(FilterOperator::Equal as i32),
+                    values: vec![format!("\"{}\"", ip)],
+                    ..Default::default()
+                }],
+                limit: Some(1),
+                ..Default::default()
+            }),
+        };
 
-        let request = GetByFilterRequestBuilder::new()
-            .table(DBTable::IpInfos)
-            .plucks(vec!["id"])
-            .limit(1)
-            .advance_filter(filter)
-            .build();
-
-        let response = self.inner.clone().get_by_filter(request, token).await?;
+        let response = self
+            .inner
+            .clone()
+            .aggregation_filter(request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
 
         Ok(response.count > 0)
     }

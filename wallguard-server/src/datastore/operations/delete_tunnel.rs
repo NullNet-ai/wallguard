@@ -1,16 +1,29 @@
-use nullnet_libdatastore::DeleteRequestBuilder;
-use nullnet_liberror::Error;
-
-use crate::datastore::{Datastore, TunnelModel};
+use crate::datastore::{
+    Datastore,
+    db_tables::DBTable,
+    generated::{DeleteDeviceTunnelsRequest, DeleteParams, DeleteQuery},
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn delete_tunnel(&self, token: &str, tunnel_id: &str) -> Result<(), Error> {
-        let request = DeleteRequestBuilder::new()
-            .id(tunnel_id)
-            .table(TunnelModel::table())
-            .build();
+        let request = DeleteDeviceTunnelsRequest {
+            params: Some(DeleteParams {
+                id: tunnel_id.to_string(),
+                table: DBTable::DeviceTunnels.into(),
+                r#type: String::new(),
+            }),
+            query: Some(DeleteQuery {
+                is_permanent: String::new(),
+            }),
+        };
 
-        let _ = self.inner.clone().delete(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .delete_device_tunnels(request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

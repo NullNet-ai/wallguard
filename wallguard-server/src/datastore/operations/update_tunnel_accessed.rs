@@ -1,8 +1,9 @@
-use nullnet_libdatastore::UpdateRequestBuilder;
-use nullnet_liberror::Error;
-use serde_json::json;
-
-use crate::datastore::{Datastore, TunnelModel};
+use crate::datastore::{
+    Datastore,
+    db_tables::DBTable,
+    generated::{DeviceTunnels, UpdateDeviceTunnelsRequest, UpdateParams, UpdateQuery},
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn update_tunnel_accessed(
@@ -12,9 +13,8 @@ impl Datastore {
         performed_by_root: bool,
         timestamp: u64,
     ) -> Result<(), Error> {
-        let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
-
-        let update_type = if performed_by_root { "root" } else { "" };
+        let (date, time) =
+            crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
 
         let request = UpdateDeviceTunnelsRequest {
             device_tunnel: Some(DeviceTunnels {
@@ -25,14 +25,23 @@ impl Datastore {
             params: Some(UpdateParams {
                 id: tunnel_id.to_string(),
                 table: DBTable::DeviceTunnels.into(),
-                r#type: update_type.to_string(),
+                r#type: if performed_by_root {
+                    "root".to_string()
+                } else {
+                    String::new()
+                },
             }),
             query: Some(UpdateQuery {
-                pluck: "".to_string()
+                pluck: String::new(),
             }),
         };
 
-        let _ = self.inner.update_device_tunnels(request).await.handle_err(location!())?;
+        let _ = self
+            .inner
+            .clone()
+            .update_device_tunnels(request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

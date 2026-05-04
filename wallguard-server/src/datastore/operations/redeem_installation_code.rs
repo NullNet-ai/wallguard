@@ -1,7 +1,9 @@
-use crate::datastore::{Datastore, InstallationCode};
-use nullnet_libdatastore::UpdateRequestBuilder;
-use nullnet_liberror::Error;
-use serde_json::json;
+use crate::datastore::{
+    Datastore, InstallationCode,
+    db_tables::DBTable,
+    generated::{InstallationCodes, UpdateInstallationCodesRequest, UpdateParams, UpdateQuery},
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn redeem_installation_code(
@@ -9,16 +11,27 @@ impl Datastore {
         code: &InstallationCode,
         token: &str,
     ) -> Result<(), Error> {
-        let update = json!({"redeemed": true});
+        let request = UpdateInstallationCodesRequest {
+            installation_code: Some(InstallationCodes {
+                redeemed: Some(true),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id: code.id.clone(),
+                table: DBTable::InstallationCodes.into(),
+                r#type: "root".to_string(),
+            }),
+            query: Some(UpdateQuery {
+                pluck: String::new(),
+            }),
+        };
 
-        let request = UpdateRequestBuilder::new()
-            .performed_by_root(true)
-            .id(&code.id)
-            .body(update.to_string())
-            .table(InstallationCode::table())
-            .build();
-
-        let _ = self.inner.clone().update(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .update_installation_codes(request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

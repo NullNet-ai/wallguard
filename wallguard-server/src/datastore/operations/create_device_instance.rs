@@ -1,11 +1,9 @@
-use nullnet_libdatastore::CreateRequestBuilder;
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use serde_json::json;
-
-use crate::{
-    datastore::{Datastore, DeviceInstance},
-    utilities,
+use crate::datastore::{
+    Datastore, DeviceInstance,
+    db_tables::DBTable,
+    generated::{CreateDeviceInstancesRequest, CreateParams, CreateQuery, DeviceInstances},
 };
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn create_device_instance(
@@ -13,21 +11,35 @@ impl Datastore {
         token: &str,
         instance: &DeviceInstance,
     ) -> Result<String, Error> {
-        let mut json = json!(instance);
-        json.as_object_mut().unwrap().remove("id");
+        let request = CreateDeviceInstancesRequest {
+            device_instances: Some(DeviceInstances {
+                device_id: Some(instance.device_id.clone()),
+                ..Default::default()
+            }),
+            params: Some(CreateParams {
+                table: DBTable::DeviceInstances.into(),
+                r#type: String::new(),
+            }),
+            query: Some(CreateQuery {
+                pluck: "id".to_string(),
+                ..Default::default()
+            }),
+        };
 
-        let request = CreateRequestBuilder::new()
-            .pluck(DeviceInstance::pluck())
-            .table(DeviceInstance::table())
-            .record(json.to_string())
-            .build();
+        let response = self
+            .inner
+            .clone()
+            .create_device_instances(request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
 
-        let response = self.inner.clone().create(request, token).await?;
+        let id = response
+            .data
+            .and_then(|d| d.id)
+            .ok_or("Missing 'id' in device instance response")
+            .handle_err(location!())?;
 
-        let json_data = utilities::json::parse_string(&response.data)?;
-        let value = utilities::json::first_element_from_array(&json_data)?;
-        let retval = serde_json::from_value::<DeviceInstance>(value).handle_err(location!())?;
-
-        Ok(retval.id.clone())
+        Ok(id)
     }
 }
