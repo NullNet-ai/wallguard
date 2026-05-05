@@ -62,16 +62,14 @@ enigo    = { workspace = true, optional = true }
 openh264 = { workspace = true, optional = true }
 x11rb    = { workspace = true, optional = true }
 
+pcap = { version = "2" }
+
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = [
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Dxgi",
 ] }
-
-# TODO (Phase 7): uncomment once sources are verified
-# nullnet-traffic-monitor = { workspace = true }
-# nullnet-libresmon       = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
