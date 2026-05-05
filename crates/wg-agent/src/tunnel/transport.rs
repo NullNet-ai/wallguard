@@ -54,8 +54,8 @@ async fn get_or_create_quic_conn(ctx: &TunnelContext) -> anyhow::Result<quinn::C
         return Ok(conn);
     }
 
-    // Slow path: open a new QUIC connection.
-    let conn = tokio::time::timeout(QUIC_TIMEOUT, quic_connect(&ctx.config))
+    // Slow path: open a new QUIC connection using the cached TLS config.
+    let conn = tokio::time::timeout(QUIC_TIMEOUT, quic_connect(ctx))
         .await
         .map_err(|_| anyhow::anyhow!("QUIC connect timeout"))?
         .map_err(|e| anyhow::anyhow!("QUIC connect: {e}"))?;
@@ -64,10 +64,12 @@ async fn get_or_create_quic_conn(ctx: &TunnelContext) -> anyhow::Result<quinn::C
     Ok(conn)
 }
 
-async fn quic_connect(config: &crate::config::Config) -> anyhow::Result<quinn::Connection> {
+async fn quic_connect(ctx: &TunnelContext) -> anyhow::Result<quinn::Connection> {
     use quinn::crypto::rustls::QuicClientConfig;
 
-    let tls_cfg  = crate::tls::build_rustls_client_config(config)?;
+    // Build a fresh config for QUIC — this is only reached once per session
+    // since get_or_create_quic_conn caches the connection.
+    let tls_cfg  = crate::tls::build_rustls_client_config(&ctx.config)?;
     let quic_cfg = QuicClientConfig::try_from(tls_cfg)
         .map_err(|e| anyhow::anyhow!("QUIC crypto: {e}"))?;
 
@@ -76,6 +78,7 @@ async fn quic_connect(config: &crate::config::Config) -> anyhow::Result<quinn::C
     transport.keep_alive_interval(Some(Duration::from_secs(15)));
     client_cfg.transport_config(Arc::new(transport));
 
+    let config = &ctx.config;
     let addr = tokio::net::lookup_host(
         format!("{}:{}", config.server.name, config.server.quic_port),
     )
@@ -117,8 +120,8 @@ async fn open_tcp_stream(ctx: &TunnelContext, tunnel_id: &str) -> anyhow::Result
 
     let tcp = tokio::net::TcpStream::connect(addr).await?;
 
-    let tls_cfg = crate::tls::build_rustls_client_config(config)?;
-    let connector = TlsConnector::from(Arc::new(tls_cfg));
+    // Reuse the cached TLS config — no file I/O on every tunnel command.
+    let connector = TlsConnector::from(ctx.tls.clone());
 
     let server_name = rustls_pki_types::ServerName::try_from(config.server.name.as_str())
         .map_err(|e| anyhow::anyhow!("invalid server name: {e}"))?
@@ -126,7 +129,6 @@ async fn open_tcp_stream(ctx: &TunnelContext, tunnel_id: &str) -> anyhow::Result
 
     let mut tls = connector.connect(server_name, tcp).await?;
 
-    // Write hello on the full stream before splitting into halves.
     write_hello(&mut tls, tunnel_id).await?;
 
     let (r, w) = tokio::io::split(tls);
@@ -135,4 +137,3 @@ async fn open_tcp_stream(ctx: &TunnelContext, tunnel_id: &str) -> anyhow::Result
         read:  Box::new(r),
     })
 }
-

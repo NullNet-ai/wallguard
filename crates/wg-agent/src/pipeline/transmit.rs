@@ -1,22 +1,19 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use prost::Message;
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Channel;
-use tracing::{info, warn};
+use tracing::warn;
 
 use crate::config::Config;
 use crate::disk_buffer::DiskBuffer;
+use crate::pipeline::grpc::connect_with_retry;
 use crate::proto::data::{data_service_client::DataServiceClient, PacketBatch};
-
-const RECONNECT_DELAY: Duration = Duration::from_secs(5);
 
 /// Sends `PacketBatch` objects to the server's Data gRPC service.
 ///
-/// On connection failure, batches are written to `disk_buf`.
-/// On reconnect, buffered files are drained before live data resumes.
+/// On connection failure batches are written to `disk_buf`.
+/// On reconnect buffered files are drained before live data resumes.
 pub async fn run_transmitter(
     mut rx:       mpsc::Receiver<PacketBatch>,
     config:       Arc<Config>,
@@ -24,37 +21,17 @@ pub async fn run_transmitter(
     mut shutdown: broadcast::Receiver<()>,
 ) {
     loop {
-        if shutdown.try_recv().is_ok() { return; }
-
-        match connect(&config).await {
-            Err(e) => {
-                warn!("data gRPC connect failed: {e:#}");
-                tokio::select! {
-                    _ = shutdown.recv()                        => return,
-                    _ = tokio::time::sleep(RECONNECT_DELAY)   => {}
-                }
-            }
-            Ok(mut client) => {
-                info!("data gRPC connected");
-                run_session(&mut client, &mut rx, &disk_buf, &mut shutdown).await;
-            }
-        }
+        let Some(mut client) = connect_with_retry(&config, &mut shutdown).await else { return };
+        run_session(&mut client, &mut rx, &disk_buf, &mut shutdown).await;
     }
 }
 
-async fn connect(config: &Config) -> anyhow::Result<DataServiceClient<Channel>> {
-    let channel = crate::tls::build_grpc_channel(config, config.grpc_endpoint()).await?;
-
-    Ok(DataServiceClient::new(channel))
-}
-
 async fn run_session(
-    client:   &mut DataServiceClient<Channel>,
+    client:   &mut DataServiceClient<tonic::transport::Channel>,
     rx:       &mut mpsc::Receiver<PacketBatch>,
     disk_buf: &DiskBuffer,
     shutdown: &mut broadcast::Receiver<()>,
 ) {
-    // Create the streaming upload channel.
     let (stream_tx, stream_rx) = mpsc::channel::<PacketBatch>(64);
     let upload_stream          = ReceiverStream::new(stream_rx);
 
@@ -70,21 +47,11 @@ async fn run_session(
 
         let data = match std::fs::read(&path) {
             Ok(d)  => d,
-            Err(e) => {
-                warn!("disk_buf read {}: {e}", path.display());
-                disk_buf.remove(&path);
-                continue;
-            }
+            Err(e) => { warn!("disk_buf read {}: {e}", path.display()); disk_buf.remove(&path); continue; }
         };
         match PacketBatch::decode(data.as_slice()) {
-            Ok(batch) => {
-                if stream_tx.send(batch).await.is_err() { return; }
-                disk_buf.remove(&path);
-            }
-            Err(e) => {
-                warn!("disk_buf decode {}: {e} — dropping", path.display());
-                disk_buf.remove(&path);
-            }
+            Ok(batch) => { if stream_tx.send(batch).await.is_err() { return; } disk_buf.remove(&path); }
+            Err(e)    => { warn!("disk_buf decode {}: {e} — dropping", path.display()); disk_buf.remove(&path); }
         }
     }
 
@@ -111,7 +78,6 @@ async fn run_session(
                         metrics::counter!("wg_agent_packets_sent_total").increment(packet_count);
                     }
                     Err(mpsc::error::TrySendError::Full(b)) => {
-                        // Internal upload buffer full — overflow to disk.
                         if !disk_buf.try_write(&b.encode_to_vec()) {
                             metrics::counter!("wg_agent.packets.dropped")
                                 .increment(b.packets.len() as u64);

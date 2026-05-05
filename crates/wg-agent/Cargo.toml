@@ -75,6 +75,7 @@ windows = { version = "0.58", features = [
 [dev-dependencies]
 proptest = { workspace = true }
 tempfile = { workspace = true }
+tokio    = { workspace = true, features = ["test-util"] }
 
 [build-dependencies]
 tonic-build         = { version = "0.12" }

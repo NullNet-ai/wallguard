@@ -22,6 +22,10 @@ pub struct TunnelStream {
 /// Per-session shared state for all tunnel operations.
 pub struct TunnelContext {
     pub config:      Arc<Config>,
+    /// Rustls client config built once per agent run and reused across all
+    /// tunnel connections — avoids re-reading cert/key PEM files on every
+    /// tunnel command.
+    pub tls:         Arc<rustls::ClientConfig>,
     /// Lazily-initialised QUIC connection; None until first tunnel command.
     pub quic_conn:   Arc<Mutex<Option<quinn::Connection>>>,
     /// Set true after any persistent QUIC failure; skips QUIC for remainder
@@ -30,9 +34,10 @@ pub struct TunnelContext {
 }
 
 impl TunnelContext {
-    pub fn new(config: Arc<Config>) -> Self {
+    pub fn new(config: Arc<Config>, tls: Arc<rustls::ClientConfig>) -> Self {
         Self {
             config,
+            tls,
             quic_conn:   Arc::new(Mutex::new(None)),
             quic_failed: Arc::new(AtomicBool::new(false)),
         }

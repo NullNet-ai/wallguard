@@ -1,60 +1,39 @@
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use sysinfo::{Disks, System};
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Channel;
-use tracing::{info, warn};
+use tracing::warn;
 
 use crate::config::Config;
+use crate::pipeline::control::PipelineControl;
+use crate::pipeline::grpc::connect_with_retry;
 use crate::proto::data::{
     data_service_client::DataServiceClient, ResourceMetrics, ResourceMetricsBatch,
 };
 use crate::proto_conv::unix_ms_now;
 
 const COLLECT_INTERVAL: Duration = Duration::from_secs(30);
-const RECONNECT_DELAY:  Duration = Duration::from_secs(5);
 
 pub async fn run_metrics_pipeline(
-    config:            Arc<Config>,
-    telemetry_enabled: Arc<AtomicBool>,
-    mut shutdown:      broadcast::Receiver<()>,
+    config:       Arc<Config>,
+    ctrl:         Arc<PipelineControl>,
+    mut shutdown: broadcast::Receiver<()>,
 ) {
     let mut sys = System::new_all();
 
     loop {
-        if shutdown.try_recv().is_ok() {
-            return;
-        }
-
-        match connect(&config).await {
-            Err(e) => {
-                warn!("metrics gRPC connect failed: {e:#}");
-                tokio::select! {
-                    _ = shutdown.recv()                      => return,
-                    _ = tokio::time::sleep(RECONNECT_DELAY) => {}
-                }
-            }
-            Ok(mut client) => {
-                info!("metrics gRPC connected");
-                run_session(&mut client, &mut sys, &telemetry_enabled, &mut shutdown).await;
-            }
-        }
+        let Some(mut client) = connect_with_retry(&config, &mut shutdown).await else { return };
+        run_session(&mut client, &mut sys, &ctrl, &mut shutdown).await;
     }
 }
 
-async fn connect(config: &Config) -> anyhow::Result<DataServiceClient<Channel>> {
-    let channel = crate::tls::build_grpc_channel(config, config.grpc_endpoint()).await?;
-    Ok(DataServiceClient::new(channel))
-}
-
 async fn run_session(
-    client:            &mut DataServiceClient<Channel>,
-    sys:               &mut System,
-    telemetry_enabled: &Arc<AtomicBool>,
-    shutdown:          &mut broadcast::Receiver<()>,
+    client:   &mut DataServiceClient<tonic::transport::Channel>,
+    sys:      &mut System,
+    ctrl:     &Arc<PipelineControl>,
+    shutdown: &mut broadcast::Receiver<()>,
 ) {
     let (stream_tx, stream_rx) = mpsc::channel::<ResourceMetricsBatch>(8);
     let upload_stream = ReceiverStream::new(stream_rx);
@@ -84,7 +63,7 @@ async fn run_session(
             }
 
             _ = ticker.tick() => {
-                if !telemetry_enabled.load(Ordering::Relaxed) {
+                if !ctrl.telemetry_enabled() {
                     continue;
                 }
 

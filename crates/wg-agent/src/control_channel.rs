@@ -1,6 +1,6 @@
 use std::collections::HashSet;
+use std::future::Future;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::Duration;
 
 use tokio::sync::mpsc;
@@ -11,6 +11,7 @@ use wg_shared::types::Feature;
 use crate::config::Config;
 use crate::disk_buffer::DiskBuffer;
 use crate::failure_buffer::FailureBuffer;
+use crate::pipeline::control::PipelineControl;
 use crate::proto::control::{
     client_message, control_client::ControlClient, server_message, ClientMessage, CommandStatus,
     Heartbeat, HeartbeatAck, HttpServicesUpdate, MonitoringStatus, RenewCertificateResponse,
@@ -20,7 +21,7 @@ use crate::proto_conv::{
     cmd_result, failure_entry_to_proto, make_hello, proto_to_shared_feature, unix_ms_now,
 };
 use crate::state::DaemonState;
-use crate::tunnel;
+use crate::tunnel::{self, TunnelStream};
 
 pub struct ConnectSuccess {
     pub negotiated_features: Vec<Feature>,
@@ -77,16 +78,16 @@ pub async fn try_connect(
 }
 
 pub async fn run_connected_loop(
-    cs:                ConnectSuccess,
-    config:            &Arc<Config>,
-    buf:               &'static FailureBuffer,
-    disk_buf:          &Arc<DiskBuffer>,
-    sampling:          &Arc<AtomicU32>,
-    telemetry_enabled: &Arc<AtomicBool>,
+    cs:       ConnectSuccess,
+    config:   &Arc<Config>,
+    buf:      &'static FailureBuffer,
+    disk_buf: &Arc<DiskBuffer>,
+    ctrl:     &Arc<PipelineControl>,
+    tls:      &Arc<rustls::ClientConfig>,
 ) -> DaemonState {
     let ConnectSuccess { out_tx, mut in_stream, .. } = cs;
 
-    let tunnel_ctx = Arc::new(tunnel::TunnelContext::new(config.clone()));
+    let tunnel_ctx = Arc::new(tunnel::TunnelContext::new(config.clone(), tls.clone()));
 
     replay_failures(&out_tx, buf).await;
 
@@ -149,7 +150,7 @@ pub async fn run_connected_loop(
                         return DaemonState::Connecting;
                     }
                     Ok(Some(msg)) => {
-                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling, telemetry_enabled, &tunnel_ctx, &mut pending_cert_key).await {
+                        if !handle_server_msg(msg, &out_tx, &mut in_flight, ctrl, &tunnel_ctx, &mut pending_cert_key).await {
                             return DaemonState::Connecting;
                         }
                     }
@@ -182,15 +183,51 @@ async fn replay_failures(out_tx: &mpsc::Sender<ClientMessage>, buf: &FailureBuff
     info!("replayed {} failure(s)", delivered.len());
 }
 
+/// Spawn a tunnel task following the standard open→result→relay pattern.
+///
+/// All four tunnel types (SSH, TTY, HTTP, RDP) share this structure:
+/// open a transport stream, send CommandResult::Success/Failure, then hand
+/// the stream to the protocol-specific relay function.
+fn spawn_tunnel<F, Fut>(
+    tunnel_id:  String,
+    command_id: String,
+    err_prefix: &'static str,
+    out_tx:     mpsc::Sender<ClientMessage>,
+    ctx:        Arc<tunnel::TunnelContext>,
+    run:        F,
+)
+where
+    F:   FnOnce(TunnelStream) -> Fut + Send + 'static,
+    Fut: Future<Output = anyhow::Result<()>> + Send + 'static,
+{
+    tokio::spawn(async move {
+        let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
+        match tunnel::transport::open_stream(&ctx, &tunnel_id).await {
+            Err(e) => {
+                let _ = out_tx.send(cmd_result(
+                    &command_id,
+                    CommandStatus::Failure,
+                    &format!("{err_prefix}: {e:#}"),
+                )).await;
+            }
+            Ok(stream) => {
+                let _ = out_tx.send(cmd_result(&command_id, CommandStatus::Success, "")).await;
+                if let Err(e) = run(stream).await {
+                    tracing::debug!(command_id = %command_id, "tunnel closed: {e:#}");
+                }
+            }
+        }
+    });
+}
+
 /// Returns `false` if the caller should reconnect immediately.
 async fn handle_server_msg(
-    msg:               ServerMessage,
-    out_tx:            &mpsc::Sender<ClientMessage>,
-    in_flight:         &mut HashSet<u64>,
-    sampling:          &Arc<AtomicU32>,
-    telemetry_enabled: &Arc<AtomicBool>,
-    tunnel_ctx:        &Arc<tunnel::TunnelContext>,
-    pending_cert_key:  &mut Option<String>,
+    msg:              ServerMessage,
+    out_tx:           &mpsc::Sender<ClientMessage>,
+    in_flight:        &mut HashSet<u64>,
+    ctrl:             &Arc<PipelineControl>,
+    tunnel_ctx:       &Arc<tunnel::TunnelContext>,
+    pending_cert_key: &mut Option<String>,
 ) -> bool {
     use server_message::Message as M;
 
@@ -215,7 +252,7 @@ async fn handle_server_msg(
         }
 
         Some(M::SetMonitoring(cmd)) => {
-            telemetry_enabled.store(cmd.telemetry_enabled, Ordering::Relaxed);
+            ctrl.set_telemetry_enabled(cmd.telemetry_enabled);
             info!(
                 command_id        = %cmd.command_id,
                 traffic_enabled   = cmd.traffic_enabled,
@@ -225,124 +262,58 @@ async fn handle_server_msg(
             let _ = out_tx.send(cmd_result(&cmd.command_id, CommandStatus::Success, "")).await;
         }
         Some(M::ThrottleMonitoring(t)) => {
-            let rate = t.packet_sampling_rate.clamp(0.0, 1.0);
-            sampling.store(rate.to_bits(), Ordering::Relaxed);
+            let rate = t.packet_sampling_rate;
+            ctrl.set_sampling_rate(rate);
             info!(rate, "packet sampling rate updated");
         }
 
         Some(M::OpenSshTunnel(cmd)) => {
-            let ctx      = tunnel_ctx.clone();
-            let out      = out_tx.clone();
             let port     = tunnel_ctx.config.agent.ssh_port;
             let username = cmd.username.clone();
-            tokio::spawn(async move {
-                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
-                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
-                    Err(e) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Failure,
-                            &format!("SSH tunnel open failed: {e:#}"),
-                        )).await;
-                    }
-                    Ok(stream) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Success, "",
-                        )).await;
-                        if let Err(e) = tunnel::ssh::run_ssh_tunnel(stream, port, &username).await {
-                            tracing::debug!(command_id = %cmd.command_id, "SSH tunnel closed: {e}");
-                        }
-                    }
-                }
-            });
+            spawn_tunnel(
+                cmd.tunnel_id, cmd.command_id, "SSH tunnel open failed",
+                out_tx.clone(), tunnel_ctx.clone(),
+                move |stream| async move {
+                    tunnel::ssh::run_ssh_tunnel(stream, port, &username).await
+                },
+            );
         }
 
         Some(M::OpenTtyTunnel(cmd)) => {
-            let ctx   = tunnel_ctx.clone();
-            let out   = out_tx.clone();
             let shell = tunnel_ctx.config.agent.tty_shell.clone();
-            tokio::spawn(async move {
-                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
-                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
-                    Err(e) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Failure,
-                            &format!("TTY tunnel open failed: {e:#}"),
-                        )).await;
-                    }
-                    Ok(stream) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Success, "",
-                        )).await;
-                        if let Err(e) = tunnel::tty::run_tty_tunnel(stream, &shell).await {
-                            tracing::debug!(command_id = %cmd.command_id, "TTY tunnel closed: {e}");
-                        }
-                    }
-                }
-            });
+            spawn_tunnel(
+                cmd.tunnel_id, cmd.command_id, "TTY tunnel open failed",
+                out_tx.clone(), tunnel_ctx.clone(),
+                move |stream| async move {
+                    tunnel::tty::run_tty_tunnel(stream, &shell).await
+                },
+            );
         }
 
         Some(M::OpenHttpTunnel(cmd)) => {
-            let ctx         = tunnel_ctx.clone();
-            let out         = out_tx.clone();
             let target_host = cmd.target_host.clone();
             let target_port = cmd.target_port as u16;
-            tokio::spawn(async move {
-                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
-                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
-                    Err(e) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Failure,
-                            &format!("HTTP tunnel open failed: {e:#}"),
-                        )).await;
-                    }
-                    Ok(stream) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Success, "",
-                        )).await;
-                        if let Err(e) = tunnel::http::run_http_tunnel(stream, &target_host, target_port).await {
-                            tracing::debug!(command_id = %cmd.command_id, "HTTP tunnel closed: {e}");
-                        }
-                    }
-                }
-            });
+            spawn_tunnel(
+                cmd.tunnel_id, cmd.command_id, "HTTP tunnel open failed",
+                out_tx.clone(), tunnel_ctx.clone(),
+                move |stream| async move {
+                    tunnel::http::run_http_tunnel(stream, &target_host, target_port).await
+                },
+            );
         }
 
         Some(M::OpenRemoteDesktopTunnel(cmd)) => {
-            let ctx = tunnel_ctx.clone();
-            let out = out_tx.clone();
-            tokio::spawn(async move {
-                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
-                match tunnel::transport::open_stream(&ctx, &cmd.tunnel_id).await {
-                    Err(e) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Failure,
-                            &format!("RDP tunnel open failed: {e:#}"),
-                        )).await;
-                    }
-                    Ok(stream) => {
-                        let _ = out.send(cmd_result(
-                            &cmd.command_id, CommandStatus::Success, "",
-                        )).await;
-                        if let Err(e) = tunnel::remote_desktop::run_remote_desktop_tunnel(
-                            stream,
-                            cmd.width,
-                            cmd.height,
-                            cmd.target_fps,
-                            cmd.target_kbps,
-                        ).await {
-                            tracing::debug!(
-                                command_id = %cmd.command_id,
-                                "RDP session closed: {e:#}"
-                            );
-                        }
-                    }
-                }
-            });
+            let (w, h, fps, kbps) = (cmd.width, cmd.height, cmd.target_fps, cmd.target_kbps);
+            spawn_tunnel(
+                cmd.tunnel_id, cmd.command_id, "RDP tunnel open failed",
+                out_tx.clone(), tunnel_ctx.clone(),
+                move |stream| async move {
+                    tunnel::remote_desktop::run_remote_desktop_tunnel(stream, w, h, fps, kbps).await
+                },
+            );
         }
 
         Some(M::CloseRemoteDesktopTunnel(cmd)) => {
-            // The server closes the QUIC stream when it processes this message;
-            // the agent's read loop detects EOF and tears the session down.
             tracing::debug!(session_id = %cmd.session_id, "CloseRemoteDesktopTunnel received");
         }
 

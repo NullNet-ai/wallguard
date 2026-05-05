@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32};
 
 use clap::Parser;
 use tokio::sync::{broadcast, mpsc, watch};
@@ -35,6 +34,7 @@ mod tunnel;
 use config::Config;
 use disk_buffer::DiskBuffer;
 use failure_buffer::FailureBuffer;
+use pipeline::control::PipelineControl;
 use state::DaemonState;
 
 // ---------------------------------------------------------------------------
@@ -117,17 +117,19 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
         rd_available,
     );
 
+    // Build TLS config once for the entire run — cert/key files do not change
+    // mid-run (cert renewal triggers a reconnect with the new files loaded then).
+    let tls = Arc::new(tls::build_rustls_client_config(&config)?);
+
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
     let (state_tx, state_rx) = watch::channel(DaemonState::Provisioning);
 
-    // Packet pipeline shared state.
-    let disk_buf      = Arc::new(DiskBuffer::new(
+    let disk_buf = Arc::new(DiskBuffer::new(
         config.transmission.disk_buffer_path.clone(),
         config.transmission.disk_buffer_max_bytes,
         config.transmission.disk_min_free_bytes,
     ));
-    let sampling_rate      = Arc::new(AtomicU32::new(1.0f32.to_bits())); // 100%
-    let telemetry_enabled  = Arc::new(AtomicBool::new(true));
+    let ctrl = Arc::new(PipelineControl::new());
 
     // Packet pipeline channels.
     let (cap_tx, cap_rx)     = mpsc::channel::<proto::data::Packet>(config.transmission.packet_queue_depth);
@@ -136,13 +138,13 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
     // Spawn pipeline tasks.
     pipeline::capture::spawn(cap_tx);
     tokio::spawn(pipeline::batch::run_batcher(
-        cap_rx, batch_tx, sampling_rate.clone(), shutdown_tx.subscribe(),
+        cap_rx, batch_tx, ctrl.clone(), shutdown_tx.subscribe(),
     ));
     tokio::spawn(pipeline::transmit::run_transmitter(
         batch_rx, config.clone(), disk_buf.clone(), shutdown_tx.subscribe(),
     ));
     tokio::spawn(pipeline::metrics::run_metrics_pipeline(
-        config.clone(), telemetry_enabled.clone(), shutdown_tx.subscribe(),
+        config.clone(), ctrl.clone(), shutdown_tx.subscribe(),
     ));
 
     // Signal handler task — converts SIGTERM / SIGINT into the shutdown channel.
@@ -174,10 +176,9 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
 
     state_machine::run_state_machine(
         config, features, state_tx, shutdown_tx.subscribe(),
-        disk_buf, sampling_rate, telemetry_enabled,
+        disk_buf, ctrl, tls,
     ).await?;
 
-    // Stop CLI server.
     let _ = shutdown_tx.send(());
     cli_handle.abort();
     let _ = cli_handle.await;
