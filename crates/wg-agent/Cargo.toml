@@ -43,6 +43,7 @@ rand      = { workspace = true }
 bytes     = { workspace = true }
 clap      = { workspace = true }
 libc      = { workspace = true }
+sysinfo   = { workspace = true }
 metrics                     = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
 rcgen                       = { workspace = true }

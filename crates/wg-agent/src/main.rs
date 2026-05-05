@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::sync::Arc;
-use std::sync::atomic::AtomicU32;
+use std::sync::atomic::{AtomicBool, AtomicU32};
 
 use clap::Parser;
 use tokio::sync::{broadcast, mpsc, watch};
@@ -126,7 +126,8 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
         config.transmission.disk_buffer_max_bytes,
         config.transmission.disk_min_free_bytes,
     ));
-    let sampling_rate = Arc::new(AtomicU32::new(1.0f32.to_bits())); // 100%
+    let sampling_rate      = Arc::new(AtomicU32::new(1.0f32.to_bits())); // 100%
+    let telemetry_enabled  = Arc::new(AtomicBool::new(true));
 
     // Packet pipeline channels.
     let (cap_tx, cap_rx)     = mpsc::channel::<proto::data::Packet>(config.transmission.packet_queue_depth);
@@ -139,6 +140,9 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
     ));
     tokio::spawn(pipeline::transmit::run_transmitter(
         batch_rx, config.clone(), disk_buf.clone(), shutdown_tx.subscribe(),
+    ));
+    tokio::spawn(pipeline::metrics::run_metrics_pipeline(
+        config.clone(), telemetry_enabled.clone(), shutdown_tx.subscribe(),
     ));
 
     // Signal handler task — converts SIGTERM / SIGINT into the shutdown channel.
@@ -170,7 +174,7 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
 
     state_machine::run_state_machine(
         config, features, state_tx, shutdown_tx.subscribe(),
-        disk_buf, sampling_rate,
+        disk_buf, sampling_rate, telemetry_enabled,
     ).await?;
 
     // Stop CLI server.

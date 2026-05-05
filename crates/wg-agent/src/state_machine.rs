@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::sync::atomic::AtomicU32;
+use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::time::Duration;
 
 use tokio::sync::{broadcast, watch};
@@ -15,12 +15,13 @@ use crate::failure_buffer::FailureBuffer;
 use crate::state::{DaemonState, IdleReason};
 
 pub async fn run_state_machine(
-    config:       Arc<Config>,
-    features:     Vec<Feature>,
-    state_tx:     watch::Sender<DaemonState>,
-    mut shutdown: broadcast::Receiver<()>,
-    disk_buf:     Arc<DiskBuffer>,
-    sampling:     Arc<AtomicU32>,
+    config:            Arc<Config>,
+    features:          Vec<Feature>,
+    state_tx:          watch::Sender<DaemonState>,
+    mut shutdown:      broadcast::Receiver<()>,
+    disk_buf:          Arc<DiskBuffer>,
+    sampling:          Arc<AtomicU32>,
+    telemetry_enabled: Arc<AtomicBool>,
 ) -> anyhow::Result<()> {
     let buf    = failure_buffer::BUFFER.get().expect("buffer must be initialised");
     let mut bo = Backoff::new(
@@ -39,7 +40,7 @@ pub async fn run_state_machine(
                 info!("shutdown signal — stopping state machine");
                 break;
             }
-            next = step(&state, &config, &features, buf, &mut bo, &disk_buf, &sampling) => next,
+            next = step(&state, &config, &features, buf, &mut bo, &disk_buf, &sampling, &telemetry_enabled) => next,
         };
 
         state = next;
@@ -57,18 +58,19 @@ fn initial_state(config: &Config) -> DaemonState {
 }
 
 async fn step(
-    state:    &DaemonState,
-    config:   &Arc<Config>,
-    features: &[Feature],
-    buf:      &'static FailureBuffer,
-    bo:       &mut Backoff,
-    disk_buf: &Arc<DiskBuffer>,
-    sampling: &Arc<AtomicU32>,
+    state:             &DaemonState,
+    config:            &Arc<Config>,
+    features:          &[Feature],
+    buf:               &'static FailureBuffer,
+    bo:                &mut Backoff,
+    disk_buf:          &Arc<DiskBuffer>,
+    sampling:          &Arc<AtomicU32>,
+    telemetry_enabled: &Arc<AtomicBool>,
 ) -> DaemonState {
     match state {
         DaemonState::Provisioning     => step_provisioning(config).await,
         DaemonState::Idle(reason)     => step_idle(reason).await,
-        DaemonState::Connecting       => step_connecting(config, features, buf, bo, disk_buf, sampling).await,
+        DaemonState::Connecting       => step_connecting(config, features, buf, bo, disk_buf, sampling, telemetry_enabled).await,
         DaemonState::Connected { .. } => DaemonState::Connecting,
     }
 }
@@ -98,12 +100,13 @@ async fn step_idle(reason: &IdleReason) -> DaemonState {
 }
 
 async fn step_connecting(
-    config:   &Arc<Config>,
-    features: &[Feature],
-    buf:      &'static FailureBuffer,
-    bo:       &mut Backoff,
-    disk_buf: &Arc<DiskBuffer>,
-    sampling: &Arc<AtomicU32>,
+    config:            &Arc<Config>,
+    features:          &[Feature],
+    buf:               &'static FailureBuffer,
+    bo:                &mut Backoff,
+    disk_buf:          &Arc<DiskBuffer>,
+    sampling:          &Arc<AtomicU32>,
+    telemetry_enabled: &Arc<AtomicBool>,
 ) -> DaemonState {
     info!(server = %config.server.name, "connecting …");
 
@@ -121,7 +124,7 @@ async fn step_connecting(
         Ok(ConnectResult::Connected(cs)) => {
             bo.reset();
             info!("connected; running connected loop");
-            run_connected_loop(cs, config, buf, disk_buf, sampling).await
+            run_connected_loop(cs, config, buf, disk_buf, sampling, telemetry_enabled).await
         }
     }
 }

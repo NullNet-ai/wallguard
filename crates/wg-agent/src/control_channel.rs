@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::Duration;
 
 use tokio::sync::mpsc;
@@ -77,11 +77,12 @@ pub async fn try_connect(
 }
 
 pub async fn run_connected_loop(
-    cs:       ConnectSuccess,
-    config:   &Arc<Config>,
-    buf:      &'static FailureBuffer,
-    disk_buf: &Arc<DiskBuffer>,
-    sampling: &Arc<AtomicU32>,
+    cs:                ConnectSuccess,
+    config:            &Arc<Config>,
+    buf:               &'static FailureBuffer,
+    disk_buf:          &Arc<DiskBuffer>,
+    sampling:          &Arc<AtomicU32>,
+    telemetry_enabled: &Arc<AtomicBool>,
 ) -> DaemonState {
     let ConnectSuccess { out_tx, mut in_stream, .. } = cs;
 
@@ -148,7 +149,7 @@ pub async fn run_connected_loop(
                         return DaemonState::Connecting;
                     }
                     Ok(Some(msg)) => {
-                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling, &tunnel_ctx, &mut pending_cert_key).await {
+                        if !handle_server_msg(msg, &out_tx, &mut in_flight, sampling, telemetry_enabled, &tunnel_ctx, &mut pending_cert_key).await {
                             return DaemonState::Connecting;
                         }
                     }
@@ -183,12 +184,13 @@ async fn replay_failures(out_tx: &mpsc::Sender<ClientMessage>, buf: &FailureBuff
 
 /// Returns `false` if the caller should reconnect immediately.
 async fn handle_server_msg(
-    msg:             ServerMessage,
-    out_tx:          &mpsc::Sender<ClientMessage>,
-    in_flight:       &mut HashSet<u64>,
-    sampling:        &Arc<AtomicU32>,
-    tunnel_ctx:      &Arc<tunnel::TunnelContext>,
-    pending_cert_key: &mut Option<String>,
+    msg:               ServerMessage,
+    out_tx:            &mpsc::Sender<ClientMessage>,
+    in_flight:         &mut HashSet<u64>,
+    sampling:          &Arc<AtomicU32>,
+    telemetry_enabled: &Arc<AtomicBool>,
+    tunnel_ctx:        &Arc<tunnel::TunnelContext>,
+    pending_cert_key:  &mut Option<String>,
 ) -> bool {
     use server_message::Message as M;
 
@@ -213,6 +215,7 @@ async fn handle_server_msg(
         }
 
         Some(M::SetMonitoring(cmd)) => {
+            telemetry_enabled.store(cmd.telemetry_enabled, Ordering::Relaxed);
             info!(
                 command_id        = %cmd.command_id,
                 traffic_enabled   = cmd.traffic_enabled,

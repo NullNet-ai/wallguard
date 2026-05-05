@@ -108,7 +108,8 @@ xmltree  = { version = "0.10" }
 nftables = { version = "0.7" }
 
 # --- system ---
-libc = { version = "0.2" }
+libc    = { version = "0.2" }
+sysinfo = { version = "0.31" }
 
 # --- testing ---
 x509-parser = { version = "0.16" }
