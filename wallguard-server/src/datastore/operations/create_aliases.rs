@@ -50,10 +50,16 @@ impl Datastore {
             }),
         };
 
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token).parse().handle_err(location!())?,
+        );
+
         let response = self
             .inner
             .clone()
-            .create_aliases(request)
+            .create_aliases(grpc_request)
             .await
             .handle_err(location!())?
             .into_inner();
@@ -94,10 +100,16 @@ impl Datastore {
                 }),
             };
 
+            let mut grpc_request = tonic::Request::new(request);
+            grpc_request.metadata_mut().insert(
+                "authorization",
+                format!("Bearer {}", token).parse().handle_err(location!())?,
+            );
+
             let _ = self
                 .inner
                 .clone()
-                .batch_insert_ip_aliases(request)
+                .batch_insert_ip_aliases(grpc_request)
                 .await
                 .handle_err(location!())?;
         }
@@ -128,10 +140,16 @@ impl Datastore {
                 }),
             };
 
+            let mut grpc_request = tonic::Request::new(request);
+            grpc_request.metadata_mut().insert(
+                "authorization",
+                format!("Bearer {}", token).parse().handle_err(location!())?,
+            );
+
             let _ = self
                 .inner
                 .clone()
-                .batch_insert_port_aliases(request)
+                .batch_insert_port_aliases(grpc_request)
                 .await
                 .handle_err(location!())?;
         }

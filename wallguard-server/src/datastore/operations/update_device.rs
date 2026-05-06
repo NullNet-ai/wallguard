@@ -41,10 +41,16 @@ impl Datastore {
             }),
         };
 
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token).parse().handle_err(location!())?,
+        );
+
         let response = self
             .inner
             .clone()
-            .update_devices(request)
+            .update_devices(grpc_request)
             .await
             .handle_err(location!())?
             .into_inner();
@@ -73,10 +79,16 @@ impl Datastore {
             }),
         };
 
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token).parse().handle_err(location!())?,
+        );
+
         let _ = self
             .inner
             .clone()
-            .update_devices(request)
+            .update_devices(grpc_request)
             .await
             .handle_err(location!())?;
 
@@ -114,10 +126,16 @@ impl Datastore {
             }),
         };
 
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token).parse().handle_err(location!())?,
+        );
+
         let _ = self
             .inner
             .clone()
-            .batch_update_devices(request)
+            .batch_update_devices(grpc_request)
             .await
             .handle_err(location!())?;
 

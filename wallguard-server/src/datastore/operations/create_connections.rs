@@ -51,9 +51,15 @@ impl Datastore {
             }),
         };
 
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token).parse().handle_err(location!())?,
+        );
+
         self.inner
             .clone()
-            .batch_insert_connections(request)
+            .batch_insert_connections(grpc_request)
             .await
             .handle_err(location!())
             .map(|_| ())
