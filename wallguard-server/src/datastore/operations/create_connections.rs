@@ -29,7 +29,9 @@ impl Datastore {
                     .transport_header
                     .destination_port
                     .map(|p| p as i32),
-                protocol: Some(String::from(record.connection_key.transport_header.protocol)),
+                protocol: Some(String::from(
+                    record.connection_key.transport_header.protocol,
+                )),
                 timestamp: Some(record.connection_value.timestamp),
                 total_packet: Some(record.connection_value.total_packet as i32),
                 total_byte: Some(record.connection_value.total_byte as i32),
@@ -54,7 +56,9 @@ impl Datastore {
         let mut grpc_request = tonic::Request::new(request);
         grpc_request.metadata_mut().insert(
             "authorization",
-            format!("Bearer {}", token).parse().handle_err(location!())?,
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
         );
 
         self.inner

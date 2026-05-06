@@ -50,10 +50,7 @@ impl Datastore {
                     .as_ref()
                     .map(|p| p.operator.clone()),
                 destination_ip_value: rule.destination_addr.as_ref().map(|a| a.value.clone()),
-                destination_ip_operator: rule
-                    .destination_addr
-                    .as_ref()
-                    .map(|a| a.operator.clone()),
+                destination_ip_operator: rule.destination_addr.as_ref().map(|a| a.operator.clone()),
                 destination_ip_version: rule.destination_addr.as_ref().map(|a| a.version),
                 destination_type: Some(rule.destination_type.clone()),
                 description: Some(rule.description.clone()),
@@ -84,7 +81,9 @@ impl Datastore {
         let mut grpc_request = tonic::Request::new(request);
         grpc_request.metadata_mut().insert(
             "authorization",
-            format!("Bearer {}", token).parse().handle_err(location!())?,
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
         );
 
         let _ = self
@@ -132,10 +131,7 @@ impl Datastore {
                     .as_ref()
                     .map(|p| p.operator.clone()),
                 destination_ip_value: rule.destination_addr.as_ref().map(|a| a.value.clone()),
-                destination_ip_operator: rule
-                    .destination_addr
-                    .as_ref()
-                    .map(|a| a.operator.clone()),
+                destination_ip_operator: rule.destination_addr.as_ref().map(|a| a.operator.clone()),
                 destination_ip_version: rule.destination_addr.as_ref().map(|a| a.version),
                 destination_type: Some(rule.destination_type.clone()),
                 description: Some(rule.description.clone()),
@@ -167,7 +163,9 @@ impl Datastore {
         let mut grpc_request = tonic::Request::new(request);
         grpc_request.metadata_mut().insert(
             "authorization",
-            format!("Bearer {}", token).parse().handle_err(location!())?,
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
         );
 
         let _ = self

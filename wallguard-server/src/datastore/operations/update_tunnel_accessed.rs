@@ -13,8 +13,7 @@ impl Datastore {
         performed_by_root: bool,
         timestamp: u64,
     ) -> Result<(), Error> {
-        let (date, time) =
-            crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
+        let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
 
         let request = UpdateDeviceTunnelsRequest {
             device_tunnel: Some(DeviceTunnels {
@@ -39,7 +38,9 @@ impl Datastore {
         let mut grpc_request = tonic::Request::new(request);
         grpc_request.metadata_mut().insert(
             "authorization",
-            format!("Bearer {}", token).parse().handle_err(location!())?,
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
         );
 
         let _ = self

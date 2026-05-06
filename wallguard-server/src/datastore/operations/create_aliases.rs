@@ -1,12 +1,10 @@
-use crate::{
-    datastore::{
-        AliasModel, Datastore,
-        db_tables::DBTable,
-        generated::{
-            Aliases, BatchInsertIpAliasesRequest, BatchInsertParams, BatchInsertPortAliasesRequest,
-            BatchInsertQuery, CreateAliasesRequest, CreateParams, CreateQuery, IpAliases,
-            PortAliases, batch_insert_ip_aliases_request, batch_insert_port_aliases_request,
-        },
+use crate::datastore::{
+    AliasModel, Datastore,
+    db_tables::DBTable,
+    generated::{
+        Aliases, BatchInsertIpAliasesRequest, BatchInsertParams, BatchInsertPortAliasesRequest,
+        BatchInsertQuery, CreateAliasesRequest, CreateParams, CreateQuery, IpAliases, PortAliases,
+        batch_insert_ip_aliases_request, batch_insert_port_aliases_request,
     },
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
@@ -53,7 +51,9 @@ impl Datastore {
         let mut grpc_request = tonic::Request::new(request);
         grpc_request.metadata_mut().insert(
             "authorization",
-            format!("Bearer {}", token).parse().handle_err(location!())?,
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
         );
 
         let response = self
@@ -103,7 +103,9 @@ impl Datastore {
             let mut grpc_request = tonic::Request::new(request);
             grpc_request.metadata_mut().insert(
                 "authorization",
-                format!("Bearer {}", token).parse().handle_err(location!())?,
+                format!("Bearer {}", token)
+                    .parse()
+                    .handle_err(location!())?,
             );
 
             let _ = self
@@ -143,7 +145,9 @@ impl Datastore {
             let mut grpc_request = tonic::Request::new(request);
             grpc_request.metadata_mut().insert(
                 "authorization",
-                format!("Bearer {}", token).parse().handle_err(location!())?,
+                format!("Bearer {}", token)
+                    .parse()
+                    .handle_err(location!())?,
             );
 
             let _ = self

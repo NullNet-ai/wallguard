@@ -1,4 +1,3 @@
-
 #![allow(clippy::pedantic)]
 #![allow(clippy::large_enum_variant)]
 #[allow(clippy::enum_variant_names)]
