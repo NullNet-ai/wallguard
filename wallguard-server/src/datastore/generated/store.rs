@@ -20765,6 +20765,82 @@ pub struct AggregationFilterResponse {
     #[prost(string, tag = "4")]
     pub data: ::prost::alloc::string::String,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LoginRequest {
+    #[prost(message, optional, tag = "1")]
+    pub body: ::core::option::Option<LoginBody>,
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<LoginParams>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LoginParams {
+    #[prost(string, tag = "1")]
+    pub is_root: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub t: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LoginBody {
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<LoginData>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LoginData {
+    #[prost(string, tag = "1")]
+    pub account_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub account_secret: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LoginResponse {
+    #[prost(string, tag = "1")]
+    pub token: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegisterDeviceRequest {
+    #[prost(message, optional, tag = "1")]
+    pub device: ::core::option::Option<RegisterDeviceParams>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RegisterDeviceParams {
+    #[prost(string, tag = "1")]
+    pub organization_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub account_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub account_secret: ::prost::alloc::string::String,
+    #[prost(bool, tag = "4")]
+    pub is_new_user: bool,
+    #[prost(bool, tag = "5")]
+    pub is_invited: bool,
+    #[prost(string, tag = "6")]
+    pub role_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "7")]
+    pub account_organization_status: ::prost::alloc::string::String,
+    #[prost(string, repeated, tag = "8")]
+    pub account_organization_categories: ::prost::alloc::vec::Vec<
+        ::prost::alloc::string::String,
+    >,
+    #[prost(string, repeated, tag = "9")]
+    pub device_categories: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(string, tag = "10")]
+    pub device_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Response {
+    #[prost(bool, tag = "1")]
+    pub success: bool,
+    #[prost(string, tag = "2")]
+    pub message: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub error: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub status_code: ::prost::alloc::string::String,
+    #[prost(int32, tag = "5")]
+    pub count: i32,
+    #[prost(string, tag = "6")]
+    pub data: ::prost::alloc::string::String,
+}
 /// Enum for aggregation types
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -37200,6 +37276,47 @@ pub mod store_service_client {
                 .insert(GrpcMethod::new("store.StoreService", "AggregationFilter"));
             self.inner.unary(req, path, codec).await
         }
+        /// Authenticate an account and return login token
+        pub async fn login(
+            &mut self,
+            request: impl tonic::IntoRequest<super::LoginRequest>,
+        ) -> std::result::Result<tonic::Response<super::LoginResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static("/store.StoreService/Login");
+            let mut req = request.into_request();
+            req.extensions_mut().insert(GrpcMethod::new("store.StoreService", "Login"));
+            self.inner.unary(req, path, codec).await
+        }
+        /// Register a device for account/organization context
+        pub async fn register_device(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RegisterDeviceRequest>,
+        ) -> std::result::Result<tonic::Response<super::Response>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/store.StoreService/RegisterDevice",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("store.StoreService", "RegisterDevice"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -42105,6 +42222,16 @@ pub mod store_service_server {
             tonic::Response<super::AggregationFilterResponse>,
             tonic::Status,
         >;
+        /// Authenticate an account and return login token
+        async fn login(
+            &self,
+            request: tonic::Request<super::LoginRequest>,
+        ) -> std::result::Result<tonic::Response<super::LoginResponse>, tonic::Status>;
+        /// Register a device for account/organization context
+        async fn register_device(
+            &self,
+            request: tonic::Request<super::RegisterDeviceRequest>,
+        ) -> std::result::Result<tonic::Response<super::Response>, tonic::Status>;
     }
     /// Store service definition with CRUD operations
     #[derive(Debug)]
@@ -72133,6 +72260,95 @@ pub mod store_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = AggregationFilterSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/store.StoreService/Login" => {
+                    #[allow(non_camel_case_types)]
+                    struct LoginSvc<T: StoreService>(pub Arc<T>);
+                    impl<
+                        T: StoreService,
+                    > tonic::server::UnaryService<super::LoginRequest> for LoginSvc<T> {
+                        type Response = super::LoginResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::LoginRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as StoreService>::login(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = LoginSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/store.StoreService/RegisterDevice" => {
+                    #[allow(non_camel_case_types)]
+                    struct RegisterDeviceSvc<T: StoreService>(pub Arc<T>);
+                    impl<
+                        T: StoreService,
+                    > tonic::server::UnaryService<super::RegisterDeviceRequest>
+                    for RegisterDeviceSvc<T> {
+                        type Response = super::Response;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::RegisterDeviceRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as StoreService>::register_device(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = RegisterDeviceSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

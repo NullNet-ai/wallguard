@@ -1593,7 +1593,7 @@ message DeviceFilterRules {
   optional string interface = 44;
   optional int32 order = 45;
   optional string associated_rule_id = 46;
-  optional string table = 47;
+  optional string table_ = 47;
   optional string chain = 48;
   optional string family = 49;
   optional bool floating = 50;
@@ -2205,7 +2205,7 @@ message DeviceNatRules {
   optional int32 redirect_port = 45;
   optional int32 order = 46;
   optional string associated_rule_id = 47;
-  optional string table = 48;
+  optional string table_ = 48;
   optional string chain = 49;
   optional string family = 50;
 }
@@ -14410,4 +14410,58 @@ service StoreService {
   // Aggregation filter for advanced queries
   rpc AggregationFilter(AggregationFilterRequest) returns (AggregationFilterResponse);
 
+  // Authenticate an account and return login token
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // Register a device for account/organization context
+  rpc RegisterDevice(RegisterDeviceRequest) returns (Response);
+
+}
+message LoginRequest {
+  LoginBody body = 1;
+  LoginParams params = 2;
+}
+
+message LoginParams {
+  string is_root = 1;
+  string t = 2;
+}
+
+message LoginBody {
+  LoginData data = 1;
+}
+
+message LoginData {
+  string account_id = 1;
+  string account_secret = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message RegisterDeviceRequest {
+  RegisterDeviceParams device = 1;
+}
+
+message RegisterDeviceParams {
+  string organization_id = 1;
+  string account_id = 2;
+  string account_secret = 3;
+  bool is_new_user = 4;
+  bool is_invited = 5;
+  string role_id = 6;
+  string account_organization_status = 7;
+  repeated string account_organization_categories = 8;
+  repeated string device_categories = 9;
+  string device_id = 10;
+}
+
+message Response {
+  bool success = 1;
+  string message = 2;
+  string error = 3;
+  string status_code = 4;
+  int32 count = 5;
+  string data = 6;
 }
