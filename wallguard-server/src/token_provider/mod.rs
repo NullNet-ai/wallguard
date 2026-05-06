@@ -1,7 +1,7 @@
 use crate::datastore::Datastore;
 use data::AuthData;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use nullnet_libtoken::Token;
+use crate::token::Token;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
