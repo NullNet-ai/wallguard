@@ -18,7 +18,6 @@ publish = false
 
 [dependencies]
 
-nullnet-libdatastore = "0.5.1"
 nullnet-libipinfo = "0.2.1"
 nullnet-libtoken = "0.3.3"
 log = "0.4.29"
