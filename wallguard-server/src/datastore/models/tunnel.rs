@@ -3,8 +3,6 @@ use std::fmt::Display;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde::{Deserialize, Serialize};
 
-use crate::datastore::db_tables::DBTable;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum TunnelType {
@@ -87,23 +85,4 @@ pub struct TunnelModel {
     pub tunnel_status: TunnelStatus,
     pub last_access_time: Option<String>,
     pub last_access_date: Option<String>,
-}
-
-impl TunnelModel {
-    pub fn pluck() -> Vec<String> {
-        vec![
-            "id".into(),
-            "device_id".into(),
-            "tunnel_type".into(),
-            "service_id".into(),
-            "tunnel_status".into(),
-            "last_accessed".into(),
-            "last_access_time".into(),
-            "last_access_date".into(),
-        ]
-    }
-
-    pub fn table() -> DBTable {
-        DBTable::DeviceTunnels
-    }
 }

@@ -1,4 +1,3 @@
-use crate::datastore::db_tables::DBTable;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -28,28 +27,4 @@ pub struct Device {
     pub organization: String,
     #[serde(rename = "device_version")]
     pub version: String,
-}
-
-impl Device {
-    pub fn pluck() -> Vec<String> {
-        vec![
-            "id".into(),
-            "device_uuid".into(),
-            "is_traffic_monitoring_enabled".into(),
-            "is_config_monitoring_enabled".into(),
-            "is_telemetry_monitoring_enabled".into(),
-            "is_device_authorized".into(),
-            "device_category".into(),
-            "device_type".into(),
-            "device_os".into(),
-            "device_name".into(),
-            "is_device_online".into(),
-            "organization_id".into(),
-            "device_version".into(),
-        ]
-    }
-
-    pub fn table() -> DBTable {
-        DBTable::Devices
-    }
 }

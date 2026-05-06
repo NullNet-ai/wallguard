@@ -1,4 +1,3 @@
-use crate::datastore::db_tables::DBTable;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, Default)]
@@ -43,23 +42,4 @@ pub struct RemoteAccessSession {
     pub local_port: Option<u32>,
     #[serde(rename = "remote_access_local_protocol")]
     pub protocol: Option<String>,
-}
-
-impl RemoteAccessSession {
-    pub fn pluck() -> Vec<String> {
-        vec![
-            "id".into(),
-            "device_id".into(),
-            "remote_access_session".into(),
-            "remote_access_type".into(),
-            "instance_id".into(),
-            "remote_access_local_addr".into(),
-            "remote_access_local_port".into(),
-            "remote_access_local_protocol".into(),
-        ]
-    }
-
-    pub fn table() -> DBTable {
-        DBTable::RemoteAccessSessions
-    }
 }

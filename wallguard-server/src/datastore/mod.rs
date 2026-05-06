@@ -1,7 +1,6 @@
 use generated::store_service_client::StoreServiceClient;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
-mod client;
 mod db_tables;
 mod generated;
 mod models;

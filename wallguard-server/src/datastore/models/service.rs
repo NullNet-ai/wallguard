@@ -31,15 +31,4 @@ impl ServiceInfo {
             ..Default::default()
         }
     }
-
-    pub fn pluck() -> Vec<String> {
-        vec![
-            "id".into(),
-            "device_id".into(),
-            "address".into(),
-            "port".into(),
-            "protocol".into(),
-            "program".into(),
-        ]
-    }
 }
