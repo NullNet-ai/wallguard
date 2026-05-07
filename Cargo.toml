@@ -4,10 +4,8 @@ members = [
     "crates/wg-agent",
     "crates/wg-cli",
     "crates/wg-server",
-    "crates/wg-ui",
     "crates/wg-testkit",
 ]
-# wg-ui is wasm32-only; built by trunk, not cargo directly.
 default-members = [
     "crates/wg-shared",
     "crates/wg-agent",

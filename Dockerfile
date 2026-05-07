@@ -1,16 +1,11 @@
-# Stage 1: build the WASM UI bundle
-FROM rust:1.88-slim AS ui-builder
+# Stage 1: build the React UI
+FROM node:22-slim AS ui-builder
 
-RUN rustup target add wasm32-unknown-unknown && \
-    cargo install trunk --locked
-
-WORKDIR /build
-COPY Cargo.toml Cargo.lock ./
-COPY crates/ crates/
-COPY proto/  proto/
-
-WORKDIR /build/crates/wg-ui
-RUN trunk build --release
+WORKDIR /build/ui
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci
+COPY ui/ ./
+RUN npm run build
 
 # Stage 2: build the server binary
 FROM rust:1.88-slim AS server-builder
@@ -24,8 +19,8 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates/     crates/
 COPY proto/      proto/
 COPY migrations/ migrations/
-# Embed the compiled WASM assets into the server binary
-COPY --from=ui-builder /build/crates/wg-ui/dist/ crates/wg-ui/dist/
+# Embed the compiled React assets into the server binary
+COPY --from=ui-builder /build/ui/dist/ ui/dist/
 
 RUN cargo build --release -p wg-server
 

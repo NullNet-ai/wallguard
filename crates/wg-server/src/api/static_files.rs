@@ -5,10 +5,10 @@ use axum::{
 };
 use rust_embed::RustEmbed;
 
-// Trunk outputs to crates/wg-ui/dist; path is relative to this crate's
+// Vite outputs to ui/dist; path is relative to this crate's
 // CARGO_MANIFEST_DIR (crates/wg-server).
 #[derive(RustEmbed)]
-#[folder = "../../crates/wg-ui/dist"]
+#[folder = "../../ui/dist"]
 struct UiAssets;
 
 pub async fn handler(uri: Uri) -> Response {

@@ -95,31 +95,22 @@ jobs:
           breaking_against: '.git#branch=main'
 
   ui-build:
-    name: UI WASM Build
+    name: UI Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust stable + wasm32 target
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
         with:
-          targets: wasm32-unknown-unknown
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
 
-      - name: Install trunk
-        uses: taiki-e/install-action@v2
-        with:
-          tool: trunk
+      - run: npm ci
+        working-directory: ui
 
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-ui-${{ hashFiles('crates/wg-ui/Cargo.lock') }}
-
-      - run: trunk build --release
-        working-directory: crates/wg-ui
+      - run: npm run build
+        working-directory: ui
 
   docker-build:
     name: Docker Build Smoke Test

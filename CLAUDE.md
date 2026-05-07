@@ -13,8 +13,11 @@ cargo build -p wg-agent --release
 cargo build -p wg-server --release
 cargo build -p wg-cli --release
 
-# Build WASM UI (requires trunk: cargo install trunk)
-cd crates/wg-ui && trunk build --release
+# Build React UI
+cd ui && npm ci && npm run build
+
+# Dev server (proxies /api to localhost:4444)
+cd ui && npm run dev
 
 # Full dev stack (includes TimescaleDB, Prometheus, Grafana)
 docker compose up --build
