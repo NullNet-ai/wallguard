@@ -207,7 +207,7 @@ pub async fn open_rdp(
     check_device_and_connected(&state, device_id, ctx.org_id).await?;
 
     let session_id = Uuid::new_v4();
-    insert_tunnel_session(&state, session_id, device_id, "rdp", ctx.user_id).await?;
+    insert_tunnel_session(&state, session_id, device_id, "remote_desktop", ctx.user_id).await?;
 
     state.pending_rdp.lock().await.insert(session_id, RdpSessionParams {
         width:       body.width,
