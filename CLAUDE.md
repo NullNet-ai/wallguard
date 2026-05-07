@@ -13,9 +13,6 @@ cargo build -p wg-agent --release
 cargo build -p wg-server --release
 cargo build -p wg-cli --release
 
-# Build with remote-desktop feature (agent only)
-cargo build -p wg-agent --release --features remote-desktop
-
 # Build WASM UI (requires trunk: cargo install trunk)
 cd crates/wg-ui && trunk build --release
 

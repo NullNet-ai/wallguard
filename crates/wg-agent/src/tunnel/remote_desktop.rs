@@ -5,12 +5,16 @@
 //! Outbound payload: raw H.264 NAL unit bytes.
 //! Inbound payload:  UTF-8 JSON `InputEvent`.
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+
+use anyhow::Context as _;
+use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+use wg_shared::rdp::InputEvent;
+
 use super::TunnelStream;
 
-/// Run a remote desktop session over `stream`.
-///
-/// When compiled without the `remote-desktop` feature this always returns an
-/// error so the caller can report a clean failure to the server.
 pub async fn run_remote_desktop_tunnel(
     stream:      TunnelStream,
     width:       u32,
@@ -18,36 +22,6 @@ pub async fn run_remote_desktop_tunnel(
     target_fps:  u32,
     target_kbps: u32,
 ) -> anyhow::Result<()> {
-    #[cfg(not(feature = "remote-desktop"))]
-    {
-        let _ = (stream, width, height, target_fps, target_kbps);
-        anyhow::bail!("remote desktop: feature not compiled in");
-    }
-
-    #[cfg(feature = "remote-desktop")]
-    rdp_impl(stream, width, height, target_fps, target_kbps).await
-}
-
-// ---------------------------------------------------------------------------
-// Real implementation (remote-desktop feature)
-// ---------------------------------------------------------------------------
-
-#[cfg(feature = "remote-desktop")]
-async fn rdp_impl(
-    stream:      TunnelStream,
-    width:       u32,
-    height:      u32,
-    target_fps:  u32,
-    target_kbps: u32,
-) -> anyhow::Result<()> {
-    use std::sync::Arc;
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::time::{Duration, Instant};
-
-    use anyhow::Context as _;
-    use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
-    use wg_shared::rdp::InputEvent;
-
     let backend = crate::capture::open_capture_backend()
         .context("RDP: capture backend unavailable")?;
     let encoder = crate::encode::H264Encoder::new(width, height, target_fps, target_kbps)
@@ -67,9 +41,9 @@ async fn rdp_impl(
     let cancelled_cap = cancelled.clone();
     let pli_cap       = pli_flag.clone();
     let cap_handle = tokio::task::spawn_blocking(move || {
-        let mut backend    = backend;
-        let mut encoder    = encoder;
-        let frame_dur      = Duration::from_millis(1000 / target_fps.max(1) as u64);
+        let mut backend   = backend;
+        let mut encoder   = encoder;
+        let frame_dur     = Duration::from_millis(1000 / target_fps.max(1) as u64);
 
         loop {
             if cancelled_cap.load(Ordering::Relaxed) { break; }

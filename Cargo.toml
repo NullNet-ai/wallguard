@@ -118,7 +118,7 @@ proptest              = { version = "1" }
 testcontainers        = { version = "0.23" }
 testcontainers-modules = { version = "0.11", features = ["postgres"] }
 
-# --- remote desktop (remote-desktop feature) ---
+# --- remote desktop ---
 enigo    = { version = "0.2", default-features = false, features = ["x11rb"] }
 openh264 = { version = "0.9" }
 x11rb    = { version = "0.13" }

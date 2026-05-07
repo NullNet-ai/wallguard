@@ -7,18 +7,6 @@ edition = "2021"
 name = "wg-agent"
 path = "src/main.rs"
 
-[features]
-# Enables screen capture, H.264 encoding, and keyboard/mouse injection.
-# Omit this feature for headless firewall appliance builds.
-# Remote desktop capability is also gated at runtime by a display probe
-# (see crates/wg-agent/src/capabilities.rs), so the feature may be compiled
-# in on FreeBSD without forcing the capability to be advertised.
-remote-desktop = [
-    "dep:enigo",
-    "dep:openh264",
-    "dep:x11rb",
-]
-
 [dependencies]
 wg-shared  = { path = "../wg-shared" }
 
@@ -58,10 +46,9 @@ portable-pty     = { workspace = true }
 tower            = { workspace = true }
 hyper-util       = { workspace = true }
 
-# Remote-desktop optional deps
-enigo    = { workspace = true, optional = true }
-openh264 = { workspace = true, optional = true }
-x11rb    = { workspace = true, optional = true }
+enigo    = { workspace = true }
+openh264 = { workspace = true }
+x11rb    = { workspace = true }
 
 pcap = { version = "2" }
 

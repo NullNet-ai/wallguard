@@ -4,11 +4,13 @@ pub mod ssh;
 pub mod transport;
 pub mod tty;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt as _};
 use tokio::sync::Mutex;
+use tokio::task::AbortHandle;
 
 use crate::config::Config;
 
@@ -31,6 +33,9 @@ pub struct TunnelContext {
     /// Set true after any persistent QUIC failure; skips QUIC for remainder
     /// of the gRPC session and goes straight to TCP-TLS.
     pub quic_failed: Arc<AtomicBool>,
+    /// Active remote desktop sessions keyed by tunnel_id.
+    /// Populated when an RDP tunnel is opened; used to abort on CloseRemoteDesktopTunnel.
+    pub rdp_sessions: Arc<Mutex<HashMap<String, AbortHandle>>>,
 }
 
 impl TunnelContext {
@@ -38,8 +43,9 @@ impl TunnelContext {
         Self {
             config,
             tls,
-            quic_conn:   Arc::new(Mutex::new(None)),
-            quic_failed: Arc::new(AtomicBool::new(false)),
+            quic_conn:    Arc::new(Mutex::new(None)),
+            quic_failed:  Arc::new(AtomicBool::new(false)),
+            rdp_sessions: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }

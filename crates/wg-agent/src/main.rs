@@ -8,11 +8,8 @@ use tracing::{error, info};
 
 mod backoff;
 mod capabilities;
-#[cfg(feature = "remote-desktop")]
 mod capture;
-#[cfg(feature = "remote-desktop")]
 mod encode;
-#[cfg(feature = "remote-desktop")]
 mod input;
 mod cli_server;
 mod config;

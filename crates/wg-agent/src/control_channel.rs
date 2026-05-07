@@ -304,17 +304,46 @@ async fn handle_server_msg(
 
         Some(M::OpenRemoteDesktopTunnel(cmd)) => {
             let (w, h, fps, kbps) = (cmd.width, cmd.height, cmd.target_fps, cmd.target_kbps);
-            spawn_tunnel(
-                cmd.tunnel_id, cmd.command_id, "RDP tunnel open failed",
-                out_tx.clone(), tunnel_ctx.clone(),
-                move |stream| async move {
-                    tunnel::remote_desktop::run_remote_desktop_tunnel(stream, w, h, fps, kbps).await
-                },
-            );
+            let tunnel_id  = cmd.tunnel_id;
+            let command_id = cmd.command_id;
+            let out        = out_tx.clone();
+            let ctx        = tunnel_ctx.clone();
+            let tid        = tunnel_id.clone();
+            let handle = tokio::spawn(async move {
+                let _guard = crate::lifecycle::upgrade::InFlightGuard::new();
+                match tunnel::transport::open_stream(&ctx, &tunnel_id).await {
+                    Err(e) => {
+                        let _ = out.send(cmd_result(
+                            &command_id,
+                            CommandStatus::Failure,
+                            &format!("RDP tunnel open failed: {e:#}"),
+                        )).await;
+                    }
+                    Ok(stream) => {
+                        let _ = out.send(cmd_result(&command_id, CommandStatus::Success, "")).await;
+                        if let Err(e) = tunnel::remote_desktop::run_remote_desktop_tunnel(
+                            stream, w, h, fps, kbps,
+                        ).await {
+                            tracing::debug!("RDP tunnel closed: {e:#}");
+                        }
+                    }
+                }
+            });
+            tunnel_ctx.rdp_sessions.lock().await.insert(tid.clone(), handle.abort_handle());
+            let sessions = tunnel_ctx.rdp_sessions.clone();
+            tokio::spawn(async move {
+                let _ = handle.await;
+                sessions.lock().await.remove(&tid);
+            });
         }
 
         Some(M::CloseRemoteDesktopTunnel(cmd)) => {
-            tracing::debug!(session_id = %cmd.session_id, "CloseRemoteDesktopTunnel received");
+            if let Some(abort) = tunnel_ctx.rdp_sessions.lock().await.remove(&cmd.session_id) {
+                abort.abort();
+                tracing::debug!(session_id = %cmd.session_id, "remote desktop session aborted");
+            } else {
+                tracing::debug!(session_id = %cmd.session_id, "CloseRemoteDesktopTunnel: session not found (already closed)");
+            }
         }
 
         // Firewall stubs (Phase 12)
