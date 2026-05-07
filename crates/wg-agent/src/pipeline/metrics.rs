@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+const SESSION_BACKOFF: Duration = Duration::from_secs(5);
+
 use sysinfo::{Disks, System};
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
@@ -26,6 +28,8 @@ pub async fn run_metrics_pipeline(
     loop {
         let Some(mut client) = connect_with_retry(&config, &mut shutdown).await else { return };
         run_session(&mut client, &mut sys, &ctrl, &mut shutdown).await;
+        if shutdown.try_recv().is_ok() { return; }
+        tokio::time::sleep(SESSION_BACKOFF).await;
     }
 }
 

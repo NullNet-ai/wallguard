@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use prost::Message;
 use tokio::sync::{broadcast, mpsc};
@@ -9,6 +10,8 @@ use crate::config::Config;
 use crate::disk_buffer::DiskBuffer;
 use crate::pipeline::grpc::connect_with_retry;
 use crate::proto::data::{data_service_client::DataServiceClient, PacketBatch};
+
+const SESSION_BACKOFF: Duration = Duration::from_secs(5);
 
 /// Sends `PacketBatch` objects to the server's Data gRPC service.
 ///
@@ -23,6 +26,10 @@ pub async fn run_transmitter(
     loop {
         let Some(mut client) = connect_with_retry(&config, &mut shutdown).await else { return };
         run_session(&mut client, &mut rx, &disk_buf, &mut shutdown).await;
+        // Back off before reconnecting so a persistent RPC failure (e.g. mTLS
+        // rejection before enrollment completes) doesn't spin at full speed.
+        if shutdown.try_recv().is_ok() { return; }
+        tokio::time::sleep(SESSION_BACKOFF).await;
     }
 }
 
