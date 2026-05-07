@@ -25,9 +25,7 @@ services:
   server:
     container_name: server-wallguard
     networks: [wg]
-    build:
-      context: .
-      dockerfile: Dockerfile.server
+    build: .
     environment:
       DATABASE_URL:      postgres://wallguard:dev_password@postgres:5432/wallguard
       # TLS — paths inside the container; certs are generated on first run if absent.
