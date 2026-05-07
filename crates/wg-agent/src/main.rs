@@ -82,10 +82,18 @@ fn main() {
         .build()
         .expect("failed to build tokio runtime");
 
-    if let Err(e) = rt.block_on(run(config)) {
-        error!("agent exited with error: {e:#}");
-        std::process::exit(1);
-    }
+    let exit_code = match rt.block_on(run(config)) {
+        Ok(())  => 0,
+        Err(e)  => { error!("agent exited with error: {e:#}"); 1 }
+    };
+
+    // Give spawn_blocking tasks (pcap capture threads) up to 2 s to drain.
+    // Some interface types ignore libpcap's read timeout and block indefinitely
+    // in next_packet(); force-exit prevents a hung shutdown in those cases.
+    // All meaningful cleanup (state machine, disk buffer, CLI server) has
+    // already completed inside run().
+    rt.shutdown_timeout(std::time::Duration::from_secs(2));
+    std::process::exit(exit_code);
 }
 
 // ---------------------------------------------------------------------------
