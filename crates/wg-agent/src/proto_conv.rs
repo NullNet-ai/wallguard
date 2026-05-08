@@ -1,7 +1,6 @@
 use sysinfo::{Disks, Networks, System};
 use wg_shared::types::{FailureCategory, FailureSeverity, Feature, FirewallKind};
 
-use crate::config::Config;
 use crate::failure_buffer::FailureEntry;
 use crate::proto::control::{
     client_message,
@@ -24,14 +23,14 @@ pub fn unix_ms_now() -> u64 {
         .unwrap_or(0)
 }
 
-pub fn make_hello(features: &[Feature], config: &Config) -> ClientMessage {
+pub fn make_hello(features: &[Feature], firewall_kind: FirewallKind) -> ClientMessage {
     ClientMessage {
         message: Some(client_message::Message::Hello(Hello {
             protocol_version:       wg_shared::capabilities::PROTOCOL_VERSION,
             min_compatible_version: wg_shared::capabilities::MIN_AGENT_PROTOCOL_VERSION,
             supported_features:     features.iter().map(|&f| shared_to_proto_feature(f)).collect(),
             agent_version:          env!("CARGO_PKG_VERSION").to_string(),
-            firewall_kind:          firewall_to_proto(config.device.firewall_kind),
+            firewall_kind:          firewall_to_proto(firewall_kind),
             system_info:            Some(collect_system_info()),
         })),
     }
@@ -131,6 +130,7 @@ pub fn firewall_to_proto(k: FirewallKind) -> i32 {
         FirewallKind::PfSense  => ProtoFirewallKind::Pfsense  as i32,
         FirewallKind::OPNSense => ProtoFirewallKind::Opnsense as i32,
         FirewallKind::NFTables => ProtoFirewallKind::Nftables as i32,
+        FirewallKind::IPTables => ProtoFirewallKind::Iptables as i32,
     }
 }
 

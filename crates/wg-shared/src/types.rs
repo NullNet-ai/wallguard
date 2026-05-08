@@ -127,6 +127,8 @@ pub enum FirewallKind {
     OPNSense,
     #[serde(rename = "nftables")]
     NFTables,
+    #[serde(rename = "iptables")]
+    IPTables,
     None,
 }
 

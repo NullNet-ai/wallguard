@@ -18,8 +18,9 @@ pub struct Config {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct DeviceConfig {
-    pub id:            String,
-    pub firewall_kind: FirewallKind,
+    pub id: String,
+    /// Override auto-detection. Omit from config to let the agent detect automatically.
+    pub firewall_kind: Option<FirewallKind>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

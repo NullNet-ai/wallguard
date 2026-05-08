@@ -36,6 +36,7 @@ fn parse_firewall_kind(s: &str) -> FirewallKind {
         "pfsense"  => FirewallKind::PfSense,
         "opnsense" => FirewallKind::OPNSense,
         "nftables" => FirewallKind::NFTables,
+        "iptables" => FirewallKind::IPTables,
         _          => FirewallKind::None,
     }
 }

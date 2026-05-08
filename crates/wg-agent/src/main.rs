@@ -9,6 +9,7 @@ use tracing::{error, info};
 mod backoff;
 mod capabilities;
 mod capture;
+mod detect;
 mod encode;
 mod input;
 mod cli_server;
@@ -116,9 +117,12 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
         tracing::info!(port = config.observability.metrics_port, "agent metrics endpoint listening");
     }
 
+    let firewall_kind = config.device.firewall_kind
+        .unwrap_or_else(detect::detect_firewall_kind);
+
     let rd_available = capabilities::probe_remote_desktop().await;
     let features     = wg_shared::capabilities::derive_capabilities(
-        config.device.firewall_kind,
+        firewall_kind,
         rd_available,
     );
 
@@ -190,7 +194,7 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
     };
 
     state_machine::run_state_machine(
-        config, features, state_tx, shutdown_tx.subscribe(),
+        config, features, firewall_kind, state_tx, shutdown_tx.subscribe(),
         disk_buf, ctrl, tls,
     ).await?;
 

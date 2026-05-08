@@ -102,7 +102,7 @@ CREATE TABLE devices (
     org_id         UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     display_name   TEXT        NOT NULL,
     firewall_kind  TEXT        NOT NULL DEFAULT 'none'
-                               CHECK (firewall_kind IN ('pfsense','opnsense','nftables','none')),
+                               CHECK (firewall_kind IN ('pfsense','opnsense','nftables','iptables','none')),
     agent_version  TEXT,
     enrolled_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_seen_at   TIMESTAMPTZ,

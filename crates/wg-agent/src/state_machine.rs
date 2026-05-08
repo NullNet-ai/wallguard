@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use tokio::sync::{broadcast, watch};
 use tracing::{info, warn};
-use wg_shared::types::Feature;
+use wg_shared::types::{Feature, FirewallKind};
 
 use crate::backoff::Backoff;
 use crate::config::Config;
@@ -15,13 +15,14 @@ use crate::pipeline::control::PipelineControl;
 use crate::state::{DaemonState, IdleReason};
 
 pub async fn run_state_machine(
-    config:   Arc<Config>,
-    features: Vec<Feature>,
-    state_tx: watch::Sender<DaemonState>,
-    mut shutdown: broadcast::Receiver<()>,
-    disk_buf: Arc<DiskBuffer>,
-    ctrl:     Arc<PipelineControl>,
-    tls:      Arc<rustls::ClientConfig>,
+    config:        Arc<Config>,
+    features:      Vec<Feature>,
+    firewall_kind: FirewallKind,
+    state_tx:      watch::Sender<DaemonState>,
+    mut shutdown:  broadcast::Receiver<()>,
+    disk_buf:      Arc<DiskBuffer>,
+    ctrl:          Arc<PipelineControl>,
+    tls:           Arc<rustls::ClientConfig>,
 ) -> anyhow::Result<()> {
     let buf    = failure_buffer::BUFFER.get().expect("buffer must be initialised");
     let mut bo = Backoff::new(
@@ -40,7 +41,7 @@ pub async fn run_state_machine(
                 info!("shutdown signal — stopping state machine");
                 break;
             }
-            next = step(&state, &config, &features, buf, &mut bo, &disk_buf, &ctrl, &tls) => next,
+            next = step(&state, &config, &features, firewall_kind, buf, &mut bo, &disk_buf, &ctrl, &tls) => next,
         };
 
         state = next;
@@ -58,19 +59,20 @@ fn initial_state(config: &Config) -> DaemonState {
 }
 
 async fn step(
-    state:    &DaemonState,
-    config:   &Arc<Config>,
-    features: &[Feature],
-    buf:      &'static FailureBuffer,
-    bo:       &mut Backoff,
-    disk_buf: &Arc<DiskBuffer>,
-    ctrl:     &Arc<PipelineControl>,
-    tls:      &Arc<rustls::ClientConfig>,
+    state:         &DaemonState,
+    config:        &Arc<Config>,
+    features:      &[Feature],
+    firewall_kind: FirewallKind,
+    buf:           &'static FailureBuffer,
+    bo:            &mut Backoff,
+    disk_buf:      &Arc<DiskBuffer>,
+    ctrl:          &Arc<PipelineControl>,
+    tls:           &Arc<rustls::ClientConfig>,
 ) -> DaemonState {
     match state {
         DaemonState::Provisioning     => step_provisioning(config).await,
         DaemonState::Idle(reason)     => step_idle(reason).await,
-        DaemonState::Connecting       => step_connecting(config, features, buf, bo, disk_buf, ctrl, tls).await,
+        DaemonState::Connecting       => step_connecting(config, features, firewall_kind, buf, bo, disk_buf, ctrl, tls).await,
         DaemonState::Connected { .. } => DaemonState::Connecting,
     }
 }
@@ -99,17 +101,18 @@ async fn step_idle(reason: &IdleReason) -> DaemonState {
 }
 
 async fn step_connecting(
-    config:   &Arc<Config>,
-    features: &[Feature],
-    buf:      &'static FailureBuffer,
-    bo:       &mut Backoff,
-    disk_buf: &Arc<DiskBuffer>,
-    ctrl:     &Arc<PipelineControl>,
-    tls:      &Arc<rustls::ClientConfig>,
+    config:        &Arc<Config>,
+    features:      &[Feature],
+    firewall_kind: FirewallKind,
+    buf:           &'static FailureBuffer,
+    bo:            &mut Backoff,
+    disk_buf:      &Arc<DiskBuffer>,
+    ctrl:          &Arc<PipelineControl>,
+    tls:           &Arc<rustls::ClientConfig>,
 ) -> DaemonState {
     info!(server = %config.server.name, "connecting …");
 
-    match try_connect(config, features).await {
+    match try_connect(config, features, firewall_kind).await {
         Err(e) => {
             let delay = bo.next();
             warn!("connection failed: {e:#} — retry in {delay:?}");

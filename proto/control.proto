@@ -30,6 +30,7 @@ enum FirewallKind {
   FIREWALL_KIND_PFSENSE  = 1;
   FIREWALL_KIND_OPNSENSE = 2;
   FIREWALL_KIND_NFTABLES = 3;
+  FIREWALL_KIND_IPTABLES = 4;
 }
 
 // Capabilities declared by the agent at handshake time.

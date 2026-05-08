@@ -6,7 +6,7 @@ use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tracing::{info, warn};
-use wg_shared::types::Feature;
+use wg_shared::types::{Feature, FirewallKind};
 
 use crate::config::Config;
 use crate::disk_buffer::DiskBuffer;
@@ -35,8 +35,9 @@ pub enum ConnectResult {
 }
 
 pub async fn try_connect(
-    config:   &Config,
-    features: &[Feature],
+    config:        &Config,
+    features:      &[Feature],
+    firewall_kind: FirewallKind,
 ) -> anyhow::Result<ConnectResult> {
     let channel = crate::tls::build_grpc_channel(config, config.grpc_endpoint()).await?;
 
@@ -48,7 +49,7 @@ pub async fn try_connect(
     let response  = client.channel(out_stream).await?;
     let mut in_st = response.into_inner();
 
-    out_tx.send(make_hello(features, config)).await?;
+    out_tx.send(make_hello(features, firewall_kind)).await?;
 
     let msg = in_st
         .message()
