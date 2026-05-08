@@ -20,7 +20,7 @@ fn exists(path: &str) -> bool {
 
 fn detect_inner() -> FirewallKind {
     // --- pfSense (FreeBSD-based) ---
-    if exists("/etc/pfsense-release") || exists("/cf/conf/config.xml") {
+    if exists("/etc/pfsense-release") {
         return FirewallKind::PfSense;
     }
 
