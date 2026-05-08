@@ -2,6 +2,7 @@ pub mod auth;
 pub mod devices;
 pub mod failures;
 pub mod http_services;
+pub mod metrics;
 pub mod sse;
 pub mod static_files;
 pub mod traffic;
@@ -23,6 +24,7 @@ pub fn build_router(state: AppState) -> Router<AppState> {
         .route("/api/v1/devices/:id",                               get(devices::get_one))
         .route("/api/v1/devices/:id/status",                        get(devices::status))
         .route("/api/v1/devices/:id/traffic",                       get(traffic::get_traffic))
+        .route("/api/v1/devices/:id/metrics",                       get(metrics::get_metrics))
         .route("/api/v1/devices/:id/http-services",                 get(http_services::list))
         .route("/api/v1/failures",                                   get(failures::list_failures_org))
         .route("/api/v1/devices/:id/failures",                      get(failures::list_failures))

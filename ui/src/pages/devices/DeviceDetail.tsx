@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { StatusBadge } from '@/components/StatusBadge'
 import { TrafficChart } from '@/components/TrafficChart'
+import { TelemetryDashboard } from '@/components/TelemetryDashboard'
 import { useServerEvents } from '@/hooks/useServerEvents'
 import { getDevice, getDeviceStatus, listHttpServices } from '@/api/devices'
 import { openSsh, openTty, openRdp } from '@/api/tunnels'
@@ -100,6 +101,9 @@ export function DeviceDetail() {
 
           {/* Traffic chart */}
           <TrafficChart deviceId={id} />
+
+          {/* Telemetry */}
+          <TelemetryDashboard deviceId={id} />
 
           {/* HTTP Services */}
           {(services?.length ?? 0) > 0 && (
