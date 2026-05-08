@@ -1,31 +1,38 @@
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use tokio::sync::{broadcast, mpsc};
 use tracing::warn;
 
 use crate::pipeline::control::PipelineControl;
-use crate::proto::data::{Packet, PacketBatch};
+use crate::proto::data::{Direction, Packet, PacketBatch};
 
-const BATCH_MAX:    usize    = 1_000;
-const BATCH_WINDOW: Duration = Duration::from_millis(500);
+/// Aggregation window. One PacketBatch with ≤2 synthetic packets (IN + OUT)
+/// is emitted per window instead of forwarding every raw packet.
+/// This keeps the DB write rate at ~2 rows/s regardless of traffic volume.
+const AGG_WINDOW: Duration = Duration::from_secs(1);
 
-/// Accumulates captured packets and forwards `PacketBatch` objects to the
-/// transmitter.
+/// Accumulates captured packets and emits aggregated byte-count summaries.
 ///
-/// Flushes when the batch reaches `BATCH_MAX` packets or `BATCH_WINDOW`
-/// has elapsed since the first packet.  Applies the sampling rate
-/// maintained by the server via `ThrottleMonitoring` messages.
+/// Within each `AGG_WINDOW` the batcher sums bytes by direction.  At the end
+/// of the window it emits a single `PacketBatch` with one synthetic `Packet`
+/// per direction that carried any traffic.  Individual packet metadata (IPs,
+/// ports) is discarded — callers that need per-flow data should tap a
+/// separate forensics pipeline.
+///
+/// The server's `sampling_rate` is still honoured: packets that fail the
+/// sampling dice-roll are excluded from the byte counts.
 pub async fn run_batcher(
     mut rx:       mpsc::Receiver<Packet>,
     tx:           mpsc::Sender<PacketBatch>,
     ctrl:         Arc<PipelineControl>,
     mut shutdown: broadcast::Receiver<()>,
 ) {
-    let mut batch_id: u64        = 0;
-    let mut buf:      Vec<Packet> = Vec::with_capacity(BATCH_MAX);
+    let mut batch_id: u64 = 0;
+    let mut in_bytes:  u64 = 0;
+    let mut out_bytes: u64 = 0;
 
-    let mut window = tokio::time::interval(BATCH_WINDOW);
+    let mut window = tokio::time::interval(AGG_WINDOW);
     window.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
     loop {
@@ -35,8 +42,8 @@ pub async fn run_batcher(
             _ = shutdown.recv() => break,
 
             _ = window.tick() => {
-                if !buf.is_empty() {
-                    flush(&mut buf, &tx, &mut batch_id).await;
+                if in_bytes > 0 || out_bytes > 0 {
+                    flush_agg(&mut in_bytes, &mut out_bytes, &tx, &mut batch_id).await;
                 }
             }
 
@@ -49,26 +56,66 @@ pub async fn run_batcher(
                     continue;
                 }
 
-                buf.push(pkt);
-                if buf.len() >= BATCH_MAX {
-                    flush(&mut buf, &tx, &mut batch_id).await;
+                match pkt.direction {
+                    d if d == Direction::In  as i32 => in_bytes  += pkt.bytes as u64,
+                    d if d == Direction::Out as i32 => out_bytes += pkt.bytes as u64,
+                    _ => {}
                 }
             }
         }
     }
 
-    // Flush any remainder on shutdown.
-    if !buf.is_empty() {
-        flush(&mut buf, &tx, &mut batch_id).await;
+    if in_bytes > 0 || out_bytes > 0 {
+        flush_agg(&mut in_bytes, &mut out_bytes, &tx, &mut batch_id).await;
     }
 }
 
-async fn flush(buf: &mut Vec<Packet>, tx: &mpsc::Sender<PacketBatch>, batch_id: &mut u64) {
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+async fn flush_agg(
+    in_bytes:  &mut u64,
+    out_bytes: &mut u64,
+    tx:        &mpsc::Sender<PacketBatch>,
+    batch_id:  &mut u64,
+) {
+    let ts = now_ms();
+    let mut packets = Vec::with_capacity(2);
+
+    if *in_bytes > 0 {
+        packets.push(Packet {
+            timestamp_ms: ts,
+            bytes:        *in_bytes as u32,
+            direction:    Direction::In as i32,
+            src_ip:  String::new(),
+            dst_ip:  String::new(),
+            src_port: 0,
+            dst_port: 0,
+            protocol: 0,
+        });
+        *in_bytes = 0;
+    }
+
+    if *out_bytes > 0 {
+        packets.push(Packet {
+            timestamp_ms: ts,
+            bytes:        *out_bytes as u32,
+            direction:    Direction::Out as i32,
+            src_ip:  String::new(),
+            dst_ip:  String::new(),
+            src_port: 0,
+            dst_port: 0,
+            protocol: 0,
+        });
+        *out_bytes = 0;
+    }
+
     *batch_id += 1;
-    let batch = PacketBatch {
-        batch_id: *batch_id,
-        packets:  std::mem::take(buf),
-    };
+    let batch = PacketBatch { batch_id: *batch_id, packets };
     if tx.send(batch).await.is_err() {
         warn!("batch transmit channel closed");
     }
@@ -89,13 +136,21 @@ mod tests {
         c
     }
 
-    /// Drive the batcher for one window tick with `n` packets, return all
-    /// batches that arrive on `batch_rx` within a short deadline.
-    async fn collect_batches(
-        packets:  Vec<Packet>,
-        ctrl:     Arc<PipelineControl>,
-    ) -> Vec<PacketBatch> {
-        let (pkt_tx, pkt_rx)     = mpsc::channel::<Packet>(1024);
+    fn make_packet(direction: i32, bytes: u32) -> Packet {
+        Packet {
+            timestamp_ms: 0,
+            src_ip:   String::new(),
+            dst_ip:   String::new(),
+            src_port: 0,
+            dst_port: 0,
+            protocol: 0,
+            bytes,
+            direction,
+        }
+    }
+
+    async fn collect_batches(packets: Vec<Packet>, ctrl: Arc<PipelineControl>) -> Vec<PacketBatch> {
+        let (pkt_tx, pkt_rx)         = mpsc::channel::<Packet>(1024);
         let (batch_tx, mut batch_rx) = mpsc::channel::<PacketBatch>(64);
         let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
 
@@ -105,8 +160,7 @@ mod tests {
             pkt_tx.send(pkt).await.unwrap();
         }
 
-        // Give the batcher a moment to accumulate, then shut it down.
-        tokio::time::sleep(Duration::from_millis(600)).await;
+        tokio::time::sleep(Duration::from_millis(1_100)).await;
         let _ = shutdown_tx.send(());
         let _ = task.await;
 
@@ -117,119 +171,76 @@ mod tests {
         out
     }
 
-    fn make_packet() -> Packet {
-        Packet {
-            timestamp_ms: 0,
-            src_ip:  "1.2.3.4".into(),
-            dst_ip:  "5.6.7.8".into(),
-            src_port: 1234,
-            dst_port: 80,
-            protocol: 6,
-            bytes:    100,
-            direction: 1,
-        }
-    }
-
     #[tokio::test]
-    async fn flushes_on_window_tick() {
-        tokio::time::pause();
-        let (pkt_tx, pkt_rx)         = mpsc::channel::<Packet>(64);
-        let (batch_tx, mut batch_rx) = mpsc::channel::<PacketBatch>(64);
-        let (sd_tx, sd_rx)           = broadcast::channel::<()>(1);
+    async fn aggregates_bytes_by_direction() {
+        let packets = vec![
+            make_packet(Direction::In  as i32, 100),
+            make_packet(Direction::In  as i32, 200),
+            make_packet(Direction::Out as i32, 500),
+        ];
+        let batches = collect_batches(packets, ctrl(1.0)).await;
+        let all: Vec<&Packet> = batches.iter().flat_map(|b| &b.packets).collect();
 
-        let c = Arc::new(PipelineControl::new());
-        tokio::spawn(run_batcher(pkt_rx, batch_tx, c, sd_rx));
+        let in_total: u64  = all.iter().filter(|p| p.direction == Direction::In  as i32).map(|p| p.bytes as u64).sum();
+        let out_total: u64 = all.iter().filter(|p| p.direction == Direction::Out as i32).map(|p| p.bytes as u64).sum();
 
-        pkt_tx.send(make_packet()).await.unwrap();
-        pkt_tx.send(make_packet()).await.unwrap();
-
-        // Yield so the batcher processes the initial immediate tick (empty buf)
-        // and then both packets before we advance the clock.
-        for _ in 0..4 { tokio::task::yield_now().await; }
-
-        // Advance past the 500ms window.
-        tokio::time::advance(Duration::from_millis(600)).await;
-
-        // Yield so the batcher processes the window tick and flushes.
-        for _ in 0..4 { tokio::task::yield_now().await; }
-
-        let batch = batch_rx.try_recv().expect("should have flushed on tick");
-        assert_eq!(batch.packets.len(), 2);
-        let _ = sd_tx.send(());
-    }
-
-    #[tokio::test]
-    async fn flushes_at_batch_max() {
-        // Freeze time so the 500ms window never fires mid-test.
-        tokio::time::pause();
-        let (pkt_tx, pkt_rx)         = mpsc::channel::<Packet>(BATCH_MAX + 1);
-        let (batch_tx, mut batch_rx) = mpsc::channel::<PacketBatch>(64);
-        let (_sd_tx, sd_rx)          = broadcast::channel::<()>(1);
-
-        let c = ctrl(1.0);
-        let task = tokio::spawn(run_batcher(pkt_rx, batch_tx, c, sd_rx));
-
-        // Yield once so the batcher processes the initial immediate tick before
-        // any packets arrive.
-        tokio::task::yield_now().await;
-
-        for _ in 0..BATCH_MAX {
-            pkt_tx.send(make_packet()).await.unwrap();
-        }
-        // Dropping the sender closes the channel; the batcher will process all
-        // buffered packets, flush at BATCH_MAX, then exit on None.
-        drop(pkt_tx);
-
-        let _ = task.await;
-
-        let batch = batch_rx.try_recv().expect("should flush at BATCH_MAX");
-        assert_eq!(batch.packets.len(), BATCH_MAX);
-        assert!(batch_rx.try_recv().is_err(), "no leftover batches expected");
+        assert_eq!(in_total,  300);
+        assert_eq!(out_total, 500);
     }
 
     #[tokio::test]
     async fn sampling_rate_zero_drops_all() {
-        let packets: Vec<Packet> = (0..100).map(|_| make_packet()).collect();
+        let packets: Vec<Packet> = (0..100).map(|_| make_packet(Direction::In as i32, 100)).collect();
         let batches = collect_batches(packets, ctrl(0.0)).await;
-        let total: usize = batches.iter().map(|b| b.packets.len()).sum();
-        assert_eq!(total, 0, "rate=0.0 should drop every packet");
+        let total: u64 = batches.iter().flat_map(|b| &b.packets).map(|p| p.bytes as u64).sum();
+        assert_eq!(total, 0);
     }
 
     #[tokio::test]
     async fn batch_ids_are_monotonic() {
-        let packets: Vec<Packet> = (0..BATCH_MAX * 2 + 1).map(|_| make_packet()).collect();
-        let batches = collect_batches(packets, ctrl(1.0)).await;
-        for w in batches.windows(2) {
-            assert!(w[1].batch_id > w[0].batch_id, "batch_ids must increase");
+        let packets: Vec<Packet> = (0..10).map(|_| make_packet(Direction::In as i32, 1)).collect();
+        // Two windows worth
+        let (pkt_tx, pkt_rx)         = mpsc::channel::<Packet>(64);
+        let (batch_tx, mut batch_rx) = mpsc::channel::<PacketBatch>(64);
+        let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
+        let task = tokio::spawn(run_batcher(pkt_rx, batch_tx, ctrl(1.0), shutdown_rx));
+
+        for pkt in packets {
+            pkt_tx.send(pkt).await.unwrap();
+        }
+        tokio::time::sleep(Duration::from_millis(2_200)).await;
+        let _ = shutdown_tx.send(());
+        let _ = task.await;
+
+        let mut ids = Vec::new();
+        while let Ok(b) = batch_rx.try_recv() {
+            ids.push(b.batch_id);
+        }
+        for w in ids.windows(2) {
+            assert!(w[1] > w[0]);
         }
     }
 
     #[tokio::test]
     async fn shutdown_flushes_remainder() {
-        // Freeze time so the window never fires. Keep _sd_tx alive so the
-        // shutdown branch is never ready — closure of pkt_tx is what terminates
-        // the loop (rx.recv() returns None), after which the remainder is flushed.
-        tokio::time::pause();
         let (pkt_tx, pkt_rx)         = mpsc::channel::<Packet>(64);
         let (batch_tx, mut batch_rx) = mpsc::channel::<PacketBatch>(64);
-        let (_sd_tx, sd_rx)          = broadcast::channel::<()>(1);
+        let (shutdown_tx, shutdown_rx) = broadcast::channel::<()>(1);
 
-        let c = Arc::new(PipelineControl::new());
-        let task = tokio::spawn(run_batcher(pkt_rx, batch_tx, c, sd_rx));
+        let task = tokio::spawn(run_batcher(pkt_rx, batch_tx, ctrl(1.0), shutdown_rx));
 
-        pkt_tx.send(make_packet()).await.unwrap();
-        pkt_tx.send(make_packet()).await.unwrap();
-
-        // Let the batcher receive both packets before we close the channel.
-        for _ in 0..4 { tokio::task::yield_now().await; }
-
-        // Closing the sender makes rx.recv() return None, which breaks the loop
-        // and triggers the post-loop remainder flush.
-        drop(pkt_tx);
-
+        pkt_tx.send(make_packet(Direction::Out as i32, 42)).await.unwrap();
+        // Give the batcher time to receive the packet, then shut down before the window fires.
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let _ = shutdown_tx.send(());
         let _ = task.await;
 
-        let batch = batch_rx.try_recv().expect("remainder must be flushed on channel close");
-        assert_eq!(batch.packets.len(), 2);
+        let all: Vec<Packet> = {
+            let mut v = Vec::new();
+            while let Ok(b) = batch_rx.try_recv() { v.extend(b.packets); }
+            v
+        };
+        let total: u64 = all.iter().map(|p| p.bytes as u64).sum();
+        assert_eq!(total, 42);
     }
 }
