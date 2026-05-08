@@ -1,9 +1,6 @@
 name: Packages CI
 
-on:
-  push:
-    tags:
-      - 'v*.*.*'
+on: workflow_dispatch
 
 jobs:
   build-deb-and-release:

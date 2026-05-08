@@ -16,7 +16,7 @@ use config::HttpApiConfig;
 
 mod api;
 mod config;
-// mod rd_gateway;
+pub mod rd_gateway_v2;
 pub mod ssh_gateway_v2;
 pub mod tty_gateway_v2;
 pub mod utilities;
@@ -81,6 +81,10 @@ pub async fn run_http_api(context: AppContext) {
             .route(
                 "/wallguard/gateway/tty",
                 web::to(tty_gateway_v2::open_tty_session),
+            )
+            .route(
+                "/wallguard/gateway/rd",
+                web::to(rd_gateway_v2::open_rd_session),
             )
             .route("/wallguard/rule/filter", web::to(create_filter_rule))
             .route("/wallguard/rule/nat", web::to(create_nat_rule))

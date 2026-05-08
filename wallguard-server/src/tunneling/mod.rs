@@ -2,6 +2,7 @@ use crate::{
     app_context::AppContext,
     tunneling::{
         http::HttpTunnel,
+        rd::RdTunnel,
         ssh::SshTunnel,
         timeout_controller::TimeoutController,
         tty::TtyTunnel,
@@ -13,6 +14,7 @@ use tokio::sync::Mutex;
 
 mod command;
 pub mod http;
+pub mod rd;
 pub mod ssh;
 mod timeout_controller;
 pub mod tty;
@@ -72,6 +74,10 @@ impl TunnelsManager {
             TunnelType::Tty => {
                 let tunnel = TtyTunnel::new(context, data).await?;
                 Ok(WallguardTunnel::Tty(Arc::new(Mutex::new(tunnel))))
+            }
+            TunnelType::RemoteDesktop => {
+                let tunnel = RdTunnel::new(context, data).await?;
+                Ok(WallguardTunnel::Rd(Arc::new(Mutex::new(tunnel))))
             }
         }
     }
