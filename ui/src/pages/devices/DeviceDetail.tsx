@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { StatusBadge } from '@/components/StatusBadge'
+import { TrafficChart } from '@/components/TrafficChart'
 import { useServerEvents } from '@/hooks/useServerEvents'
 import { getDevice, getDeviceStatus, listHttpServices } from '@/api/devices'
 import { openSsh, openTty, openRdp } from '@/api/tunnels'
@@ -96,6 +97,9 @@ export function DeviceDetail() {
               <p className="mt-4 rounded-md bg-gray-50 p-3 text-sm text-gray-600">{device.notes}</p>
             )}
           </div>
+
+          {/* Traffic chart */}
+          <TrafficChart deviceId={id} />
 
           {/* HTTP Services */}
           {(services?.length ?? 0) > 0 && (
