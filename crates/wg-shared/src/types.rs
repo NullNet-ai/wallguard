@@ -89,6 +89,33 @@ pub struct Device {
     /// SHA-256 of the last applied firewall config; None before first snapshot.
     pub config_digest:  Option<String>,
     pub notes:          Option<String>,
+    pub system_info:    Option<SystemInfo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SystemInfo {
+    pub hostname:        String,
+    pub os_name:         String,
+    pub os_version:      String,
+    pub kernel_version:  String,
+    pub arch:            String,
+    pub cpu_brand:       String,
+    pub cpu_cores:       u32,
+    pub total_mem_bytes: u64,
+    pub disks:           Vec<DiskInfo>,
+    pub interfaces:      Vec<NetInterface>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiskInfo {
+    pub name:        String,
+    pub total_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetInterface {
+    pub name: String,
+    pub mac:  String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

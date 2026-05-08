@@ -202,10 +202,13 @@ async fn handshake(
         .filter_map(|&f| proto_feature_to_str(f))
         .map(String::from)
         .collect();
+    let system_info_json = hello.system_info.as_ref().map(proto_system_info_to_json);
+
     sqlx::query(
-        "UPDATE devices SET last_seen_at = NOW(), features = $1 WHERE id = $2",
+        "UPDATE devices SET last_seen_at = NOW(), features = $1, system_info = $2 WHERE id = $3",
     )
     .bind(&feature_strings)
+    .bind(&system_info_json)
     .bind(device_id)
     .execute(&state.pool)
     .await
@@ -399,6 +402,29 @@ async fn resolve_command_result(result: &CommandResult, state: &AppState) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+fn proto_system_info_to_json(si: &crate::proto::control::SystemInfo) -> serde_json::Value {
+    use wg_shared::types::{DiskInfo, NetInterface, SystemInfo};
+    let info = SystemInfo {
+        hostname:        si.hostname.clone(),
+        os_name:         si.os_name.clone(),
+        os_version:      si.os_version.clone(),
+        kernel_version:  si.kernel_version.clone(),
+        arch:            si.arch.clone(),
+        cpu_brand:       si.cpu_brand.clone(),
+        cpu_cores:       si.cpu_cores,
+        total_mem_bytes: si.total_mem_bytes,
+        disks: si.disks.iter().map(|d| DiskInfo {
+            name:        d.name.clone(),
+            total_bytes: d.total_bytes,
+        }).collect(),
+        interfaces: si.interfaces.iter().map(|i| NetInterface {
+            name: i.name.clone(),
+            mac:  i.mac.clone(),
+        }).collect(),
+    };
+    serde_json::to_value(info).unwrap_or(serde_json::Value::Null)
+}
 
 fn proto_feature_to_str(f: i32) -> Option<&'static str> {
     use crate::proto::control::Feature;

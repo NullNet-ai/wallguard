@@ -1,3 +1,4 @@
+use sysinfo::{Disks, Networks, System};
 use wg_shared::types::{FailureCategory, FailureSeverity, Feature, FirewallKind};
 
 use crate::config::Config;
@@ -6,11 +7,14 @@ use crate::proto::control::{
     client_message,
     AgentFailure as ProtoFailure,
     ClientMessage, CommandResult, CommandStatus,
+    DiskInfo as ProtoDisk,
     FailureCategory as ProtoCategory,
     FailureSeverity as ProtoSeverity,
     Feature as ProtoFeature,
     FirewallKind as ProtoFirewallKind,
     Hello,
+    NetInterface as ProtoIface,
+    SystemInfo as ProtoSystemInfo,
 };
 
 pub fn unix_ms_now() -> u64 {
@@ -28,7 +32,45 @@ pub fn make_hello(features: &[Feature], config: &Config) -> ClientMessage {
             supported_features:     features.iter().map(|&f| shared_to_proto_feature(f)).collect(),
             agent_version:          env!("CARGO_PKG_VERSION").to_string(),
             firewall_kind:          firewall_to_proto(config.device.firewall_kind),
+            system_info:            Some(collect_system_info()),
         })),
+    }
+}
+
+fn collect_system_info() -> ProtoSystemInfo {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    let cpu_brand = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_default();
+    let cpu_cores = sys.physical_core_count().unwrap_or_else(|| sys.cpus().len()) as u32;
+
+    let disks = Disks::new_with_refreshed_list()
+        .iter()
+        .map(|d| ProtoDisk {
+            name:        d.name().to_string_lossy().into_owned(),
+            total_bytes: d.total_space(),
+        })
+        .collect();
+
+    let interfaces = Networks::new_with_refreshed_list()
+        .iter()
+        .map(|(name, data)| ProtoIface {
+            name: name.clone(),
+            mac:  data.mac_address().to_string(),
+        })
+        .collect();
+
+    ProtoSystemInfo {
+        hostname:        System::host_name().unwrap_or_default(),
+        os_name:         System::name().unwrap_or_default(),
+        os_version:      System::os_version().unwrap_or_default(),
+        kernel_version:  System::kernel_version().unwrap_or_default(),
+        arch:            System::cpu_arch().unwrap_or_else(|| std::env::consts::ARCH.to_string()),
+        cpu_brand,
+        cpu_cores,
+        total_mem_bytes: sys.total_memory(),
+        disks,
+        interfaces,
     }
 }
 

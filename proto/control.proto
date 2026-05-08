@@ -75,12 +75,36 @@ enum NamedCommand {
 // Handshake
 // ---------------------------------------------------------------------------
 
+message DiskInfo {
+  string name        = 1;  // e.g. "/dev/sda"
+  uint64 total_bytes = 2;
+}
+
+message NetInterface {
+  string name = 1;  // e.g. "eth0"
+  string mac  = 2;
+}
+
+message SystemInfo {
+  string hostname        = 1;
+  string os_name         = 2;  // e.g. "Linux", "FreeBSD"
+  string os_version      = 3;  // e.g. "14.0-RELEASE"
+  string kernel_version  = 4;
+  string arch            = 5;  // e.g. "x86_64"
+  string cpu_brand       = 6;
+  uint32 cpu_cores       = 7;
+  uint64 total_mem_bytes = 8;
+  repeated DiskInfo     disks      = 9;
+  repeated NetInterface interfaces = 10;
+}
+
 message Hello {
   uint32           protocol_version       = 1;
   uint32           min_compatible_version = 2;
   repeated Feature supported_features     = 3;
   string           agent_version          = 4;
   FirewallKind     firewall_kind          = 5;  // display only; never used for capability decisions
+  SystemInfo       system_info            = 6;
 }
 
 message Welcome {

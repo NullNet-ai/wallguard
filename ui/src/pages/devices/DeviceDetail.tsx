@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -59,12 +59,19 @@ export function DeviceDetail() {
     } catch (e) { setTunnelError(e instanceof ApiError ? e.message : 'Failed') }
   }
 
+  const fmtBytes = useMemo(() => (b: number) => {
+    if (b >= 1_073_741_824) return `${(b / 1_073_741_824).toFixed(1)} GB`
+    if (b >= 1_048_576)     return `${(b / 1_048_576).toFixed(1)} MB`
+    return `${(b / 1_024).toFixed(0)} KB`
+  }, [])
+
   if (!device) return <p className="text-gray-400">Loading…</p>
 
   const features = device.features ?? []
   const hasSsh = features.includes('ssh_tunnel')
   const hasTty = features.includes('tty_tunnel')
   const hasRdp = features.includes('remote_desktop')
+  const si = device.system_info
 
   return (
     <div className="space-y-6">
@@ -94,6 +101,50 @@ export function DeviceDetail() {
               <dt className="text-gray-500">Features</dt>
               <dd className="text-slate-900">{features.join(', ') || '—'}</dd>
             </dl>
+
+            {si && (
+              <>
+                <hr className="my-4 border-gray-100" />
+                <h3 className="mb-3 text-sm font-semibold text-slate-700">System</h3>
+                <dl className="grid grid-cols-2 gap-3 text-sm">
+                  {si.hostname       && <><dt className="text-gray-500">Hostname</dt>       <dd className="text-slate-900">{si.hostname}</dd></>}
+                  {si.os_name        && <><dt className="text-gray-500">OS</dt>             <dd className="text-slate-900">{si.os_name} {si.os_version}</dd></>}
+                  {si.kernel_version && <><dt className="text-gray-500">Kernel</dt>         <dd className="font-mono text-xs text-slate-900">{si.kernel_version}</dd></>}
+                  {si.arch           && <><dt className="text-gray-500">Architecture</dt>   <dd className="text-slate-900">{si.arch}</dd></>}
+                  {si.cpu_brand      && <><dt className="text-gray-500">CPU</dt>            <dd className="text-slate-900">{si.cpu_brand} ({si.cpu_cores} cores)</dd></>}
+                  {si.total_mem_bytes > 0 && <><dt className="text-gray-500">Memory</dt>   <dd className="text-slate-900">{fmtBytes(si.total_mem_bytes)}</dd></>}
+                </dl>
+
+                {si.disks.length > 0 && (
+                  <>
+                    <h3 className="mb-2 mt-4 text-sm font-semibold text-slate-700">Storage</h3>
+                    <div className="space-y-1">
+                      {si.disks.map((d) => (
+                        <div key={d.name} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-1.5 text-sm">
+                          <span className="font-mono text-xs text-slate-700">{d.name}</span>
+                          <span className="text-gray-500">{fmtBytes(d.total_bytes)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {si.interfaces.length > 0 && (
+                  <>
+                    <h3 className="mb-2 mt-4 text-sm font-semibold text-slate-700">Network Interfaces</h3>
+                    <div className="space-y-1">
+                      {si.interfaces.map((iface) => (
+                        <div key={iface.name} className="flex items-center justify-between rounded-md bg-gray-50 px-3 py-1.5 text-sm">
+                          <span className="font-mono text-xs text-slate-700">{iface.name}</span>
+                          <span className="font-mono text-xs text-gray-400">{iface.mac}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
             {device.notes && (
               <p className="mt-4 rounded-md bg-gray-50 p-3 text-sm text-gray-600">{device.notes}</p>
             )}

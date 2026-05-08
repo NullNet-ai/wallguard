@@ -69,11 +69,15 @@ type DeviceRow = (
     Option<String>,               // config_digest
     Option<String>,               // notes
     Vec<String>,                  // features
+    Option<serde_json::Value>,    // system_info
 );
 
 fn row_to_device(row: DeviceRow) -> Device {
     let (id, org_id, display_name, firewall_kind_str, agent_version,
-         enrolled_at, last_seen_at, config_digest, notes, feature_strs) = row;
+         enrolled_at, last_seen_at, config_digest, notes, feature_strs, system_info_json) = row;
+
+    let system_info = system_info_json
+        .and_then(|v| serde_json::from_value(v).ok());
 
     Device {
         id,
@@ -86,6 +90,7 @@ fn row_to_device(row: DeviceRow) -> Device {
         last_seen_at:   last_seen_at.map(|t| t.unix_timestamp() * 1000),
         config_digest,
         notes,
+        system_info,
     }
 }
 
@@ -100,7 +105,7 @@ pub async fn list(
     let rows = sqlx::query_as::<_, DeviceRow>(
         r#"
         SELECT id, org_id, display_name, firewall_kind, agent_version,
-               enrolled_at, last_seen_at, config_digest, notes, features
+               enrolled_at, last_seen_at, config_digest, notes, features, system_info
         FROM   devices
         WHERE  org_id = $1
         ORDER  BY display_name
@@ -136,7 +141,7 @@ pub async fn get_one(
     let row = sqlx::query_as::<_, DeviceRow>(
         r#"
         SELECT id, org_id, display_name, firewall_kind, agent_version,
-               enrolled_at, last_seen_at, config_digest, notes, features
+               enrolled_at, last_seen_at, config_digest, notes, features, system_info
         FROM   devices
         WHERE  id = $1
         "#,
