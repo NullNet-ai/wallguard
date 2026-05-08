@@ -140,8 +140,18 @@ async fn run(config: Arc<Config>) -> anyhow::Result<()> {
     let (cap_tx, cap_rx)     = mpsc::channel::<proto::data::Packet>(config.transmission.packet_queue_depth);
     let (batch_tx, batch_rx) = mpsc::channel::<proto::data::PacketBatch>(32);
 
+    // Resolve the server's IP addresses so the packet capture BPF filter can
+    // exclude management traffic (control/data gRPC, tunnel ports) from
+    // telemetry, preventing a feedback loop where uploads generate captures.
+    let server_ips: Vec<std::net::IpAddr> = tokio::net::lookup_host(
+        (config.server.name.as_str(), config.server.grpc_port),
+    )
+    .await
+    .map(|iter| iter.map(|a| a.ip()).collect())
+    .unwrap_or_default();
+
     // Spawn pipeline tasks.
-    pipeline::capture::spawn(cap_tx);
+    pipeline::capture::spawn(cap_tx, &config.server, server_ips);
     tokio::spawn(pipeline::batch::run_batcher(
         cap_rx, batch_tx, ctrl.clone(), shutdown_tx.subscribe(),
     ));

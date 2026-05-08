@@ -4,14 +4,50 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
+use crate::config::ServerConfig;
 use crate::proto::data::{Direction, Packet};
+
+// ---------------------------------------------------------------------------
+// BPF exclusion filter for management traffic
+// ---------------------------------------------------------------------------
+
+/// Build a BPF fragment that excludes WallGuard management traffic so it never
+/// appears in the captured telemetry or the traffic chart.
+///
+/// With resolved IPs we can be precise: only traffic to/from the server on the
+/// management ports is excluded.  If DNS resolution failed at startup we fall
+/// back to a port-only filter (less precise but avoids a feedback loop).
+fn build_exclusion_filter(server: &ServerConfig, server_ips: &[IpAddr]) -> String {
+    let ports = format!(
+        "port {} or port {} or port {}",
+        server.grpc_port, server.quic_port, server.tcp_port,
+    );
+
+    if server_ips.is_empty() {
+        // DNS failed — exclude by port only.
+        warn!(
+            "capture: could not resolve server hostname '{}'; \
+             excluding management ports {} {} {} regardless of destination",
+            server.name, server.grpc_port, server.quic_port, server.tcp_port,
+        );
+        format!("not ({ports})")
+    } else {
+        let hosts = server_ips
+            .iter()
+            .map(|ip| format!("host {ip}"))
+            .collect::<Vec<_>>()
+            .join(" or ");
+        format!("not (({hosts}) and ({ports}))")
+    }
+}
 
 /// Spawn one blocking capture task per non-loopback, running network interface.
 ///
 /// Requires `CAP_NET_RAW` (Linux) or equivalent privilege.  When no suitable
 /// interface is found the function returns without spawning — the pipeline
 /// channel stays open via the sender held in `main.rs`.
-pub fn spawn(tx: mpsc::Sender<Packet>) {
+pub fn spawn(tx: mpsc::Sender<Packet>, server: &ServerConfig, server_ips: Vec<IpAddr>) {
+    let exclusion = build_exclusion_filter(server, &server_ips);
     metrics::gauge!("wg_agent_capture_queue_depth").set(0.0);
 
     let devices = match pcap::Device::list() {
@@ -46,10 +82,13 @@ pub fn spawn(tx: mpsc::Sender<Packet>) {
         "capture: starting"
     );
 
+    let bpf = format!("(ip or ip6) and {exclusion}");
+
     for dev in devices {
         let tx_clone  = tx.clone();
         let ips_clone = local_ips.clone();
-        tokio::task::spawn_blocking(move || capture_loop(dev, tx_clone, ips_clone));
+        let bpf_clone = bpf.clone();
+        tokio::task::spawn_blocking(move || capture_loop(dev, tx_clone, ips_clone, bpf_clone));
     }
 }
 
@@ -57,7 +96,7 @@ pub fn spawn(tx: mpsc::Sender<Packet>) {
 // Per-interface blocking capture loop
 // ---------------------------------------------------------------------------
 
-fn capture_loop(dev: pcap::Device, tx: mpsc::Sender<Packet>, local_ips: HashSet<IpAddr>) {
+fn capture_loop(dev: pcap::Device, tx: mpsc::Sender<Packet>, local_ips: HashSet<IpAddr>, bpf: String) {
     let name = dev.name.clone();
 
     let mut cap = match pcap::Capture::from_device(dev)
@@ -70,9 +109,13 @@ fn capture_loop(dev: pcap::Device, tx: mpsc::Sender<Packet>, local_ips: HashSet<
         }
     };
 
-    // Only IP/IPv6 — reduces load and avoids non-IP noise.
-    if let Err(e) = cap.filter("ip or ip6", true) {
-        debug!(%name, "capture: BPF filter not applied — {e}");
+    if let Err(e) = cap.filter(&bpf, true) {
+        // BPF failed (old kernel, virtual NIC, etc.) — log and continue without
+        // the filter rather than disabling capture entirely.  Management traffic
+        // will be captured but that is preferable to losing all telemetry.
+        warn!(%name, %bpf, "capture: BPF filter not applied — {e}");
+    } else {
+        debug!(%name, %bpf, "capture: BPF filter applied");
     }
 
     info!(%name, "capture: active");
