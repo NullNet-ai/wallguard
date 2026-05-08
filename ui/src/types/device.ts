@@ -1,14 +1,14 @@
 export type FirewallKind = 'PfSense' | 'OPNSense' | 'NFTables' | 'None'
 
 export type Feature =
-  | 'NetworkMonitoring'
-  | 'TelemetryMonitoring'
-  | 'ConfigMonitoring'
-  | 'SshTunnel'
-  | 'TtyTunnel'
-  | 'HttpTunnel'
-  | 'NamedCommands'
-  | 'RemoteDesktop'
+  | 'network_monitoring'
+  | 'telemetry_monitoring'
+  | 'config_monitoring'
+  | 'ssh_tunnel'
+  | 'tty_tunnel'
+  | 'http_tunnel'
+  | 'named_commands'
+  | 'remote_desktop'
 
 export interface Device {
   id: string

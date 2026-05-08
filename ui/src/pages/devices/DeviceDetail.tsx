@@ -61,9 +61,9 @@ export function DeviceDetail() {
   if (!device) return <p className="text-gray-400">Loading…</p>
 
   const features = device.features ?? []
-  const hasSsh = features.includes('SshTunnel')
-  const hasTty = features.includes('TtyTunnel')
-  const hasRdp = features.includes('RemoteDesktop')
+  const hasSsh = features.includes('ssh_tunnel')
+  const hasTty = features.includes('tty_tunnel')
+  const hasRdp = features.includes('remote_desktop')
 
   return (
     <div className="space-y-6">

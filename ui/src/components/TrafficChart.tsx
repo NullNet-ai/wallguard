@@ -11,7 +11,7 @@ import { getDeviceTraffic } from '@/api/traffic'
 // ---------------------------------------------------------------------------
 
 const WINDOWS = [
-  { label: 'Live', window: '2m',  bucket: '10s', live: true  },
+  { label: 'Live', window: '2m',  bucket: '1s',  live: true  },
   { label: '15m',  window: '15m', bucket: '30s', live: false },
   { label: '1h',   window: '1h',  bucket: '1m',  live: false },
   { label: '6h',   window: '6h',  bucket: '5m',  live: false },
