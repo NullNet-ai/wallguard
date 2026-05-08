@@ -1,9 +1,5 @@
--- Migration 001 — Initial relational schema.
---
--- Creates the TimescaleDB extension (required before 002 can create hypertables)
--- and all relational tables.
---
--- firewall_rules and config_snapshots are deferred to migration 006 (Phase 12).
+-- WallGuard — complete database schema.
+-- Apply to a fresh database; requires TimescaleDB extension.
 
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
 
@@ -25,9 +21,9 @@ CREATE TABLE users (
     id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id        UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     email         TEXT        NOT NULL,
-    password_hash TEXT        NOT NULL,   -- argon2id
+    password_hash TEXT        NOT NULL,
     display_name  TEXT        NOT NULL,
-    role          TEXT        NOT NULL    CHECK (role IN ('owner','admin','operator','viewer')),
+    role          TEXT        NOT NULL CHECK (role IN ('owner','admin','operator','viewer')),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (org_id, email)
 );
@@ -38,7 +34,6 @@ CREATE INDEX users_org_id_idx ON users (org_id);
 -- Auth tokens
 -- ---------------------------------------------------------------------------
 
--- JWT refresh tokens (access tokens are stateless; only refresh tokens stored).
 CREATE TABLE refresh_tokens (
     jti        UUID        PRIMARY KEY,
     user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -48,8 +43,6 @@ CREATE TABLE refresh_tokens (
 
 CREATE INDEX refresh_tokens_user_id_idx ON refresh_tokens (user_id);
 
--- Revoked access-token JTIs, checked on every request.
--- Rows are GC'd after expires_at so the table stays bounded.
 CREATE TABLE revoked_tokens (
     jti        UUID        PRIMARY KEY,
     expires_at TIMESTAMPTZ NOT NULL
@@ -58,16 +51,16 @@ CREATE TABLE revoked_tokens (
 CREATE INDEX revoked_tokens_expires_at_idx ON revoked_tokens (expires_at);
 
 -- ---------------------------------------------------------------------------
--- API keys (long-lived programmatic access)
+-- API keys
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE api_keys (
     id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id       UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    user_id      UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    key_hash     TEXT        NOT NULL,   -- argon2id of the raw key
+    user_id      UUID        NOT NULL REFERENCES users(id)         ON DELETE CASCADE,
+    key_hash     TEXT        NOT NULL,
     description  TEXT,
-    role         TEXT        NOT NULL    CHECK (role IN ('owner','admin','operator','viewer')),
+    role         TEXT        NOT NULL CHECK (role IN ('owner','admin','operator','viewer')),
     last_used_at TIMESTAMPTZ,
     expires_at   TIMESTAMPTZ,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -76,17 +69,17 @@ CREATE TABLE api_keys (
 CREATE INDEX api_keys_org_id_idx ON api_keys (org_id);
 
 -- ---------------------------------------------------------------------------
--- Server-level secrets (JWT signing key, etc.)
+-- Server secrets (JWT signing key, etc.)
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE server_secrets (
-    key        TEXT        PRIMARY KEY,
-    value      BYTEA       NOT NULL,
+    key        TEXT  PRIMARY KEY,
+    value      BYTEA NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ---------------------------------------------------------------------------
--- Device installation codes (single-use enrollment tokens)
+-- Installation codes (single-use enrollment tokens)
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE installation_codes (
@@ -105,7 +98,7 @@ CREATE INDEX installation_codes_org_id_idx ON installation_codes (org_id);
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE devices (
-    id             UUID        PRIMARY KEY,         -- matches CN in device cert
+    id             UUID        PRIMARY KEY,
     org_id         UUID        NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     display_name   TEXT        NOT NULL,
     firewall_kind  TEXT        NOT NULL DEFAULT 'none'
@@ -113,14 +106,14 @@ CREATE TABLE devices (
     agent_version  TEXT,
     enrolled_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_seen_at   TIMESTAMPTZ,
-    features       TEXT[]      NOT NULL DEFAULT '{}',  -- negotiated on last Hello
-    config_digest  TEXT,                               -- SHA-256 of last applied config
-    notes          TEXT
+    features       TEXT[]      NOT NULL DEFAULT '{}',
+    config_digest  TEXT,
+    notes          TEXT,
+    system_info    JSONB                              -- populated on first Hello handshake
 );
 
 CREATE INDEX devices_org_id_idx ON devices (org_id);
 
--- Per-device permission overrides (supplements org-level role).
 CREATE TABLE device_permissions (
     user_id   UUID NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
     device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
@@ -129,7 +122,7 @@ CREATE TABLE device_permissions (
 );
 
 -- ---------------------------------------------------------------------------
--- Device certificates (audit trail for cert rotation)
+-- Device certificates
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE device_certificates (
@@ -149,23 +142,23 @@ CREATE INDEX device_certificates_device_id_idx ON device_certificates (device_id
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE device_failures (
-    failure_id  UUID        PRIMARY KEY,   -- from AgentFailure.failure_id; used for dedup
+    failure_id  UUID        PRIMARY KEY,
     device_id   UUID        NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
     severity    TEXT        NOT NULL CHECK (severity IN ('warning','error','fatal')),
     category    TEXT        NOT NULL,
     message     TEXT        NOT NULL,
     context     JSONB,
-    occurred_at TIMESTAMPTZ NOT NULL,      -- time of occurrence on the agent
+    occurred_at TIMESTAMPTZ NOT NULL,
     received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     is_replay   BOOLEAN     NOT NULL DEFAULT FALSE
 );
 
-CREATE INDEX device_failures_device_id_idx       ON device_failures (device_id);
-CREATE INDEX device_failures_occurred_at_idx     ON device_failures (occurred_at DESC);
-CREATE INDEX device_failures_severity_idx        ON device_failures (severity);
+CREATE INDEX device_failures_device_id_idx   ON device_failures (device_id);
+CREATE INDEX device_failures_occurred_at_idx ON device_failures (occurred_at DESC);
+CREATE INDEX device_failures_severity_idx    ON device_failures (severity);
 
 -- ---------------------------------------------------------------------------
--- Tunnel session audit log
+-- Tunnel sessions
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE tunnel_sessions (
@@ -181,15 +174,15 @@ CREATE TABLE tunnel_sessions (
     bytes_received BIGINT      NOT NULL DEFAULT 0
 );
 
-CREATE INDEX tunnel_sessions_device_id_idx ON tunnel_sessions (device_id);
+CREATE INDEX tunnel_sessions_device_id_idx  ON tunnel_sessions (device_id);
 CREATE INDEX tunnel_sessions_started_at_idx ON tunnel_sessions (started_at DESC);
 
 -- ---------------------------------------------------------------------------
--- Command audit log
+-- Command log
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE command_log (
-    id             UUID        PRIMARY KEY,   -- = command_id
+    id             UUID        PRIMARY KEY,
     device_id      UUID        NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
     command_type   TEXT        NOT NULL,
     initiated_by   UUID        REFERENCES users(id),
@@ -202,3 +195,142 @@ CREATE TABLE command_log (
 
 CREATE INDEX command_log_device_id_idx ON command_log (device_id);
 CREATE INDEX command_log_sent_at_idx   ON command_log (sent_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Time-series: packet telemetry
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE packets (
+    time           TIMESTAMPTZ NOT NULL,
+    device_id      UUID        NOT NULL,
+    src_ip         INET,
+    dst_ip         INET,
+    src_port       INTEGER,
+    dst_port       INTEGER,
+    protocol       SMALLINT,
+    bytes          INTEGER     NOT NULL,
+    direction      TEXT        NOT NULL CHECK (direction IN ('in','out')),
+    interface_name TEXT
+);
+
+SELECT create_hypertable('packets', 'time', chunk_time_interval => INTERVAL '1 hour');
+
+CREATE INDEX ON packets (device_id, time DESC);
+
+-- ---------------------------------------------------------------------------
+-- Time-series: resource metrics
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE resource_metrics (
+    time             TIMESTAMPTZ NOT NULL,
+    device_id        UUID        NOT NULL,
+    cpu_percent      REAL,
+    mem_used_bytes   BIGINT,
+    mem_total_bytes  BIGINT,
+    disk_used_bytes  BIGINT,
+    disk_total_bytes BIGINT,
+    load_1m          REAL,
+    load_5m          REAL
+);
+
+SELECT create_hypertable('resource_metrics', 'time', chunk_time_interval => INTERVAL '4 hours');
+
+CREATE INDEX ON resource_metrics (device_id, time DESC);
+
+-- ---------------------------------------------------------------------------
+-- Time-series: device monitoring status (from heartbeats)
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE device_monitoring_status (
+    time                  TIMESTAMPTZ NOT NULL,
+    device_id             UUID        NOT NULL,
+    packet_queue_depth    INTEGER,
+    disk_buffer_bytes     BIGINT,
+    disk_buffer_max_bytes BIGINT,
+    packets_dropped_total BIGINT,
+    packets_sent_total    BIGINT,
+    degraded              BOOLEAN,
+    active_tunnel_count   INTEGER
+);
+
+SELECT create_hypertable('device_monitoring_status', 'time', chunk_time_interval => INTERVAL '1 day');
+
+CREATE INDEX ON device_monitoring_status (device_id, time DESC);
+
+-- ---------------------------------------------------------------------------
+-- Continuous aggregates
+-- ---------------------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW packets_5m
+WITH (timescaledb.continuous) AS
+SELECT
+    time_bucket('5 minutes', time) AS bucket,
+    device_id,
+    SUM(bytes) AS total_bytes,
+    COUNT(*)   AS packet_count
+FROM packets
+GROUP BY bucket, device_id
+WITH NO DATA;
+
+SELECT add_continuous_aggregate_policy(
+    'packets_5m',
+    start_offset      => INTERVAL '1 hour',
+    end_offset        => INTERVAL '1 minute',
+    schedule_interval => INTERVAL '5 minutes'
+);
+
+-- ---------------------------------------------------------------------------
+-- Retention policies
+-- ---------------------------------------------------------------------------
+
+SELECT add_retention_policy('packets',                  INTERVAL '30 days');
+SELECT add_retention_policy('resource_metrics',         INTERVAL '90 days');
+SELECT add_retention_policy('device_monitoring_status', INTERVAL '90 days');
+
+-- ---------------------------------------------------------------------------
+-- Row-level security (multi-tenancy defence-in-depth)
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION current_org_id() RETURNS UUID
+    LANGUAGE sql STABLE
+AS $$
+    SELECT NULLIF(current_setting('app.current_org_id', true), '')::uuid
+$$;
+
+ALTER TABLE devices             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE api_keys            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE installation_codes  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE device_failures     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tunnel_sessions     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE command_log         ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY org_isolation ON devices
+    USING (current_org_id() IS NULL OR org_id = current_org_id());
+
+CREATE POLICY org_isolation ON users
+    USING (current_org_id() IS NULL OR org_id = current_org_id());
+
+CREATE POLICY org_isolation ON api_keys
+    USING (current_org_id() IS NULL OR org_id = current_org_id());
+
+CREATE POLICY org_isolation ON installation_codes
+    USING (current_org_id() IS NULL OR org_id = current_org_id());
+
+CREATE POLICY org_isolation ON device_failures
+    USING (
+        current_org_id() IS NULL
+        OR device_id IN (SELECT id FROM devices WHERE org_id = current_org_id())
+    );
+
+CREATE POLICY org_isolation ON tunnel_sessions
+    USING (
+        current_org_id() IS NULL
+        OR device_id IN (SELECT id FROM devices WHERE org_id = current_org_id())
+    );
+
+CREATE POLICY org_isolation ON command_log
+    USING (
+        current_org_id() IS NULL
+        OR device_id IN (SELECT id FROM devices WHERE org_id = current_org_id())
+    );
