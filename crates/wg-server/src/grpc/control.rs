@@ -88,8 +88,8 @@ async fn run_connection(
     state:       &AppState,
 ) {
     // ── 1. Handshake ──────────────────────────────────────────────────────
-    let org_id = match handshake(device_id, &mut in_st, &out_tx, state).await {
-        Ok(id)   => id,
+    let (org_id, device_name) = match handshake(device_id, &mut in_st, &out_tx, state).await {
+        Ok(pair) => pair,
         Err(e)   => {
             tracing::warn!(%device_id, "handshake failed: {e}");
             return;
@@ -100,7 +100,7 @@ async fn run_connection(
     metrics::gauge!("wg_connected_agents_total").increment(1.0);
     let _ = state.sse_tx.send(SseEvent {
         org_id,
-        kind: SseEventKind::DeviceConnected { device_id },
+        kind: SseEventKind::DeviceConnected { device_id, device_name: device_name.clone() },
     });
 
     // ── 2. Message loop ────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ async fn run_connection(
                     Ok(None)  => { tracing::info!(%device_id, "agent disconnected"); break; }
                     Ok(Some(msg)) => {
                         handle_client_msg(
-                            msg, device_id, org_id, &out_tx, &mut hb, state,
+                            msg, device_id, org_id, &device_name, &out_tx, &mut hb, state,
                         ).await;
                     }
                 }
@@ -148,7 +148,7 @@ async fn run_connection(
     metrics::gauge!("wg_connected_agents_total").decrement(1.0);
     let _ = state.sse_tx.send(SseEvent {
         org_id,
-        kind: SseEventKind::DeviceDisconnected { device_id },
+        kind: SseEventKind::DeviceDisconnected { device_id, device_name },
     });
 }
 
@@ -161,7 +161,7 @@ async fn handshake(
     in_st:     &mut Streaming<ClientMessage>,
     out_tx:    &mpsc::Sender<ServerMessage>,
     state:     &AppState,
-) -> anyhow::Result<Uuid> {
+) -> anyhow::Result<(Uuid, String)> {
     let msg = in_st.message().await?
         .ok_or_else(|| anyhow::anyhow!("stream closed before Hello"))?;
 
@@ -184,8 +184,8 @@ async fn handshake(
     }
 
     // Look up the device and org in the DB.
-    let org_id: Uuid = sqlx::query_scalar(
-        "SELECT org_id FROM devices WHERE id = $1",
+    let (org_id, device_name): (Uuid, String) = sqlx::query_as(
+        "SELECT org_id, display_name FROM devices WHERE id = $1",
     )
     .bind(device_id)
     .fetch_optional(&state.pool)
@@ -229,7 +229,7 @@ async fn handshake(
         })),
     }).await;
 
-    Ok(org_id)
+    Ok((org_id, device_name))
 }
 
 // ---------------------------------------------------------------------------
@@ -237,12 +237,13 @@ async fn handshake(
 // ---------------------------------------------------------------------------
 
 async fn handle_client_msg(
-    msg:       ClientMessage,
-    device_id: DeviceId,
-    org_id:    Uuid,
-    out_tx:    &mpsc::Sender<ServerMessage>,
-    hb:        &mut HeartbeatState,
-    state:     &AppState,
+    msg:         ClientMessage,
+    device_id:   DeviceId,
+    org_id:      Uuid,
+    device_name: &str,
+    out_tx:      &mpsc::Sender<ServerMessage>,
+    hb:          &mut HeartbeatState,
+    state:       &AppState,
 ) {
     use client_message::Message as M;
 
@@ -337,8 +338,10 @@ async fn handle_client_msg(
                 org_id,
                 kind: SseEventKind::NewFailure {
                     device_id,
+                    device_name: device_name.to_string(),
                     failure_id,
                     severity: severity_str.to_string(),
+                    message: failure.message.clone(),
                 },
             });
         }
@@ -358,7 +361,7 @@ async fn handle_client_msg(
             state.registry.update_http_services(device_id, update.services).await;
             let _ = state.sse_tx.send(SseEvent {
                 org_id,
-                kind: SseEventKind::HttpServicesUpdated { device_id },
+                kind: SseEventKind::HttpServicesUpdated { device_id, device_name: device_name.to_string() },
             });
         }
 

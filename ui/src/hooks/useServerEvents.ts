@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/auth'
 type Handler = (event: MessageEvent) => void
 
 export function useServerEvents(
-  eventType: string | null,
+  eventType: string | string[] | null,
   handler: Handler,
 ) {
   const token = useAuthStore((s) => s.token)
@@ -17,20 +17,19 @@ export function useServerEvents(
       : '/api/v1/events'
 
     const es = new EventSource(url)
-
     const cb = (e: MessageEvent) => handlerRef.current(e)
 
-    if (eventType) {
-      es.addEventListener(eventType, cb)
+    const types = Array.isArray(eventType) ? eventType : eventType ? [eventType] : []
+
+    if (types.length > 0) {
+      types.forEach(t => es.addEventListener(t, cb))
     } else {
       es.onmessage = cb
     }
 
     return () => {
-      if (eventType) {
-        es.removeEventListener(eventType, cb)
-      }
+      types.forEach(t => es.removeEventListener(t, cb))
       es.close()
     }
-  }, [token, eventType])
+  }, [token, Array.isArray(eventType) ? eventType.join(',') : eventType])
 }
