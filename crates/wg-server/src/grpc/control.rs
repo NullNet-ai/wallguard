@@ -199,7 +199,8 @@ async fn handshake(
     let feature_strings: Vec<String> = hello
         .supported_features
         .iter()
-        .map(|&f| format!("{f}"))
+        .filter_map(|&f| proto_feature_to_str(f))
+        .map(String::from)
         .collect();
     sqlx::query(
         "UPDATE devices SET last_seen_at = NOW(), features = $1 WHERE id = $2",
@@ -398,6 +399,20 @@ async fn resolve_command_result(result: &CommandResult, state: &AppState) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+fn proto_feature_to_str(f: i32) -> Option<&'static str> {
+    use crate::proto::control::Feature;
+    match Feature::try_from(f).ok()? {
+        Feature::NetworkMonitoring   => Some("network_monitoring"),
+        Feature::TelemetryMonitoring => Some("telemetry_monitoring"),
+        Feature::ConfigMonitoring    => Some("config_monitoring"),
+        Feature::SshTunnel           => Some("ssh_tunnel"),
+        Feature::TtyTunnel           => Some("tty_tunnel"),
+        Feature::HttpTunnel          => Some("http_tunnel"),
+        Feature::NamedCommands       => Some("named_commands"),
+        Feature::RemoteDesktop       => Some("remote_desktop"),
+    }
+}
 
 fn unix_ms_now() -> u64 {
     std::time::SystemTime::now()
