@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -5,23 +6,34 @@ use tokio::sync::{broadcast, mpsc};
 use tracing::warn;
 
 use crate::pipeline::control::PipelineControl;
-use crate::proto::data::{Direction, Packet, PacketBatch};
+use crate::proto::data::{Packet, PacketBatch};
 
-/// Aggregation window. One PacketBatch with ≤2 synthetic packets (IN + OUT)
-/// is emitted per window instead of forwarding every raw packet.
-/// This keeps the DB write rate at ~2 rows/s regardless of traffic volume.
+/// Aggregation window: one PacketBatch per second containing one row per
+/// unique (src_ip, dst_ip, protocol, interface, direction) tuple seen.
 const AGG_WINDOW: Duration = Duration::from_secs(1);
 
-/// Accumulates captured packets and emits aggregated byte-count summaries.
+/// Aggregation key: the fields we group by within each window.
+#[derive(Eq, PartialEq, Hash)]
+struct FlowKey {
+    src_ip:         String,
+    dst_ip:         String,
+    protocol:       u32,
+    interface_name: String,
+    direction:      i32,
+}
+
+/// Accumulates captured packets and emits per-flow byte-count summaries.
 ///
-/// Within each `AGG_WINDOW` the batcher sums bytes by direction.  At the end
-/// of the window it emits a single `PacketBatch` with one synthetic `Packet`
-/// per direction that carried any traffic.  Individual packet metadata (IPs,
-/// ports) is discarded — callers that need per-flow data should tap a
-/// separate forensics pipeline.
+/// Within each `AGG_WINDOW` bytes are summed per (src, dst, protocol,
+/// interface, direction) tuple.  At window expiry one `Packet` row is
+/// emitted per tuple that saw any traffic.  This reduces DB write rate
+/// from O(raw packets) to O(unique flows per second), which is orders of
+/// magnitude smaller on any real network.
 ///
-/// The server's `sampling_rate` is still honoured: packets that fail the
-/// sampling dice-roll are excluded from the byte counts.
+/// Port information is intentionally dropped: it creates unbounded
+/// cardinality and is not needed for the bandwidth chart.
+///
+/// The server's `sampling_rate` is still honoured.
 pub async fn run_batcher(
     mut rx:       mpsc::Receiver<Packet>,
     tx:           mpsc::Sender<PacketBatch>,
@@ -29,8 +41,7 @@ pub async fn run_batcher(
     mut shutdown: broadcast::Receiver<()>,
 ) {
     let mut batch_id: u64 = 0;
-    let mut in_bytes:  u64 = 0;
-    let mut out_bytes: u64 = 0;
+    let mut flows: HashMap<FlowKey, u64> = HashMap::new();
 
     let mut window = tokio::time::interval(AGG_WINDOW);
     window.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
@@ -42,8 +53,8 @@ pub async fn run_batcher(
             _ = shutdown.recv() => break,
 
             _ = window.tick() => {
-                if in_bytes > 0 || out_bytes > 0 {
-                    flush_agg(&mut in_bytes, &mut out_bytes, &tx, &mut batch_id).await;
+                if !flows.is_empty() {
+                    flush_agg(&mut flows, &tx, &mut batch_id).await;
                 }
             }
 
@@ -56,17 +67,20 @@ pub async fn run_batcher(
                     continue;
                 }
 
-                match pkt.direction {
-                    d if d == Direction::In  as i32 => in_bytes  += pkt.bytes as u64,
-                    d if d == Direction::Out as i32 => out_bytes += pkt.bytes as u64,
-                    _ => {}
-                }
+                let key = FlowKey {
+                    src_ip:         pkt.src_ip,
+                    dst_ip:         pkt.dst_ip,
+                    protocol:       pkt.protocol,
+                    interface_name: pkt.interface_name,
+                    direction:      pkt.direction,
+                };
+                *flows.entry(key).or_insert(0) += pkt.bytes as u64;
             }
         }
     }
 
-    if in_bytes > 0 || out_bytes > 0 {
-        flush_agg(&mut in_bytes, &mut out_bytes, &tx, &mut batch_id).await;
+    if !flows.is_empty() {
+        flush_agg(&mut flows, &tx, &mut batch_id).await;
     }
 }
 
@@ -78,41 +92,25 @@ fn now_ms() -> u64 {
 }
 
 async fn flush_agg(
-    in_bytes:  &mut u64,
-    out_bytes: &mut u64,
-    tx:        &mpsc::Sender<PacketBatch>,
-    batch_id:  &mut u64,
+    flows:    &mut HashMap<FlowKey, u64>,
+    tx:       &mpsc::Sender<PacketBatch>,
+    batch_id: &mut u64,
 ) {
     let ts = now_ms();
-    let mut packets = Vec::with_capacity(2);
-
-    if *in_bytes > 0 {
-        packets.push(Packet {
-            timestamp_ms: ts,
-            bytes:        *in_bytes as u32,
-            direction:    Direction::In as i32,
-            src_ip:  String::new(),
-            dst_ip:  String::new(),
-            src_port: 0,
-            dst_port: 0,
-            protocol: 0,
-        });
-        *in_bytes = 0;
-    }
-
-    if *out_bytes > 0 {
-        packets.push(Packet {
-            timestamp_ms: ts,
-            bytes:        *out_bytes as u32,
-            direction:    Direction::Out as i32,
-            src_ip:  String::new(),
-            dst_ip:  String::new(),
-            src_port: 0,
-            dst_port: 0,
-            protocol: 0,
-        });
-        *out_bytes = 0;
-    }
+    let packets: Vec<Packet> = flows
+        .drain()
+        .map(|(key, bytes)| Packet {
+            timestamp_ms:   ts,
+            src_ip:         key.src_ip,
+            dst_ip:         key.dst_ip,
+            src_port:       0,
+            dst_port:       0,
+            protocol:       key.protocol,
+            bytes:          bytes as u32,
+            direction:      key.direction,
+            interface_name: key.interface_name,
+        })
+        .collect();
 
     *batch_id += 1;
     let batch = PacketBatch { batch_id: *batch_id, packets };
@@ -136,16 +134,19 @@ mod tests {
         c
     }
 
+    use crate::proto::data::Direction;
+
     fn make_packet(direction: i32, bytes: u32) -> Packet {
         Packet {
-            timestamp_ms: 0,
-            src_ip:   String::new(),
-            dst_ip:   String::new(),
-            src_port: 0,
-            dst_port: 0,
-            protocol: 0,
+            timestamp_ms:   0,
+            src_ip:         "1.2.3.4".into(),
+            dst_ip:         "5.6.7.8".into(),
+            src_port:       0,
+            dst_port:       0,
+            protocol:       6,
             bytes,
             direction,
+            interface_name: "eth0".into(),
         }
     }
 

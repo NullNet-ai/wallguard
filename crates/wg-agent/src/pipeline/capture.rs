@@ -92,6 +92,7 @@ pub fn spawn(tx: mpsc::Sender<Packet>, server: &ServerConfig, server_ips: Vec<Ip
     }
 }
 
+
 // ---------------------------------------------------------------------------
 // Per-interface blocking capture loop
 // ---------------------------------------------------------------------------
@@ -136,7 +137,8 @@ fn capture_loop(dev: pcap::Device, tx: mpsc::Sender<Packet>, local_ips: HashSet<
                     + raw.header.ts.tv_usec as u64 / 1_000;
                 let wire_len = raw.header.len;
 
-                if let Some(pkt) = parse_ethernet(raw.data, ts_ms, wire_len, &local_ips) {
+                if let Some(mut pkt) = parse_ethernet(raw.data, ts_ms, wire_len, &local_ips) {
+                    pkt.interface_name = name.clone();
                     let depth = tx.max_capacity().saturating_sub(tx.capacity()) as f64;
                     metrics::gauge!("wg_agent_capture_queue_depth").set(depth);
 
@@ -206,14 +208,15 @@ fn parse_ipv4(
     let dst_ip = IpAddr::V4(Ipv4Addr::new(data[16], data[17], data[18], data[19]));
     let (src_port, dst_port) = extract_ports(proto, data.get(ihl..)?);
     Some(Packet {
-        timestamp_ms: ts_ms,
-        src_ip:       src_ip.to_string(),
-        dst_ip:       dst_ip.to_string(),
+        timestamp_ms:   ts_ms,
+        src_ip:         src_ip.to_string(),
+        dst_ip:         dst_ip.to_string(),
         src_port,
         dst_port,
-        protocol:  proto as u32,
+        protocol:       proto as u32,
         bytes,
-        direction: classify(src_ip, dst_ip, local_ips),
+        direction:      classify(src_ip, dst_ip, local_ips),
+        interface_name: String::new(), // filled in by capture_loop
     })
 }
 
@@ -236,14 +239,15 @@ fn parse_ipv6(
     ));
     let (src_port, dst_port) = extract_ports(next_header, data.get(40..)?);
     Some(Packet {
-        timestamp_ms: ts_ms,
-        src_ip:       src_ip.to_string(),
-        dst_ip:       dst_ip.to_string(),
+        timestamp_ms:   ts_ms,
+        src_ip:         src_ip.to_string(),
+        dst_ip:         dst_ip.to_string(),
         src_port,
         dst_port,
-        protocol:  next_header as u32,
+        protocol:       next_header as u32,
         bytes,
-        direction: classify(src_ip, dst_ip, local_ips),
+        direction:      classify(src_ip, dst_ip, local_ips),
+        interface_name: String::new(), // filled in by capture_loop
     })
 }
 

@@ -26,14 +26,15 @@ message PacketBatch {
 }
 
 message Packet {
-  uint64 timestamp_ms = 1;
-  string src_ip       = 2;
-  string dst_ip       = 3;
-  uint32 src_port     = 4;
-  uint32 dst_port     = 5;
-  uint32 protocol     = 6;  // IANA protocol number
-  uint32 bytes        = 7;
-  Direction direction = 8;
+  uint64 timestamp_ms    = 1;
+  string src_ip          = 2;
+  string dst_ip          = 3;
+  uint32 src_port        = 4;
+  uint32 dst_port        = 5;
+  uint32 protocol        = 6;  // IANA protocol number
+  uint32 bytes           = 7;
+  Direction direction    = 8;
+  string interface_name  = 9;  // network interface the packet was captured on
 }
 
 enum Direction {

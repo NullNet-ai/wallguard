@@ -112,10 +112,16 @@ async fn insert_packets(
             _ => "in",
         };
 
+        let iface = if pkt.interface_name.is_empty() {
+            None
+        } else {
+            Some(pkt.interface_name.clone())
+        };
+
         sqlx::query(
             "INSERT INTO packets \
-             (time, device_id, src_ip, dst_ip, src_port, dst_port, protocol, bytes, direction) \
-             VALUES ($1, $2, $3::inet, $4::inet, $5, $6, $7, $8, $9)",
+             (time, device_id, src_ip, dst_ip, src_port, dst_port, protocol, bytes, direction, interface_name) \
+             VALUES ($1, $2, NULLIF($3,'')::inet, NULLIF($4,'')::inet, $5, $6, $7, $8, $9, $10)",
         )
         .bind(ts)
         .bind(device_id)
@@ -126,6 +132,7 @@ async fn insert_packets(
         .bind(pkt.protocol as i16)
         .bind(pkt.bytes as i32)
         .bind(dir)
+        .bind(iface)
         .execute(&mut *tx)
         .await?;
     }
