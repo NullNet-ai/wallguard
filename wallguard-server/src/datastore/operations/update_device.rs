@@ -25,7 +25,7 @@ impl Datastore {
                 device_category: Some(device.category.clone()),
                 device_type: Some(device.r#type.clone()),
                 device_name: Some(device.name.clone()),
-                device_os: Some(device.os.clone()),
+                device_operating_system: Some(device.os.clone()),
                 is_device_online: Some(device.online),
                 organization_id: Some(device.organization.clone()),
                 device_version: Some(device.version.clone()),

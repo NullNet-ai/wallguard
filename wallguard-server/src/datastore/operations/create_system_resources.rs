@@ -26,14 +26,14 @@ impl Datastore {
                 timestamp: Some(res.timestamp),
                 num_cpus: Some(res.num_cpus as i32),
                 global_cpu_usage: Some(res.global_cpu_usage.to_string()),
-                cpu_usages: Some(res.cpu_usages),
+                cpu_usage: Some(res.cpu_usages),
                 total_memory: Some(res.total_memory.to_string()),
                 used_memory: Some(res.used_memory.to_string()),
                 total_disk_space: Some(res.total_disk_space.to_string()),
                 available_disk_space: Some(res.available_disk_space.to_string()),
                 read_bytes: Some(res.read_bytes.to_string()),
                 written_bytes: Some(res.written_bytes.to_string()),
-                temperatures: Some(res.temperatures),
+                temperature: Some(res.temperatures),
                 device_id: Some(device_id.clone()),
                 ..Default::default()
             })
