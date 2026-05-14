@@ -43,13 +43,9 @@ impl NftablesAliasesParser {
                 Expression::String(s) => result.push(s.to_string()),
                 Expression::Number(n) => result.push(n.to_string()),
                 Expression::Range(range) => match (&range.range[0], &range.range[1]) {
-                    (Expression::Number(f), Expression::Number(t)) => {
-                        if f <= t {
-                            for v in *f..=*t {
-                                result.push(v.to_string());
-                            }
-                        } else {
-                            return None;
+                    (Expression::Number(f), Expression::Number(t)) if f <= t => {
+                        for v in *f..=*t {
+                            result.push(v.to_string());
                         }
                     }
                     (Expression::String(f), Expression::String(t)) => {

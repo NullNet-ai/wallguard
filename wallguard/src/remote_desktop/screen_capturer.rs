@@ -1,5 +1,5 @@
 use super::screenshot::Screenshot;
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_liberror::Error;
 
 pub struct ScreenCapturer {
     inner: Box<dyn PlatformCapturer + Send>,
