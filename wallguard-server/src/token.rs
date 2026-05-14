@@ -82,6 +82,7 @@ impl Token {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct User {
     pub role_id: String,
@@ -90,6 +91,7 @@ pub struct User {
     pub account_id: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Origin {
     pub user_agent: Option<String>,
@@ -97,6 +99,7 @@ pub struct Origin {
     pub url: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[allow(non_snake_case)]
 pub struct Cookie {
@@ -106,6 +109,7 @@ pub struct Cookie {
     pub httpOnly: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SessionPermissionCache {
     pub error: Option<Value>,
@@ -120,6 +124,7 @@ pub struct SessionPermissionCacheData {
     pub cache: Option<bool>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Session {
     pub user: User,
