@@ -1,6 +1,6 @@
+use crate::token::Token;
 use crate::{control_service::service::WallGuardService, datastore::Device};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use crate::token::Token;
 
 impl WallGuardService {
     pub(crate) async fn ensure_device_exists_and_authrorized(

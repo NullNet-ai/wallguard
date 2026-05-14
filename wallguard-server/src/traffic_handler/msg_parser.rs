@@ -1,4 +1,5 @@
 use super::{ip_header::IpHeader, parsed_message::ParsedMessage};
+use crate::token::Token;
 use crate::traffic_handler::connections_map::{ConnectionKey, ConnectionValue, ConnectionsMap};
 use crate::traffic_handler::transport_header::TransportHeader;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
@@ -6,7 +7,6 @@ use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource, LinkHeader};
 use nullnet_liberror::{ErrorHandler, Location, location};
 use nullnet_libipinfo::get_ip_to_lookup;
-use crate::token::Token;
 use std::net::IpAddr;
 use std::sync::mpsc::Sender;
 use wallguard_common::protobuf::wallguard_service::PacketsData;

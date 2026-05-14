@@ -58,8 +58,7 @@ mod linux {
 
     impl X11Capturer {
         pub fn new() -> Result<Self, Error> {
-            let (conn, screen_num) =
-                RustConnection::connect(None).handle_err(location!())?;
+            let (conn, screen_num) = RustConnection::connect(None).handle_err(location!())?;
 
             // Borrow conn inside a block so the borrow ends before conn is moved into Self.
             let (root, width, height, bits_per_pixel) = {
@@ -71,7 +70,12 @@ mod linux {
                     .find(|f| f.depth == screen.root_depth)
                     .map(|f| f.bits_per_pixel)
                     .unwrap_or(32);
-                (screen.root, screen.width_in_pixels, screen.height_in_pixels, bpp)
+                (
+                    screen.root,
+                    screen.width_in_pixels,
+                    screen.height_in_pixels,
+                    bpp,
+                )
             };
 
             Ok(Self {
@@ -103,7 +107,11 @@ mod linux {
 
             let rgb = raw_to_rgb(&reply.data, self.bits_per_pixel);
 
-            Ok(Screenshot::new(rgb, self.width as usize, self.height as usize))
+            Ok(Screenshot::new(
+                rgb,
+                self.width as usize,
+                self.height as usize,
+            ))
         }
     }
 
@@ -152,8 +160,8 @@ mod windows_backend {
     use std::mem;
     use winapi::shared::windef::{HBITMAP, HDC};
     use winapi::um::wingdi::{
-        BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits,
-        SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, SRCCOPY,
+        BI_RGB, BITMAPINFO, BITMAPINFOHEADER, BitBlt, CreateCompatibleBitmap, CreateCompatibleDC,
+        DIB_RGB_COLORS, DeleteDC, DeleteObject, GetDIBits, SRCCOPY, SelectObject,
     };
     use winapi::um::winuser::{GetDC, GetSystemMetrics, ReleaseDC, SM_CXSCREEN, SM_CYSCREEN};
 
@@ -252,7 +260,7 @@ mod windows_backend {
                 let px = row_start + col * 3;
                 rgb.push(raw[px + 2]); // R
                 rgb.push(raw[px + 1]); // G
-                rgb.push(raw[px]);     // B
+                rgb.push(raw[px]); // B
             }
         }
 

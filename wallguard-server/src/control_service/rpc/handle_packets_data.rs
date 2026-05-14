@@ -1,6 +1,6 @@
 use crate::control_service::service::WallGuardService;
-use crate::traffic_handler::msg_parser::parse_message;
 use crate::token::Token;
+use crate::traffic_handler::msg_parser::parse_message;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_service::PacketsData;
 

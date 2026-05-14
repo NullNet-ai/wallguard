@@ -1,6 +1,4 @@
-use crate::remote_desktop::{
-    messages::MessageHandler, screen_capturer::ScreenCapturer,
-};
+use crate::remote_desktop::{messages::MessageHandler, screen_capturer::ScreenCapturer};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use openh264::OpenH264API;
 use openh264::encoder::{Encoder, EncoderConfig};
@@ -154,7 +152,9 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
 
         // Force an intra frame on the periodic interval or when a new viewer just
         // joined (swap clears the flag atomically so we only do it once).
-        if frame_count % KEYFRAME_INTERVAL == 0 || manager.force_keyframe.swap(false, Ordering::Relaxed) {
+        if frame_count % KEYFRAME_INTERVAL == 0
+            || manager.force_keyframe.swap(false, Ordering::Relaxed)
+        {
             encoder.force_intra_frame();
         }
 

@@ -1,8 +1,8 @@
 use crate::datastore::Datastore;
+use crate::token::Token;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
 use futures_util::future::try_join_all;
 use nullnet_liberror::Error;
-use crate::token::Token;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration};
 use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus};

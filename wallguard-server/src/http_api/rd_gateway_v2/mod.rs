@@ -26,8 +26,7 @@ pub(super) async fn open_rd_session(
         Err(response) => return response,
     };
 
-    let Some(WallguardTunnel::Rd(rd_tunnel)) = context.tunnels_manager.get(&tunnel_id).await
-    else {
+    let Some(WallguardTunnel::Rd(rd_tunnel)) = context.tunnels_manager.get(&tunnel_id).await else {
         return HttpResponse::NotFound().json(ErrorJson::from("Tunnel not found"));
     };
 
@@ -61,11 +60,11 @@ pub(super) async fn open_rd_session(
         }
     }
 
-    let (response, ws_session, stream) =
-        match request_handling::upgrade_to_websocket(request, body) {
-            Ok(r) => r,
-            Err(resp) => return resp,
-        };
+    let (response, ws_session, stream) = match request_handling::upgrade_to_websocket(request, body)
+    {
+        Ok(r) => r,
+        Err(resp) => return resp,
+    };
 
     rt::spawn(websocket_relay(
         stream,
