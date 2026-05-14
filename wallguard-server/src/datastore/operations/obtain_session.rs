@@ -2,8 +2,8 @@ use crate::datastore::{
     Datastore, RemoteAccessSession,
     db_tables::DBTable,
     generated::{
-        AggregationFilterParams, AggregationFilterRequest, AggregationOrder, FilterCriteria,
-        FilterOperator, aggregation_filter_request,
+        FilterCriteria, FilterOperator, GetByFilterParams, GetByFilterRequest,
+        get_by_filter_request,
     },
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
@@ -14,12 +14,22 @@ impl Datastore {
         token: &str,
         session_token: &str,
     ) -> Result<Option<RemoteAccessSession>, Error> {
-        let request = AggregationFilterRequest {
-            params: Some(AggregationFilterParams {
+        let request = GetByFilterRequest {
+            params: Some(GetByFilterParams {
+                table: DBTable::RemoteAccessSessions.into(),
                 r#type: String::new(),
             }),
-            body: Some(aggregation_filter_request::AggregationFilterBody {
-                entity: DBTable::RemoteAccessSessions.into(),
+            body: Some(get_by_filter_request::GetByFilterBody {
+                pluck: vec![
+                    "id".to_string(),
+                    "device_id".to_string(),
+                    "instance_id".to_string(),
+                    "remote_access_session".to_string(),
+                    "remote_access_type".to_string(),
+                    "remote_access_local_addr".to_string(),
+                    "remote_access_local_port".to_string(),
+                    "remote_access_local_protocol".to_string(),
+                ],
                 advance_filters: vec![FilterCriteria {
                     r#type: "criteria".to_string(),
                     field: Some("remote_access_session".to_string()),
@@ -29,10 +39,8 @@ impl Datastore {
                     ..Default::default()
                 }],
                 limit: Some(1),
-                order: Some(AggregationOrder {
-                    order_by: "timestamp".to_string(),
-                    order_direction: "desc".to_string(),
-                }),
+                order_by: Some("timestamp".to_string()),
+                order_direction: Some("desc".to_string()),
                 ..Default::default()
             }),
         };
@@ -48,7 +56,7 @@ impl Datastore {
         let response = self
             .inner
             .clone()
-            .aggregation_filter(grpc_request)
+            .get_by_filter(grpc_request)
             .await
             .handle_err(location!())?
             .into_inner();

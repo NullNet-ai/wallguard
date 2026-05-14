@@ -2,8 +2,8 @@ use crate::datastore::{
     Datastore, TunnelModel,
     db_tables::DBTable,
     generated::{
-        AggregationFilterParams, AggregationFilterRequest, FilterCriteria, FilterOperator,
-        aggregation_filter_request,
+        FilterCriteria, FilterOperator, GetByFilterParams, GetByFilterRequest,
+        get_by_filter_request,
     },
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
@@ -15,16 +15,25 @@ impl Datastore {
         tunnel_id: &str,
         performed_by_root: bool,
     ) -> Result<Option<TunnelModel>, Error> {
-        let request = AggregationFilterRequest {
-            params: Some(AggregationFilterParams {
+        let request = GetByFilterRequest {
+            params: Some(GetByFilterParams {
+                table: DBTable::DeviceTunnels.into(),
                 r#type: if performed_by_root {
                     "root".to_string()
                 } else {
                     String::new()
                 },
             }),
-            body: Some(aggregation_filter_request::AggregationFilterBody {
-                entity: DBTable::DeviceTunnels.into(),
+            body: Some(get_by_filter_request::GetByFilterBody {
+                pluck: vec![
+                    "id".to_string(),
+                    "device_id".to_string(),
+                    "tunnel_type".to_string(),
+                    "service_id".to_string(),
+                    "tunnel_status".to_string(),
+                    "last_access_time".to_string(),
+                    "last_access_date".to_string(),
+                ],
                 advance_filters: vec![FilterCriteria {
                     r#type: "criteria".to_string(),
                     field: Some("id".to_string()),
@@ -49,7 +58,7 @@ impl Datastore {
         let response = self
             .inner
             .clone()
-            .aggregation_filter(grpc_request)
+            .get_by_filter(grpc_request)
             .await
             .handle_err(location!())?
             .into_inner();

@@ -97,6 +97,12 @@ message GetQuery {
   string pluck = 1; // Field to pluck
 }
 
+// Common parameter structure for GetByFilter requests
+message GetByFilterParams {
+  string table = 1; // Table name
+  string type = 2; // request type
+}
+
 // Common parameter structure for AggregationFilter requests
 message AggregationFilterParams {
   string type = 1; // request type
@@ -10622,6 +10628,46 @@ message AggregationFilterResponse {
   string data = 4;  // Single JSON string containing the entire result array
 }
 
+// GetByFilter request for advanced filtering queries
+message GetByFilterRequest {
+  GetByFilterParams params = 1;
+  message GetByFilterBody {
+    repeated string pluck = 1;  // Fields to select
+    message PluckObjectEntry {
+      string key = 1;
+      repeated string value = 2;
+    }
+    repeated PluckObjectEntry pluck_object = 2;  // Object-based field selection
+    repeated PluckObjectEntry pluck_group_object = 3;  // Group object field selection
+    repeated FilterCriteria advance_filters = 4;  // Filter conditions
+    repeated FilterCriteria group_advance_filters = 5;  // Group filter conditions
+    repeated Join joins = 6;  // Join definitions
+    optional string group_by_fields = 7;  // JSON string of group by fields
+    optional bool group_by_has_count = 8;  // Include count in group by
+    optional string concatenate_fields = 9;  // JSON string of concatenate fields
+    repeated string multiple_sort = 10;  // JSON array of sort options
+    optional string date_format = 11;  // Date format string
+    optional string order_by = 12;  // Primary sort field
+    optional string order_direction = 13;  // Sort direction (asc/desc)
+    optional bool is_case_sensitive_sorting = 14;  // Case sensitive sorting
+    optional int32 offset = 15;  // Pagination offset
+    optional int32 limit = 16;  // Result limit
+    optional string distinct_by = 17;  // Distinct field
+    optional string timezone = 18;  // Timezone for date operations
+    optional string time_format = 19;  // Time format string
+    optional string materialized_view = 20;  // JSON string of materialized view config
+  }
+  GetByFilterBody body = 2;
+}
+
+// GetByFilter response with flexible JSON structure
+message GetByFilterResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  string data = 4;  // JSON string containing the result array
+}
+
 // Store service definition with CRUD operations
 service StoreService {
   // Create a new UserRoles
@@ -12159,6 +12205,9 @@ service StoreService {
 
   // Upsert a TcpConnections (create if not exists, update if exists)
   rpc UpsertTcpConnections(UpsertTcpConnectionsRequest) returns (UpsertTcpConnectionsResponse);
+
+  // GetByFilter for advanced filtering queries
+  rpc GetByFilter(GetByFilterRequest) returns (GetByFilterResponse);
 
   // Aggregation filter for advanced queries
   rpc AggregationFilter(AggregationFilterRequest) returns (AggregationFilterResponse);

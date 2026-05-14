@@ -2,8 +2,8 @@ use crate::datastore::{
     Datastore, Device,
     db_tables::DBTable,
     generated::{
-        AggregationFilterParams, AggregationFilterRequest, FilterCriteria, FilterOperator,
-        aggregation_filter_request,
+        FilterCriteria, FilterOperator, GetByFilterParams, GetByFilterRequest,
+        get_by_filter_request,
     },
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
@@ -15,16 +15,31 @@ impl Datastore {
         device_id: &str,
         performed_by_root: bool,
     ) -> Result<Option<Device>, Error> {
-        let request = AggregationFilterRequest {
-            params: Some(AggregationFilterParams {
+        let request = GetByFilterRequest {
+            params: Some(GetByFilterParams {
+                table: DBTable::Devices.into(),
                 r#type: if performed_by_root {
                     "root".to_string()
                 } else {
                     String::new()
                 },
             }),
-            body: Some(aggregation_filter_request::AggregationFilterBody {
-                entity: DBTable::Devices.into(),
+            body: Some(get_by_filter_request::GetByFilterBody {
+                pluck: vec![
+                    "id".to_string(),
+                    "device_uuid".to_string(),
+                    "is_traffic_monitoring_enabled".to_string(),
+                    "is_config_monitoring_enabled".to_string(),
+                    "is_telemetry_monitoring_enabled".to_string(),
+                    "is_device_authorized".to_string(),
+                    "device_category".to_string(),
+                    "device_type".to_string(),
+                    "device_name".to_string(),
+                    "device_operating_system".to_string(),
+                    "is_device_online".to_string(),
+                    "organization_id".to_string(),
+                    "device_version".to_string(),
+                ],
                 advance_filters: vec![FilterCriteria {
                     r#type: "criteria".to_string(),
                     field: Some("id".to_string()),
@@ -49,7 +64,7 @@ impl Datastore {
         let response = self
             .inner
             .clone()
-            .aggregation_filter(grpc_request)
+            .get_by_filter(grpc_request)
             .await
             .handle_err(location!())?
             .into_inner();

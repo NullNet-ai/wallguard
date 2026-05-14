@@ -19,7 +19,7 @@ pub struct Device {
     pub r#type: String,
     #[serde(rename = "device_name")]
     pub name: String,
-    #[serde(rename = "device_os")]
+    #[serde(rename = "device_operating_system")]
     pub os: String,
     #[serde(rename = "is_device_online")]
     pub online: bool,

@@ -141,6 +141,16 @@ pub struct GetQuery {
     #[prost(string, tag = "1")]
     pub pluck: ::prost::alloc::string::String,
 }
+/// Common parameter structure for GetByFilter requests
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetByFilterParams {
+    /// Table name
+    #[prost(string, tag = "1")]
+    pub table: ::prost::alloc::string::String,
+    /// request type
+    #[prost(string, tag = "2")]
+    pub r#type: ::prost::alloc::string::String,
+}
 /// Common parameter structure for AggregationFilter requests
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AggregationFilterParams {
@@ -17483,6 +17493,105 @@ pub struct AggregationFilterResponse {
     #[prost(string, tag = "4")]
     pub data: ::prost::alloc::string::String,
 }
+/// GetByFilter request for advanced filtering queries
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetByFilterRequest {
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<GetByFilterParams>,
+    #[prost(message, optional, tag = "2")]
+    pub body: ::core::option::Option<get_by_filter_request::GetByFilterBody>,
+}
+/// Nested message and enum types in `GetByFilterRequest`.
+pub mod get_by_filter_request {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct GetByFilterBody {
+        /// Fields to select
+        #[prost(string, repeated, tag = "1")]
+        pub pluck: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+        /// Object-based field selection
+        #[prost(message, repeated, tag = "2")]
+        pub pluck_object: ::prost::alloc::vec::Vec<get_by_filter_body::PluckObjectEntry>,
+        /// Group object field selection
+        #[prost(message, repeated, tag = "3")]
+        pub pluck_group_object: ::prost::alloc::vec::Vec<
+            get_by_filter_body::PluckObjectEntry,
+        >,
+        /// Filter conditions
+        #[prost(message, repeated, tag = "4")]
+        pub advance_filters: ::prost::alloc::vec::Vec<super::FilterCriteria>,
+        /// Group filter conditions
+        #[prost(message, repeated, tag = "5")]
+        pub group_advance_filters: ::prost::alloc::vec::Vec<super::FilterCriteria>,
+        /// Join definitions
+        #[prost(message, repeated, tag = "6")]
+        pub joins: ::prost::alloc::vec::Vec<super::Join>,
+        /// JSON string of group by fields
+        #[prost(string, optional, tag = "7")]
+        pub group_by_fields: ::core::option::Option<::prost::alloc::string::String>,
+        /// Include count in group by
+        #[prost(bool, optional, tag = "8")]
+        pub group_by_has_count: ::core::option::Option<bool>,
+        /// JSON string of concatenate fields
+        #[prost(string, optional, tag = "9")]
+        pub concatenate_fields: ::core::option::Option<::prost::alloc::string::String>,
+        /// JSON array of sort options
+        #[prost(string, repeated, tag = "10")]
+        pub multiple_sort: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+        /// Date format string
+        #[prost(string, optional, tag = "11")]
+        pub date_format: ::core::option::Option<::prost::alloc::string::String>,
+        /// Primary sort field
+        #[prost(string, optional, tag = "12")]
+        pub order_by: ::core::option::Option<::prost::alloc::string::String>,
+        /// Sort direction (asc/desc)
+        #[prost(string, optional, tag = "13")]
+        pub order_direction: ::core::option::Option<::prost::alloc::string::String>,
+        /// Case sensitive sorting
+        #[prost(bool, optional, tag = "14")]
+        pub is_case_sensitive_sorting: ::core::option::Option<bool>,
+        /// Pagination offset
+        #[prost(int32, optional, tag = "15")]
+        pub offset: ::core::option::Option<i32>,
+        /// Result limit
+        #[prost(int32, optional, tag = "16")]
+        pub limit: ::core::option::Option<i32>,
+        /// Distinct field
+        #[prost(string, optional, tag = "17")]
+        pub distinct_by: ::core::option::Option<::prost::alloc::string::String>,
+        /// Timezone for date operations
+        #[prost(string, optional, tag = "18")]
+        pub timezone: ::core::option::Option<::prost::alloc::string::String>,
+        /// Time format string
+        #[prost(string, optional, tag = "19")]
+        pub time_format: ::core::option::Option<::prost::alloc::string::String>,
+        /// JSON string of materialized view config
+        #[prost(string, optional, tag = "20")]
+        pub materialized_view: ::core::option::Option<::prost::alloc::string::String>,
+    }
+    /// Nested message and enum types in `GetByFilterBody`.
+    pub mod get_by_filter_body {
+        #[derive(Clone, PartialEq, ::prost::Message)]
+        pub struct PluckObjectEntry {
+            #[prost(string, tag = "1")]
+            pub key: ::prost::alloc::string::String,
+            #[prost(string, repeated, tag = "2")]
+            pub value: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+        }
+    }
+}
+/// GetByFilter response with flexible JSON structure
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetByFilterResponse {
+    #[prost(bool, tag = "1")]
+    pub success: bool,
+    #[prost(string, tag = "2")]
+    pub message: ::prost::alloc::string::String,
+    #[prost(int32, tag = "3")]
+    pub count: i32,
+    /// JSON string containing the result array
+    #[prost(string, tag = "4")]
+    pub data: ::prost::alloc::string::String,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LoginRequest {
     #[prost(message, optional, tag = "1")]
@@ -31253,6 +31362,31 @@ pub mod store_service_client {
                 .insert(GrpcMethod::new("store.StoreService", "UpsertTcpConnections"));
             self.inner.unary(req, path, codec).await
         }
+        /// GetByFilter for advanced filtering queries
+        pub async fn get_by_filter(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetByFilterRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetByFilterResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/store.StoreService/GetByFilter",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("store.StoreService", "GetByFilter"));
+            self.inner.unary(req, path, codec).await
+        }
         /// Aggregation filter for advanced queries
         pub async fn aggregation_filter(
             &mut self,
@@ -35434,6 +35568,14 @@ pub mod store_service_server {
             request: tonic::Request<super::UpsertTcpConnectionsRequest>,
         ) -> std::result::Result<
             tonic::Response<super::UpsertTcpConnectionsResponse>,
+            tonic::Status,
+        >;
+        /// GetByFilter for advanced filtering queries
+        async fn get_by_filter(
+            &self,
+            request: tonic::Request<super::GetByFilterRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetByFilterResponse>,
             tonic::Status,
         >;
         /// Aggregation filter for advanced queries
@@ -60448,6 +60590,51 @@ pub mod store_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = UpsertTcpConnectionsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/store.StoreService/GetByFilter" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetByFilterSvc<T: StoreService>(pub Arc<T>);
+                    impl<
+                        T: StoreService,
+                    > tonic::server::UnaryService<super::GetByFilterRequest>
+                    for GetByFilterSvc<T> {
+                        type Response = super::GetByFilterResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetByFilterRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as StoreService>::get_by_filter(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = GetByFilterSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
