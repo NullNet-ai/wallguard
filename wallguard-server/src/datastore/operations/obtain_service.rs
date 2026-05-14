@@ -1,7 +1,11 @@
-use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, ServiceInfo};
-use crate::utilities::json;
-use nullnet_libdatastore::GetByIdRequestBuilder;
+use crate::datastore::{
+    Datastore, ServiceInfo,
+    db_tables::DBTable,
+    generated::{
+        AggregationFilterParams, AggregationFilterRequest, FilterCriteria, FilterOperator,
+        aggregation_filter_request,
+    },
+};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
@@ -11,24 +15,58 @@ impl Datastore {
         service_id: &str,
         performed_by_root: bool,
     ) -> Result<Option<ServiceInfo>, Error> {
-        let request = GetByIdRequestBuilder::new()
-            .table(DBTable::DeviceServices)
-            .durability("hard")
-            .id(service_id)
-            .pluck(ServiceInfo::pluck())
-            .performed_by_root(performed_by_root)
-            .build();
+        let request = AggregationFilterRequest {
+            params: Some(AggregationFilterParams {
+                r#type: if performed_by_root {
+                    "root".to_string()
+                } else {
+                    String::new()
+                },
+            }),
+            body: Some(aggregation_filter_request::AggregationFilterBody {
+                entity: DBTable::DeviceServices.into(),
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("id".to_string()),
+                    entity: Some(DBTable::DeviceServices.into()),
+                    operator: Some(FilterOperator::Equal as i32),
+                    values: vec![format!("\"{}\"", service_id)],
+                    ..Default::default()
+                }],
+                limit: Some(1),
+                ..Default::default()
+            }),
+        };
 
-        let response = self.inner.clone().get_by_id(request, token).await?;
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
+
+        let response = self
+            .inner
+            .clone()
+            .aggregation_filter(grpc_request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
 
         if response.count == 0 {
             return Ok(None);
         }
 
-        let json_data = json::parse_string(&response.data)?;
-        let data = json::first_element_from_array(&json_data)?;
+        let data: Vec<serde_json::Value> =
+            serde_json::from_str(&response.data).handle_err(location!())?;
+        let first = data
+            .into_iter()
+            .next()
+            .ok_or("Empty service data")
+            .handle_err(location!())?;
+        let service = serde_json::from_value::<ServiceInfo>(first).handle_err(location!())?;
 
-        let device = serde_json::from_value::<ServiceInfo>(data).handle_err(location!())?;
-        Ok(Some(device))
+        Ok(Some(service))
     }
 }

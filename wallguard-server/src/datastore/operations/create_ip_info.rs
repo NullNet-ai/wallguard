@@ -1,11 +1,11 @@
+use crate::datastore::{
+    Datastore,
+    db_tables::DBTable,
+    generated::{CreateIpInfosRequest, CreateParams, CreateQuery, IpInfos},
+};
 use chrono::Utc;
-use nullnet_liberror::Error;
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use nullnet_libipinfo::IpInfo;
-use serde_json::json;
-
-use crate::datastore::Datastore;
-use crate::datastore::db_tables::DBTable;
-use nullnet_libdatastore::CreateRequestBuilder;
 
 impl Datastore {
     pub async fn create_ip_info(
@@ -14,26 +14,44 @@ impl Datastore {
         ip_info: &IpInfo,
         ip: &str,
     ) -> Result<(), Error> {
-        let json = json!({
-            "timestamp": Utc::now().to_rfc3339(),
-            "ip": ip,
-            "country": ip_info.country,
-            "asn": ip_info.asn,
-            "org": ip_info.org,
-            "continent_code": ip_info.continent_code,
-            "city": ip_info.city,
-            "region": ip_info.region,
-            "postal": ip_info.postal,
-            "timezone": ip_info.timezone,
-        });
+        let request = CreateIpInfosRequest {
+            ip_infos: Some(IpInfos {
+                timestamp: Some(Utc::now().to_rfc3339()),
+                ip: Some(ip.to_string()),
+                country: ip_info.country.clone(),
+                asn: ip_info.asn.clone(),
+                org: ip_info.org.clone(),
+                continent_code: ip_info.continent_code.clone(),
+                city: ip_info.city.clone(),
+                region: ip_info.region.clone(),
+                postal: ip_info.postal.clone(),
+                timezone: ip_info.timezone.clone(),
+                ..Default::default()
+            }),
+            params: Some(CreateParams {
+                table: DBTable::IpInfos.into(),
+                r#type: String::new(),
+            }),
+            query: Some(CreateQuery {
+                pluck: String::new(),
+                ..Default::default()
+            }),
+        };
 
-        let request = CreateRequestBuilder::new()
-            .pluck(vec!["id"])
-            .table(DBTable::IpInfos)
-            .record(json.to_string())
-            .build();
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        let _ = self.inner.clone().create(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .create_ip_infos(grpc_request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

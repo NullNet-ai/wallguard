@@ -1,6 +1,12 @@
-use crate::datastore::{Datastore, ServiceInfo, db_tables::DBTable};
-use nullnet_libdatastore::{AdvanceFilterBuilder, BatchDeleteRequestBuilder};
-use nullnet_liberror::Error;
+use crate::datastore::{
+    Datastore, ServiceInfo,
+    db_tables::DBTable,
+    generated::{
+        BatchDeleteDeviceServicesRequest, BatchDeleteParams, FilterCriteria, FilterOperator,
+        batch_delete_device_services_request,
+    },
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn delete_services(
@@ -12,26 +18,42 @@ impl Datastore {
             return Ok(());
         }
 
-        let values = services
+        let id_values: Vec<String> = services
             .iter()
-            .map(|svc| format!("\"{}\"", svc.id.clone()))
-            .collect::<Vec<_>>()
-            .join(",");
+            .map(|svc| format!("\"{}\"", svc.id))
+            .collect();
 
-        let filter = AdvanceFilterBuilder::new()
-            .field("id")
-            .values(format!("[{values}]"))
-            .r#type("criteria")
-            .operator("contains")
-            .entity(DBTable::DeviceServices)
-            .build();
+        let request = BatchDeleteDeviceServicesRequest {
+            params: Some(BatchDeleteParams {
+                table: DBTable::DeviceServices.into(),
+                r#type: String::new(),
+            }),
+            body: Some(batch_delete_device_services_request::BatchDeleteBody {
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("id".to_string()),
+                    entity: Some(DBTable::DeviceServices.into()),
+                    operator: Some(FilterOperator::Contains as i32),
+                    values: id_values,
+                    ..Default::default()
+                }],
+            }),
+        };
 
-        let request = BatchDeleteRequestBuilder::new()
-            .table(DBTable::DeviceServices)
-            .advance_filter(filter)
-            .build();
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        self.inner.clone().batch_delete(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .batch_delete_device_services(grpc_request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

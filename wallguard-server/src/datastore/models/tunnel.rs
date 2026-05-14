@@ -3,8 +3,6 @@ use std::fmt::Display;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde::{Deserialize, Serialize};
 
-use crate::datastore::db_tables::DBTable;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum TunnelType {
@@ -13,6 +11,7 @@ pub enum TunnelType {
     Ssh,
     Http,
     Https,
+    RemoteDesktop,
 }
 
 impl TryFrom<&str> for TunnelType {
@@ -24,6 +23,7 @@ impl TryFrom<&str> for TunnelType {
             "http" => Ok(TunnelType::Http),
             "https" => Ok(TunnelType::Https),
             "tty" => Ok(TunnelType::Tty),
+            "rd" => Ok(TunnelType::RemoteDesktop),
             other => {
                 Err(format!("Tunnel of type {other} is not supported")).handle_err(location!())
             }
@@ -38,6 +38,7 @@ impl Display for TunnelType {
             TunnelType::Ssh => "ssh",
             TunnelType::Http => "http",
             TunnelType::Https => "https",
+            TunnelType::RemoteDesktop => "rd",
         };
 
         f.write_str(value)
@@ -87,23 +88,4 @@ pub struct TunnelModel {
     pub tunnel_status: TunnelStatus,
     pub last_access_time: Option<String>,
     pub last_access_date: Option<String>,
-}
-
-impl TunnelModel {
-    pub fn pluck() -> Vec<String> {
-        vec![
-            "id".into(),
-            "device_id".into(),
-            "tunnel_type".into(),
-            "service_id".into(),
-            "tunnel_status".into(),
-            "last_accessed".into(),
-            "last_access_time".into(),
-            "last_access_date".into(),
-        ]
-    }
-
-    pub fn table() -> DBTable {
-        DBTable::DeviceTunnels
-    }
 }

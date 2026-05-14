@@ -1,8 +1,9 @@
-use nullnet_libdatastore::UpdateRequestBuilder;
-use nullnet_liberror::Error;
-use serde_json::json;
-
-use crate::datastore::{Datastore, TunnelModel};
+use crate::datastore::{
+    Datastore,
+    db_tables::DBTable,
+    generated::{DeviceTunnels, UpdateDeviceTunnelsRequest, UpdateParams, UpdateQuery},
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn update_tunnel_accessed(
@@ -13,20 +14,41 @@ impl Datastore {
         timestamp: u64,
     ) -> Result<(), Error> {
         let (date, time) = crate::utilities::time::timestamp_to_datetime(timestamp.cast_signed());
-        let body = json!({
-            "last_access_time": time,
-            "last_access_date": date
-        })
-        .to_string();
 
-        let request = UpdateRequestBuilder::new()
-            .id(tunnel_id)
-            .table(TunnelModel::table())
-            .body(body)
-            .performed_by_root(performed_by_root)
-            .build();
+        let request = UpdateDeviceTunnelsRequest {
+            device_tunnel: Some(DeviceTunnels {
+                last_access_time: Some(time.to_string()),
+                last_access_date: Some(date.to_string()),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id: tunnel_id.to_string(),
+                table: DBTable::DeviceTunnels.into(),
+                r#type: if performed_by_root {
+                    "root".to_string()
+                } else {
+                    String::new()
+                },
+            }),
+            query: Some(UpdateQuery {
+                pluck: String::new(),
+            }),
+        };
 
-        let _ = self.inner.clone().update(request, token).await?;
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
+
+        let _ = self
+            .inner
+            .clone()
+            .update_device_tunnels(grpc_request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

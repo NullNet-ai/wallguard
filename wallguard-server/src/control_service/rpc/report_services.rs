@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
+use crate::token::Token;
 use crate::{control_service::service::WallGuardService, datastore::ServiceInfo};
-use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_service::ServicesMessage;
 

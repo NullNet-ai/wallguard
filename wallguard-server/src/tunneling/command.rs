@@ -8,9 +8,9 @@ const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
 enum TunnelType {
     Ssh((String, String)),
     Tty,
+    RemoteDesktop,
     // Local Addr, Local Port, Protocol
     UI((String, u32, String)),
-    _RemoteDesktop,
 }
 
 pub async fn establish_tunneled_ssh(
@@ -57,7 +57,7 @@ pub async fn establish_tunneled_tty(
     establish_tunneled_channel(context, device_id, &instance_id, TunnelType::Tty).await
 }
 
-pub async fn _establish_tunneled_rd(
+pub async fn establish_tunneled_rd(
     context: &AppContext,
     device_id: &str,
 ) -> Result<TunnelInstance, Error> {
@@ -72,7 +72,7 @@ pub async fn _establish_tunneled_rd(
         .instance_id
         .clone();
 
-    establish_tunneled_channel(context, device_id, &instance_id, TunnelType::_RemoteDesktop).await
+    establish_tunneled_channel(context, device_id, &instance_id, TunnelType::RemoteDesktop).await
 }
 
 pub async fn establish_tunneled_ui(
@@ -126,7 +126,7 @@ async fn establish_tunneled_channel(
                 .await?
         }
         TunnelType::Tty => client.request_tty_session(token.clone()).await?,
-        TunnelType::_RemoteDesktop => client.request_remote_desktop_session(token.clone()).await?,
+        TunnelType::RemoteDesktop => client.request_remote_desktop_session(token.clone()).await?,
         TunnelType::UI((addr, port, protocol)) => {
             client
                 .request_ui_session(token.clone(), addr, port, protocol)

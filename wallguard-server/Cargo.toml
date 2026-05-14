@@ -18,9 +18,7 @@ publish = false
 
 [dependencies]
 
-nullnet-libdatastore = "0.5.1"
 nullnet-libipinfo = "0.2.1"
-nullnet-libtoken = "0.3.3"
 log = "0.4.29"
 env_logger = "0.11.8"
 rand = "0.9.1"
@@ -60,6 +58,9 @@ async-trait = "0.1.89"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 pingora = {version = "0.6.0", features = ["proxy", "openssl"] }
+
+[build-dependencies]
+tonic-build = "0.13.1"
 
 [badges]
 maintenance = { status = "actively-developed" }

@@ -8,6 +8,7 @@ cfg_if::cfg_if! {
         mod mcp;
         mod orchestrator;
         mod reverse_tunnel;
+        mod token;
         mod token_provider;
         mod traffic_handler;
         mod tunneling;

@@ -1,8 +1,8 @@
 use crate::datastore::Datastore;
+use crate::token::Token;
 use crate::{control_service::service::WallGuardService, datastore::DeviceConfiguration};
 use futures_util::future::try_join_all;
 use nullnet_liberror::Error;
-use nullnet_libtoken::Token;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_models::{Alias, Configuration};
 use wallguard_common::protobuf::wallguard_service::{ConfigSnapshot, ConfigStatus};
@@ -34,7 +34,7 @@ impl WallGuardService {
         let previous = self
             .context
             .datastore
-            .obtain_config(&token.jwt, &token.account.device.as_ref().unwrap().id)
+            .obtain_config(&token.jwt, token.account.device_id().unwrap_or_default())
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
@@ -89,7 +89,7 @@ async fn insert_new_configuration(
     status: ConfigStatus,
 ) -> Result<(), Error> {
     let devcfg = DeviceConfiguration {
-        device_id: token.account.device.as_ref().unwrap().id.clone(),
+        device_id: token.account.device_id().unwrap_or_default().to_string(),
         digest: conf.digest.clone(),
         hostname: conf.hostname.clone(),
         version: 0,

@@ -1,13 +1,14 @@
-use crate::remote_desktop::{
-    messages::MessageHandler, screen_capturer::ScreenCapturer, screenshot::Screenshot,
-};
+use crate::remote_desktop::{messages::MessageHandler, screen_capturer::ScreenCapturer};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use openh264::OpenH264API;
 use openh264::encoder::{Encoder, EncoderConfig};
 use openh264::formats::YUVBuffer;
 use std::{
     collections::HashMap,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant},
 };
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
@@ -23,7 +24,9 @@ type ClientsInner = Arc<Mutex<HashMap<u128, client::Client>>>;
 pub struct RemoteDesktopManager {
     clients: ClientsInner,
     counter: Arc<RwLock<u128>>,
-    last_screenshot: Arc<Mutex<Screenshot>>,
+    /// Set to true when a new viewer connects so the encode loop sends a keyframe
+    /// immediately, giving them a complete picture before the periodic interval.
+    force_keyframe: Arc<AtomicBool>,
     terminate: broadcast::Sender<()>,
     msg_handler: MessageHandler,
 }
@@ -37,7 +40,7 @@ impl RemoteDesktopManager {
             terminate,
             clients: Default::default(),
             counter: Default::default(),
-            last_screenshot: Default::default(),
+            force_keyframe: Arc::new(AtomicBool::new(false)),
             msg_handler,
         })
     }
@@ -66,6 +69,10 @@ impl RemoteDesktopManager {
             });
         }
 
+        // New viewer: force an intra frame so they get a complete picture immediately
+        // rather than waiting up to KEYFRAME_INTERVAL frames for the next periodic one.
+        self.force_keyframe.store(true, Ordering::Relaxed);
+
         lock.insert(client_id, client::Client::new(channel));
 
         log::debug!("Client with ID {client_id} has just connected");
@@ -90,6 +97,10 @@ impl RemoteDesktopManager {
     }
 
     pub async fn on_client_message(&self, id: u128, message: Vec<u8>) -> Result<(), Error> {
+        if message.is_empty() {
+            return Ok(());
+        }
+
         if !self.clients.lock().await.contains_key(&id) {
             return Err(format!("No client with ID {id}")).handle_err(location!());
         }
@@ -116,24 +127,22 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
     const TARGET_FPS: u64 = 24;
     const KEYFRAME_INTERVAL: u64 = 60;
 
-    let mut capturer = ScreenCapturer::new()?;
     let target_frame_duration = Duration::from_millis(1000 / TARGET_FPS);
 
     let api = OpenH264API::from_source();
-
     let config = EncoderConfig::new().skip_frames(false);
-
     let mut encoder = Encoder::with_api_config(api, config).handle_err(location!())?;
-
-    {
-        let mut lock = manager.last_screenshot.lock().await;
-        *lock = capturer.screenshot()?;
-    }
-
+    let mut capturer = ScreenCapturer::new()?;
     let mut frame_count: u64 = 0;
 
     loop {
         let frame_start = Instant::now();
+
+        // Skip capture entirely when nobody is watching.
+        if manager.clients.lock().await.is_empty() {
+            tokio::time::sleep(target_frame_duration).await;
+            continue;
+        }
 
         let screenshot = capturer.screenshot()?;
         if screenshot.is_empty() {
@@ -141,34 +150,33 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
             continue;
         }
 
-        let mut lock = manager.last_screenshot.lock().await;
-
-        let yuv_frame = YUVBuffer::from_rgb8_source(screenshot.clone());
-
-        if frame_count.is_multiple_of(KEYFRAME_INTERVAL) {
+        // Force an intra frame on the periodic interval or when a new viewer just
+        // joined (swap clears the flag atomically so we only do it once).
+        if frame_count.is_multiple_of(KEYFRAME_INTERVAL)
+            || manager.force_keyframe.swap(false, Ordering::Relaxed)
+        {
             encoder.force_intra_frame();
         }
 
-        let encoded_frame = match encoder.encode(&yuv_frame) {
+        // screenshot is moved here; no clone needed since we no longer cache it.
+        let yuv_frame = YUVBuffer::from_rgb8_source(screenshot);
+
+        let encoded = match encoder.encode(&yuv_frame) {
             Ok(bits) => bits.to_vec(),
             Err(e) => {
                 log::warn!("Failed to encode frame: {:?}", e);
-                *lock = screenshot;
-                drop(lock);
+                frame_count += 1;
                 continue;
             }
         };
 
-        if !encoded_frame.is_empty() {
-            for client in manager.clients.lock().await.values() {
-                let _ = client
-                    .send(encoded_frame.clone(), target_frame_duration)
-                    .await;
+        if !encoded.is_empty() {
+            let clients = manager.clients.lock().await;
+            for client in clients.values() {
+                let _ = client.send(encoded.clone(), target_frame_duration).await;
             }
         }
 
-        *lock = screenshot;
-        drop(lock);
         frame_count += 1;
 
         let elapsed = frame_start.elapsed();

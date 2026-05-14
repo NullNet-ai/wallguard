@@ -1,4 +1,5 @@
 use super::{ip_header::IpHeader, parsed_message::ParsedMessage};
+use crate::token::Token;
 use crate::traffic_handler::connections_map::{ConnectionKey, ConnectionValue, ConnectionsMap};
 use crate::traffic_handler::transport_header::TransportHeader;
 use etherparse::err::ip::{HeaderError, LaxHeaderSliceError};
@@ -6,7 +7,6 @@ use etherparse::err::{Layer, LenError};
 use etherparse::{LaxPacketHeaders, LenSource, LinkHeader};
 use nullnet_liberror::{ErrorHandler, Location, location};
 use nullnet_libipinfo::get_ip_to_lookup;
-use nullnet_libtoken::Token;
 use std::net::IpAddr;
 use std::sync::mpsc::Sender;
 use wallguard_common::protobuf::wallguard_service::PacketsData;
@@ -23,7 +23,7 @@ pub fn parse_message(
             && let Some((ip_header, packet_length)) = IpHeader::from_etherparse(headers.net)
             && let Some(transport_header) = TransportHeader::from_etherparse(headers.transport)
         {
-            let device_id = token.account.device.as_ref().unwrap().id.clone();
+            let device_id = token.account.device_id().unwrap_or_default().to_string();
             let interface_name = packet.interface;
             let has_eth = matches!(headers.link, Some(LinkHeader::Ethernet2(_)));
             let total_byte = 14 * usize::from(has_eth) + usize::from(packet_length);

@@ -1,5 +1,5 @@
 use crate::control_service::service::WallGuardService;
-use nullnet_libtoken::Token;
+use crate::token::Token;
 use tonic::{Request, Response, Status};
 use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
 use wallguard_common::protobuf::wallguard_service::DeviceSettingsResponse;

@@ -62,10 +62,19 @@ async fn stream_to_system(
     client_id: u128,
 ) -> Result<(), Error> {
     loop {
-        let mut buffer = [0; 4096];
-        let bytes = reader.read(&mut buffer).await.handle_err(location!())?;
+        // The server prefixes every input event with a 4-byte LE length so we
+        // always read exactly one complete JSON message, never a partial one.
+        let mut len_buf = [0u8; 4];
+        if reader.read_exact(&mut len_buf).await.is_err() {
+            break;
+        }
 
-        let message = buffer[..bytes].to_vec();
+        let len = u32::from_le_bytes(len_buf) as usize;
+
+        let mut message = vec![0u8; len];
+        if reader.read_exact(&mut message).await.is_err() {
+            break;
+        }
 
         if let Err(err) = remote_desktop_manager
             .on_client_message(client_id, message)
@@ -77,6 +86,8 @@ async fn stream_to_system(
             );
         }
     }
+
+    Ok(())
 }
 
 async fn system_to_stream(

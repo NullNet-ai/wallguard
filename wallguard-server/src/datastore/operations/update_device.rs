@@ -1,8 +1,12 @@
-use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, Device};
-use nullnet_libdatastore::{AdvanceFilterBuilder, BatchUpdateRequestBuilder, UpdateRequestBuilder};
-use nullnet_liberror::Error;
-use serde_json::json;
+use crate::datastore::{
+    Datastore, Device,
+    db_tables::DBTable,
+    generated::{
+        BatchUpdateDevicesRequest, BatchUpdateParams, Devices, FilterCriteria, FilterOperator,
+        UpdateDevicesRequest, UpdateParams, UpdateQuery, batch_update_devices_request,
+    },
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn update_device(
@@ -11,15 +15,49 @@ impl Datastore {
         device_id: &str,
         device: &Device,
     ) -> Result<bool, Error> {
-        let request = UpdateRequestBuilder::new()
-            .id(device_id)
-            .table(DBTable::Devices)
-            .body(json!(device).to_string())
-            .build();
+        let request = UpdateDevicesRequest {
+            device: Some(Devices {
+                device_uuid: Some(device.uuid.clone()),
+                is_traffic_monitoring_enabled: Some(device.traffic_monitoring),
+                is_config_monitoring_enabled: Some(device.sysconf_monitoring),
+                is_telemetry_monitoring_enabled: Some(device.telemetry_monitoring),
+                is_device_authorized: Some(device.authorized),
+                device_category: Some(device.category.clone()),
+                device_type: Some(device.r#type.clone()),
+                device_name: Some(device.name.clone()),
+                device_operating_system: Some(device.os.clone()),
+                is_device_online: Some(device.online),
+                organization_id: Some(device.organization.clone()),
+                device_version: Some(device.version.clone()),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id: device_id.to_string(),
+                table: DBTable::Devices.into(),
+                r#type: String::new(),
+            }),
+            query: Some(UpdateQuery {
+                pluck: String::new(),
+            }),
+        };
 
-        let data = self.inner.clone().update(request, token).await?;
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        Ok(data.count == 1)
+        let response = self
+            .inner
+            .clone()
+            .update_devices(grpc_request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
+
+        Ok(response.count == 1)
     }
 
     pub async fn update_device_online_status(
@@ -28,19 +66,35 @@ impl Datastore {
         device_id: &str,
         is_online: bool,
     ) -> Result<(), Error> {
-        let body = json!({
-            "is_device_online": is_online
-        })
-        .to_string();
+        let request = UpdateDevicesRequest {
+            device: Some(Devices {
+                is_device_online: Some(is_online),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id: device_id.to_string(),
+                table: DBTable::Devices.into(),
+                r#type: String::new(),
+            }),
+            query: Some(UpdateQuery {
+                pluck: String::new(),
+            }),
+        };
 
-        let request = UpdateRequestBuilder::new()
-            .id(device_id)
-            .table(Device::table())
-            .body(body)
-            .performed_by_root(false)
-            .build();
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        let _ = self.inner.clone().update(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .update_devices(grpc_request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }
@@ -51,26 +105,45 @@ impl Datastore {
         is_online: bool,
         performed_by_root: bool,
     ) -> Result<(), Error> {
-        let update = json!({
-            "is_device_online": is_online
-        });
+        let request = BatchUpdateDevicesRequest {
+            params: Some(BatchUpdateParams {
+                table: DBTable::Devices.into(),
+                r#type: if performed_by_root {
+                    "root".to_string()
+                } else {
+                    String::new()
+                },
+            }),
+            body: Some(batch_update_devices_request::BatchUpdateBody {
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("is_device_online".to_string()),
+                    entity: Some(DBTable::Devices.into()),
+                    operator: Some(FilterOperator::Equal as i32),
+                    values: vec!["true".to_string()],
+                    ..Default::default()
+                }],
+                updates: Some(Devices {
+                    is_device_online: Some(is_online),
+                    ..Default::default()
+                }),
+            }),
+        };
 
-        let filter = AdvanceFilterBuilder::new()
-            .field("is_device_online")
-            .values("[true]")
-            .r#type("criteria")
-            .operator("equal")
-            .entity(Device::table())
-            .build();
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        let request = BatchUpdateRequestBuilder::new()
-            .advance_filter(filter)
-            .performed_by_root(performed_by_root)
-            .table(Device::table())
-            .updates(update.to_string())
-            .build();
-
-        let _ = self.inner.clone().batch_update(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .batch_update_devices(grpc_request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

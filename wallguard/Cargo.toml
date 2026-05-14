@@ -36,12 +36,12 @@ rustls.workspace = true
 tokio-rustls.workspace = true
 whoami = "2.0.2"
 
-[target.'cfg(not(target_os = "freebsd"))'.dependencies]
-captis = "0.6.1"
+[target.'cfg(target_os = "linux")'.dependencies]
+x11rb = "0.13"
 
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
-winapi = {version = "0.3.9", features = ["winerror", "iphlpapi", "handleapi", "tlhelp32"]}
+winapi = {version = "0.3.9", features = ["winerror", "iphlpapi", "handleapi", "tlhelp32", "wingdi", "winuser", "windef", "minwindef"]}
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.30.1", features = ["user"] }

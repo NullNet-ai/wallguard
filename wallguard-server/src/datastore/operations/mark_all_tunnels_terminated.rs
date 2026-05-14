@@ -1,7 +1,12 @@
-use crate::datastore::{Datastore, TunnelModel, TunnelStatus};
-use nullnet_libdatastore::{AdvanceFilterBuilder, BatchUpdateRequestBuilder};
-use nullnet_liberror::Error;
-use serde_json::json;
+use crate::datastore::{
+    Datastore, TunnelStatus,
+    db_tables::DBTable,
+    generated::{
+        BatchUpdateDeviceTunnelsRequest, BatchUpdateParams, DeviceTunnels, FilterCriteria,
+        FilterOperator, batch_update_device_tunnels_request,
+    },
+};
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
     pub async fn mark_all_tunnels_terminated(
@@ -9,24 +14,45 @@ impl Datastore {
         token: &str,
         performed_by_root: bool,
     ) -> Result<(), Error> {
-        let updates = json!({"tunnel_status": TunnelStatus::Terminated.to_string()});
+        let request = BatchUpdateDeviceTunnelsRequest {
+            params: Some(BatchUpdateParams {
+                table: DBTable::DeviceTunnels.into(),
+                r#type: if performed_by_root {
+                    "root".to_string()
+                } else {
+                    String::new()
+                },
+            }),
+            body: Some(batch_update_device_tunnels_request::BatchUpdateBody {
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("status".to_string()),
+                    entity: Some(DBTable::DeviceTunnels.into()),
+                    operator: Some(FilterOperator::Equal as i32),
+                    values: vec!["\"Active\"".to_string()],
+                    ..Default::default()
+                }],
+                updates: Some(DeviceTunnels {
+                    tunnel_status: Some(TunnelStatus::Terminated.to_string()),
+                    ..Default::default()
+                }),
+            }),
+        };
 
-        let filter = AdvanceFilterBuilder::new()
-            .field("status")
-            .values("[\"Active\"]")
-            .r#type("criteria")
-            .operator("equal")
-            .entity(TunnelModel::table())
-            .build();
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        let request = BatchUpdateRequestBuilder::new()
-            .advance_filter(filter)
-            .performed_by_root(performed_by_root)
-            .table(TunnelModel::table())
-            .updates(updates.to_string())
-            .build();
-
-        let _ = self.inner.clone().batch_update(request, token).await?;
+        let _ = self
+            .inner
+            .clone()
+            .batch_update_device_tunnels(grpc_request)
+            .await
+            .handle_err(location!())?;
 
         Ok(())
     }

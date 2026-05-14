@@ -1,12 +1,6 @@
 name: Server Docker
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'wallguard-server/**'
-      - 'wallguard-common/**'
+on: workflow_dispatch
 
 jobs:
   build-and-push:

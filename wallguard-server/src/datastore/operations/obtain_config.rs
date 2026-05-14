@@ -1,7 +1,11 @@
-use crate::datastore::db_tables::DBTable;
-use crate::datastore::{Datastore, DeviceConfiguration};
-use crate::utilities;
-use nullnet_libdatastore::{AdvanceFilterBuilder, GetByFilterRequestBuilder};
+use crate::datastore::{
+    Datastore, DeviceConfiguration,
+    db_tables::DBTable,
+    generated::{
+        AggregationFilterParams, AggregationFilterRequest, AggregationOrder, FilterCriteria,
+        FilterOperator, aggregation_filter_request,
+    },
+};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 impl Datastore {
@@ -10,36 +14,59 @@ impl Datastore {
         token: &str,
         device_id: &str,
     ) -> Result<Option<DeviceConfiguration>, Error> {
-        let filter = AdvanceFilterBuilder::new()
-            .field("device_id")
-            .values(format!("[\"{device_id}\"]"))
-            .r#type("criteria")
-            .operator("equal")
-            .entity(DBTable::DeviceConfigurations)
-            .build();
+        let request = AggregationFilterRequest {
+            params: Some(AggregationFilterParams {
+                r#type: String::new(),
+            }),
+            body: Some(aggregation_filter_request::AggregationFilterBody {
+                entity: DBTable::DeviceConfigurations.into(),
+                advance_filters: vec![FilterCriteria {
+                    r#type: "criteria".to_string(),
+                    field: Some("device_id".to_string()),
+                    entity: Some(DBTable::DeviceConfigurations.into()),
+                    operator: Some(FilterOperator::Equal as i32),
+                    values: vec![format!("\"{}\"", device_id)],
+                    ..Default::default()
+                }],
+                limit: Some(1),
+                order: Some(AggregationOrder {
+                    order_by: "timestamp".to_string(),
+                    order_direction: "desc".to_string(),
+                }),
+                ..Default::default()
+            }),
+        };
 
-        let request = GetByFilterRequestBuilder::new()
-            .plucks(DeviceConfiguration::pluck())
-            .order_by("timestamp")
-            .order_direction("desc")
-            .limit(1)
-            .advance_filter(filter)
-            .table(DBTable::DeviceConfigurations)
-            .case_sensitive_sorting(true)
-            .build();
+        let mut grpc_request = tonic::Request::new(request);
+        grpc_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
 
-        let response = self.inner.clone().get_by_filter(request, token).await?;
+        let response = self
+            .inner
+            .clone()
+            .aggregation_filter(grpc_request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
 
-        if response.count == 1 {
-            let json = utilities::json::parse_string(&response.data)?;
-            let data = utilities::json::first_element_from_array(&json)?;
-
-            let config =
-                serde_json::from_value::<DeviceConfiguration>(data).handle_err(location!())?;
-
-            Ok(Some(config))
-        } else {
-            Ok(None)
+        if response.count == 0 {
+            return Ok(None);
         }
+
+        let data: Vec<serde_json::Value> =
+            serde_json::from_str(&response.data).handle_err(location!())?;
+        let first = data
+            .into_iter()
+            .next()
+            .ok_or("Empty config data")
+            .handle_err(location!())?;
+        let config =
+            serde_json::from_value::<DeviceConfiguration>(first).handle_err(location!())?;
+
+        Ok(Some(config))
     }
 }
