@@ -10,7 +10,8 @@ pub struct Account {
     pub id: String,
     pub account_id: String,
     pub organization_id: String,
-    pub account_organization_id: String,
+    #[serde(default)]
+    pub account_organization_id: Option<String>,
     pub account_status: String,
     #[serde(default)]
     pub role_id: Option<String>,
