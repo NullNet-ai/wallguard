@@ -14,7 +14,7 @@ impl Datastore {
         token: &str,
         device_id: &str,
         device: &Device,
-        is_root: bool
+        is_root: bool,
     ) -> Result<bool, Error> {
         let request = UpdateDevicesRequest {
             device: Some(Devices {
@@ -35,7 +35,11 @@ impl Datastore {
             params: Some(UpdateParams {
                 id: device_id.to_string(),
                 table: DBTable::Devices.into(),
-                r#type: if is_root { String::from("root") } else { String::from("user") },
+                r#type: if is_root {
+                    String::from("root")
+                } else {
+                    String::from("user")
+                },
             }),
             query: Some(UpdateQuery {
                 pluck: String::new(),

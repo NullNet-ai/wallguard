@@ -26,7 +26,7 @@ pub struct Account {
     #[serde(default)]
     pub organization: Option<serde_json::Value>,
     #[serde(default)]
-    pub contact: Option<serde_json::Value>, 
+    pub contact: Option<serde_json::Value>,
     #[serde(default)]
     pub device: Option<serde_json::Value>,
 }

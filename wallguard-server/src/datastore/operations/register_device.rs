@@ -2,8 +2,8 @@ use crate::datastore::{
     Datastore, Device,
     db_tables::DBTable,
     generated::{
-        Accounts, RegisterDeviceParams, RegisterDeviceRequest, UpdateAccountsRequest, UpdateParams,
-        UpdateQuery,
+        AccountOrganizations, Accounts, RegisterDeviceParams, RegisterDeviceRequest,
+        UpdateAccountOrganizationsRequest, UpdateAccountsRequest, UpdateParams, UpdateQuery,
     },
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
@@ -89,6 +89,37 @@ impl Datastore {
             .inner
             .clone()
             .update_accounts(grpc_update_request)
+            .await
+            .handle_err(location!())?;
+
+        let update_org_request = UpdateAccountOrganizationsRequest {
+            account_organization: Some(AccountOrganizations {
+                status: Some("Active".to_string()),
+                account_organization_status: Some("Active".to_string()),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id: account_organization_id,
+                table: String::from("account_organizations"),
+                r#type: String::from("root"),
+            }),
+            query: Some(UpdateQuery {
+                pluck: String::new(),
+            }),
+        };
+
+        let mut grpc_org_request = tonic::Request::new(update_org_request);
+        grpc_org_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
+
+        let _ = self
+            .inner
+            .clone()
+            .update_account_organizations(grpc_org_request)
             .await
             .handle_err(location!())?;
 
