@@ -49,10 +49,16 @@ impl Datastore {
         let data: serde_json::Value =
             serde_json::from_str(&register_response.data).handle_err(location!())?;
 
-        let id = data["account_id"]
+        let account_id = data["account_id"]
             .as_str()
             .map(str::to_string)
             .ok_or("Missing 'account_id' in register_device response")
+            .handle_err(location!())?;
+
+        let account_organization_id = data["account_organization_id"]
+            .as_str()
+            .map(str::to_string)
+            .ok_or("Missing 'account_organization_id' in register_device response")
             .handle_err(location!())?;
 
         let update_request = UpdateAccountsRequest {
@@ -62,7 +68,7 @@ impl Datastore {
                 ..Default::default()
             }),
             params: Some(UpdateParams {
-                id,
+                id: account_id,
                 table: DBTable::Accounts.into(),
                 r#type: String::from("root"),
             }),
