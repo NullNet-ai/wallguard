@@ -1,6 +1,10 @@
 use crate::datastore::{
     Datastore, Device,
-    generated::{RegisterDeviceParams, RegisterDeviceRequest},
+    db_tables::DBTable,
+    generated::{
+        Accounts, RegisterDeviceParams, RegisterDeviceRequest, UpdateAccountsRequest, UpdateParams,
+        UpdateQuery,
+    },
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
@@ -34,10 +38,51 @@ impl Datastore {
                 .handle_err(location!())?,
         );
 
-        let _ = self
+        let register_response = self
             .inner
             .clone()
             .register_device(grpc_request)
+            .await
+            .handle_err(location!())?
+            .into_inner();
+
+        let data: Vec<serde_json::Value> =
+            serde_json::from_str(&register_response.data).handle_err(location!())?;
+        let id = data
+            .into_iter()
+            .next()
+            .and_then(|v| v["id"].as_str().map(str::to_string))
+            .ok_or("Missing 'id' in register_device response")
+            .handle_err(location!())?;
+
+        let update_request = UpdateAccountsRequest {
+            account: Some(Accounts {
+                status: Some("Active".to_string()),
+                account_status: Some("Active".to_string()),
+                ..Default::default()
+            }),
+            params: Some(UpdateParams {
+                id,
+                table: DBTable::Accounts.into(),
+                r#type: String::new(),
+            }),
+            query: Some(UpdateQuery {
+                pluck: String::new(),
+            }),
+        };
+
+        let mut grpc_update_request = tonic::Request::new(update_request);
+        grpc_update_request.metadata_mut().insert(
+            "authorization",
+            format!("Bearer {}", token)
+                .parse()
+                .handle_err(location!())?,
+        );
+
+        let _ = self
+            .inner
+            .clone()
+            .update_accounts(grpc_update_request)
             .await
             .handle_err(location!())?;
 
