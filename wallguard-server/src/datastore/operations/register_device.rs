@@ -46,13 +46,13 @@ impl Datastore {
             .handle_err(location!())?
             .into_inner();
 
-        let data: Vec<serde_json::Value> =
+        let data: serde_json::Value =
             serde_json::from_str(&register_response.data).handle_err(location!())?;
-        let id = data
-            .into_iter()
-            .next()
-            .and_then(|v| v["id"].as_str().map(str::to_string))
-            .ok_or("Missing 'id' in register_device response")
+
+        let id = data["account_id"]
+            .as_str()
+            .map(str::to_string)
+            .ok_or("Missing 'account_id' in register_device response")
             .handle_err(location!())?;
 
         let update_request = UpdateAccountsRequest {
