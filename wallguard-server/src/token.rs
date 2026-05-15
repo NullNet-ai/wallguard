@@ -21,13 +21,13 @@ pub struct Account {
     #[serde(default)]
     pub is_root_account: bool,
     #[serde(default)]
-    pub profile: Option<Value>,
+    pub profile: Option<serde_json::Value>,
     #[serde(default)]
-    pub organization: Option<Value>,
+    pub organization: Option<serde_json::Value>,
     #[serde(default)]
-    pub contact: Option<Value>,
+    pub contact: Option<serde_json::Value>, 
     #[serde(default)]
-    pub device: Option<Value>,
+    pub device: Option<serde_json::Value>,
 }
 
 impl Account {
@@ -40,7 +40,7 @@ impl Account {
 #[allow(non_snake_case)]
 pub struct Token {
     pub account: Account,
-    pub sessionID: String,
+    pub sessionID: Option<String>,
     #[serde(default)]
     pub role_name: Option<String>,
     #[serde(default)]
@@ -48,8 +48,8 @@ pub struct Token {
     #[serde(default)]
     pub previously_logged_in: Option<String>,
     pub signed_in_account: Account,
-    pub exp: usize,
-    pub iat: usize,
+    exp: usize,
+    iat: usize,
     #[serde(skip)]
     pub jwt: String,
 }
@@ -82,69 +82,16 @@ impl Token {
     }
 }
 
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct User {
-    pub role_id: String,
-    #[serde(default)]
-    pub is_root_user: bool,
-    pub account_id: String,
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct Origin {
-    pub user_agent: Option<String>,
-    pub host: String,
-    pub url: String,
-}
+    #[test]
+    fn test_token() {
+        let jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhY2NvdW50Ijp7ImFjY291bnRfaWQiOiJxd2JxNDZqcWNsZXYiLCJhY2NvdW50X29yZ2FuaXphdGlvbl9pZCI6bnVsbCwiYWNjb3VudF9zdGF0dXMiOiJBY3RpdmUiLCJjb250YWN0Ijp7fSwiZGV2aWNlIjp7fSwiaWQiOiIwMUtSUE41RUpLUEhUSldUM1Y2WUM3NjhXQSIsIm9yZ2FuaXphdGlvbiI6eyJjYXRlZ29yaWVzIjpbIlBlcnNvbmFsIl0sImNvZGUiOiJPMDAwMDIxIiwiaWQiOiIwMUtSUE41RVA3QTdOWjJWQTU2SjBBOVNZSyIsIm5hbWUiOiJQZXJzb25hbCBPcmdhbml6YXRpb24iLCJvcmdhbml6YXRpb25faWQiOiIwMUtSUE41RVA3QTdOWjJWQTU2SjBBOVNZSyIsInBhcmVudF9vcmdhbml6YXRpb25faWQiOm51bGwsInN0YXR1cyI6IkFjdGl2ZSJ9LCJvcmdhbml6YXRpb25faWQiOiIwMUtSUE41RVA3QTdOWjJWQTU2SjBBOVNZSyIsInByb2ZpbGUiOnsiYWNjb3VudF9pZCI6IjAxS1JQTjVFSktQSFRKV1QzVjZZQzc2OFdBIiwiY2F0ZWdvcmllcyI6W10sImNvZGUiOm51bGwsImVtYWlsIjoicXdicTQ2anFjbGV2IiwiZmlyc3RfbmFtZSI6IiIsImlkIjoiMDFLUlBONUZCQ1cwRU5GWDNDNTBGOE01TVYiLCJsYXN0X25hbWUiOiIiLCJvcmdhbml6YXRpb25faWQiOiIwMUtSUE41RVA3QTdOWjJWQTU2SjBBOVNZSyIsInN0YXR1cyI6IkFjdGl2ZSJ9LCJyb2xlX2lkIjpudWxsLCJzZXNzaW9uSUQiOiIifSwiZXhwIjoxNzc4OTYzOTM4LCJpYXQiOjE3Nzg4Nzc1MzgsInJvbGVfbmFtZSI6IiIsInNlbnNpdGl2aXR5X2xldmVsIjoxMDAwLCJzZXNzaW9uSUQiOiIiLCJzaWduZWRfaW5fYWNjb3VudCI6eyJhY2NvdW50X2lkIjoicXdicTQ2anFjbGV2IiwiYWNjb3VudF9vcmdhbml6YXRpb25faWQiOm51bGwsImFjY291bnRfc3RhdHVzIjoiQWN0aXZlIiwiY29udGFjdCI6e30sImRldmljZSI6e30sImlkIjoiMDFLUlBONUVKS1BIVEpXVDNWNllDNzY4V0EiLCJvcmdhbml6YXRpb24iOnsiY2F0ZWdvcmllcyI6WyJQZXJzb25hbCJdLCJjb2RlIjoiTzAwMDAyMSIsImlkIjoiMDFLUlBONUVQN0E3TloyVkE1NkowQTlTWUsiLCJuYW1lIjoiUGVyc29uYWwgT3JnYW5pemF0aW9uIiwib3JnYW5pemF0aW9uX2lkIjoiMDFLUlBONUVQN0E3TloyVkE1NkowQTlTWUsiLCJwYXJlbnRfb3JnYW5pemF0aW9uX2lkIjpudWxsLCJzdGF0dXMiOiJBY3RpdmUifSwib3JnYW5pemF0aW9uX2lkIjoiMDFLUlBONUVQN0E3TloyVkE1NkowQTlTWUsiLCJwcm9maWxlIjp7ImFjY291bnRfaWQiOiIwMUtSUE41RUpLUEhUSldUM1Y2WUM3NjhXQSIsImNhdGVnb3JpZXMiOltdLCJjb2RlIjpudWxsLCJlbWFpbCI6InF3YnE0NmpxY2xldiIsImZpcnN0X25hbWUiOiIiLCJpZCI6IjAxS1JQTjVGQkNXMEVORlgzQzUwRjhNNU1WIiwibGFzdF9uYW1lIjoiIiwib3JnYW5pemF0aW9uX2lkIjoiMDFLUlBONUVQN0E3TloyVkE1NkowQTlTWUsiLCJzdGF0dXMiOiJBY3RpdmUifSwicm9sZV9pZCI6bnVsbCwic2Vzc2lvbklEIjoiIn19.uCwpxbfDo6-3v-2hkbgPisbEo0GzMaQUv9SxKXIhWfo";
 
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[allow(non_snake_case)]
-pub struct Cookie {
-    pub path: String,
-    pub expires: String,
-    pub originalMaxAge: i64,
-    pub httpOnly: bool,
-}
+        let result = Token::from_jwt(&jwt);
 
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SessionPermissionCache {
-    pub error: Option<Value>,
-    pub cache_key: String,
-    pub cached: Option<SessionPermissionCacheData>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SessionPermissionCacheData {
-    pub data: Option<Vec<Value>>,
-    pub account_organization_id: Option<String>,
-    pub cache: Option<bool>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct Session {
-    pub user: User,
-    pub session_id: String,
-    pub origin: Option<Origin>,
-    pub token: String,
-    pub cookie: Cookie,
-    pub field_permissions: Option<SessionPermissionCache>,
-    pub role_permissions: Option<SessionPermissionCache>,
-    pub record_permissions: Option<SessionPermissionCache>,
-    pub valid_pass_keys: Option<SessionPermissionCache>,
-    #[serde(default)]
-    pub ip_address: Option<String>,
-    #[serde(default)]
-    pub location: Option<String>,
-    #[serde(default)]
-    pub browser_name: Option<String>,
-    #[serde(default)]
-    pub operating_system: Option<String>,
-    #[serde(default)]
-    pub device_name: Option<String>,
-    pub account_organization_id: Option<String>,
+        assert!(result.is_ok());
+    }
 }

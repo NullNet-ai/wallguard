@@ -9,12 +9,15 @@ pub async fn send_authenticate(outbound: OutboundStream) -> Result<(), Error> {
     let app_id = Storage::get_value(Secret::AppId)
         .await
         .ok_or("AppId not set")
-        .handle_err(location!())?;
+        .handle_err(location!())?
+        .to_lowercase();
 
     let app_secret = Storage::get_value(Secret::AppSecret)
         .await
         .ok_or("AppSecret not set")
         .handle_err(location!())?;
+
+    log::warn!("{app_id} {app_secret}");
 
     let message = ClientMessage {
         message: Some(client_message::Message::Authentication(Authentication {

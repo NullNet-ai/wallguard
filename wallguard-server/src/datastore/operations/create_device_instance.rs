@@ -18,7 +18,7 @@ impl Datastore {
             }),
             params: Some(CreateParams {
                 table: DBTable::DeviceInstances.into(),
-                r#type: String::new(),
+                r#type: String::from("root"),
             }),
             query: Some(CreateQuery {
                 pluck: "id".to_string(),

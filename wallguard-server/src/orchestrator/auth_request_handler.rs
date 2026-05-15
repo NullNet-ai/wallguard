@@ -56,10 +56,10 @@ impl AuthReqHandler {
             Err(_) => fail_with_status!(outbound, "Failed to obtain root token"),
         };
 
-        let sys_token = match self.context.sysdev_token_provider.get().await {
-            Ok(token) => token,
-            Err(_) => fail_with_status!(outbound, "Failed to obtain system device token"),
-        };
+        // let sys_token = match self.context.sysdev_token_provider.get().await {
+        //     Ok(token) => token,
+        //     Err(_) => fail_with_status!(outbound, "Failed to obtain system device token"),
+        // };
 
         let installation_code = match self
             .context
@@ -102,7 +102,7 @@ impl AuthReqHandler {
             if self
                 .context
                 .datastore
-                .update_device(&sys_token.jwt, &installation_code.device_id, &device)
+                .update_device(&root_token.jwt, &installation_code.device_id, &device, true)
                 .await
                 .is_err()
             {
@@ -125,7 +125,7 @@ impl AuthReqHandler {
             if self
                 .context
                 .datastore
-                .register_device(&sys_token.jwt, &account_id, &account_secret, &device)
+                .register_device(&root_token.jwt, &account_id, &account_secret, &device)
                 .await
                 .is_err()
             {
@@ -140,7 +140,7 @@ impl AuthReqHandler {
             Self::add_device_instance(
                 &mut clients,
                 &device,
-                &sys_token.jwt,
+                &root_token.jwt,
                 inbound,
                 outbound,
                 self.context.clone(),
@@ -164,7 +164,7 @@ impl AuthReqHandler {
                 if self
                     .context
                     .datastore
-                    .update_device(&sys_token.jwt, &installation_code.device_id, &device)
+                    .update_device(&root_token.jwt, &installation_code.device_id, &device, true)
                     .await
                     .is_err()
                 {
@@ -174,7 +174,7 @@ impl AuthReqHandler {
                 Self::add_device_instance(
                     &mut clients,
                     &device,
-                    &sys_token.jwt,
+                    &root_token.jwt,
                     inbound,
                     outbound,
                     self.context.clone(),
@@ -201,7 +201,7 @@ impl AuthReqHandler {
                 let Ok(device_id) = self
                     .context
                     .datastore
-                    .create_device(&sys_token.jwt, &device)
+                    .create_device(&root_token.jwt, &device)
                     .await
                 else {
                     fail_with_status!(outbound, "Failed to create device")
@@ -212,7 +212,7 @@ impl AuthReqHandler {
                 Self::add_device_instance(
                     &mut clients,
                     &device,
-                    &sys_token.jwt,
+                    &root_token.jwt,
                     inbound,
                     outbound,
                     self.context.clone(),

@@ -49,7 +49,7 @@ pub async fn enable_config_monitoring(
 
     if context
         .datastore
-        .update_device(&jwt, &body.device_id, &device)
+        .update_device(&jwt, &body.device_id, &device, false)
         .await
         .is_err()
     {

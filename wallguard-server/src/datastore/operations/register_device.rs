@@ -64,7 +64,7 @@ impl Datastore {
             params: Some(UpdateParams {
                 id,
                 table: DBTable::Accounts.into(),
-                r#type: String::new(),
+                r#type: String::from("root"),
             }),
             query: Some(UpdateQuery {
                 pluck: String::new(),

@@ -63,7 +63,7 @@ pub async fn authorize_device(
 
     if context
         .datastore
-        .update_device(&jwt, &body.device_id, &device)
+        .update_device(&jwt, &body.device_id, &device, false)
         .await
         .is_err()
     {
