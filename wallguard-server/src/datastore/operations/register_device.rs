@@ -1,10 +1,6 @@
 use crate::datastore::{
     Datastore, Device,
-    db_tables::DBTable,
-    generated::{
-        AccountOrganizations, Accounts, RegisterDeviceParams, RegisterDeviceRequest,
-        UpdateAccountOrganizationsRequest, UpdateAccountsRequest, UpdateParams, UpdateQuery,
-    },
+    generated::{RegisterDeviceParams, RegisterDeviceRequest},
 };
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
@@ -38,90 +34,13 @@ impl Datastore {
                 .handle_err(location!())?,
         );
 
-        let register_response = self
+        let _ = self
             .inner
             .clone()
             .register_device(grpc_request)
             .await
             .handle_err(location!())?
             .into_inner();
-
-        let data: serde_json::Value =
-            serde_json::from_str(&register_response.data).handle_err(location!())?;
-
-        let account_id = data["account_id"]
-            .as_str()
-            .map(str::to_string)
-            .ok_or("Missing 'account_id' in register_device response")
-            .handle_err(location!())?;
-
-        let account_organization_id = data["account_organization_id"]
-            .as_str()
-            .map(str::to_string)
-            .ok_or("Missing 'account_organization_id' in register_device response")
-            .handle_err(location!())?;
-
-        let update_request = UpdateAccountsRequest {
-            account: Some(Accounts {
-                status: Some("Active".to_string()),
-                account_status: Some("Active".to_string()),
-                ..Default::default()
-            }),
-            params: Some(UpdateParams {
-                id: account_id,
-                table: DBTable::Accounts.into(),
-                r#type: String::from("root"),
-            }),
-            query: Some(UpdateQuery {
-                pluck: String::new(),
-            }),
-        };
-
-        let mut grpc_update_request = tonic::Request::new(update_request);
-        grpc_update_request.metadata_mut().insert(
-            "authorization",
-            format!("Bearer {}", token)
-                .parse()
-                .handle_err(location!())?,
-        );
-
-        let _ = self
-            .inner
-            .clone()
-            .update_accounts(grpc_update_request)
-            .await
-            .handle_err(location!())?;
-
-        let update_org_request = UpdateAccountOrganizationsRequest {
-            account_organization: Some(AccountOrganizations {
-                status: Some("Active".to_string()),
-                account_organization_status: Some("Active".to_string()),
-                ..Default::default()
-            }),
-            params: Some(UpdateParams {
-                id: account_organization_id,
-                table: String::from("account_organizations"),
-                r#type: String::from("root"),
-            }),
-            query: Some(UpdateQuery {
-                pluck: String::new(),
-            }),
-        };
-
-        let mut grpc_org_request = tonic::Request::new(update_org_request);
-        grpc_org_request.metadata_mut().insert(
-            "authorization",
-            format!("Bearer {}", token)
-                .parse()
-                .handle_err(location!())?,
-        );
-
-        let _ = self
-            .inner
-            .clone()
-            .update_account_organizations(grpc_org_request)
-            .await
-            .handle_err(location!())?;
 
         Ok(())
     }

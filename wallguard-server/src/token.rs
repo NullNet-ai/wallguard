@@ -1,6 +1,5 @@
 use base64::Engine as _;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const EXPIRATION_MARGIN: usize = 60 * 5;
