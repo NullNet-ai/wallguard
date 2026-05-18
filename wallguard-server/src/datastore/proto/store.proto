@@ -2253,6 +2253,335 @@ message TcpConnections {
   optional string proto = 27;
 }
 
+// TempDeviceInterfaceAddresses entity definition
+message TempDeviceInterfaceAddresses {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string device_interface_id = 23;
+  optional string address = 24;
+}
+
+// TempSystemResources entity definition
+message TempSystemResources {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional int32 num_cpus = 23;
+  optional string global_cpu_usage = 24;
+  optional string cpu_usage = 25;
+  optional string total_memory = 26;
+  optional string used_memory = 27;
+  optional string total_disk_space = 28;
+  optional string available_disk_space = 29;
+  optional string read_bytes = 30;
+  optional string written_bytes = 31;
+  optional string temperature = 32;
+  optional string device_id = 33;
+}
+
+// TempDeviceInterfaces entity definition
+message TempDeviceInterfaces {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string device_configuration_id = 23;
+  optional string name = 24;
+  optional string device = 25;
+  optional string description = 26;
+}
+
+// TempDeviceNatRules entity definition
+message TempDeviceNatRules {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string device_configuration_id = 23;
+  optional bool disabled = 24;
+  optional string protocol = 25;
+  optional string ipprotocol = 26;
+  optional bool source_inversed = 27;
+  optional string source_port_value = 28;
+  optional string source_port_operator = 29;
+  optional string source_ip_value = 30;
+  optional string source_ip_operator = 31;
+  optional int32 source_ip_version = 32;
+  optional string source_type = 33;
+  optional bool destination_inversed = 34;
+  optional string destination_port_value = 35;
+  optional string destination_port_operator = 36;
+  optional string destination_ip_value = 37;
+  optional string destination_ip_operator = 38;
+  optional int32 destination_ip_version = 39;
+  optional string destination_type = 40;
+  optional string device_rule_status = 41;
+  optional string description = 42;
+  optional string interface = 43;
+  optional string redirect_ip = 44;
+  optional int32 redirect_port = 45;
+  optional int32 order = 46;
+  optional string associated_rule_id = 47;
+  optional string table_ = 48;
+  optional string chain = 49;
+  optional string family = 50;
+}
+
+// TempDeviceServices entity definition
+message TempDeviceServices {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string device_id = 23;
+  optional string address = 24;
+  optional int32 port = 25;
+  optional string protocol = 26;
+  optional string program = 27;
+}
+
+// TempConnections entity definition
+message TempConnections {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string hypertable_timestamp = 23;
+  optional string interface_name = 24;
+  optional int32 total_packet = 25;
+  optional int32 total_byte = 26;
+  optional string device_id = 27;
+  optional string protocol = 28;
+  optional string source_ip = 29;
+  optional string destination_ip = 30;
+  optional string remote_ip = 31;
+  optional int32 source_port = 32;
+  optional int32 destination_port = 33;
+}
+
+// TempPortAliases entity definition
+message TempPortAliases {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string alias_id = 23;
+  optional int32 lower_port = 24;
+  optional int32 upper_port = 25;
+}
+
+// TempDeviceFilterRules entity definition
+message TempDeviceFilterRules {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string device_configuration_id = 23;
+  optional bool disabled = 24;
+  optional string policy = 25;
+  optional string protocol = 26;
+  optional string ipprotocol = 27;
+  optional bool source_inversed = 28;
+  optional string source_port_value = 29;
+  optional string source_port_operator = 30;
+  optional string source_ip_value = 31;
+  optional string source_ip_operator = 32;
+  optional int32 source_ip_version = 33;
+  optional string source_type = 34;
+  optional bool destination_inversed = 35;
+  optional string destination_port_value = 36;
+  optional string destination_port_operator = 37;
+  optional string destination_ip_value = 38;
+  optional string destination_ip_operator = 39;
+  optional int32 destination_ip_version = 40;
+  optional string destination_type = 41;
+  optional string device_rule_status = 42;
+  optional string description = 43;
+  optional string interface = 44;
+  optional int32 order = 45;
+  optional string associated_rule_id = 46;
+  optional string table_ = 47;
+  optional string chain = 48;
+  optional string family = 49;
+  optional bool floating = 50;
+}
+
+// TempIpAliases entity definition
+message TempIpAliases {
+  optional int32 tombstone = 1;
+  optional string status = 2;
+  optional string previous_status = 3;
+  optional int32 version = 4;
+  optional string created_date = 5;
+  optional string created_time = 6;
+  optional string updated_date = 7;
+  optional string updated_time = 8;
+  optional string organization_id = 9;
+  optional string created_by = 10;
+  optional string updated_by = 11;
+  optional string deleted_by = 12;
+  optional string requested_by = 13;
+  optional string timestamp = 14;
+  repeated string tags = 15;
+  repeated string categories = 16;
+  optional string code = 17;
+  optional string id = 18;
+  optional int32 sensitivity_level = 19;
+  optional string sync_status = 20;
+  optional bool is_batch = 21;
+  optional string image_url = 22;
+  optional string alias_id = 23;
+  optional string ip = 24;
+  optional int32 prefix = 25;
+}
+
 // Create UserRoles request
 message CreateUserRolesRequest {
   UserRoles user_roles = 1;
@@ -10509,6 +10838,1167 @@ message UpsertTcpConnectionsResponse {
   repeated TcpConnections data = 4;
 }
 
+// Create TempDeviceInterfaceAddresses request
+message CreateTempDeviceInterfaceAddressesRequest {
+  TempDeviceInterfaceAddresses temp_device_interface_addresses = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempDeviceInterfaceAddresses response
+message CreateTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceInterfaceAddresses data = 4;
+}
+
+// Get TempDeviceInterfaceAddresses request
+message GetTempDeviceInterfaceAddressesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempDeviceInterfaceAddresses response
+message GetTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  string message = 2;
+  TempDeviceInterfaceAddresses data = 3;
+}
+
+// Update TempDeviceInterfaceAddresses request
+message UpdateTempDeviceInterfaceAddressesRequest {
+  TempDeviceInterfaceAddresses temp_device_interface_address = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempDeviceInterfaceAddresses response
+message UpdateTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceInterfaceAddresses data = 4;
+}
+
+// BatchUpdate TempDeviceInterfaceAddresses request
+message BatchUpdateTempDeviceInterfaceAddressesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempDeviceInterfaceAddresses updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempDeviceInterfaceAddresses response
+message BatchUpdateTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceInterfaceAddresses data = 4;
+}
+
+// BatchDelete TempDeviceInterfaceAddresses request
+message BatchDeleteTempDeviceInterfaceAddressesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempDeviceInterfaceAddresses response
+message BatchDeleteTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceInterfaceAddresses data = 4;
+}
+
+// Delete TempDeviceInterfaceAddresses request
+message DeleteTempDeviceInterfaceAddressesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempDeviceInterfaceAddresses response
+message DeleteTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceInterfaceAddresses data = 4;
+}
+
+// BatchInsert TempDeviceInterfaceAddresses request
+message BatchInsertTempDeviceInterfaceAddressesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempDeviceInterfaceAddresses temp_device_interface_addresses = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempDeviceInterfaceAddresses response
+message BatchInsertTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceInterfaceAddresses data = 4;
+}
+
+// Upsert TempDeviceInterfaceAddresses request
+message UpsertTempDeviceInterfaceAddressesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempDeviceInterfaceAddresses data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempDeviceInterfaceAddresses response
+message UpsertTempDeviceInterfaceAddressesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceInterfaceAddresses data = 4;
+}
+
+// Create TempSystemResources request
+message CreateTempSystemResourcesRequest {
+  TempSystemResources temp_system_resources = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempSystemResources response
+message CreateTempSystemResourcesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempSystemResources data = 4;
+}
+
+// Get TempSystemResources request
+message GetTempSystemResourcesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempSystemResources response
+message GetTempSystemResourcesResponse {
+  bool success = 1;
+  string message = 2;
+  TempSystemResources data = 3;
+}
+
+// Update TempSystemResources request
+message UpdateTempSystemResourcesRequest {
+  TempSystemResources temp_system_resource = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempSystemResources response
+message UpdateTempSystemResourcesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempSystemResources data = 4;
+}
+
+// BatchUpdate TempSystemResources request
+message BatchUpdateTempSystemResourcesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempSystemResources updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempSystemResources response
+message BatchUpdateTempSystemResourcesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempSystemResources data = 4;
+}
+
+// BatchDelete TempSystemResources request
+message BatchDeleteTempSystemResourcesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempSystemResources response
+message BatchDeleteTempSystemResourcesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempSystemResources data = 4;
+}
+
+// Delete TempSystemResources request
+message DeleteTempSystemResourcesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempSystemResources response
+message DeleteTempSystemResourcesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempSystemResources data = 4;
+}
+
+// BatchInsert TempSystemResources request
+message BatchInsertTempSystemResourcesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempSystemResources temp_system_resources = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempSystemResources response
+message BatchInsertTempSystemResourcesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempSystemResources data = 4;
+}
+
+// Upsert TempSystemResources request
+message UpsertTempSystemResourcesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempSystemResources data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempSystemResources response
+message UpsertTempSystemResourcesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempSystemResources data = 4;
+}
+
+// Create TempDeviceInterfaces request
+message CreateTempDeviceInterfacesRequest {
+  TempDeviceInterfaces temp_device_interfaces = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempDeviceInterfaces response
+message CreateTempDeviceInterfacesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceInterfaces data = 4;
+}
+
+// Get TempDeviceInterfaces request
+message GetTempDeviceInterfacesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempDeviceInterfaces response
+message GetTempDeviceInterfacesResponse {
+  bool success = 1;
+  string message = 2;
+  TempDeviceInterfaces data = 3;
+}
+
+// Update TempDeviceInterfaces request
+message UpdateTempDeviceInterfacesRequest {
+  TempDeviceInterfaces temp_device_interface = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempDeviceInterfaces response
+message UpdateTempDeviceInterfacesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceInterfaces data = 4;
+}
+
+// BatchUpdate TempDeviceInterfaces request
+message BatchUpdateTempDeviceInterfacesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempDeviceInterfaces updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempDeviceInterfaces response
+message BatchUpdateTempDeviceInterfacesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceInterfaces data = 4;
+}
+
+// BatchDelete TempDeviceInterfaces request
+message BatchDeleteTempDeviceInterfacesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempDeviceInterfaces response
+message BatchDeleteTempDeviceInterfacesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceInterfaces data = 4;
+}
+
+// Delete TempDeviceInterfaces request
+message DeleteTempDeviceInterfacesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempDeviceInterfaces response
+message DeleteTempDeviceInterfacesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceInterfaces data = 4;
+}
+
+// BatchInsert TempDeviceInterfaces request
+message BatchInsertTempDeviceInterfacesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempDeviceInterfaces temp_device_interfaces = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempDeviceInterfaces response
+message BatchInsertTempDeviceInterfacesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceInterfaces data = 4;
+}
+
+// Upsert TempDeviceInterfaces request
+message UpsertTempDeviceInterfacesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempDeviceInterfaces data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempDeviceInterfaces response
+message UpsertTempDeviceInterfacesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceInterfaces data = 4;
+}
+
+// Create TempDeviceNatRules request
+message CreateTempDeviceNatRulesRequest {
+  TempDeviceNatRules temp_device_nat_rules = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempDeviceNatRules response
+message CreateTempDeviceNatRulesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceNatRules data = 4;
+}
+
+// Get TempDeviceNatRules request
+message GetTempDeviceNatRulesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempDeviceNatRules response
+message GetTempDeviceNatRulesResponse {
+  bool success = 1;
+  string message = 2;
+  TempDeviceNatRules data = 3;
+}
+
+// Update TempDeviceNatRules request
+message UpdateTempDeviceNatRulesRequest {
+  TempDeviceNatRules temp_device_nat_rule = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempDeviceNatRules response
+message UpdateTempDeviceNatRulesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceNatRules data = 4;
+}
+
+// BatchUpdate TempDeviceNatRules request
+message BatchUpdateTempDeviceNatRulesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempDeviceNatRules updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempDeviceNatRules response
+message BatchUpdateTempDeviceNatRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceNatRules data = 4;
+}
+
+// BatchDelete TempDeviceNatRules request
+message BatchDeleteTempDeviceNatRulesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempDeviceNatRules response
+message BatchDeleteTempDeviceNatRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceNatRules data = 4;
+}
+
+// Delete TempDeviceNatRules request
+message DeleteTempDeviceNatRulesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempDeviceNatRules response
+message DeleteTempDeviceNatRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceNatRules data = 4;
+}
+
+// BatchInsert TempDeviceNatRules request
+message BatchInsertTempDeviceNatRulesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempDeviceNatRules temp_device_nat_rules = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempDeviceNatRules response
+message BatchInsertTempDeviceNatRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceNatRules data = 4;
+}
+
+// Upsert TempDeviceNatRules request
+message UpsertTempDeviceNatRulesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempDeviceNatRules data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempDeviceNatRules response
+message UpsertTempDeviceNatRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceNatRules data = 4;
+}
+
+// Create TempDeviceServices request
+message CreateTempDeviceServicesRequest {
+  TempDeviceServices temp_device_services = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempDeviceServices response
+message CreateTempDeviceServicesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceServices data = 4;
+}
+
+// Get TempDeviceServices request
+message GetTempDeviceServicesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempDeviceServices response
+message GetTempDeviceServicesResponse {
+  bool success = 1;
+  string message = 2;
+  TempDeviceServices data = 3;
+}
+
+// Update TempDeviceServices request
+message UpdateTempDeviceServicesRequest {
+  TempDeviceServices temp_device_service = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempDeviceServices response
+message UpdateTempDeviceServicesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceServices data = 4;
+}
+
+// BatchUpdate TempDeviceServices request
+message BatchUpdateTempDeviceServicesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempDeviceServices updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempDeviceServices response
+message BatchUpdateTempDeviceServicesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceServices data = 4;
+}
+
+// BatchDelete TempDeviceServices request
+message BatchDeleteTempDeviceServicesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempDeviceServices response
+message BatchDeleteTempDeviceServicesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceServices data = 4;
+}
+
+// Delete TempDeviceServices request
+message DeleteTempDeviceServicesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempDeviceServices response
+message DeleteTempDeviceServicesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceServices data = 4;
+}
+
+// BatchInsert TempDeviceServices request
+message BatchInsertTempDeviceServicesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempDeviceServices temp_device_services = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempDeviceServices response
+message BatchInsertTempDeviceServicesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceServices data = 4;
+}
+
+// Upsert TempDeviceServices request
+message UpsertTempDeviceServicesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempDeviceServices data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempDeviceServices response
+message UpsertTempDeviceServicesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceServices data = 4;
+}
+
+// Create TempConnections request
+message CreateTempConnectionsRequest {
+  TempConnections temp_connections = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempConnections response
+message CreateTempConnectionsResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempConnections data = 4;
+}
+
+// Get TempConnections request
+message GetTempConnectionsRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempConnections response
+message GetTempConnectionsResponse {
+  bool success = 1;
+  string message = 2;
+  TempConnections data = 3;
+}
+
+// Update TempConnections request
+message UpdateTempConnectionsRequest {
+  TempConnections temp_connection = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempConnections response
+message UpdateTempConnectionsResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempConnections data = 4;
+}
+
+// BatchUpdate TempConnections request
+message BatchUpdateTempConnectionsRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempConnections updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempConnections response
+message BatchUpdateTempConnectionsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempConnections data = 4;
+}
+
+// BatchDelete TempConnections request
+message BatchDeleteTempConnectionsRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempConnections response
+message BatchDeleteTempConnectionsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempConnections data = 4;
+}
+
+// Delete TempConnections request
+message DeleteTempConnectionsRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempConnections response
+message DeleteTempConnectionsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempConnections data = 4;
+}
+
+// BatchInsert TempConnections request
+message BatchInsertTempConnectionsRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempConnections temp_connections = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempConnections response
+message BatchInsertTempConnectionsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempConnections data = 4;
+}
+
+// Upsert TempConnections request
+message UpsertTempConnectionsRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempConnections data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempConnections response
+message UpsertTempConnectionsResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempConnections data = 4;
+}
+
+// Create TempPortAliases request
+message CreateTempPortAliasesRequest {
+  TempPortAliases temp_port_aliases = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempPortAliases response
+message CreateTempPortAliasesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempPortAliases data = 4;
+}
+
+// Get TempPortAliases request
+message GetTempPortAliasesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempPortAliases response
+message GetTempPortAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  TempPortAliases data = 3;
+}
+
+// Update TempPortAliases request
+message UpdateTempPortAliasesRequest {
+  TempPortAliases temp_port_alias = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempPortAliases response
+message UpdateTempPortAliasesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempPortAliases data = 4;
+}
+
+// BatchUpdate TempPortAliases request
+message BatchUpdateTempPortAliasesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempPortAliases updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempPortAliases response
+message BatchUpdateTempPortAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempPortAliases data = 4;
+}
+
+// BatchDelete TempPortAliases request
+message BatchDeleteTempPortAliasesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempPortAliases response
+message BatchDeleteTempPortAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempPortAliases data = 4;
+}
+
+// Delete TempPortAliases request
+message DeleteTempPortAliasesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempPortAliases response
+message DeleteTempPortAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempPortAliases data = 4;
+}
+
+// BatchInsert TempPortAliases request
+message BatchInsertTempPortAliasesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempPortAliases temp_port_aliases = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempPortAliases response
+message BatchInsertTempPortAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempPortAliases data = 4;
+}
+
+// Upsert TempPortAliases request
+message UpsertTempPortAliasesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempPortAliases data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempPortAliases response
+message UpsertTempPortAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempPortAliases data = 4;
+}
+
+// Create TempDeviceFilterRules request
+message CreateTempDeviceFilterRulesRequest {
+  TempDeviceFilterRules temp_device_filter_rules = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempDeviceFilterRules response
+message CreateTempDeviceFilterRulesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceFilterRules data = 4;
+}
+
+// Get TempDeviceFilterRules request
+message GetTempDeviceFilterRulesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempDeviceFilterRules response
+message GetTempDeviceFilterRulesResponse {
+  bool success = 1;
+  string message = 2;
+  TempDeviceFilterRules data = 3;
+}
+
+// Update TempDeviceFilterRules request
+message UpdateTempDeviceFilterRulesRequest {
+  TempDeviceFilterRules temp_device_filter_rule = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempDeviceFilterRules response
+message UpdateTempDeviceFilterRulesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempDeviceFilterRules data = 4;
+}
+
+// BatchUpdate TempDeviceFilterRules request
+message BatchUpdateTempDeviceFilterRulesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempDeviceFilterRules updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempDeviceFilterRules response
+message BatchUpdateTempDeviceFilterRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceFilterRules data = 4;
+}
+
+// BatchDelete TempDeviceFilterRules request
+message BatchDeleteTempDeviceFilterRulesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempDeviceFilterRules response
+message BatchDeleteTempDeviceFilterRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceFilterRules data = 4;
+}
+
+// Delete TempDeviceFilterRules request
+message DeleteTempDeviceFilterRulesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempDeviceFilterRules response
+message DeleteTempDeviceFilterRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempDeviceFilterRules data = 4;
+}
+
+// BatchInsert TempDeviceFilterRules request
+message BatchInsertTempDeviceFilterRulesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempDeviceFilterRules temp_device_filter_rules = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempDeviceFilterRules response
+message BatchInsertTempDeviceFilterRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceFilterRules data = 4;
+}
+
+// Upsert TempDeviceFilterRules request
+message UpsertTempDeviceFilterRulesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempDeviceFilterRules data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempDeviceFilterRules response
+message UpsertTempDeviceFilterRulesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempDeviceFilterRules data = 4;
+}
+
+// Create TempIpAliases request
+message CreateTempIpAliasesRequest {
+  TempIpAliases temp_ip_aliases = 1;
+  CreateParams params = 2;
+  CreateQuery query = 3;
+}
+
+// Create TempIpAliases response
+message CreateTempIpAliasesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempIpAliases data = 4;
+}
+
+// Get TempIpAliases request
+message GetTempIpAliasesRequest {
+  GetParams params = 1;
+  GetQuery query = 2;
+}
+
+// Get TempIpAliases response
+message GetTempIpAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  TempIpAliases data = 3;
+}
+
+// Update TempIpAliases request
+message UpdateTempIpAliasesRequest {
+  TempIpAliases temp_ip_alias = 1;
+  UpdateParams params = 2;
+  UpdateQuery query = 3;
+}
+
+// Update TempIpAliases response
+message UpdateTempIpAliasesResponse {
+  bool success = 1;
+  int32 count = 2;
+  string message = 3;
+  TempIpAliases data = 4;
+}
+
+// BatchUpdate TempIpAliases request
+message BatchUpdateTempIpAliasesRequest {
+  BatchUpdateParams params = 1;
+  message BatchUpdateBody {
+    repeated FilterCriteria advance_filters = 1;
+  TempIpAliases updates = 2;
+  }
+  BatchUpdateBody body = 2;
+}
+
+// BatchUpdate TempIpAliases response
+message BatchUpdateTempIpAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempIpAliases data = 4;
+}
+
+// BatchDelete TempIpAliases request
+message BatchDeleteTempIpAliasesRequest {
+  BatchDeleteParams params = 1;
+  message BatchDeleteBody {
+    repeated FilterCriteria advance_filters = 1;
+  }
+  BatchDeleteBody body = 2;
+}
+
+// BatchDelete TempIpAliases response
+message BatchDeleteTempIpAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempIpAliases data = 4;
+}
+
+// Delete TempIpAliases request
+message DeleteTempIpAliasesRequest {
+  DeleteParams params = 1;
+  DeleteQuery query = 2;
+}
+
+// Delete TempIpAliases response
+message DeleteTempIpAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  TempIpAliases data = 4;
+}
+
+// BatchInsert TempIpAliases request
+message BatchInsertTempIpAliasesRequest {
+  BatchInsertParams params = 1;
+  BatchInsertQuery query = 2;
+  message BatchBody {
+    repeated TempIpAliases temp_ip_aliases = 1;
+  }
+  BatchBody body = 3;
+}
+
+// BatchInsert TempIpAliases response
+message BatchInsertTempIpAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempIpAliases data = 4;
+}
+
+// Upsert TempIpAliases request
+message UpsertTempIpAliasesRequest {
+  UpsertParams params = 1;
+  UpsertQuery query = 2;
+  message UpsertBody {
+    repeated string conflict_columns = 1;
+    TempIpAliases data = 2;
+  }
+  UpsertBody body = 3;
+}
+
+// Upsert TempIpAliases response
+message UpsertTempIpAliasesResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+  repeated TempIpAliases data = 4;
+}
+
 // Enum for aggregation types
 enum AggregationType {
   SUM = 0;
@@ -12205,6 +13695,222 @@ service StoreService {
 
   // Upsert a TcpConnections (create if not exists, update if exists)
   rpc UpsertTcpConnections(UpsertTcpConnectionsRequest) returns (UpsertTcpConnectionsResponse);
+
+  // Create a new TempDeviceInterfaceAddresses
+  rpc CreateTempDeviceInterfaceAddresses(CreateTempDeviceInterfaceAddressesRequest) returns (CreateTempDeviceInterfaceAddressesResponse);
+
+  // Get a TempDeviceInterfaceAddresses by ID
+  rpc GetTempDeviceInterfaceAddresses(GetTempDeviceInterfaceAddressesRequest) returns (GetTempDeviceInterfaceAddressesResponse);
+
+  // Update an existing TempDeviceInterfaceAddresses
+  rpc UpdateTempDeviceInterfaceAddresses(UpdateTempDeviceInterfaceAddressesRequest) returns (UpdateTempDeviceInterfaceAddressesResponse);
+
+  // Delete a TempDeviceInterfaceAddresses by ID
+  rpc DeleteTempDeviceInterfaceAddresses(DeleteTempDeviceInterfaceAddressesRequest) returns (DeleteTempDeviceInterfaceAddressesResponse);
+
+  // Batch insert multiple TempDeviceInterfaceAddressess
+  rpc BatchInsertTempDeviceInterfaceAddresses(BatchInsertTempDeviceInterfaceAddressesRequest) returns (BatchInsertTempDeviceInterfaceAddressesResponse);
+
+  // Batch update multiple TempDeviceInterfaceAddressess based on filters
+  rpc BatchUpdateTempDeviceInterfaceAddresses(BatchUpdateTempDeviceInterfaceAddressesRequest) returns (BatchUpdateTempDeviceInterfaceAddressesResponse);
+
+  // Batch delete multiple TempDeviceInterfaceAddressess based on filters
+  rpc BatchDeleteTempDeviceInterfaceAddresses(BatchDeleteTempDeviceInterfaceAddressesRequest) returns (BatchDeleteTempDeviceInterfaceAddressesResponse);
+
+  // Upsert a TempDeviceInterfaceAddresses (create if not exists, update if exists)
+  rpc UpsertTempDeviceInterfaceAddresses(UpsertTempDeviceInterfaceAddressesRequest) returns (UpsertTempDeviceInterfaceAddressesResponse);
+
+  // Create a new TempSystemResources
+  rpc CreateTempSystemResources(CreateTempSystemResourcesRequest) returns (CreateTempSystemResourcesResponse);
+
+  // Get a TempSystemResources by ID
+  rpc GetTempSystemResources(GetTempSystemResourcesRequest) returns (GetTempSystemResourcesResponse);
+
+  // Update an existing TempSystemResources
+  rpc UpdateTempSystemResources(UpdateTempSystemResourcesRequest) returns (UpdateTempSystemResourcesResponse);
+
+  // Delete a TempSystemResources by ID
+  rpc DeleteTempSystemResources(DeleteTempSystemResourcesRequest) returns (DeleteTempSystemResourcesResponse);
+
+  // Batch insert multiple TempSystemResourcess
+  rpc BatchInsertTempSystemResources(BatchInsertTempSystemResourcesRequest) returns (BatchInsertTempSystemResourcesResponse);
+
+  // Batch update multiple TempSystemResourcess based on filters
+  rpc BatchUpdateTempSystemResources(BatchUpdateTempSystemResourcesRequest) returns (BatchUpdateTempSystemResourcesResponse);
+
+  // Batch delete multiple TempSystemResourcess based on filters
+  rpc BatchDeleteTempSystemResources(BatchDeleteTempSystemResourcesRequest) returns (BatchDeleteTempSystemResourcesResponse);
+
+  // Upsert a TempSystemResources (create if not exists, update if exists)
+  rpc UpsertTempSystemResources(UpsertTempSystemResourcesRequest) returns (UpsertTempSystemResourcesResponse);
+
+  // Create a new TempDeviceInterfaces
+  rpc CreateTempDeviceInterfaces(CreateTempDeviceInterfacesRequest) returns (CreateTempDeviceInterfacesResponse);
+
+  // Get a TempDeviceInterfaces by ID
+  rpc GetTempDeviceInterfaces(GetTempDeviceInterfacesRequest) returns (GetTempDeviceInterfacesResponse);
+
+  // Update an existing TempDeviceInterfaces
+  rpc UpdateTempDeviceInterfaces(UpdateTempDeviceInterfacesRequest) returns (UpdateTempDeviceInterfacesResponse);
+
+  // Delete a TempDeviceInterfaces by ID
+  rpc DeleteTempDeviceInterfaces(DeleteTempDeviceInterfacesRequest) returns (DeleteTempDeviceInterfacesResponse);
+
+  // Batch insert multiple TempDeviceInterfacess
+  rpc BatchInsertTempDeviceInterfaces(BatchInsertTempDeviceInterfacesRequest) returns (BatchInsertTempDeviceInterfacesResponse);
+
+  // Batch update multiple TempDeviceInterfacess based on filters
+  rpc BatchUpdateTempDeviceInterfaces(BatchUpdateTempDeviceInterfacesRequest) returns (BatchUpdateTempDeviceInterfacesResponse);
+
+  // Batch delete multiple TempDeviceInterfacess based on filters
+  rpc BatchDeleteTempDeviceInterfaces(BatchDeleteTempDeviceInterfacesRequest) returns (BatchDeleteTempDeviceInterfacesResponse);
+
+  // Upsert a TempDeviceInterfaces (create if not exists, update if exists)
+  rpc UpsertTempDeviceInterfaces(UpsertTempDeviceInterfacesRequest) returns (UpsertTempDeviceInterfacesResponse);
+
+  // Create a new TempDeviceNatRules
+  rpc CreateTempDeviceNatRules(CreateTempDeviceNatRulesRequest) returns (CreateTempDeviceNatRulesResponse);
+
+  // Get a TempDeviceNatRules by ID
+  rpc GetTempDeviceNatRules(GetTempDeviceNatRulesRequest) returns (GetTempDeviceNatRulesResponse);
+
+  // Update an existing TempDeviceNatRules
+  rpc UpdateTempDeviceNatRules(UpdateTempDeviceNatRulesRequest) returns (UpdateTempDeviceNatRulesResponse);
+
+  // Delete a TempDeviceNatRules by ID
+  rpc DeleteTempDeviceNatRules(DeleteTempDeviceNatRulesRequest) returns (DeleteTempDeviceNatRulesResponse);
+
+  // Batch insert multiple TempDeviceNatRuless
+  rpc BatchInsertTempDeviceNatRules(BatchInsertTempDeviceNatRulesRequest) returns (BatchInsertTempDeviceNatRulesResponse);
+
+  // Batch update multiple TempDeviceNatRuless based on filters
+  rpc BatchUpdateTempDeviceNatRules(BatchUpdateTempDeviceNatRulesRequest) returns (BatchUpdateTempDeviceNatRulesResponse);
+
+  // Batch delete multiple TempDeviceNatRuless based on filters
+  rpc BatchDeleteTempDeviceNatRules(BatchDeleteTempDeviceNatRulesRequest) returns (BatchDeleteTempDeviceNatRulesResponse);
+
+  // Upsert a TempDeviceNatRules (create if not exists, update if exists)
+  rpc UpsertTempDeviceNatRules(UpsertTempDeviceNatRulesRequest) returns (UpsertTempDeviceNatRulesResponse);
+
+  // Create a new TempDeviceServices
+  rpc CreateTempDeviceServices(CreateTempDeviceServicesRequest) returns (CreateTempDeviceServicesResponse);
+
+  // Get a TempDeviceServices by ID
+  rpc GetTempDeviceServices(GetTempDeviceServicesRequest) returns (GetTempDeviceServicesResponse);
+
+  // Update an existing TempDeviceServices
+  rpc UpdateTempDeviceServices(UpdateTempDeviceServicesRequest) returns (UpdateTempDeviceServicesResponse);
+
+  // Delete a TempDeviceServices by ID
+  rpc DeleteTempDeviceServices(DeleteTempDeviceServicesRequest) returns (DeleteTempDeviceServicesResponse);
+
+  // Batch insert multiple TempDeviceServicess
+  rpc BatchInsertTempDeviceServices(BatchInsertTempDeviceServicesRequest) returns (BatchInsertTempDeviceServicesResponse);
+
+  // Batch update multiple TempDeviceServicess based on filters
+  rpc BatchUpdateTempDeviceServices(BatchUpdateTempDeviceServicesRequest) returns (BatchUpdateTempDeviceServicesResponse);
+
+  // Batch delete multiple TempDeviceServicess based on filters
+  rpc BatchDeleteTempDeviceServices(BatchDeleteTempDeviceServicesRequest) returns (BatchDeleteTempDeviceServicesResponse);
+
+  // Upsert a TempDeviceServices (create if not exists, update if exists)
+  rpc UpsertTempDeviceServices(UpsertTempDeviceServicesRequest) returns (UpsertTempDeviceServicesResponse);
+
+  // Create a new TempConnections
+  rpc CreateTempConnections(CreateTempConnectionsRequest) returns (CreateTempConnectionsResponse);
+
+  // Get a TempConnections by ID
+  rpc GetTempConnections(GetTempConnectionsRequest) returns (GetTempConnectionsResponse);
+
+  // Update an existing TempConnections
+  rpc UpdateTempConnections(UpdateTempConnectionsRequest) returns (UpdateTempConnectionsResponse);
+
+  // Delete a TempConnections by ID
+  rpc DeleteTempConnections(DeleteTempConnectionsRequest) returns (DeleteTempConnectionsResponse);
+
+  // Batch insert multiple TempConnectionss
+  rpc BatchInsertTempConnections(BatchInsertTempConnectionsRequest) returns (BatchInsertTempConnectionsResponse);
+
+  // Batch update multiple TempConnectionss based on filters
+  rpc BatchUpdateTempConnections(BatchUpdateTempConnectionsRequest) returns (BatchUpdateTempConnectionsResponse);
+
+  // Batch delete multiple TempConnectionss based on filters
+  rpc BatchDeleteTempConnections(BatchDeleteTempConnectionsRequest) returns (BatchDeleteTempConnectionsResponse);
+
+  // Upsert a TempConnections (create if not exists, update if exists)
+  rpc UpsertTempConnections(UpsertTempConnectionsRequest) returns (UpsertTempConnectionsResponse);
+
+  // Create a new TempPortAliases
+  rpc CreateTempPortAliases(CreateTempPortAliasesRequest) returns (CreateTempPortAliasesResponse);
+
+  // Get a TempPortAliases by ID
+  rpc GetTempPortAliases(GetTempPortAliasesRequest) returns (GetTempPortAliasesResponse);
+
+  // Update an existing TempPortAliases
+  rpc UpdateTempPortAliases(UpdateTempPortAliasesRequest) returns (UpdateTempPortAliasesResponse);
+
+  // Delete a TempPortAliases by ID
+  rpc DeleteTempPortAliases(DeleteTempPortAliasesRequest) returns (DeleteTempPortAliasesResponse);
+
+  // Batch insert multiple TempPortAliasess
+  rpc BatchInsertTempPortAliases(BatchInsertTempPortAliasesRequest) returns (BatchInsertTempPortAliasesResponse);
+
+  // Batch update multiple TempPortAliasess based on filters
+  rpc BatchUpdateTempPortAliases(BatchUpdateTempPortAliasesRequest) returns (BatchUpdateTempPortAliasesResponse);
+
+  // Batch delete multiple TempPortAliasess based on filters
+  rpc BatchDeleteTempPortAliases(BatchDeleteTempPortAliasesRequest) returns (BatchDeleteTempPortAliasesResponse);
+
+  // Upsert a TempPortAliases (create if not exists, update if exists)
+  rpc UpsertTempPortAliases(UpsertTempPortAliasesRequest) returns (UpsertTempPortAliasesResponse);
+
+  // Create a new TempDeviceFilterRules
+  rpc CreateTempDeviceFilterRules(CreateTempDeviceFilterRulesRequest) returns (CreateTempDeviceFilterRulesResponse);
+
+  // Get a TempDeviceFilterRules by ID
+  rpc GetTempDeviceFilterRules(GetTempDeviceFilterRulesRequest) returns (GetTempDeviceFilterRulesResponse);
+
+  // Update an existing TempDeviceFilterRules
+  rpc UpdateTempDeviceFilterRules(UpdateTempDeviceFilterRulesRequest) returns (UpdateTempDeviceFilterRulesResponse);
+
+  // Delete a TempDeviceFilterRules by ID
+  rpc DeleteTempDeviceFilterRules(DeleteTempDeviceFilterRulesRequest) returns (DeleteTempDeviceFilterRulesResponse);
+
+  // Batch insert multiple TempDeviceFilterRuless
+  rpc BatchInsertTempDeviceFilterRules(BatchInsertTempDeviceFilterRulesRequest) returns (BatchInsertTempDeviceFilterRulesResponse);
+
+  // Batch update multiple TempDeviceFilterRuless based on filters
+  rpc BatchUpdateTempDeviceFilterRules(BatchUpdateTempDeviceFilterRulesRequest) returns (BatchUpdateTempDeviceFilterRulesResponse);
+
+  // Batch delete multiple TempDeviceFilterRuless based on filters
+  rpc BatchDeleteTempDeviceFilterRules(BatchDeleteTempDeviceFilterRulesRequest) returns (BatchDeleteTempDeviceFilterRulesResponse);
+
+  // Upsert a TempDeviceFilterRules (create if not exists, update if exists)
+  rpc UpsertTempDeviceFilterRules(UpsertTempDeviceFilterRulesRequest) returns (UpsertTempDeviceFilterRulesResponse);
+
+  // Create a new TempIpAliases
+  rpc CreateTempIpAliases(CreateTempIpAliasesRequest) returns (CreateTempIpAliasesResponse);
+
+  // Get a TempIpAliases by ID
+  rpc GetTempIpAliases(GetTempIpAliasesRequest) returns (GetTempIpAliasesResponse);
+
+  // Update an existing TempIpAliases
+  rpc UpdateTempIpAliases(UpdateTempIpAliasesRequest) returns (UpdateTempIpAliasesResponse);
+
+  // Delete a TempIpAliases by ID
+  rpc DeleteTempIpAliases(DeleteTempIpAliasesRequest) returns (DeleteTempIpAliasesResponse);
+
+  // Batch insert multiple TempIpAliasess
+  rpc BatchInsertTempIpAliases(BatchInsertTempIpAliasesRequest) returns (BatchInsertTempIpAliasesResponse);
+
+  // Batch update multiple TempIpAliasess based on filters
+  rpc BatchUpdateTempIpAliases(BatchUpdateTempIpAliasesRequest) returns (BatchUpdateTempIpAliasesResponse);
+
+  // Batch delete multiple TempIpAliasess based on filters
+  rpc BatchDeleteTempIpAliases(BatchDeleteTempIpAliasesRequest) returns (BatchDeleteTempIpAliasesResponse);
+
+  // Upsert a TempIpAliases (create if not exists, update if exists)
+  rpc UpsertTempIpAliases(UpsertTempIpAliasesRequest) returns (UpsertTempIpAliasesResponse);
 
   // GetByFilter for advanced filtering queries
   rpc GetByFilter(GetByFilterRequest) returns (GetByFilterResponse);
