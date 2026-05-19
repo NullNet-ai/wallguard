@@ -41,13 +41,14 @@ pub struct ControlChannel {
 }
 
 impl ControlChannel {
-    pub fn new(context: Context, code: String) -> Self {
+    pub fn new(context: Context, code: String, attempt: u32) -> Self {
         let (terminate, _) = broadcast::channel(1);
 
         tokio::spawn(stream_wrapper(
             context.clone(),
             code.clone(),
             terminate.subscribe(),
+            attempt,
         ));
 
         Self { context, terminate }
@@ -75,13 +76,21 @@ async fn stream_wrapper(
     context: Context,
     installation_code: String,
     mut terminate: broadcast::Receiver<()>,
+    attempt: u32,
 ) {
+    let connected_at = std::time::Instant::now();
+
     tokio::select! {
         _ = terminate.recv() => {}
         result = control_stream(context.clone(), &installation_code) => {
             if result.is_err() {
-                // Try to reconnect
-                Daemon::connect(context).await;
+                // Reset backoff after a stable connection; otherwise accumulate.
+                let next_attempt = if connected_at.elapsed() >= Duration::from_secs(60) {
+                    1
+                } else {
+                    attempt.saturating_add(1)
+                };
+                Daemon::connect(context, next_attempt).await;
             }
         }
     };
@@ -165,11 +174,11 @@ async fn handle_incoming_messages(
 
     loop {
         match inbound.lock().await.message().await {
-            Ok(message) => {
-                let message = message
-                    .and_then(|message| message.message)
-                    .ok_or("Malformed message")
-                    .handle_err(location!())?;
+            Ok(Some(message)) => {
+                let Some(message) = message.message else {
+                    log::warn!("Received server message with missing payload; ignoring");
+                    continue;
+                };
 
                 match message {
                     Message::UpdateTokenCommand(token) => {
@@ -300,6 +309,9 @@ async fn handle_incoming_messages(
                         Err("Unexpected message").handle_err(location!())?
                     }
                 }
+            }
+            Ok(None) => {
+                return Err("Inbound stream closed by server").handle_err(location!());
             }
             Err(err) => return Err(format!("Inbound stream error: {err}")).handle_err(location!()),
         }

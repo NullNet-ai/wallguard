@@ -86,7 +86,7 @@ impl Daemon {
 
                 drop(lock);
 
-                tokio::spawn(async move { Daemon::connect(context).await });
+                tokio::spawn(async move { Daemon::connect(context, 0).await });
 
                 Ok(())
             }
@@ -132,10 +132,20 @@ impl Daemon {
         this.lock().await.state = DaemonState::Error(reason.into());
     }
 
-    pub(crate) async fn connect(context: Context) {
+    pub(crate) async fn connect(context: Context, attempt: u32) {
         let daemon = context.clone().daemon;
 
         daemon.lock().await.state = DaemonState::Connecting;
+
+        let backoff = reconnect_backoff(attempt);
+        if !backoff.is_zero() {
+            log::info!(
+                "Reconnecting in {}s (attempt {})",
+                backoff.as_secs(),
+                attempt
+            );
+            tokio::time::sleep(backoff).await;
+        }
 
         context.server.reset().await;
 
@@ -145,10 +155,18 @@ impl Daemon {
         }
 
         if let Some(installation_code) = Storage::get_value(Secret::InstallationCode).await {
-            let control_channel = ControlChannel::new(context, installation_code);
+            let control_channel = ControlChannel::new(context, installation_code, attempt);
             daemon.lock().await.state = DaemonState::Connected(Box::new(control_channel));
         } else {
             Daemon::on_error(daemon, "Failed to obtain installation code").await;
         }
     }
+}
+
+fn reconnect_backoff(attempt: u32) -> std::time::Duration {
+    const MAX: std::time::Duration = std::time::Duration::from_secs(60);
+    if attempt == 0 {
+        return std::time::Duration::ZERO;
+    }
+    std::time::Duration::from_secs(5u64.saturating_mul(1u64 << (attempt - 1).min(10))).min(MAX)
 }
