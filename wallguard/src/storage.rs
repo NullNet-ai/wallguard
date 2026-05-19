@@ -11,6 +11,28 @@ use serde::{Deserialize, Serialize};
 
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
+async fn set_permissions_600(path: &PathBuf) -> Result<(), Error> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        tokio::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+            .await
+            .handle_err(location!())?;
+    }
+    Ok(())
+}
+
+async fn set_permissions_700(path: &PathBuf) -> Result<(), Error> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        tokio::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
+            .await
+            .handle_err(location!())?;
+    }
+    Ok(())
+}
+
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub enum Secret {
@@ -54,8 +76,10 @@ impl Storage {
         let file_path = Self::file_path();
 
         create_dir_all(&dir).await.handle_err(location!())?;
+        set_permissions_700(&dir).await?;
 
         let config = if file_path.exists() {
+            set_permissions_600(&file_path).await?;
             read_to_string(&file_path)
                 .await
                 .ok()
@@ -68,6 +92,7 @@ impl Storage {
             file.write_all(json.as_bytes())
                 .await
                 .handle_err(location!())?;
+            set_permissions_600(&file_path).await?;
             default
         };
 

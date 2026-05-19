@@ -21,6 +21,7 @@ pub struct Daemon {
     client_data: ClientData,
     server_data: ServerData,
     state: DaemonState,
+    connect_handle: Option<tokio::task::JoinHandle<()>>,
 }
 
 impl Daemon {
@@ -29,6 +30,7 @@ impl Daemon {
             client_data,
             server_data,
             state: DaemonState::default(),
+            connect_handle: None,
         }));
 
         if let Some(code) = Storage::get_value(Secret::InstallationCode).await {
@@ -58,49 +60,54 @@ impl Daemon {
         this: Arc<Mutex<Daemon>>,
         installation_code: String,
     ) -> Result<(), String> {
-        let lock = this.lock().await;
-        match lock.state {
-            DaemonState::Idle => {
-                Storage::set_value(Secret::InstallationCode, &installation_code)
-                    .await
-                    .map_err(|err| err.to_str().to_string())?;
+        let mut lock = this.lock().await;
 
-                let context = Context::new(
-                    this.clone(),
-                    lock.client_data.clone(),
-                    lock.server_data.clone(),
-                )
-                .await
-                .map_err(|err| err.to_str().to_string())?;
-
-                // let _ = crate::autostart::enable_service(
-                //     "wallguard",
-                //     &[
-                //         "--control-channel-url",
-                //         lock.server_data.grpc_addr.to_string().as_str(),
-                //         "--platform",
-                //         lock.client_data.platform.to_string().as_str(),
-                //     ],
-                // )
-                // .await;
-
-                drop(lock);
-
-                tokio::spawn(async move { Daemon::connect(context).await });
-
-                Ok(())
-            }
-            _ => Err(format!(
-                "Can not join a new organization from the current state: {}",
-                lock.state
-            )),
+        if matches!(lock.state, DaemonState::Connecting) {
+            return Err(
+                "Already connecting to an organization. Run `leave` to cancel first.".into(),
+            );
         }
+        if matches!(lock.state, DaemonState::Connected(_)) {
+            return Err(
+                "Already connected to an organization. Run `leave` to disconnect first.".into(),
+            );
+        }
+
+        Storage::set_value(Secret::InstallationCode, &installation_code)
+            .await
+            .map_err(|err| err.to_str().to_string())?;
+
+        let context = Context::new(
+            this.clone(),
+            lock.client_data.clone(),
+            lock.server_data.clone(),
+        )
+        .await
+        .map_err(|err| err.to_str().to_string())?;
+
+        // Set state and store the task handle atomically so leave_org can abort it.
+        lock.state = DaemonState::Connecting;
+        let handle = tokio::spawn(async move { Daemon::connect(context, 0).await });
+        lock.connect_handle = Some(handle);
+
+        Ok(())
     }
 
     pub(crate) async fn leave_org(this: Arc<Mutex<Daemon>>) -> Result<(), String> {
         let mut this = this.lock().await;
 
         match &this.state {
+            DaemonState::Idle => Err("Not connected to any organization.".into()),
+
+            DaemonState::Connecting => {
+                if let Some(handle) = this.connect_handle.take() {
+                    handle.abort();
+                }
+                let _ = Storage::delete_value(Secret::InstallationCode).await;
+                this.state = DaemonState::Idle;
+                Ok(())
+            }
+
             DaemonState::Connected(control_channel) => {
                 Storage::delete_value(Secret::InstallationCode)
                     .await
@@ -108,19 +115,15 @@ impl Daemon {
 
                 control_channel.terminate().await;
 
-                // let _ = crate::autostart::disable_service("wallguard").await;
+                this.state = DaemonState::Idle;
+                Ok(())
+            }
 
-                this.state = DaemonState::Idle;
-                Ok(())
-            }
             DaemonState::Error(_) => {
+                let _ = Storage::delete_value(Secret::InstallationCode).await;
                 this.state = DaemonState::Idle;
                 Ok(())
             }
-            _ => Err(format!(
-                "Can not leave current organization from the current state: {}",
-                this.state
-            )),
         }
     }
 
@@ -132,10 +135,20 @@ impl Daemon {
         this.lock().await.state = DaemonState::Error(reason.into());
     }
 
-    pub(crate) async fn connect(context: Context) {
+    pub(crate) async fn connect(context: Context, attempt: u32) {
         let daemon = context.clone().daemon;
 
         daemon.lock().await.state = DaemonState::Connecting;
+
+        let backoff = reconnect_backoff(attempt);
+        if !backoff.is_zero() {
+            log::info!(
+                "Reconnecting in {}s (attempt {})",
+                backoff.as_secs(),
+                attempt
+            );
+            tokio::time::sleep(backoff).await;
+        }
 
         context.server.reset().await;
 
@@ -145,10 +158,18 @@ impl Daemon {
         }
 
         if let Some(installation_code) = Storage::get_value(Secret::InstallationCode).await {
-            let control_channel = ControlChannel::new(context, installation_code);
+            let control_channel = ControlChannel::new(context, installation_code, attempt);
             daemon.lock().await.state = DaemonState::Connected(Box::new(control_channel));
         } else {
             Daemon::on_error(daemon, "Failed to obtain installation code").await;
         }
     }
+}
+
+fn reconnect_backoff(attempt: u32) -> std::time::Duration {
+    const MAX: std::time::Duration = std::time::Duration::from_secs(60);
+    if attempt == 0 {
+        return std::time::Duration::ZERO;
+    }
+    std::time::Duration::from_secs(5u64.saturating_mul(1u64 << (attempt - 1).min(10))).min(MAX)
 }

@@ -54,7 +54,7 @@ async fn main() {
         .expect("Failed to install rustls crypto provider");
 
     check_privileges();
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let arguments = match Arguments::try_parse() {
         Ok(args) => args,
