@@ -17,8 +17,6 @@ pub async fn send_authenticate(outbound: OutboundStream) -> Result<(), Error> {
         .ok_or("AppSecret not set")
         .handle_err(location!())?;
 
-    log::warn!("{app_id} {app_secret}");
-
     let message = ClientMessage {
         message: Some(client_message::Message::Authentication(Authentication {
             app_id,

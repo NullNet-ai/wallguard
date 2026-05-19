@@ -140,20 +140,20 @@ async fn authstream(
                             },
                             client_message::Message::Heartbeat(()) => {
                                 log::debug!("Received a heartbeat from {device_id}");
-                                // @TODO
-                                // if let Ok(token) = context.sysdev_token_provider.get().await {
-                                //     let data = HeartbeatModel::from_device_id(device_id.clone());
-                                //     if context
-                                //         .datastore
-                                //         .create_heartbeat(&token.jwt, &data)
-                                //         .await
-                                //         .is_err()
-                                //     {
-                                //         log::error!("Failed to write heatbeat");
-                                //     }
-                                // } else {
-                                //     log::error!("Heartbeat: Failed to obtain token");
-                                // }
+
+                                if let Ok(token) = context.sysdev_token_provider.get().await {
+                                    let data = HeartbeatModel::from_device_id(device_id.clone());
+                                    if context
+                                        .datastore
+                                        .create_heartbeat(&token.jwt, &data)
+                                        .await
+                                        .is_err()
+                                    {
+                                        log::error!("Failed to write heatbeat");
+                                    }
+                                } else {
+                                    log::error!("Heartbeat: Failed to obtain token");
+                                }
                             }
                             other => {
                                 log::warn!("Unexpected message from client after authentication; ignoring: {:?}", other);
