@@ -117,8 +117,8 @@ pub async fn main() -> AnyResult<()> {
 
             match response.success {
                 true => {
-                    println!("Request submitted");
-                    println!("Check its status with `wallguard-cli status`.");
+                    println!("Connecting to organization.");
+                    println!("Run `wallguard-cli status` to check progress.");
                 }
                 false => eprintln!("Failed to join organization: {}", response.message),
             }
@@ -128,10 +128,7 @@ pub async fn main() -> AnyResult<()> {
             let response = client.leave_org(()).await?.into_inner();
 
             match response.success {
-                true => {
-                    println!("Request submitted");
-                    println!("Check its status with `wallguard-cli status`.");
-                }
+                true => println!("Left organization successfully."),
                 false => eprintln!("Failed to leave organization: {}", response.message),
             }
         }
