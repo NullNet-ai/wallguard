@@ -175,7 +175,9 @@ pub async fn main() -> AnyResult<()> {
                 .open(LOG_PATH)
                 .map(Stdio::from)
                 .unwrap_or_else(|err| {
-                    eprintln!("WARNING: Could not open {LOG_PATH} ({err}); agent logs will be lost");
+                    eprintln!(
+                        "WARNING: Could not open {LOG_PATH} ({err}); agent logs will be lost"
+                    );
                     Stdio::null()
                 });
 
