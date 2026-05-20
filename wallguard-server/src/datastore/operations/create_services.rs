@@ -26,6 +26,7 @@ impl Datastore {
                 port: Some(svc.port as i32),
                 protocol: Some(svc.protocol.clone()),
                 program: Some(svc.program.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             })
             .collect();
