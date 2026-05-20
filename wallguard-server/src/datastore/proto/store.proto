@@ -1076,7 +1076,7 @@ message DeviceFilterRules {
   optional string interface = 44;
   optional int32 order = 45;
   optional string associated_rule_id = 46;
-  optional string table_ = 47;
+  optional string table = 47;
   optional string chain = 48;
   optional string family = 49;
   optional bool floating = 50;
@@ -1359,7 +1359,7 @@ message GridFilters {
   optional string contact_id = 28;
   optional string account_organization_id = 29;
   optional string entity = 30;
-  optional string columns_data = 31;
+  optional string columns = 31;
   optional string groups = 32;
   optional string sorts = 33;
   optional string default_sorts = 34;

@@ -2540,7 +2540,7 @@ pub struct GridFilters {
     #[prost(string, optional, tag = "30")]
     pub entity: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "31")]
-    pub columns_data: ::core::option::Option<::prost::alloc::string::String>,
+    pub columns: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "32")]
     pub groups: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "33")]
