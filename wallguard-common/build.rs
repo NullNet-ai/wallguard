@@ -12,11 +12,11 @@ fn main() {
         .out_dir(OUTPUT_DIR)
         .protoc_arg("--experimental_allow_proto3_optional")
         .type_attribute(
-            "wallguard_service.PacketsData",
+            "wallguard_service.ConnectionsData",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(
-            "wallguard_service.Packet",
+            "wallguard_service.Connection",
             "#[derive(serde::Serialize, serde::Deserialize)]",
         )
         .type_attribute(

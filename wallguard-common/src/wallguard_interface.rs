@@ -12,7 +12,8 @@ use crate::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
 use crate::protobuf::wallguard_service::ServicesMessage;
 use crate::protobuf::wallguard_service::wall_guard_client::WallGuardClient;
 use crate::protobuf::wallguard_service::{
-    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+    ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse,
+    SystemResourcesData,
 };
 
 #[derive(Clone, Debug)]
@@ -25,13 +26,14 @@ impl WallGuardGrpcInterface {
     pub async fn new(addr: &str, port: u16) -> Result<Self, Error> {
         let addr = format!("http://{addr}:{port}");
 
-        let channel = Channel::from_shared(addr)
-            .expect("Failed to parse address")
-            .timeout(Duration::from_secs(10))
-            .keep_alive_timeout(Duration::from_secs(10))
-            .connect()
-            .await
-            .handle_err(location!())?;
+        let channel = {
+            let ep = Channel::from_shared(addr)
+                .expect("Failed to parse address")
+                .keep_alive_timeout(Duration::from_secs(10));
+            #[cfg(not(debug_assertions))]
+            let ep = ep.timeout(Duration::from_secs(10));
+            ep.connect().await.handle_err(location!())?
+        };
 
         let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
 
@@ -42,13 +44,14 @@ impl WallGuardGrpcInterface {
     pub async fn from_sockaddr(addr: SocketAddr) -> Result<Self, Error> {
         let addr = format!("http://{addr}");
 
-        let channel = Channel::from_shared(addr)
-            .expect("Failed to parse address")
-            .timeout(Duration::from_secs(10))
-            .keep_alive_timeout(Duration::from_secs(10))
-            .connect()
-            .await
-            .handle_err(location!())?;
+        let channel = {
+            let ep = Channel::from_shared(addr)
+                .expect("Failed to parse address")
+                .keep_alive_timeout(Duration::from_secs(10));
+            #[cfg(not(debug_assertions))]
+            let ep = ep.timeout(Duration::from_secs(10));
+            ep.connect().await.handle_err(location!())?
+        };
 
         let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
 
@@ -71,10 +74,10 @@ impl WallGuardGrpcInterface {
         Ok(response.into_inner())
     }
 
-    pub async fn handle_packets_data(&self, data: PacketsData) -> Result<(), Error> {
+    pub async fn handle_connections_data(&self, data: ConnectionsData) -> Result<(), Error> {
         self.client
             .clone()
-            .handle_packets_data(Request::new(data))
+            .handle_connections_data(Request::new(data))
             .await
             .handle_err(location!())
             .map(|response| response.into_inner())

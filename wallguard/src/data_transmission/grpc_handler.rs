@@ -5,7 +5,7 @@ use crate::wg_server::WGServer;
 use std::cmp::min;
 use std::time::Duration;
 use tokio::fs;
-use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResourcesData};
+use wallguard_common::protobuf::wallguard_service::{ConnectionsData, SystemResourcesData};
 
 pub(crate) async fn _handle_connection_and_retransmission(
     interface: WGServer,
@@ -40,12 +40,12 @@ pub(crate) async fn _handle_connection_and_retransmission(
             while dump._size() != 0 {
                 let range = ..min(dump._size(), BATCH_SIZE);
                 let send_res = match &dump {
-                    DumpItem::Packets(p) => {
-                        let msg = PacketsData {
-                            packets: p.packets.get(range).unwrap_or_default().to_vec(),
-                            ..p.clone()
+                    DumpItem::Connections(c) => {
+                        let msg = ConnectionsData {
+                            connections: c.connections.get(range).unwrap_or_default().to_vec(),
+                            ..c.clone()
                         };
-                        interface.handle_packets_data(msg).await
+                        interface.handle_connections_data(msg).await
                     }
                     DumpItem::Resources(r) => {
                         let msg = SystemResourcesData {

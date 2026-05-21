@@ -11,7 +11,7 @@ use wallguard_common::protobuf::wallguard_service::wall_guard_server::{
     WallGuard, WallGuardServer,
 };
 use wallguard_common::protobuf::wallguard_service::{
-    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, ServicesMessage,
+    ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse, ServicesMessage,
     SystemResourcesData,
 };
 
@@ -70,11 +70,11 @@ impl WallGuard for WallGuardService {
         self.control_channel_impl(request).await
     }
 
-    async fn handle_packets_data(
+    async fn handle_connections_data(
         &self,
-        request: Request<PacketsData>,
+        request: Request<ConnectionsData>,
     ) -> Result<Response<()>, Status> {
-        self.handle_packets_data_impl(request).await
+        self.handle_connections_data_impl(request).await
     }
 
     async fn handle_system_resources_data(

@@ -6,37 +6,50 @@ use crate::datastore::{
         batch_insert_connections_request,
     },
 };
-use crate::traffic_handler::parsed_message::ParsedMessage;
+use crate::token::Token;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_libipinfo::get_ip_to_lookup;
+use std::net::IpAddr;
+use wallguard_common::protobuf::wallguard_service::ConnectionsData;
 
 impl Datastore {
-    pub async fn create_connections(&self, token: &str, data: ParsedMessage) -> Result<(), Error> {
+    pub async fn create_connections(
+        &self,
+        token: &str,
+        auth_token: &Token,
+        data: ConnectionsData,
+    ) -> Result<(), Error> {
+        let device_id = auth_token
+            .account
+            .device_id()
+            .unwrap_or_default()
+            .to_string();
+
         let records: Vec<Connections> = data
-            .records
+            .connections
             .into_iter()
-            .map(|record| Connections {
-                device_id: Some(record.connection_key.device_id),
-                interface_name: Some(record.connection_key.interface_name),
-                source_ip: Some(record.connection_key.ip_header.source_ip.to_string()),
-                destination_ip: Some(record.connection_key.ip_header.destination_ip.to_string()),
-                source_port: record
-                    .connection_key
-                    .transport_header
-                    .source_port
-                    .map(|p| p as i32),
-                destination_port: record
-                    .connection_key
-                    .transport_header
-                    .destination_port
-                    .map(|p| p as i32),
-                protocol: Some(String::from(
-                    record.connection_key.transport_header.protocol,
-                )),
-                timestamp: Some(record.connection_value.timestamp),
-                total_packet: Some(record.connection_value.total_packet as i32),
-                total_byte: Some(record.connection_value.total_byte as i32),
-                remote_ip: record.connection_value.remote_ip.map(|ip| ip.to_string()),
-                ..Default::default()
+            .map(|conn| {
+                let src: Option<IpAddr> = conn.source_ip.parse().ok();
+                let dst: Option<IpAddr> = conn.destination_ip.parse().ok();
+                let remote_ip = src
+                    .zip(dst)
+                    .and_then(|(s, d)| get_ip_to_lookup(s, d))
+                    .map(|ip| ip.to_string());
+
+                Connections {
+                    device_id: Some(device_id.clone()),
+                    interface_name: Some(conn.interface),
+                    source_ip: Some(conn.source_ip),
+                    destination_ip: Some(conn.destination_ip),
+                    source_port: conn.source_port.map(|p| p as i32),
+                    destination_port: conn.destination_port.map(|p| p as i32),
+                    protocol: Some(conn.protocol),
+                    timestamp: Some(conn.timestamp),
+                    total_packet: Some(conn.total_packet as i32),
+                    total_byte: Some(conn.total_byte as i32),
+                    remote_ip,
+                    ..Default::default()
+                }
             })
             .collect();
 
