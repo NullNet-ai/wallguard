@@ -71,7 +71,10 @@ impl WallGuardService {
                 )
                 .await
                 .map_err(|err| Status::internal(err.to_str()))?;
-                log::info!("insert_new_configuration: {}ms", start.elapsed().as_millis());
+                log::info!(
+                    "insert_new_configuration: {}ms",
+                    start.elapsed().as_millis()
+                );
 
                 Ok(Response::new(()))
             }
@@ -85,7 +88,10 @@ impl WallGuardService {
             )
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
-            log::info!("insert_new_configuration: {}ms", start.elapsed().as_millis());
+            log::info!(
+                "insert_new_configuration: {}ms",
+                start.elapsed().as_millis()
+            );
 
             Ok(Response::new(()))
         }

@@ -39,8 +39,7 @@ pub fn parse_packets(packets: Vec<PacketInfo>) -> Vec<Connection> {
             continue;
         };
 
-        let Some((source_port, destination_port, protocol)) =
-            extract_transport(&headers.transport)
+        let Some((source_port, destination_port, protocol)) = extract_transport(&headers.transport)
         else {
             continue;
         };
@@ -122,7 +121,9 @@ fn is_ignored_interface(name: &str) -> bool {
         return true;
     }
     // virtual/container interfaces
-    let virtual_prefixes = ["veth", "docker", "br-", "virbr", "vmnet", "vboxnet", "tun", "tap"];
+    let virtual_prefixes = [
+        "veth", "docker", "br-", "virbr", "vmnet", "vboxnet", "tun", "tap",
+    ];
     virtual_prefixes.iter().any(|p| name.starts_with(p))
 }
 

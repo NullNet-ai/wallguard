@@ -29,12 +29,7 @@ pub(crate) async fn transmit_packets(
             let connections = parse_packets(std::mem::take(&mut raw_batch));
             connection_queue.extend(connections);
 
-            send_connections(
-                &client,
-                &mut connection_queue,
-                &token_provider,
-            )
-            .await;
+            send_connections(&client, &mut connection_queue, &token_provider).await;
 
             if connection_queue.is_full() {
                 log::warn!(

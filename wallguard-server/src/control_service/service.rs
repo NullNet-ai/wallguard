@@ -11,8 +11,8 @@ use wallguard_common::protobuf::wallguard_service::wall_guard_server::{
     WallGuard, WallGuardServer,
 };
 use wallguard_common::protobuf::wallguard_service::{
-    ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse, ServicesMessage,
-    SystemResourcesData,
+    ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse,
+    ServicesMessage, SystemResourcesData,
 };
 
 // @TODO: Configure through ENV
