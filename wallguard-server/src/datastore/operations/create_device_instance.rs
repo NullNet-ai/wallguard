@@ -14,6 +14,7 @@ impl Datastore {
         let request = CreateDeviceInstancesRequest {
             device_instances: Some(DeviceInstances {
                 device_id: Some(instance.device_id.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {

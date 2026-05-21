@@ -19,6 +19,7 @@ impl Datastore {
                 hostname: Some(config.hostname.clone()),
                 device_id: Some(config.device_id.clone()),
                 config_version: Some(config.version),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {

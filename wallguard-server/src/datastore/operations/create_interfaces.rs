@@ -29,6 +29,7 @@ impl Datastore {
                 name: Some(iface.name.clone()),
                 device: Some(iface.device.clone()),
                 description: Some(iface.description.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             })
             .collect();
@@ -77,6 +78,7 @@ impl Datastore {
                     addr_records.push(DeviceInterfaceAddresses {
                         device_interface_id: Some(iface_id.clone()),
                         address: Some(address.address.clone()),
+                        status: Some(String::from("Active")),
                         ..Default::default()
                     });
                 }

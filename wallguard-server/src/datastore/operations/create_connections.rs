@@ -48,6 +48,7 @@ impl Datastore {
                     total_packet: Some(conn.total_packet as i32),
                     total_byte: Some(conn.total_byte as i32),
                     remote_ip,
+                    status: Some(String::from("Active")),
                     ..Default::default()
                 }
             })

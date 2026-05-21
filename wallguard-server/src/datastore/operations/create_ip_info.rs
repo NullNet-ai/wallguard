@@ -26,6 +26,7 @@ impl Datastore {
                 region: ip_info.region.clone(),
                 postal: ip_info.postal.clone(),
                 timezone: ip_info.timezone.clone(),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {

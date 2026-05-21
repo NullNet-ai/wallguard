@@ -14,6 +14,7 @@ impl Datastore {
         let request = CreateDeviceHeartbeatsRequest {
             device_heartbeats: Some(DeviceHeartbeats {
                 device_id: Some(heartbeat.device_id.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {

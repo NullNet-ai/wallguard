@@ -13,6 +13,7 @@ impl Datastore {
                 tunnel_type: Some(tunnel.tunnel_type.to_string()),
                 service_id: Some(tunnel.service_id.clone()),
                 tunnel_status: Some(tunnel.tunnel_status.to_string()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {

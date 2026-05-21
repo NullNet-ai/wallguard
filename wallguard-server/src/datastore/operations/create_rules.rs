@@ -61,6 +61,7 @@ impl Datastore {
                 chain: Some(rule.chain.clone()),
                 family: Some(rule.family.clone()),
                 floating: Some(rule.floating),
+                status: Some(String::from("Active")),
                 ..Default::default()
             })
             .collect();
@@ -143,6 +144,7 @@ impl Datastore {
                 table: Some(rule.table.clone()),
                 chain: Some(rule.chain.clone()),
                 family: Some(rule.family.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             })
             .collect();

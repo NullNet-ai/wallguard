@@ -21,6 +21,7 @@ impl Datastore {
                 is_device_online: Some(device.online),
                 organization_id: Some(device.organization.clone()),
                 device_version: Some(device.version.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {

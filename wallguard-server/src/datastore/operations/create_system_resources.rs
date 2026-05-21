@@ -35,6 +35,7 @@ impl Datastore {
                 written_bytes: Some(res.written_bytes.to_string()),
                 temperature: Some(res.temperatures),
                 device_id: Some(device_id.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             })
             .collect();

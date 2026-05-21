@@ -335,7 +335,10 @@ pub mod wall_guard_client {
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
-                    GrpcMethod::new("wallguard_service.WallGuard", "HandleConnectionsData"),
+                    GrpcMethod::new(
+                        "wallguard_service.WallGuard",
+                        "HandleConnectionsData",
+                    ),
                 );
             self.inner.unary(req, path, codec).await
         }
@@ -643,7 +646,9 @@ pub mod wall_guard_server {
                 "/wallguard_service.WallGuard/HandleConnectionsData" => {
                     #[allow(non_camel_case_types)]
                     struct HandleConnectionsDataSvc<T: WallGuard>(pub Arc<T>);
-                    impl<T: WallGuard> tonic::server::UnaryService<super::ConnectionsData>
+                    impl<
+                        T: WallGuard,
+                    > tonic::server::UnaryService<super::ConnectionsData>
                     for HandleConnectionsDataSvc<T> {
                         type Response = ();
                         type Future = BoxFuture<
@@ -656,7 +661,8 @@ pub mod wall_guard_server {
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as WallGuard>::handle_connections_data(&inner, request).await
+                                <T as WallGuard>::handle_connections_data(&inner, request)
+                                    .await
                             };
                             Box::pin(fut)
                         }

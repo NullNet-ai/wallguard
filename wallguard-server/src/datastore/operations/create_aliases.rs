@@ -36,6 +36,7 @@ impl Datastore {
                 alias_status: Some(alias_model.alias_status.clone()),
                 family: Some(alias_model.family.clone()),
                 table: Some(alias_model.table.clone()),
+                status: Some(String::from("Active")),
                 ..Default::default()
             }),
             params: Some(CreateParams {
@@ -83,6 +84,7 @@ impl Datastore {
                     alias_id: Some(a.alias_id.clone()),
                     ip: Some(a.ip.clone()),
                     prefix: Some(a.prefix),
+                    status: Some(String::from("Active")),
                     ..Default::default()
                 })
                 .collect();
@@ -125,6 +127,7 @@ impl Datastore {
                     alias_id: Some(a.alias_id.clone()),
                     lower_port: Some(a.lower_port),
                     upper_port: Some(a.upper_port),
+                    status: Some(String::from("Active")),
                     ..Default::default()
                 })
                 .collect();
