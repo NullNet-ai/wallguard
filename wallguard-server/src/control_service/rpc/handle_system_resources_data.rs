@@ -18,14 +18,21 @@ impl WallGuardService {
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
-        log::info!("Received {} system resources.", data.resources.len());
+        let resources_count = data.resources.len();
+        log::info!("Received {} system resources", resources_count);
 
         if !data.resources.is_empty() {
+            let start = std::time::Instant::now();
             self.context
                 .datastore
                 .create_system_resources(&token.jwt, data.resources, device.id)
                 .await
                 .map_err(|_| Status::internal("Datastore operation failed"))?;
+            log::info!(
+                "create_system_resources: inserted {} records in {}ms",
+                resources_count,
+                start.elapsed().as_millis()
+            );
         }
 
         Ok(Response::new(()))

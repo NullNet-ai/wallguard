@@ -31,31 +31,38 @@ impl WallGuardService {
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
 
+        let start = std::time::Instant::now();
         let previous = self
             .context
             .datastore
             .obtain_config(&token.jwt, token.account.device_id().unwrap_or_default())
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
+        log::info!("obtain_config: {}ms", start.elapsed().as_millis());
 
         if let Some(mut prev) = previous {
             if prev.digest == configuration.digest {
                 prev.version += 1;
 
+                let start = std::time::Instant::now();
                 self.context
                     .datastore
                     .update_config(&token.jwt, &prev.id, &prev)
                     .await
                     .map_err(|err| Status::internal(err.to_str()))?;
+                log::info!("update_config: {}ms", start.elapsed().as_millis());
 
+                let start = std::time::Instant::now();
                 self.context
                     .datastore
                     .update_rules_status(&token.jwt, &prev.id, status)
                     .await
                     .map_err(|err| Status::internal(err.to_str()))?;
+                log::info!("update_rules_status: {}ms", start.elapsed().as_millis());
 
                 Ok(Response::new(()))
             } else {
+                let start = std::time::Instant::now();
                 insert_new_configuration(
                     self.context.datastore.clone(),
                     &token,
@@ -64,10 +71,12 @@ impl WallGuardService {
                 )
                 .await
                 .map_err(|err| Status::internal(err.to_str()))?;
+                log::info!("insert_new_configuration: {}ms", start.elapsed().as_millis());
 
                 Ok(Response::new(()))
             }
         } else {
+            let start = std::time::Instant::now();
             insert_new_configuration(
                 self.context.datastore.clone(),
                 &token,
@@ -76,6 +85,7 @@ impl WallGuardService {
             )
             .await
             .map_err(|err| Status::internal(err.to_str()))?;
+            log::info!("insert_new_configuration: {}ms", start.elapsed().as_millis());
 
             Ok(Response::new(()))
         }

@@ -33,11 +33,17 @@ impl WallGuardService {
         log::info!("Received {} pre-parsed connections", connections_count);
 
         if !data.connections.is_empty() {
+            let start = std::time::Instant::now();
             self.context
                 .datastore
                 .create_connections(&token.jwt, &token, data)
                 .await
                 .map_err(|_| Status::internal("Datastore operation failed"))?;
+            log::info!(
+                "create_connections: inserted {} records in {}ms",
+                connections_count,
+                start.elapsed().as_millis()
+            );
         }
 
         Ok(Response::new(()))
