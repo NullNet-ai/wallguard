@@ -39,10 +39,6 @@ pub fn parse_packets(packets: Vec<PacketInfo>) -> Vec<Connection> {
             continue;
         };
 
-        if is_ignored_ip(source_ip) || is_ignored_ip(destination_ip) {
-            continue;
-        }
-
         let Some((source_port, destination_port, protocol)) =
             extract_transport(&headers.transport)
         else {
@@ -128,13 +124,6 @@ fn is_ignored_interface(name: &str) -> bool {
     // virtual/container interfaces
     let virtual_prefixes = ["veth", "docker", "br-", "virbr", "vmnet", "vboxnet", "tun", "tap"];
     virtual_prefixes.iter().any(|p| name.starts_with(p))
-}
-
-fn is_ignored_ip(ip: IpAddr) -> bool {
-    ip.is_loopback()
-        || ip.is_multicast()
-        || matches!(ip, IpAddr::V4(v4) if v4.is_link_local())
-        || matches!(ip, IpAddr::V6(v6) if (v6.segments()[0] & 0xffc0) == 0xfe80)
 }
 
 fn get_packet_headers(packet: &[u8], link_type: i32) -> Option<LaxPacketHeaders<'_>> {
