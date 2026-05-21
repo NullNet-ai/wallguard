@@ -4,7 +4,8 @@ use tokio::sync::{Mutex, mpsc};
 use tonic::Streaming;
 use wallguard_common::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
 use wallguard_common::protobuf::wallguard_service::{
-    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+    ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse,
+    SystemResourcesData,
 };
 use wallguard_common::wallguard_interface::WallGuardGrpcInterface;
 
@@ -85,10 +86,10 @@ impl WGServer {
             .await
     }
 
-    pub async fn handle_packets_data(&self, data: PacketsData) -> Result<(), Error> {
+    pub async fn handle_connections_data(&self, data: ConnectionsData) -> Result<(), Error> {
         self.get_interface(false)
             .await?
-            .handle_packets_data(data)
+            .handle_connections_data(data)
             .await
     }
 

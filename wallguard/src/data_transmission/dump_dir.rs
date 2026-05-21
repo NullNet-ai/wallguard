@@ -2,7 +2,7 @@ use crate::constants::DUMP_DIR;
 use std::ops::RangeTo;
 use std::path::PathBuf;
 use tokio::fs;
-use wallguard_common::protobuf::wallguard_service::{PacketsData, SystemResourcesData};
+use wallguard_common::protobuf::wallguard_service::{ConnectionsData, SystemResourcesData};
 
 #[derive(Clone, Debug)]
 pub(crate) struct DumpDir {
@@ -46,7 +46,7 @@ impl DumpDir {
 
     fn get_file_path(&self, time: &str, dump_item: &DumpItem) -> String {
         match dump_item {
-            DumpItem::Packets(_) => format!("{}/{time}_packets", self.path),
+            DumpItem::Connections(_) => format!("{}/{time}_connections", self.path),
             DumpItem::Resources(_) => format!("{}/{time}_resources", self.path),
             DumpItem::Empty => format!("{}/{time}_empty", self.path),
         }
@@ -77,7 +77,7 @@ impl DumpDir {
 #[derive(serde::Serialize, serde::Deserialize, Default)]
 #[serde(untagged)]
 pub(crate) enum DumpItem {
-    Packets(PacketsData),
+    Connections(ConnectionsData),
     Resources(SystemResourcesData),
     #[default]
     Empty,
@@ -86,7 +86,7 @@ pub(crate) enum DumpItem {
 impl DumpItem {
     pub(crate) fn _set_token(&mut self, token: String) {
         match self {
-            DumpItem::Packets(packets) => packets.token = token,
+            DumpItem::Connections(connections) => connections.token = token,
             DumpItem::Resources(resources) => resources.token = token,
             DumpItem::Empty => {}
         }
@@ -94,7 +94,7 @@ impl DumpItem {
 
     pub(crate) fn _size(&self) -> usize {
         match self {
-            DumpItem::Packets(packets) => packets.packets.len(),
+            DumpItem::Connections(connections) => connections.connections.len(),
             DumpItem::Resources(resources) => resources.resources.len(),
             DumpItem::Empty => 0,
         }
@@ -102,8 +102,8 @@ impl DumpItem {
 
     pub(crate) fn _drain(&mut self, range: RangeTo<usize>) {
         match self {
-            DumpItem::Packets(packets) => {
-                packets.packets.drain(range);
+            DumpItem::Connections(connections) => {
+                connections.connections.drain(range);
             }
             DumpItem::Resources(resources) => {
                 resources.resources.drain(range);

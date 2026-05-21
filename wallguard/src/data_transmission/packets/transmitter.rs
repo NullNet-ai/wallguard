@@ -1,3 +1,4 @@
+use super::parser::parse_packets;
 use crate::constants::{BATCH_SIZE, DATA_TRANSMISSION_INTERVAL_SECONDS, QUEUE_SIZE};
 use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
 use crate::data_transmission::item_buffer::ItemBuffer;
@@ -7,7 +8,7 @@ use crate::wg_server::WGServer;
 use async_channel::Receiver;
 use nullnet_traffic_monitor::PacketInfo;
 use std::cmp::min;
-use wallguard_common::protobuf::wallguard_service::{Packet, PacketsData};
+use wallguard_common::protobuf::wallguard_service::{Connection, ConnectionsData};
 
 pub(crate) async fn transmit_packets(
     rx: Receiver<PacketInfo>,
@@ -15,36 +16,32 @@ pub(crate) async fn transmit_packets(
     dump_dir: DumpDir,
     client: WGServer,
 ) {
-    let mut packet_batch = ItemBuffer::new(BATCH_SIZE);
-    let mut packet_queue = ItemBuffer::new(QUEUE_SIZE);
+    let mut raw_batch = ItemBuffer::new(BATCH_SIZE);
+    let mut connection_queue: ItemBuffer<Connection> = ItemBuffer::new(QUEUE_SIZE);
     let mut timer = Timer::new(DATA_TRANSMISSION_INTERVAL_SECONDS);
 
     while let Ok(packet) = rx.recv().await {
-        let packet = Packet {
-            timestamp: packet.timestamp,
-            interface: packet.interface,
-            link_type: packet.link_type,
-            data: packet.data,
-        };
-        packet_batch.push(packet);
-        if packet_batch.is_full() || timer.is_expired() {
+        raw_batch.push(packet);
+        if raw_batch.is_full() || timer.is_expired() {
             timer.reset();
 
-            send_packets(
+            let connections = parse_packets(raw_batch.take());
+            connection_queue.extend(connections);
+
+            send_connections(
                 &client,
-                &mut packet_batch,
-                &mut packet_queue,
+                &mut connection_queue,
                 &token_provider,
             )
             .await;
 
-            if packet_queue.is_full() {
+            if connection_queue.is_full() {
                 log::warn!(
-                    "Queue is full. Dumping {} packets to file",
-                    packet_queue.len(),
+                    "Queue is full. Dumping {} connections to file",
+                    connection_queue.len(),
                 );
-                let dump_item = DumpItem::Packets(PacketsData {
-                    packets: packet_queue.take(),
+                let dump_item = DumpItem::Connections(ConnectionsData {
+                    connections: connection_queue.take(),
                     token: String::new(),
                 });
                 dump_dir.dump_item_to_file(dump_item).await;
@@ -65,14 +62,12 @@ pub(crate) async fn transmit_packets(
     }
 }
 
-async fn send_packets(
+async fn send_connections(
     interface: &WGServer,
-    packet_batch: &mut ItemBuffer<Packet>,
-    packet_queue: &mut ItemBuffer<Packet>,
+    connection_queue: &mut ItemBuffer<Connection>,
     token_provider: &TokenProvider,
 ) {
-    packet_queue.extend(packet_batch.take());
-    while !packet_queue.is_empty() {
+    while !connection_queue.is_empty() {
         let token = token_provider.get().await;
 
         if token.is_none() {
@@ -80,17 +75,17 @@ async fn send_packets(
             break;
         }
 
-        let range = ..min(packet_queue.len(), BATCH_SIZE);
-        let packets = PacketsData {
-            packets: packet_queue.get(range),
+        let range = ..min(connection_queue.len(), BATCH_SIZE);
+        let data = ConnectionsData {
+            connections: connection_queue.get(range),
             token: token.unwrap(),
         };
 
-        if interface.handle_packets_data(packets).await.is_err() {
-            log::error!("Failed to send packets");
+        if interface.handle_connections_data(data).await.is_err() {
+            log::error!("Failed to send connections");
             break;
         }
 
-        packet_queue.drain(range);
+        connection_queue.drain(range);
     }
 }

@@ -12,10 +12,10 @@ service WallGuard {
   rpc GetDeviceSettings(DeviceSettingsRequest) 
     returns (DeviceSettingsResponse);
 
-  rpc HandlePacketsData(PacketsData) 
+  rpc HandleConnectionsData(ConnectionsData)
     returns (google.protobuf.Empty);
 
-  rpc HandleSystemResourcesData(SystemResourcesData) 
+  rpc HandleSystemResourcesData(SystemResourcesData)
     returns (google.protobuf.Empty);
 
   rpc HandleConfigData(ConfigSnapshot) 
@@ -25,16 +25,21 @@ service WallGuard {
     returns (google.protobuf.Empty);
 }
 
-message PacketsData {
+message ConnectionsData {
   string token = 1;
-  repeated Packet packets = 2;
+  repeated Connection connections = 2;
 }
 
-message Packet {
+message Connection {
   string timestamp = 1;
   string interface = 2;
-  int32 link_type = 3;
-  bytes data = 4;
+  string source_ip = 3;
+  string destination_ip = 4;
+  optional uint32 source_port = 5;
+  optional uint32 destination_port = 6;
+  string protocol = 7;
+  uint64 total_byte = 8;
+  uint32 total_packet = 9;
 }
 
 message SystemResourcesData {

@@ -12,7 +12,8 @@ use crate::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
 use crate::protobuf::wallguard_service::ServicesMessage;
 use crate::protobuf::wallguard_service::wall_guard_client::WallGuardClient;
 use crate::protobuf::wallguard_service::{
-    ConfigSnapshot, DeviceSettingsRequest, DeviceSettingsResponse, PacketsData, SystemResourcesData,
+    ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse,
+    SystemResourcesData,
 };
 
 #[derive(Clone, Debug)]
@@ -71,10 +72,10 @@ impl WallGuardGrpcInterface {
         Ok(response.into_inner())
     }
 
-    pub async fn handle_packets_data(&self, data: PacketsData) -> Result<(), Error> {
+    pub async fn handle_connections_data(&self, data: ConnectionsData) -> Result<(), Error> {
         self.client
             .clone()
-            .handle_packets_data(Request::new(data))
+            .handle_connections_data(Request::new(data))
             .await
             .handle_err(location!())
             .map(|response| response.into_inner())
