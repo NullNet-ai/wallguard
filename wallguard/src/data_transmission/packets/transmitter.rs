@@ -16,16 +16,17 @@ pub(crate) async fn transmit_packets(
     dump_dir: DumpDir,
     client: WGServer,
 ) {
-    let mut raw_batch = ItemBuffer::new(BATCH_SIZE);
+    // PacketInfo doesn't implement Clone so we use a plain Vec for the raw accumulation window
+    let mut raw_batch: Vec<PacketInfo> = Vec::with_capacity(BATCH_SIZE);
     let mut connection_queue: ItemBuffer<Connection> = ItemBuffer::new(QUEUE_SIZE);
     let mut timer = Timer::new(DATA_TRANSMISSION_INTERVAL_SECONDS);
 
     while let Ok(packet) = rx.recv().await {
         raw_batch.push(packet);
-        if raw_batch.is_full() || timer.is_expired() {
+        if raw_batch.len() >= BATCH_SIZE || timer.is_expired() {
             timer.reset();
 
-            let connections = parse_packets(raw_batch.take());
+            let connections = parse_packets(std::mem::take(&mut raw_batch));
             connection_queue.extend(connections);
 
             send_connections(
