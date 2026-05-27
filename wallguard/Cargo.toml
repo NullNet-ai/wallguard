@@ -37,7 +37,7 @@ rustls.workspace = true
 tokio-rustls.workspace = true
 whoami = "2.0.2"
 
-[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 x11rb = "0.13"
 
 [target.'cfg(windows)'.dependencies]
