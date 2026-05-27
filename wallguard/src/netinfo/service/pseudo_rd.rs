@@ -26,21 +26,50 @@ pub fn filter(_: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
 /// Returns `true` when a live display session is reachable by the agent
 /// process right now.
 ///
-/// We use `Enigo::new()` as the ground-truth probe because it exercises the
-/// same code path as the actual Remote Desktop feature (mouse/keyboard
-/// injection).  A socket existing on disk is not sufficient — enigo also
-/// needs authenticated access, which is only available while a user session
-/// is running.
+/// The check uses two strategies depending on which display protocol is
+/// available:
+///
+/// **X11 (or XWayland)** — `x11rb::connect()` is attempted first.  This is
+/// exactly what `X11Capturer::new()` does, so success here means screen
+/// capture will work.  We additionally probe `Enigo::new()` to confirm that
+/// input injection is also possible.
+///
+/// **Pure Wayland (no X11 socket reachable)** — Enigo only speaks X11 and
+/// cannot connect, but the Wayland compositor socket being alive is a strong
+/// signal that a live user session exists.  We therefore report available and
+/// let the session-open path fail gracefully if screen capture is ultimately
+/// not possible (e.g. compositor lacks the screencopy protocol).
 fn is_rd_available() -> bool {
-    use enigo::{Enigo, Settings};
+    use crate::client_data::platform::{has_wayland_display, has_x11_display};
 
-    // Suppress the enigo attempt entirely when there is no display socket at
-    // all (e.g. a headless server).  Skipping the attempt avoids enigo's
-    // internal error logs appearing every 5 minutes for machines that never
-    // had a display.
-    if !crate::client_data::platform::has_desktop_environment() {
+    // Fast path: no display at all (headless server) — skip the more
+    // expensive probes and avoid noisy Enigo log output every 5 minutes.
+    if !has_x11_display() && !has_wayland_display() {
         return false;
     }
 
-    Enigo::new(&Settings::default()).is_ok()
+    // On Linux and FreeBSD the screen capturer uses x11rb exclusively.
+    // Try an actual connection — same call X11Capturer::new() makes — so we
+    // know capture will work before reporting available.
+    #[cfg(any(target_os = "linux", target_os = "freebsd"))]
+    {
+        if x11rb::connect(None).is_ok() {
+            // X11 display is connectable; also verify input injection.
+            use enigo::{Enigo, Settings};
+            return Enigo::new(&Settings::default()).is_ok();
+        }
+
+        // X11 connect failed (no X11 server or XWayland auth not available),
+        // but Wayland compositor socket is live: report the service so the
+        // server knows a desktop session exists.  The actual session open will
+        // surface a clean error if screen capture cannot be established.
+        return has_wayland_display();
+    }
+
+    // All other platforms: use Enigo as the ground-truth probe.
+    #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
+    {
+        use enigo::{Enigo, Settings};
+        Enigo::new(&Settings::default()).is_ok()
+    }
 }

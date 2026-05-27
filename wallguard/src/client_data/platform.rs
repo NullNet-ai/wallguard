@@ -104,7 +104,7 @@ pub(crate) fn has_desktop_environment() -> bool {
 ///
 /// On Windows we ask GDI for the primary screen width: a non-zero result
 /// means at least one monitor is active.
-fn has_x11_display() -> bool {
+pub(crate) fn has_x11_display() -> bool {
     #[cfg(target_os = "linux")]
     {
         // Try a real handshake via DISPLAY first (covers the normal desktop case).
@@ -158,7 +158,7 @@ fn has_x11_display() -> bool {
 /// (or at `$XDG_RUNTIME_DIR/wayland-0` when the var is unset).  We verify
 /// the socket path actually exists rather than just checking the env var,
 /// because the env var may linger after the compositor dies.
-fn has_wayland_display() -> bool {
+pub(crate) fn has_wayland_display() -> bool {
     // WAYLAND_DISPLAY may be an absolute path or a socket name relative to
     // XDG_RUNTIME_DIR. Unset means "wayland-0" by convention.
     let display = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
