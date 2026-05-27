@@ -20,7 +20,11 @@ pub fn extract_session_token(req: &HttpRequest) -> Result<String, HttpResponse> 
         .split('&')
         .find_map(|pair| {
             let (k, v) = pair.split_once('=')?;
-            if k == "tunnel_id" { Some(v.to_owned()) } else { None }
+            if k == "tunnel_id" {
+                Some(v.to_owned())
+            } else {
+                None
+            }
         })
         .ok_or_else(|| {
             HttpResponse::Unauthorized().json(ErrorJson::from("Session token is missing"))

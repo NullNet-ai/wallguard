@@ -11,7 +11,7 @@ pub enum Platform {
     Generic,
     PfSense,
     OpnSense,
-    NfTables
+    NfTables,
 }
 
 impl TryFrom<&str> for Platform {
@@ -164,8 +164,7 @@ fn has_x11_display() -> bool {
 fn has_wayland_display() -> bool {
     // WAYLAND_DISPLAY may be an absolute path or a socket name relative to
     // XDG_RUNTIME_DIR. Unset means "wayland-0" by convention.
-    let display = std::env::var("WAYLAND_DISPLAY")
-        .unwrap_or_else(|_| "wayland-0".to_string());
+    let display = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
 
     if display.starts_with('/') {
         return Path::new(&display).exists();
@@ -207,7 +206,9 @@ fn x11_socket_exists() -> bool {
             if num.parse::<u32>().is_ok() {
                 if std::env::var_os("DISPLAY").is_none() {
                     // SAFETY: see doc-comment above.
-                    unsafe { std::env::set_var("DISPLAY", format!(":{num}")); }
+                    unsafe {
+                        std::env::set_var("DISPLAY", format!(":{num}"));
+                    }
                 }
                 return true;
             }
@@ -236,9 +237,7 @@ fn has_quartz_display() -> bool {
 /// present.  Returns zero in headless / no-monitor scenarios.
 #[cfg(target_os = "windows")]
 fn has_windows_display() -> bool {
-    unsafe {
-        winapi::um::winuser::GetSystemMetrics(winapi::um::winuser::SM_CXSCREEN) > 0
-    }
+    unsafe { winapi::um::winuser::GetSystemMetrics(winapi::um::winuser::SM_CXSCREEN) > 0 }
 }
 
 /// Returns the effective UID of the current process for building the
