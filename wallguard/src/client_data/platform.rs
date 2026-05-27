@@ -175,13 +175,43 @@ fn has_wayland_display() -> bool {
     Path::new(&runtime_dir).join(&display).exists()
 }
 
-/// Scans `/tmp/.X11-unix/` for at least one socket file, which indicates an
-/// X11 server is running even when DISPLAY is not in the environment.
+/// Scans `/tmp/.X11-unix/` for socket files created by an X11 server.
+///
+/// Socket names follow the pattern `X<n>` (e.g. `X0`, `X1`).  When a socket
+/// is found and `DISPLAY` is not already set in the environment we synthesise
+/// it (e.g. `:0`) so that downstream tools — `enigo`, `copypasta`, etc. —
+/// can connect without requiring the caller to have inherited `DISPLAY` from
+/// a login session.
+///
+/// # Safety of `set_var`
+/// `std::env::set_var` is inherently racy in a multi-threaded process.
+/// This call is safe in practice because:
+///   * It is only reached when `DISPLAY` is absent (checked immediately before).
+///   * It is invoked once, early in `Context::new()`, before the agent's
+///     worker tasks start reading the environment.
+///   * After this point `DISPLAY` is only ever read, never written again.
 #[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn x11_socket_exists() -> bool {
-    std::fs::read_dir("/tmp/.X11-unix")
-        .map(|mut d| d.next().is_some())
-        .unwrap_or(false)
+    let Ok(entries) = std::fs::read_dir("/tmp/.X11-unix") else {
+        return false;
+    };
+
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        // Socket names are "X0", "X1", …
+        if let Some(num) = name.strip_prefix('X') {
+            if num.parse::<u32>().is_ok() {
+                if std::env::var_os("DISPLAY").is_none() {
+                    // SAFETY: see doc-comment above.
+                    unsafe { std::env::set_var("DISPLAY", format!(":{num}")); }
+                }
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 /// Calls `CGMainDisplayID()` via FFI to check for an active Quartz (macOS
