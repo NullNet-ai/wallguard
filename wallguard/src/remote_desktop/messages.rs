@@ -93,14 +93,22 @@ impl InputBackend {
             InputBackend::Enigo(e) => {
                 use enigo::{Button, Direction, Mouse};
                 let button = parse_enigo_button(btn)?;
-                let dir = if press { Direction::Press } else { Direction::Release };
+                let dir = if press {
+                    Direction::Press
+                } else {
+                    Direction::Release
+                };
                 e.button(button, dir).handle_err(location!())
             }
             #[cfg(target_os = "linux")]
             InputBackend::Uinput(u) => {
                 use super::uinput_handler::MouseButton;
                 let btn = parse_uinput_button(btn)?;
-                if press { u.button_press(btn) } else { u.button_release(btn) }
+                if press {
+                    u.button_press(btn)
+                } else {
+                    u.button_release(btn)
+                }
             }
         }
     }
@@ -111,31 +119,35 @@ impl InputBackend {
                 use enigo::{Direction, Key, Keyboard};
                 let k = parse_enigo_key(key);
                 let dir = match direction {
-                    KeyDir::Press   => Direction::Press,
+                    KeyDir::Press => Direction::Press,
                     KeyDir::Release => Direction::Release,
-                    KeyDir::Click   => Direction::Click,
+                    KeyDir::Click => Direction::Click,
                 };
                 e.key(k, dir).handle_err(location!())
             }
             #[cfg(target_os = "linux")]
             InputBackend::Uinput(u) => match direction {
-                KeyDir::Press   => u.key_press(key),
+                KeyDir::Press => u.key_press(key),
                 KeyDir::Release => u.key_release(key),
-                KeyDir::Click   => u.key_click(key),
+                KeyDir::Click => u.key_click(key),
             },
         }
     }
 }
 
 #[derive(Clone, Copy)]
-enum KeyDir { Press, Release, Click }
+enum KeyDir {
+    Press,
+    Release,
+    Click,
+}
 
 // ── MessageHandler ────────────────────────────────────────────────────────────
 
 #[derive(Clone)]
 pub struct MessageHandler {
-    input:  Arc<Mutex<InputBackend>>,
-    clctx:  Arc<Mutex<ClipboardContext>>,
+    input: Arc<Mutex<InputBackend>>,
+    clctx: Arc<Mutex<ClipboardContext>>,
 }
 
 impl fmt::Debug for MessageHandler {
@@ -157,8 +169,7 @@ impl MessageHandler {
     }
 
     pub async fn on_message(&self, message: Vec<u8>) -> Result<(), Error> {
-        let json =
-            serde_json::from_slice::<serde_json::Value>(&message).handle_err(location!())?;
+        let json = serde_json::from_slice::<serde_json::Value>(&message).handle_err(location!())?;
 
         let message_type = json
             .get("message_type")
@@ -184,8 +195,7 @@ impl MessageHandler {
                 self.on_clipboard_message(msg).await?;
             }
             mt => {
-                return Err(format!("{mt} message type is not supported"))
-                    .handle_err(location!());
+                return Err(format!("{mt} message type is not supported")).handle_err(location!());
             }
         };
 
@@ -197,17 +207,20 @@ impl MessageHandler {
         match message.message_type.to_lowercase().as_str() {
             "mousemove" => input.move_mouse(message.x, message.y),
             "mousedown" => input.button(&message.button, true),
-            "mouseup"   => input.button(&message.button, false),
-            _ => Err(format!("Unsupported mouse message type {}", message.message_type))
-                .handle_err(location!()),
+            "mouseup" => input.button(&message.button, false),
+            _ => Err(format!(
+                "Unsupported mouse message type {}",
+                message.message_type
+            ))
+            .handle_err(location!()),
         }
     }
 
     async fn on_keyboard_message(&self, message: KeyboardMessage) -> Result<(), Error> {
         let direction = match message.message_type.to_lowercase().as_str() {
-            "keydown"  => KeyDir::Press,
-            "keyup"    => KeyDir::Release,
-            _          => KeyDir::Click,
+            "keydown" => KeyDir::Press,
+            "keyup" => KeyDir::Release,
+            _ => KeyDir::Click,
         };
         self.input.lock().await.key(&message.key, direction)
     }
@@ -226,49 +239,49 @@ impl MessageHandler {
 fn parse_enigo_button(s: &str) -> Result<enigo::Button, Error> {
     use enigo::Button;
     match s.to_lowercase().as_str() {
-        "left"    => Ok(Button::Left),
-        "middle"  => Ok(Button::Middle),
+        "left" => Ok(Button::Left),
+        "middle" => Ok(Button::Middle),
         "right" | "rigth" => Ok(Button::Right),
-        "back"    => Ok(Button::Back),
+        "back" => Ok(Button::Back),
         "forward" => Ok(Button::Forward),
-        _         => Err(format!("Unsupported mouse button {s}")).handle_err(location!()),
+        _ => Err(format!("Unsupported mouse button {s}")).handle_err(location!()),
     }
 }
 
 fn parse_enigo_key(key: &str) -> enigo::Key {
     use enigo::Key;
     match key.to_lowercase().as_str() {
-        "backspace"  => Key::Backspace,
-        "control"    => Key::Control,
-        "meta"       => Key::Meta,
-        "alt"        => Key::Alt,
-        "tab"        => Key::Tab,
-        "capslock"   => Key::CapsLock,
-        "shift"      => Key::Shift,
-        "escape"     => Key::Escape,
-        "f1"         => Key::F1,
-        "f2"         => Key::F2,
-        "f3"         => Key::F3,
-        "f4"         => Key::F4,
-        "f5"         => Key::F5,
-        "f6"         => Key::F6,
-        "f7"         => Key::F7,
-        "f8"         => Key::F8,
-        "f9"         => Key::F9,
-        "f10"        => Key::F10,
-        "f11"        => Key::F11,
-        "f12"        => Key::F12,
-        "delete"     => Key::Delete,
-        "enter"      => Key::Return,
-        "arrowup"    => Key::UpArrow,
-        "arrowdown"  => Key::DownArrow,
-        "arrowleft"  => Key::LeftArrow,
+        "backspace" => Key::Backspace,
+        "control" => Key::Control,
+        "meta" => Key::Meta,
+        "alt" => Key::Alt,
+        "tab" => Key::Tab,
+        "capslock" => Key::CapsLock,
+        "shift" => Key::Shift,
+        "escape" => Key::Escape,
+        "f1" => Key::F1,
+        "f2" => Key::F2,
+        "f3" => Key::F3,
+        "f4" => Key::F4,
+        "f5" => Key::F5,
+        "f6" => Key::F6,
+        "f7" => Key::F7,
+        "f8" => Key::F8,
+        "f9" => Key::F9,
+        "f10" => Key::F10,
+        "f11" => Key::F11,
+        "f12" => Key::F12,
+        "delete" => Key::Delete,
+        "enter" => Key::Return,
+        "arrowup" => Key::UpArrow,
+        "arrowdown" => Key::DownArrow,
+        "arrowleft" => Key::LeftArrow,
         "arrowright" => Key::RightArrow,
-        "home"       => Key::Home,
-        "end"        => Key::End,
-        "pageup"     => Key::PageUp,
-        "pagedown"   => Key::PageDown,
-        k            => Key::Unicode(k.chars().next().unwrap_or('\0')),
+        "home" => Key::Home,
+        "end" => Key::End,
+        "pageup" => Key::PageUp,
+        "pagedown" => Key::PageDown,
+        k => Key::Unicode(k.chars().next().unwrap_or('\0')),
     }
 }
 
@@ -278,11 +291,11 @@ fn parse_enigo_key(key: &str) -> enigo::Key {
 fn parse_uinput_button(s: &str) -> Result<super::uinput_handler::MouseButton, Error> {
     use super::uinput_handler::MouseButton;
     match s.to_lowercase().as_str() {
-        "left"    => Ok(MouseButton::Left),
-        "middle"  => Ok(MouseButton::Middle),
+        "left" => Ok(MouseButton::Left),
+        "middle" => Ok(MouseButton::Middle),
         "right" | "rigth" => Ok(MouseButton::Right),
-        "back"    => Ok(MouseButton::Back),
+        "back" => Ok(MouseButton::Back),
         "forward" => Ok(MouseButton::Forward),
-        _         => Err(format!("Unsupported mouse button {s}")).handle_err(location!()),
+        _ => Err(format!("Unsupported mouse button {s}")).handle_err(location!()),
     }
 }

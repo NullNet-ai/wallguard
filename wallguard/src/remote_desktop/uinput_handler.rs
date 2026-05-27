@@ -21,7 +21,7 @@ use nullnet_liberror::{Error, ErrorHandler, Location, location};
 // Composite handle over the two virtual devices.
 pub struct UinputHandler {
     keyboard: evdev::uinput::VirtualDevice,
-    pointer:  evdev::uinput::VirtualDevice,
+    pointer: evdev::uinput::VirtualDevice,
     /// Width of the virtual screen (ABS_X upper bound).
     screen_w: i32,
     /// Height of the virtual screen (ABS_Y upper bound).
@@ -38,9 +38,14 @@ impl UinputHandler {
         let screen_h = screen_h.unwrap_or(1080);
 
         let keyboard = build_keyboard()?;
-        let pointer  = build_pointer(screen_w, screen_h)?;
+        let pointer = build_pointer(screen_w, screen_h)?;
 
-        Ok(Self { keyboard, pointer, screen_w, screen_h })
+        Ok(Self {
+            keyboard,
+            pointer,
+            screen_w,
+            screen_h,
+        })
     }
 
     // ── mouse ────────────────────────────────────────────────────────────────
@@ -48,25 +53,31 @@ impl UinputHandler {
     pub fn move_abs(&mut self, x: i32, y: i32) -> Result<(), Error> {
         let x = x.clamp(0, self.screen_w - 1);
         let y = y.clamp(0, self.screen_h - 1);
-        self.pointer.emit(&[
-            InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_X.0, x),
-            InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Y.0, y),
-            InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
-        ]).handle_err(location!())
+        self.pointer
+            .emit(&[
+                InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_X.0, x),
+                InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Y.0, y),
+                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+            ])
+            .handle_err(location!())
     }
 
     pub fn button_press(&mut self, btn: MouseButton) -> Result<(), Error> {
-        self.pointer.emit(&[
-            InputEvent::new(EventType::KEY, btn.evdev_code(), 1),
-            InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
-        ]).handle_err(location!())
+        self.pointer
+            .emit(&[
+                InputEvent::new(EventType::KEY, btn.evdev_code(), 1),
+                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+            ])
+            .handle_err(location!())
     }
 
     pub fn button_release(&mut self, btn: MouseButton) -> Result<(), Error> {
-        self.pointer.emit(&[
-            InputEvent::new(EventType::KEY, btn.evdev_code(), 0),
-            InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
-        ]).handle_err(location!())
+        self.pointer
+            .emit(&[
+                InputEvent::new(EventType::KEY, btn.evdev_code(), 0),
+                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+            ])
+            .handle_err(location!())
     }
 
     // ── keyboard ─────────────────────────────────────────────────────────────
@@ -87,14 +98,20 @@ impl UinputHandler {
     fn send_key(&mut self, key: &str, value: i32) -> Result<(), Error> {
         let (needs_shift, code) = map_key(key);
         if needs_shift {
-            self.keyboard.emit(&[
-                InputEvent::new(EventType::KEY, Key::KEY_LEFTSHIFT.code(), value),
-            ]).handle_err(location!())?;
+            self.keyboard
+                .emit(&[InputEvent::new(
+                    EventType::KEY,
+                    Key::KEY_LEFTSHIFT.code(),
+                    value,
+                )])
+                .handle_err(location!())?;
         }
-        self.keyboard.emit(&[
-            InputEvent::new(EventType::KEY, code, value),
-            InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
-        ]).handle_err(location!())
+        self.keyboard
+            .emit(&[
+                InputEvent::new(EventType::KEY, code, value),
+                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+            ])
+            .handle_err(location!())
     }
 }
 
@@ -112,10 +129,10 @@ pub enum MouseButton {
 impl MouseButton {
     fn evdev_code(self) -> u16 {
         match self {
-            MouseButton::Left    => Key::BTN_LEFT.code(),
-            MouseButton::Right   => Key::BTN_RIGHT.code(),
-            MouseButton::Middle  => Key::BTN_MIDDLE.code(),
-            MouseButton::Back    => Key::BTN_BACK.code(),
+            MouseButton::Left => Key::BTN_LEFT.code(),
+            MouseButton::Right => Key::BTN_RIGHT.code(),
+            MouseButton::Middle => Key::BTN_MIDDLE.code(),
+            MouseButton::Back => Key::BTN_BACK.code(),
             MouseButton::Forward => Key::BTN_FORWARD.code(),
         }
     }
@@ -139,7 +156,13 @@ fn build_keyboard() -> Result<evdev::uinput::VirtualDevice, Error> {
 
 fn build_pointer(w: i32, h: i32) -> Result<evdev::uinput::VirtualDevice, Error> {
     let mut buttons = AttributeSet::<Key>::new();
-    for b in [Key::BTN_LEFT, Key::BTN_RIGHT, Key::BTN_MIDDLE, Key::BTN_BACK, Key::BTN_FORWARD] {
+    for b in [
+        Key::BTN_LEFT,
+        Key::BTN_RIGHT,
+        Key::BTN_MIDDLE,
+        Key::BTN_BACK,
+        Key::BTN_FORWARD,
+    ] {
         buttons.insert(b);
     }
 
@@ -169,36 +192,36 @@ fn build_pointer(w: i32, h: i32) -> Result<evdev::uinput::VirtualDevice, Error> 
 fn map_key(name: &str) -> (bool, u16) {
     match name.to_lowercase().as_str() {
         // Named keys
-        "backspace"  => (false, Key::KEY_BACKSPACE.code()),
-        "control"    => (false, Key::KEY_LEFTCTRL.code()),
-        "meta"       => (false, Key::KEY_LEFTMETA.code()),
-        "alt"        => (false, Key::KEY_LEFTALT.code()),
-        "tab"        => (false, Key::KEY_TAB.code()),
-        "capslock"   => (false, Key::KEY_CAPSLOCK.code()),
-        "shift"      => (false, Key::KEY_LEFTSHIFT.code()),
-        "escape"     => (false, Key::KEY_ESC.code()),
-        "delete"     => (false, Key::KEY_DELETE.code()),
-        "enter"      => (false, Key::KEY_ENTER.code()),
-        "arrowup"    => (false, Key::KEY_UP.code()),
-        "arrowdown"  => (false, Key::KEY_DOWN.code()),
-        "arrowleft"  => (false, Key::KEY_LEFT.code()),
+        "backspace" => (false, Key::KEY_BACKSPACE.code()),
+        "control" => (false, Key::KEY_LEFTCTRL.code()),
+        "meta" => (false, Key::KEY_LEFTMETA.code()),
+        "alt" => (false, Key::KEY_LEFTALT.code()),
+        "tab" => (false, Key::KEY_TAB.code()),
+        "capslock" => (false, Key::KEY_CAPSLOCK.code()),
+        "shift" => (false, Key::KEY_LEFTSHIFT.code()),
+        "escape" => (false, Key::KEY_ESC.code()),
+        "delete" => (false, Key::KEY_DELETE.code()),
+        "enter" => (false, Key::KEY_ENTER.code()),
+        "arrowup" => (false, Key::KEY_UP.code()),
+        "arrowdown" => (false, Key::KEY_DOWN.code()),
+        "arrowleft" => (false, Key::KEY_LEFT.code()),
         "arrowright" => (false, Key::KEY_RIGHT.code()),
-        "home"       => (false, Key::KEY_HOME.code()),
-        "end"        => (false, Key::KEY_END.code()),
-        "pageup"     => (false, Key::KEY_PAGEUP.code()),
-        "pagedown"   => (false, Key::KEY_PAGEDOWN.code()),
-        "f1"         => (false, Key::KEY_F1.code()),
-        "f2"         => (false, Key::KEY_F2.code()),
-        "f3"         => (false, Key::KEY_F3.code()),
-        "f4"         => (false, Key::KEY_F4.code()),
-        "f5"         => (false, Key::KEY_F5.code()),
-        "f6"         => (false, Key::KEY_F6.code()),
-        "f7"         => (false, Key::KEY_F7.code()),
-        "f8"         => (false, Key::KEY_F8.code()),
-        "f9"         => (false, Key::KEY_F9.code()),
-        "f10"        => (false, Key::KEY_F10.code()),
-        "f11"        => (false, Key::KEY_F11.code()),
-        "f12"        => (false, Key::KEY_F12.code()),
+        "home" => (false, Key::KEY_HOME.code()),
+        "end" => (false, Key::KEY_END.code()),
+        "pageup" => (false, Key::KEY_PAGEUP.code()),
+        "pagedown" => (false, Key::KEY_PAGEDOWN.code()),
+        "f1" => (false, Key::KEY_F1.code()),
+        "f2" => (false, Key::KEY_F2.code()),
+        "f3" => (false, Key::KEY_F3.code()),
+        "f4" => (false, Key::KEY_F4.code()),
+        "f5" => (false, Key::KEY_F5.code()),
+        "f6" => (false, Key::KEY_F6.code()),
+        "f7" => (false, Key::KEY_F7.code()),
+        "f8" => (false, Key::KEY_F8.code()),
+        "f9" => (false, Key::KEY_F9.code()),
+        "f10" => (false, Key::KEY_F10.code()),
+        "f11" => (false, Key::KEY_F11.code()),
+        "f12" => (false, Key::KEY_F12.code()),
 
         // Single character: use first char of original (pre-lowercase) name
         // to detect uppercase / shifted symbols.
@@ -238,32 +261,32 @@ fn char_to_key(c: char) -> (bool, u16) {
         'x' => (false, Key::KEY_X.code()),
         'y' => (false, Key::KEY_Y.code()),
         'z' => (false, Key::KEY_Z.code()),
-        'A' => (true,  Key::KEY_A.code()),
-        'B' => (true,  Key::KEY_B.code()),
-        'C' => (true,  Key::KEY_C.code()),
-        'D' => (true,  Key::KEY_D.code()),
-        'E' => (true,  Key::KEY_E.code()),
-        'F' => (true,  Key::KEY_F.code()),
-        'G' => (true,  Key::KEY_G.code()),
-        'H' => (true,  Key::KEY_H.code()),
-        'I' => (true,  Key::KEY_I.code()),
-        'J' => (true,  Key::KEY_J.code()),
-        'K' => (true,  Key::KEY_K.code()),
-        'L' => (true,  Key::KEY_L.code()),
-        'M' => (true,  Key::KEY_M.code()),
-        'N' => (true,  Key::KEY_N.code()),
-        'O' => (true,  Key::KEY_O.code()),
-        'P' => (true,  Key::KEY_P.code()),
-        'Q' => (true,  Key::KEY_Q.code()),
-        'R' => (true,  Key::KEY_R.code()),
-        'S' => (true,  Key::KEY_S.code()),
-        'T' => (true,  Key::KEY_T.code()),
-        'U' => (true,  Key::KEY_U.code()),
-        'V' => (true,  Key::KEY_V.code()),
-        'W' => (true,  Key::KEY_W.code()),
-        'X' => (true,  Key::KEY_X.code()),
-        'Y' => (true,  Key::KEY_Y.code()),
-        'Z' => (true,  Key::KEY_Z.code()),
+        'A' => (true, Key::KEY_A.code()),
+        'B' => (true, Key::KEY_B.code()),
+        'C' => (true, Key::KEY_C.code()),
+        'D' => (true, Key::KEY_D.code()),
+        'E' => (true, Key::KEY_E.code()),
+        'F' => (true, Key::KEY_F.code()),
+        'G' => (true, Key::KEY_G.code()),
+        'H' => (true, Key::KEY_H.code()),
+        'I' => (true, Key::KEY_I.code()),
+        'J' => (true, Key::KEY_J.code()),
+        'K' => (true, Key::KEY_K.code()),
+        'L' => (true, Key::KEY_L.code()),
+        'M' => (true, Key::KEY_M.code()),
+        'N' => (true, Key::KEY_N.code()),
+        'O' => (true, Key::KEY_O.code()),
+        'P' => (true, Key::KEY_P.code()),
+        'Q' => (true, Key::KEY_Q.code()),
+        'R' => (true, Key::KEY_R.code()),
+        'S' => (true, Key::KEY_S.code()),
+        'T' => (true, Key::KEY_T.code()),
+        'U' => (true, Key::KEY_U.code()),
+        'V' => (true, Key::KEY_V.code()),
+        'W' => (true, Key::KEY_W.code()),
+        'X' => (true, Key::KEY_X.code()),
+        'Y' => (true, Key::KEY_Y.code()),
+        'Z' => (true, Key::KEY_Z.code()),
         '0' => (false, Key::KEY_0.code()),
         '1' => (false, Key::KEY_1.code()),
         '2' => (false, Key::KEY_2.code()),
@@ -274,41 +297,41 @@ fn char_to_key(c: char) -> (bool, u16) {
         '7' => (false, Key::KEY_7.code()),
         '8' => (false, Key::KEY_8.code()),
         '9' => (false, Key::KEY_9.code()),
-        ')' => (true,  Key::KEY_0.code()),
-        '!' => (true,  Key::KEY_1.code()),
-        '@' => (true,  Key::KEY_2.code()),
-        '#' => (true,  Key::KEY_3.code()),
-        '$' => (true,  Key::KEY_4.code()),
-        '%' => (true,  Key::KEY_5.code()),
-        '^' => (true,  Key::KEY_6.code()),
-        '&' => (true,  Key::KEY_7.code()),
-        '*' => (true,  Key::KEY_8.code()),
-        '(' => (true,  Key::KEY_9.code()),
+        ')' => (true, Key::KEY_0.code()),
+        '!' => (true, Key::KEY_1.code()),
+        '@' => (true, Key::KEY_2.code()),
+        '#' => (true, Key::KEY_3.code()),
+        '$' => (true, Key::KEY_4.code()),
+        '%' => (true, Key::KEY_5.code()),
+        '^' => (true, Key::KEY_6.code()),
+        '&' => (true, Key::KEY_7.code()),
+        '*' => (true, Key::KEY_8.code()),
+        '(' => (true, Key::KEY_9.code()),
         ' ' => (false, Key::KEY_SPACE.code()),
         '-' => (false, Key::KEY_MINUS.code()),
-        '_' => (true,  Key::KEY_MINUS.code()),
+        '_' => (true, Key::KEY_MINUS.code()),
         '=' => (false, Key::KEY_EQUAL.code()),
-        '+' => (true,  Key::KEY_EQUAL.code()),
+        '+' => (true, Key::KEY_EQUAL.code()),
         '[' => (false, Key::KEY_LEFTBRACE.code()),
-        '{' => (true,  Key::KEY_LEFTBRACE.code()),
+        '{' => (true, Key::KEY_LEFTBRACE.code()),
         ']' => (false, Key::KEY_RIGHTBRACE.code()),
-        '}' => (true,  Key::KEY_RIGHTBRACE.code()),
+        '}' => (true, Key::KEY_RIGHTBRACE.code()),
         '\\' => (false, Key::KEY_BACKSLASH.code()),
-        '|' => (true,  Key::KEY_BACKSLASH.code()),
+        '|' => (true, Key::KEY_BACKSLASH.code()),
         ';' => (false, Key::KEY_SEMICOLON.code()),
-        ':' => (true,  Key::KEY_SEMICOLON.code()),
+        ':' => (true, Key::KEY_SEMICOLON.code()),
         '\'' => (false, Key::KEY_APOSTROPHE.code()),
-        '"' => (true,  Key::KEY_APOSTROPHE.code()),
+        '"' => (true, Key::KEY_APOSTROPHE.code()),
         ',' => (false, Key::KEY_COMMA.code()),
-        '<' => (true,  Key::KEY_COMMA.code()),
+        '<' => (true, Key::KEY_COMMA.code()),
         '.' => (false, Key::KEY_DOT.code()),
-        '>' => (true,  Key::KEY_DOT.code()),
+        '>' => (true, Key::KEY_DOT.code()),
         '/' => (false, Key::KEY_SLASH.code()),
-        '?' => (true,  Key::KEY_SLASH.code()),
+        '?' => (true, Key::KEY_SLASH.code()),
         '`' => (false, Key::KEY_GRAVE.code()),
-        '~' => (true,  Key::KEY_GRAVE.code()),
+        '~' => (true, Key::KEY_GRAVE.code()),
         // Fall back to space for unmapped characters.
-        _   => (false, Key::KEY_SPACE.code()),
+        _ => (false, Key::KEY_SPACE.code()),
     }
 }
 
@@ -319,29 +342,86 @@ fn char_to_key(c: char) -> (bool, u16) {
 /// Only keys actually used by `map_key()` / `char_to_key()` are listed — the
 /// kernel rejects device creation if you claim a key code that does not exist.
 static ALL_KEYBOARD_KEYS: &[Key] = &[
-    Key::KEY_A, Key::KEY_B, Key::KEY_C, Key::KEY_D, Key::KEY_E,
-    Key::KEY_F, Key::KEY_G, Key::KEY_H, Key::KEY_I, Key::KEY_J,
-    Key::KEY_K, Key::KEY_L, Key::KEY_M, Key::KEY_N, Key::KEY_O,
-    Key::KEY_P, Key::KEY_Q, Key::KEY_R, Key::KEY_S, Key::KEY_T,
-    Key::KEY_U, Key::KEY_V, Key::KEY_W, Key::KEY_X, Key::KEY_Y,
+    Key::KEY_A,
+    Key::KEY_B,
+    Key::KEY_C,
+    Key::KEY_D,
+    Key::KEY_E,
+    Key::KEY_F,
+    Key::KEY_G,
+    Key::KEY_H,
+    Key::KEY_I,
+    Key::KEY_J,
+    Key::KEY_K,
+    Key::KEY_L,
+    Key::KEY_M,
+    Key::KEY_N,
+    Key::KEY_O,
+    Key::KEY_P,
+    Key::KEY_Q,
+    Key::KEY_R,
+    Key::KEY_S,
+    Key::KEY_T,
+    Key::KEY_U,
+    Key::KEY_V,
+    Key::KEY_W,
+    Key::KEY_X,
+    Key::KEY_Y,
     Key::KEY_Z,
-    Key::KEY_0, Key::KEY_1, Key::KEY_2, Key::KEY_3, Key::KEY_4,
-    Key::KEY_5, Key::KEY_6, Key::KEY_7, Key::KEY_8, Key::KEY_9,
+    Key::KEY_0,
+    Key::KEY_1,
+    Key::KEY_2,
+    Key::KEY_3,
+    Key::KEY_4,
+    Key::KEY_5,
+    Key::KEY_6,
+    Key::KEY_7,
+    Key::KEY_8,
+    Key::KEY_9,
     Key::KEY_SPACE,
-    Key::KEY_BACKSPACE, Key::KEY_TAB, Key::KEY_ENTER, Key::KEY_ESC,
-    Key::KEY_DELETE, Key::KEY_HOME, Key::KEY_END,
-    Key::KEY_PAGEUP, Key::KEY_PAGEDOWN,
-    Key::KEY_UP, Key::KEY_DOWN, Key::KEY_LEFT, Key::KEY_RIGHT,
-    Key::KEY_F1,  Key::KEY_F2,  Key::KEY_F3,  Key::KEY_F4,
-    Key::KEY_F5,  Key::KEY_F6,  Key::KEY_F7,  Key::KEY_F8,
-    Key::KEY_F9,  Key::KEY_F10, Key::KEY_F11, Key::KEY_F12,
-    Key::KEY_LEFTSHIFT, Key::KEY_RIGHTSHIFT,
-    Key::KEY_LEFTCTRL,  Key::KEY_RIGHTCTRL,
-    Key::KEY_LEFTALT,   Key::KEY_RIGHTALT,
-    Key::KEY_LEFTMETA,  Key::KEY_RIGHTMETA,
+    Key::KEY_BACKSPACE,
+    Key::KEY_TAB,
+    Key::KEY_ENTER,
+    Key::KEY_ESC,
+    Key::KEY_DELETE,
+    Key::KEY_HOME,
+    Key::KEY_END,
+    Key::KEY_PAGEUP,
+    Key::KEY_PAGEDOWN,
+    Key::KEY_UP,
+    Key::KEY_DOWN,
+    Key::KEY_LEFT,
+    Key::KEY_RIGHT,
+    Key::KEY_F1,
+    Key::KEY_F2,
+    Key::KEY_F3,
+    Key::KEY_F4,
+    Key::KEY_F5,
+    Key::KEY_F6,
+    Key::KEY_F7,
+    Key::KEY_F8,
+    Key::KEY_F9,
+    Key::KEY_F10,
+    Key::KEY_F11,
+    Key::KEY_F12,
+    Key::KEY_LEFTSHIFT,
+    Key::KEY_RIGHTSHIFT,
+    Key::KEY_LEFTCTRL,
+    Key::KEY_RIGHTCTRL,
+    Key::KEY_LEFTALT,
+    Key::KEY_RIGHTALT,
+    Key::KEY_LEFTMETA,
+    Key::KEY_RIGHTMETA,
     Key::KEY_CAPSLOCK,
-    Key::KEY_MINUS,   Key::KEY_EQUAL,
-    Key::KEY_LEFTBRACE, Key::KEY_RIGHTBRACE,
-    Key::KEY_BACKSLASH, Key::KEY_SEMICOLON, Key::KEY_APOSTROPHE,
-    Key::KEY_COMMA,   Key::KEY_DOT,    Key::KEY_SLASH,  Key::KEY_GRAVE,
+    Key::KEY_MINUS,
+    Key::KEY_EQUAL,
+    Key::KEY_LEFTBRACE,
+    Key::KEY_RIGHTBRACE,
+    Key::KEY_BACKSLASH,
+    Key::KEY_SEMICOLON,
+    Key::KEY_APOSTROPHE,
+    Key::KEY_COMMA,
+    Key::KEY_DOT,
+    Key::KEY_SLASH,
+    Key::KEY_GRAVE,
 ];
