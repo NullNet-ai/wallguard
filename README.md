@@ -3,8 +3,6 @@
 [![Build CI](https://github.com/NullNet-ai/wallguard/actions/workflows/build.yml/badge.svg)](https://github.com/NullNet-ai/wallguard/actions/workflows/build.yml)
 [![Server Docker](https://github.com/NullNet-ai/wallguard/actions/workflows/docker.yml/badge.svg)](https://github.com/NullNet-ai/wallguard/actions/workflows/docker.yml)
 
-WallGuard is a lightweight agent developed by [NullNet](https://nullnet.ai) that connects network devices and general-purpose machines to the NullNet management platform. It runs as a background service on the target system and maintains a persistent, encrypted channel back to the NullNet server, enabling centralized visibility and control across an entire fleet of devices — from enterprise firewalls and routers to standard Linux servers.
-
 Once installed, WallGuard continuously collects system and network telemetry: CPU, memory, disk, and process metrics; live network traffic statistics; and configuration file change events. It also exposes secure remote-access capabilities, including SSH, TTY, and graphical UI sessions, so operators can reach any enrolled device directly through the NullNet console without needing to open inbound firewall ports or maintain VPN tunnels. WallGuard is built in Rust for low overhead and ships as a single self-contained binary with no runtime dependencies beyond the platform's standard networking stack.
 
 ## Installation
