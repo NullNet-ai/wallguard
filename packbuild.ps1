@@ -14,7 +14,7 @@
   Prerequisites
   ─────────────
   • Rust toolchain (stable, x86_64-pc-windows-msvc)
-  • WiX Toolset v4   (dotnet tool install --global wix --version "4.*")
+  • WiX Toolset v4 (pin to v4.*; v5+ requires a paid EULA)
   • Npcap SDK in LIB (for pcap crate compilation):
       $env:LIB = "C:\npcap-sdk\Lib\x64"
   • Internet access to download the Npcap runtime installer

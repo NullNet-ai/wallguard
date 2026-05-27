@@ -5,7 +5,7 @@
   Prerequisites
   ─────────────
   • Rust toolchain targeting x86_64-pc-windows-msvc
-  • WiX Toolset v4   (dotnet tool install --global wix --version "4.*")
+  • WiX Toolset v4 (pin to v4.*; v5+ requires a paid EULA)
   • packages\windows\npcap-installer.exe  (downloaded by packbuild.ps1 / CI)
 
   Build
