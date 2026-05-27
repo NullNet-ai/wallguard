@@ -88,7 +88,10 @@ impl Platform {
 
 /// Returns `true` when a display server (X11 or Wayland) is reachable from the
 /// current process, regardless of how the `Platform` variant was configured.
-fn has_desktop_environment() -> bool {
+///
+/// `pub(crate)` so that `pseudo_rd` can use this as a cheap pre-filter before
+/// attempting the more expensive (and potentially noisy) `Enigo::new()` probe.
+pub(crate) fn has_desktop_environment() -> bool {
     has_x11_display() || has_wayland_display()
 }
 

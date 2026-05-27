@@ -6,6 +6,7 @@ use wallguard_common::protobuf::wallguard_service::{
 
 mod http;
 mod pseudo;
+#[cfg(not(target_os = "freebsd"))]
 mod pseudo_rd;
 mod ssh;
 
@@ -42,16 +43,17 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
     }
 }
 
-pub async fn gather_info(mut sockets: Vec<SocketInfo>, rd_available: bool) -> Vec<ServiceInfo> {
+pub async fn gather_info(mut sockets: Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut retval = vec![];
 
     retval.extend(http::filter(&mut sockets).await);
     retval.extend(ssh::filter(&mut sockets).await);
     retval.extend(pseudo::filter(&mut sockets));
 
-    if rd_available {
-        retval.extend(pseudo_rd::filter(&mut sockets));
-    }
+    // pseudo_rd performs its own live check (tries Enigo::new) so it
+    // naturally reports nothing when no user session is active.
+    #[cfg(not(target_os = "freebsd"))]
+    retval.extend(pseudo_rd::filter(&mut sockets));
 
     retval
 }

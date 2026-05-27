@@ -13,13 +13,12 @@ const TIME_INTERVAL: Duration = Duration::from_secs(5 * 60);
 pub async fn monitor_services(
     interface: WGServer,
     token_provider: TokenProvider,
-    rd_available: bool,
 ) -> Result<(), Error> {
     log::info!("Staring services monitoring ...");
 
     loop {
         let sockets = sock::get_sockets_info().await;
-        let services = service::gather_info(sockets, rd_available).await;
+        let services = service::gather_info(sockets).await;
 
         if !services.is_empty() {
             let message = ServicesMessage {

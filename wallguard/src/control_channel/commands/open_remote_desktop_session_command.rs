@@ -20,22 +20,18 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
     async fn execute(self) -> Result<(), Error> {
         log::debug!("Received OpenRemoteDesktopSessionCommand");
 
-        if !self
-            .context
-            .client_data
-            .platform
-            .can_open_remote_desktop_session()
-        {
-            return Err("Cannot open remote desktop session: unsupported session")
-                .handle_err(location!());
-        }
+        // Create a fresh RemoteDesktopManager for this session.  Doing this
+        // on-demand (rather than caching it in Context) means:
+        //   • The agent never panics at startup when no display is available.
+        //   • The first session after a user logs in just works — no restart
+        //     needed.
+        let mut rdm = RemoteDesktopManager::new().map_err(|err| {
+            log::warn!("Cannot open remote desktop session: {}", err.to_str());
+            err
+        })?;
 
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());
-        };
-
-        let Some(mut rdm) = self.context.remote_desktop_manager.clone() else {
-            return Err("Remote Desktop is not available").handle_err(location!());
         };
 
         tokio::spawn(async move {

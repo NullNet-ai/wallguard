@@ -4,7 +4,7 @@ pub use platform::Platform;
 pub use target_os::TargetOs;
 
 mod device_uuid;
-mod platform;
+pub(crate) mod platform;
 mod target_os;
 
 #[derive(Debug, Clone)]
