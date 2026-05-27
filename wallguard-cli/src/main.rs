@@ -179,6 +179,11 @@ pub async fn main() -> AnyResult<()> {
                 format!(r"{}\wallguard\wallguard.log", base)
             };
 
+            // Ensure the log directory exists before opening the file.
+            if let Some(log_dir) = std::path::Path::new(&log_path).parent() {
+                let _ = std::fs::create_dir_all(log_dir);
+            }
+
             let log_stderr = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
