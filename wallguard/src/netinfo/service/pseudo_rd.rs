@@ -59,10 +59,15 @@ fn is_rd_available() -> bool {
             return Enigo::new(&Settings::default()).is_ok();
         }
 
-        // X11 connect failed (no X11 server or XWayland auth not available),
-        // but Wayland compositor socket is live: report the service so the
-        // server knows a desktop session exists.  The actual session open will
-        // surface a clean error if screen capture cannot be established.
+        // X11 connect failed (no X11 server or XWayland auth not available).
+        // Try the Wayland capture path: WayshotConnection::new() negotiates
+        // wlr-screencopy with the compositor — if it succeeds we know capture
+        // will actually work, not just that a socket file exists on disk.
+        #[cfg(target_os = "linux")]
+        return libwayshot::WayshotConnection::new().is_ok();
+
+        // FreeBSD has no libwayshot; fall back to socket-presence check.
+        #[cfg(target_os = "freebsd")]
         return has_wayland_display();
     }
 

@@ -40,6 +40,12 @@ whoami = "2.0.2"
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 x11rb = "0.13"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+# Wayland screen capture via wlr-screencopy protocol (sway, hyprland, KDE Plasma, etc.)
+libwayshot = "0.4"
+# Virtual uinput device for keyboard/mouse injection on Wayland (kernel-level, no X11 needed)
+evdev = "0.12"
+
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
 winapi = {version = "0.3.9", features = ["winerror", "iphlpapi", "handleapi", "tlhelp32", "wingdi", "winuser", "windef", "minwindef"]}

@@ -21,7 +21,30 @@ trait PlatformCapturer {
     fn capture(&mut self) -> Result<Screenshot, Error>;
 }
 
-#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+#[cfg(target_os = "linux")]
+fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
+    use crate::client_data::platform::has_wayland_display;
+
+    // Prefer native Wayland capture when the compositor socket is reachable.
+    // libwayshot uses the wlr-screencopy protocol — no portal, no D-Bus dialog.
+    if has_wayland_display() {
+        match wayland::WaylandCapturer::new() {
+            Ok(c) => {
+                log::info!("Screen capture: using Wayland (wlr-screencopy) backend");
+                return Ok(Box::new(c));
+            }
+            Err(e) => log::debug!(
+                "Wayland capturer unavailable ({}); falling back to X11",
+                e.to_str()
+            ),
+        }
+    }
+
+    log::info!("Screen capture: using X11 backend");
+    Ok(Box::new(x11::X11Capturer::new()?))
+}
+
+#[cfg(target_os = "freebsd")]
 fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
     Ok(Box::new(x11::X11Capturer::new()?))
 }
@@ -148,6 +171,46 @@ mod x11 {
                 }
                 rgb
             }
+        }
+    }
+}
+
+// ── Wayland / wlr-screencopy (Linux) ─────────────────────────────────────────
+
+/// Uses the `wlr-screencopy-unstable-v1` Wayland protocol via `libwayshot`.
+///
+/// Supported compositors: sway, hyprland, labwc, river, wayfire, KDE Plasma
+/// (since Plasma 6 ships wlr-screencopy support in KWin).  GNOME/mutter does
+/// not implement this protocol; those sessions will fall through to X11 via
+/// XWayland.
+///
+/// The captured image arrives as BGRA from the compositor; `to_rgb8()` strips
+/// alpha and converts to the RGB layout that `Screenshot` and OpenH264 expect.
+#[cfg(target_os = "linux")]
+mod wayland {
+    use super::{PlatformCapturer, Screenshot};
+    use libwayshot::WayshotConnection;
+    use nullnet_liberror::{Error, ErrorHandler, Location, location};
+
+    pub struct WaylandCapturer {
+        conn: WayshotConnection,
+    }
+
+    impl WaylandCapturer {
+        pub fn new() -> Result<Self, Error> {
+            let conn = WayshotConnection::new().handle_err(location!())?;
+            Ok(Self { conn })
+        }
+    }
+
+    impl PlatformCapturer for WaylandCapturer {
+        fn capture(&mut self) -> Result<Screenshot, Error> {
+            let image = self.conn.screenshot_all(false).handle_err(location!())?;
+            let width = image.width() as usize;
+            let height = image.height() as usize;
+            // Compositor delivers BGRA; to_rgb8() strips alpha and reorders channels.
+            let rgb = image.to_rgb8().into_raw();
+            Ok(Screenshot::new(rgb, width, height))
         }
     }
 }

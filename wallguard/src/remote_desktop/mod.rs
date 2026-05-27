@@ -17,6 +17,8 @@ mod client;
 mod messages;
 mod screen_capturer;
 mod screenshot;
+#[cfg(target_os = "linux")]
+mod uinput_handler;
 
 type ClientsInner = Arc<Mutex<HashMap<u128, client::Client>>>;
 
