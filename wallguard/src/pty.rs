@@ -15,7 +15,24 @@ pub struct Pty {
     pub writer: PtyWriter,
 }
 
+fn default_shell() -> &'static str {
+    #[cfg(windows)]
+    {
+        "powershell.exe"
+    }
+    #[cfg(not(windows))]
+    {
+        "/bin/sh"
+    }
+}
+
 impl Pty {
+    /// Opens a PTY running the OS-appropriate shell:
+    /// `powershell.exe` on Windows, `/bin/sh` everywhere else.
+    pub fn new_shell() -> Result<Self, Error> {
+        Self::new(default_shell())
+    }
+
     pub fn new(command: &str) -> Result<Self, Error> {
         let pty = NativePtySystem::default()
             .openpty(PtySize {

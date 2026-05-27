@@ -23,7 +23,7 @@ impl ExecutableCommand for OpenTtySessionCommand {
     async fn execute(self) -> Result<(), nullnet_liberror::Error> {
         log::debug!("Received OpenTtySessionCommand");
 
-        let pty = Pty::new("/bin/sh")?;
+        let pty = Pty::new_shell()?;
 
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());
