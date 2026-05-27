@@ -8,3 +8,6 @@ dumps
 .cargo
 *.deb
 *.pkg
+*.msi
+# Downloaded at build time by packbuild.ps1 / CI — never commit
+packages/windows/npcap-installer.exe

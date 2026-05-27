@@ -65,7 +65,6 @@ jobs:
           asset_content_type: application/octet-stream
 
   build-windows-and-release:
-    if: false # TODO: Impleement Windows packaging
     runs-on: windows-latest
     permissions:
       contents: write
@@ -79,19 +78,30 @@ jobs:
       - name: Determine version from tag
         id: version
         run: |
-          # PowerShell script to extract version
           $TAG = "${{ github.ref }}" -replace "refs/tags/", ""
           $VERSION = $TAG -replace "^v", ""
           echo "VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "Using version: $VERSION"
 
-      - name: Install dependencies
+      - name: Install build dependencies
         run: |
           choco install -y protoc
 
+          # Npcap SDK — headers and import libs needed to compile the pcap crate.
           Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile "C:/npcap-sdk.zip"
           Expand-Archive -LiteralPath C:/npcap-sdk.zip -DestinationPath C:/npcap-sdk
           echo "LIB=C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
+
+      - name: Download Npcap runtime installer
+        # The runtime .exe is embedded into the MSI by packbuild.ps1 so that
+        # end-users get Npcap installed automatically alongside WallGuard.
+        # NOTE: silent redistribution requires the Npcap OEM licence.
+        run: |
+          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-1.82.exe" `
+            -OutFile "packages/windows/npcap-installer.exe"
+
+      - name: Install WiX Toolset v4
+        run: dotnet tool install --global wix
 
       - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
@@ -99,9 +109,9 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
 
-      - name: Build Windows package
+      - name: Build Windows MSI package
         run: |
-          .\packbuild.bat windows ${{ env.VERSION }}
+          .\packbuild.ps1 -Version ${{ env.VERSION }} -NpcapVersion 1.82
 
       - name: Get existing GitHub release
         id: get_release
@@ -117,8 +127,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard_${{ env.VERSION }}.msi"
-          asset_name: "wallguard_${{ env.VERSION }}.msi"
+          asset_path: "wallguard-${{ env.VERSION }}-x86_64.msi"
+          asset_name: "wallguard-${{ env.VERSION }}-x86_64.msi"
           asset_content_type: application/octet-stream
 
   build-freebsd-and-release:

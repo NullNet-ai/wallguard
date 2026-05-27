@@ -5,7 +5,8 @@
   Prerequisites
   ─────────────
   • Rust toolchain targeting x86_64-pc-windows-msvc
-  • WiX Toolset v4   (winget install WixToolset.WiX)
+  • WiX Toolset v4   (dotnet tool install --global wix)
+  • packages\windows\npcap-installer.exe  (downloaded by packbuild.ps1 / CI)
 
   Build
   ─────
@@ -21,11 +22,18 @@
       C:\Program Files\WallGuard\
   • Appends that directory to the system PATH so both binaries are
     accessible from any terminal.
+  • Installs Npcap (bundled) silently if it is not already present.
+    Npcap is the packet-capture driver required by WallGuard's network
+    monitoring.  The bundled installer is downloaded at build time from
+    https://npcap.com/dist/ and embedded into the MSI.
+    NOTE: Silent installation (/S) requires the Npcap OEM licence for
+    production redistribution.  See https://npcap.com/oem/ for details.
   • Does NOT register a Windows service — that is handled at runtime by
       wallguard-cli start
     which calls `sc create` (see autostart/windows.rs), mirroring the
     systemd / rc.d approach used on Linux / FreeBSD.
   • On uninstall, the PATH entry is removed automatically.
+    Npcap is intentionally NOT uninstalled — other software may depend on it.
 
   UpgradeCode must remain constant across all versions of WallGuard.
 -->
@@ -45,6 +53,52 @@
     <Feature Id="ProductFeature" Title="WallGuard" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
+
+    <!--
+      Detect whether Npcap is already installed by probing the driver
+      service registry key that Npcap always creates.
+      If NPCAP_INSTALLED is set (non-empty), we skip the bundled installer.
+    -->
+    <Property Id="NPCAP_INSTALLED">
+      <RegistrySearch Id="NpcapSearch"
+                      Root="HKLM"
+                      Key="SYSTEM\CurrentControlSet\Services\npcap"
+                      Name="ImagePath"
+                      Type="raw" />
+    </Property>
+
+    <!--
+      Embed the Npcap installer as a binary resource.
+      The file is downloaded into packages\windows\ by packbuild.ps1 / CI
+      before `wix build` runs.
+    -->
+    <Binary Id="NpcapBinary"
+            SourceFile="packages\windows\npcap-installer.exe" />
+
+    <!--
+      Run the Npcap installer silently.
+      /S           — silent (no UI)
+      /winpcap_mode=no — do not install WinPcap compatibility shim
+      Execute="deferred" + Impersonate="no" — runs as SYSTEM (required for
+        driver installation).
+    -->
+    <CustomAction Id="InstallNpcap"
+                  BinaryRef="NpcapBinary"
+                  ExeCommand="/S /winpcap_mode=no"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <InstallExecuteSequence>
+      <!--
+        Only install Npcap when:
+          • Npcap is not already present (NOT NPCAP_INSTALLED)
+          • We are not in the middle of an uninstall (NOT REMOVE)
+      -->
+      <Custom Action="InstallNpcap" Before="InstallFinalize">
+        NOT NPCAP_INSTALLED AND NOT REMOVE
+      </Custom>
+    </InstallExecuteSequence>
 
   </Package>
 
