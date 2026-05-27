@@ -225,7 +225,12 @@ jobs:
       - name: Install WiX Toolset v4 and UI extension
         run: |
           dotnet tool install --global wix --version "4.*"
-          wix extension add WixToolset.UI.wixext --global
+          # Pin the extension to the exact same version as the installed tool.
+          # Using "latest" causes WIX0144 when the extension version doesn't
+          # match the wix tool version.
+          $wixVer = (wix --version 2>&1).Trim() -replace '\+.*', ''
+          Write-Host "WiX version: $wixVer"
+          wix extension add "WixToolset.UI.wixext/$wixVer" --global
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable

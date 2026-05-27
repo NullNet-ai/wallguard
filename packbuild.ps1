@@ -54,9 +54,21 @@ Write-Host "Generating WiX source (version $Version)..."
 (Get-Content $WxsTpl -Raw) -replace '__VERSION__', $Version |
     Set-Content $WxsOut -Encoding UTF8
 
-# ── 3. Ensure the WiX UI extension is available ──────────────────────────────
-Write-Host "Installing WiX UI extension (idempotent)..."
-wix extension add WixToolset.UI.wixext --global 2>&1 | Out-Null
+# ── 3. Ensure the WiX UI extension matches the installed wix tool version ─────
+#
+# wix extension add without a version tag installs the *latest* extension,
+# which may not match the installed wix tool version — causing WIX0144.
+# Detect the tool version first and pin the extension to the same version.
+#
+Write-Host "Detecting installed WiX version..."
+$WixVersion = (wix --version 2>&1).Trim() -replace '\+.*', ''
+Write-Host "WiX version: $WixVersion"
+
+Write-Host "Installing WixToolset.UI.wixext/$WixVersion (idempotent)..."
+wix extension add "WixToolset.UI.wixext/$WixVersion" --global
+# exit code 0 = installed, non-zero may still mean "already installed at this version"
+# — treat both as success and let wix build catch any real failure.
+Write-Host "Extension add exit code: $LASTEXITCODE"
 
 # ── 4. Build the MSI (WiX v4) ────────────────────────────────────────────────
 Write-Host "Building MSI: $MsiOut..."
