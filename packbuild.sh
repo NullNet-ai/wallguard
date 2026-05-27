@@ -28,12 +28,23 @@ mode="$1"; shift
 
 # ── shared: build Linux/FreeBSD binaries ──────────────────────────────────────
 #
-# Uses cargo-zigbuild (if available) to pin the glibc minimum to 2.17 so the
-# produced binary runs on old systems.  Falls back to plain cargo build.
+# If WALLGUARD_BIN_DIR is set, the binaries are assumed to be pre-built and
+# sitting in that directory — the build step is skipped entirely.  This is
+# how CI uses the script: it runs cargo-zigbuild explicitly in a prior step
+# (so failures are visible) and then passes the output directory here.
+#
+# Without WALLGUARD_BIN_DIR the script tries cargo-zigbuild first (pins
+# glibc to 2.17), falling back to plain cargo build for local dev use.
 #
 # Sets:  $BIN_DIR — directory containing the compiled binaries
 #
 build_linux_bins() {
+    if [ -n "${WALLGUARD_BIN_DIR:-}" ]; then
+        echo "==> Using pre-built binaries from WALLGUARD_BIN_DIR=$WALLGUARD_BIN_DIR"
+        BIN_DIR="$WALLGUARD_BIN_DIR"
+        return
+    fi
+
     local target="x86_64-unknown-linux-gnu"
 
     if cargo zigbuild --version &>/dev/null 2>&1; then

@@ -42,16 +42,25 @@ jobs:
 
       - name: Install cargo-zigbuild and Zig
         run: |
-          pip3 install ziglang --quiet
-          cargo install cargo-zigbuild --locked
+          pip3 install ziglang
+          cargo install cargo-zigbuild
+          cargo zigbuild --version   # fail fast if install did not work
 
-      - name: Add linux target
-        run: rustup target add x86_64-unknown-linux-gnu
+      - name: Build binaries with zigbuild (glibc ≥ 2.17)
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
+          cargo zigbuild \
+            --target x86_64-unknown-linux-gnu.2.17 \
+            --release -p wallguard -p wallguard-cli
 
-      - name: Build .deb package  (glibc ≥ 2.17)
+      - name: Package .deb
+        env:
+          WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh deb "$VERSION"
 
-      - name: Build binary tarball  (for install.sh fallback)
+      - name: Package binary tarball  (for install.sh fallback)
+        env:
+          WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh tarball "$VERSION"
 
       - name: Get existing GitHub release
@@ -123,13 +132,20 @@ jobs:
 
       - name: Install cargo-zigbuild and Zig
         run: |
-          pip3 install ziglang --quiet
-          cargo install cargo-zigbuild --locked
+          pip3 install ziglang
+          cargo install cargo-zigbuild
+          cargo zigbuild --version   # fail fast if install did not work
 
-      - name: Add linux target
-        run: rustup target add x86_64-unknown-linux-gnu
+      - name: Build binaries with zigbuild (glibc ≥ 2.17)
+        run: |
+          rustup target add x86_64-unknown-linux-gnu
+          cargo zigbuild \
+            --target x86_64-unknown-linux-gnu.2.17 \
+            --release -p wallguard -p wallguard-cli
 
-      - name: Build .rpm package  (glibc ≥ 2.17)
+      - name: Package .rpm
+        env:
+          WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh rpm "$VERSION"
 
       - name: Get existing GitHub release
