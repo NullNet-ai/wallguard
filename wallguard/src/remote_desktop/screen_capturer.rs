@@ -402,15 +402,33 @@ mod wayland {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// Creates an anonymous file of `size` bytes suitable for a `WlShmPool`.
+    ///
+    /// Uses `shm_open` + `shm_unlink` (glibc 2.2+) instead of `memfd_create`
+    /// (glibc 2.27+) so the binary stays compatible with the glibc 2.17 target.
+    /// The name is unlinked immediately after opening, so no entry persists in
+    /// `/dev/shm` and the fd behaves as an anonymous shared-memory object.
     fn create_shm_fd(size: usize) -> Result<std::os::fd::OwnedFd, Error> {
-        use nix::sys::memfd::{MFdFlags, memfd_create};
-        use std::ffi::CStr;
+        use nix::fcntl::OFlag;
+        use nix::sys::mman::{shm_open, shm_unlink};
+        use nix::sys::stat::Mode;
+        use std::ffi::CString;
+        use std::sync::atomic::{AtomicU32, Ordering};
 
-        let fd = memfd_create(
-            CStr::from_bytes_with_nul(b"wallguard-screencopy\0").unwrap(),
-            MFdFlags::MFD_CLOEXEC,
+        // PID + monotonic counter → unique name even if two captures race.
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+        let name =
+            CString::new(format!("/wallguard-{}-{n}", std::process::id())).unwrap();
+
+        let fd = shm_open(
+            name.as_c_str(),
+            OFlag::O_CREAT | OFlag::O_RDWR | OFlag::O_EXCL,
+            Mode::S_IRUSR | Mode::S_IWUSR,
         )
         .handle_err(location!())?;
+
+        // Remove the name immediately — fd stays valid, /dev/shm stays clean.
+        let _ = shm_unlink(name.as_c_str());
 
         nix::unistd::ftruncate(&fd, size as nix::libc::off_t).handle_err(location!())?;
 
