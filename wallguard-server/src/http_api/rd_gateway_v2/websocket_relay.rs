@@ -5,6 +5,7 @@ use actix_ws::{AggregatedMessage, AggregatedMessageStream, MessageStream, Sessio
 use futures_util::StreamExt as _;
 use prost::bytes::Bytes;
 use tokio::sync::Mutex;
+use tokio::sync::broadcast::error::RecvError;
 
 pub async fn websocket_relay(
     stream: MessageStream,
@@ -73,10 +74,23 @@ async fn relay_user_to_rd(
 async fn relay_rd_to_user(mut ws_session: WSSession, rd_tunnel: Arc<Mutex<RdTunnel>>) {
     let mut reader = rd_tunnel.lock().await.get_data_recv_channel();
 
-    while let Ok(message) = reader.recv().await {
-        let message = Bytes::copy_from_slice(&message);
-        if ws_session.binary(message).await.is_err() {
-            break;
+    loop {
+        match reader.recv().await {
+            Ok(message) => {
+                let message = Bytes::copy_from_slice(&message);
+                if ws_session.binary(message).await.is_err() {
+                    break;
+                }
+            }
+            Err(RecvError::Lagged(n)) => {
+                // The viewer fell behind the ring buffer; skip the dropped frames
+                // and resume from the oldest still-available frame.  This can
+                // happen under high load or when a viewer connects long after the
+                // stream started.  A keyframe will arrive within KEYFRAME_INTERVAL
+                // frames so the decoder can recover.
+                log::warn!("RD → WebSocket: receiver lagged, skipped {n} frame(s)");
+            }
+            Err(RecvError::Closed) => break,
         }
     }
 }

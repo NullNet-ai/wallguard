@@ -110,6 +110,7 @@ impl RemoteDesktopManager {
 }
 
 async fn capture_loop(manager: RemoteDesktopManager) {
+    let cleanup = manager.clone();
     let mut terminate_receiver = manager.terminate.subscribe();
     tokio::select! {
         _ = terminate_receiver.recv() => {
@@ -118,6 +119,15 @@ async fn capture_loop(manager: RemoteDesktopManager) {
         retval = capture_loop_impl(manager) => {
             if let Err(err) = retval {
                 log::error!("RemoteDesktopManager: capture_loop_impl resulted in error: {}", err.to_str());
+
+                // Drop every client's mpsc sender so that `system_to_stream` in
+                // `OpenRemoteDesktopSessionCommand` sees a closed channel and
+                // returns.  That ends the `tokio::select!` there, drops the TCP
+                // `TunnelInstance`, and the server-side `InternalRelay` detects
+                // the EOF → drops the broadcast sender → `relay_rd_to_user` gets
+                // `RecvError::Closed` → WebSocket closes cleanly instead of
+                // hanging until the browser times it out.
+                cleanup.clients.lock().await.clear();
             }
         }
     }

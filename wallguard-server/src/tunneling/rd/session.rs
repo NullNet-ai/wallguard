@@ -17,7 +17,18 @@ pub type SessionDataReceiver = broadcast::Receiver<Vec<u8>>;
 #[derive(Debug)]
 pub struct Session {
     data_sender: SessionDataSender,
-    data_receiver: SessionDataReceiver,
+
+    /// Cloneable broadcast sender — call `.subscribe()` to create a fresh
+    /// receiver for each new viewer.  Viewers always start at the current
+    /// stream head so they never see stale frames from before they connected.
+    data_source: UserDataSender,
+
+    /// Sentinel receiver that keeps the broadcast channel alive even when no
+    /// viewers are connected.  Without it the InternalRelay's `send()` would
+    /// return an error (no receivers) and stop relaying before any viewer
+    /// has had a chance to connect.
+    _sentinel: SessionDataReceiver,
+
     signal: broadcast::Sender<()>,
 }
 
@@ -30,7 +41,7 @@ impl Session {
         let (session_reader, session_writer) = tokio::io::split(tunnel);
 
         let (from_users_sender, from_users_receiver) = mpsc::channel(128);
-        let (to_users_sender, to_users_receiver) = broadcast::channel(128);
+        let (to_users_sender, sentinel) = broadcast::channel(128);
 
         let (terminate, _) = broadcast::channel(2);
 
@@ -39,7 +50,7 @@ impl Session {
             tunnel_id,
             session_reader,
             session_writer,
-            to_users_sender,
+            to_users_sender.clone(), // InternalRelay gets a clone; Session keeps the original
             from_users_receiver,
             terminate.subscribe(),
         )
@@ -47,7 +58,8 @@ impl Session {
 
         Ok(Self {
             data_sender: from_users_sender,
-            data_receiver: to_users_receiver,
+            data_source: to_users_sender,
+            _sentinel: sentinel,
             signal: terminate,
         })
     }
@@ -56,8 +68,14 @@ impl Session {
         self.data_sender.clone()
     }
 
+    /// Creates a fresh broadcast receiver for a new viewer.
+    ///
+    /// `subscribe()` starts the receiver at the current stream head so the
+    /// viewer only receives frames produced *after* it connects, avoiding
+    /// both stale-frame replays and the `Lagged` error that would occur if
+    /// `resubscribe()` were used on the long-idle sentinel receiver.
     pub fn get_data_recv_channel(&self) -> SessionDataReceiver {
-        self.data_receiver.resubscribe()
+        self.data_source.subscribe()
     }
 
     pub async fn signal(&self) {
