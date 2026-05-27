@@ -101,7 +101,7 @@ jobs:
             -OutFile "packages/windows/npcap-installer.exe"
 
       - name: Install WiX Toolset v4
-        run: dotnet tool install --global wix
+        run: dotnet tool install --global wix --version "4.*"
 
       - name: Set up Rust toolchain
         uses: actions-rs/toolchain@v1
