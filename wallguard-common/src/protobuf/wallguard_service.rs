@@ -144,6 +144,7 @@ pub enum ServiceProtocol {
     Https = 1,
     Ssh = 2,
     Tty = 3,
+    Rd = 4,
 }
 impl ServiceProtocol {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -156,6 +157,7 @@ impl ServiceProtocol {
             Self::Https => "HTTPS",
             Self::Ssh => "SSH",
             Self::Tty => "TTY",
+            Self::Rd => "RD",
         }
     }
     /// Creates an enum from field names used in the ProtoBuf definition.
@@ -165,6 +167,7 @@ impl ServiceProtocol {
             "HTTPS" => Some(Self::Https),
             "SSH" => Some(Self::Ssh),
             "TTY" => Some(Self::Tty),
+            "RD" => Some(Self::Rd),
             _ => None,
         }
     }
