@@ -3,66 +3,42 @@
 [![Build CI](https://github.com/NullNet-ai/wallguard/actions/workflows/build.yml/badge.svg)](https://github.com/NullNet-ai/wallguard/actions/workflows/build.yml)
 [![Server Docker](https://github.com/NullNet-ai/wallguard/actions/workflows/docker.yml/badge.svg)](https://github.com/NullNet-ai/wallguard/actions/workflows/docker.yml)
 
-**WallGuard** is a part of **Nullnet**, built to work with firewalls and other network-facing systems. It consists of a server and a set of agents installed on target machines. The server manages the agents, collects data, and provides access to remote systems.
+WallGuard is a lightweight agent developed by [NullNet](https://nullnet.ai) that connects network devices and general-purpose machines to the NullNet management platform. It runs as a background service on the target system and maintains a persistent, encrypted channel back to the NullNet server, enabling centralized visibility and control across an entire fleet of devices — from enterprise firewalls and routers to standard Linux servers.
 
-## Overivew
+Once installed, WallGuard continuously collects system and network telemetry: CPU, memory, disk, and process metrics; live network traffic statistics; and configuration file change events. It also exposes secure remote-access capabilities, including SSH, TTY, and graphical UI sessions, so operators can reach any enrolled device directly through the NullNet console without needing to open inbound firewall ports or maintain VPN tunnels. WallGuard is built in Rust for low overhead and ships as a single self-contained binary with no runtime dependencies beyond the platform's standard networking stack.
 
-WallGuard helps monitor system state and network activity, and allows secure remote access to devices. It's useful for managing machines that are part of a firewall setup or are otherwise not easy to reach directly.
+## Installation
 
-### Features
+| Platform | Package | Minimum version |
+|---|---|---|
+| Debian / Ubuntu | `.deb` or `install.sh` | Ubuntu 18.04 / Debian 10 |
+| Fedora / CentOS / RHEL | `.rpm` or `install.sh` | CentOS 7 |
+| macOS | `.dmg` (universal) | macOS 10.15 |
+| Windows | `.msi` | Windows 10 / 11 |
+| FreeBSD | `.pkg` | FreeBSD 14 |
+| pfSense / OPNsense | manual | — |
 
-1. Configuration Monitoring
-   Watches for changes in system or network configuration files.
+**One-line installer (Linux / FreeBSD):**
 
-2. Network Traffic Monitoring
-   Tracks basic traffic information.
+```sh
+curl -fsSL https://github.com/NullNet-ai/wallguard/releases/latest/download/install.sh | sudo bash
+```
 
-3. System Monitoring
-   Gathers CPU, memory, disk, and process data.
+Pre-built packages for every supported platform are attached to each [GitHub Release](https://github.com/NullNet-ai/wallguard/releases).
 
-4. Remote Access
-   Supports remote sessions through:
+## Building from source
 
-- SSH – Secure shell
+You will need Rust (latest stable), `protobuf-compiler`, and `libpcap-dev` (or the platform equivalent). Clone the repository and run:
 
-- TTY – Command-line terminal access
+```sh
+cargo build --release -p wallguard -p wallguard-cli
+```
 
-- UI – Graphical remote access (only on some systems)
+The agent binary (`wallguard`) and the control CLI (`wallguard-cli`) will be placed in `target/release/`. See `packbuild.sh` for the full packaging workflow and `CLAUDE.md` for development notes.
 
-### Supported platform
-
-- PfSense
-- OPNSense
-
-## Development
-
-WallGuard is an active work in progress. Some features may be incomplete or unavailable, and APIs may change between versions.
-
-### Prerequisites
-
-To build and develop WallGuard, you'll need the following:
-
-- A Linux system (Debian/Ubuntu recommended)
-- Rust (latest stable edition)
-- Required development packages:
-  - `libpcap-dev`
-  - `protobuf-compiler`
-  - `libprotobuf-dev`
-
-> Note: Package names may vary slightly depending on your distribution.
-
-### Datastore Dependency
-
-WallGuard relies on a separate service called **datastore** for database operations. Make sure it's installed and running before starting the server.
-
-You can find the datastore project here:  
-🔗 [https://github.com/NullNet-ai/datastore](https://github.com/NullNet-ai/datastore)
-
-## Contributing
-
-If you'd like to help improve **WallGuard**, you're welcome to open issues or submit pull requests.
+WallGuard depends on a separate **datastore** service for persistence. Start that first:
+[https://github.com/NullNet-ai/datastore](https://github.com/NullNet-ai/datastore)
 
 ## License
 
-This project is licensed under the **GNU Affero General Public License v3.0**.  
-See the [LICENSE](LICENSE) file in this repository for the full license text.
+Licensed under the **GNU Affero General Public License v3.0**. See [LICENSE](LICENSE) for the full text.
