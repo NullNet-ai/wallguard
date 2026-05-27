@@ -54,13 +54,18 @@ Write-Host "Generating WiX source (version $Version)..."
 (Get-Content $WxsTpl -Raw) -replace '__VERSION__', $Version |
     Set-Content $WxsOut -Encoding UTF8
 
-# ── 3. Build the MSI (WiX v4) ────────────────────────────────────────────────
+# ── 3. Ensure the WiX UI extension is available ──────────────────────────────
+Write-Host "Installing WiX UI extension (idempotent)..."
+wix extension add WixToolset.UI.wixext --global 2>&1 | Out-Null
+
+# ── 4. Build the MSI (WiX v4) ────────────────────────────────────────────────
 Write-Host "Building MSI: $MsiOut..."
 Push-Location $RepoRoot
 try {
     # Run wix from the repo root so that Source paths in the .wxs file
     # (e.g. "target\release\wallguard.exe") resolve correctly.
-    wix build $WxsOut -out $MsiOut
+    # -ext WixToolset.UI.wixext provides the WixUI_Minimal dialog set.
+    wix build $WxsOut -ext WixToolset.UI.wixext -out $MsiOut
     if ($LASTEXITCODE -ne 0) { throw "wix build failed (exit code $LASTEXITCODE)" }
 } finally {
     Pop-Location

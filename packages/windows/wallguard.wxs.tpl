@@ -6,6 +6,7 @@
   ─────────────
   • Rust toolchain targeting x86_64-pc-windows-msvc
   • WiX Toolset v4 (pin to v4.*; v5+ requires a paid EULA)
+  • WixToolset.UI.wixext   (wix extension add WixToolset.UI.wixext)
   • Npcap must be installed on the target machine before running this MSI.
     Download: https://npcap.com/#download
     (Silent/OEM bundling requires the Npcap OEM licence — https://npcap.com/oem/)
@@ -20,6 +21,7 @@
 
   What the MSI does
   ─────────────────
+  • Shows a standard Welcome → License → Progress → Finish UI.
   • Checks that Npcap is already installed; aborts with a clear message if not.
   • Installs wallguard.exe and wallguard-cli.exe to
       C:\Program Files\WallGuard\
@@ -33,7 +35,8 @@
 
   UpgradeCode must remain constant across all versions of WallGuard.
 -->
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
   <Package Name="WallGuard"
            Version="__VERSION__"
@@ -49,6 +52,14 @@
     <Feature Id="ProductFeature" Title="WallGuard" Level="1">
       <ComponentGroupRef Id="ProductComponents" />
     </Feature>
+
+    <!--
+      Standard installer UI: Welcome/License → Progress → Finish.
+      WixUI_Minimal is the simplest built-in dialog set — no feature
+      customization or install-directory pickers.
+    -->
+    <WixVariable Id="WixUILicenseRtf" Value="packages\windows\license.rtf" />
+    <ui:WixUI Id="WixUI_Minimal" />
 
     <!--
       Detect whether Npcap is installed by probing the driver service
