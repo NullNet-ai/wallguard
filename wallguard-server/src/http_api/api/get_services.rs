@@ -1,4 +1,7 @@
-use actix_web::{HttpRequest, HttpResponse, Responder, web::{Data, Query}};
+use actix_web::{
+    HttpRequest, HttpResponse, Responder,
+    web::{Data, Query},
+};
 use serde::Deserialize;
 use serde_json::json;
 
