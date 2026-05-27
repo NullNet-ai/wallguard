@@ -11,8 +11,7 @@ pub enum Platform {
     Generic,
     PfSense,
     OpnSense,
-    NfTables,
-    Desktop,
+    NfTables
 }
 
 impl TryFrom<&str> for Platform {
@@ -24,7 +23,6 @@ impl TryFrom<&str> for Platform {
             "pfsense" => Ok(Platform::PfSense),
             "opnsense" => Ok(Platform::OpnSense),
             "nftables" => Ok(Platform::NfTables),
-            "desktop" => Ok(Platform::Desktop),
             _ => {
                 let errmsg = format!("Unsupported platform {value}");
                 Err(errmsg).handle_err(location!())
@@ -48,7 +46,6 @@ impl fmt::Display for Platform {
             Platform::OpnSense => "opnsense",
             Platform::Generic => "generic",
             Platform::NfTables => "nftables",
-            Platform::Desktop => "desktop",
         };
 
         write!(f, "{value}")
@@ -57,7 +54,7 @@ impl fmt::Display for Platform {
 
 impl Platform {
     pub fn can_monitor_config(&self) -> bool {
-        !matches!(self, Platform::Generic | Platform::Desktop)
+        !matches!(self, Platform::Generic)
     }
 
     pub fn can_monitor_telemetry(&self) -> bool {
@@ -82,7 +79,7 @@ impl Platform {
                 let file = NftablesRuleset::default();
                 vec![SystemConfigurationFile::NftablesRuleset(file)]
             }
-            Platform::Generic | Platform::Desktop => vec![],
+            Platform::Generic => vec![],
         }
     }
 }
