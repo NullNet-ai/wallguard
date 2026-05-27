@@ -9,7 +9,7 @@ Once installed, WallGuard continuously collects system and network telemetry: CP
 
 | Platform | Package | Minimum version |
 |---|---|---|
-| Debian / Ubuntu | `.deb` or `install.sh` | Ubuntu 18.04 / Debian 10 |
+| Debian / Ubuntu / Pop!\_OS | `.deb` or `install.sh` | Ubuntu 18.04 / Debian 10 |
 | Fedora / CentOS / RHEL | `.rpm` or `install.sh` | CentOS 7 |
 | macOS | `.dmg` (universal) | macOS 10.15 |
 | Windows | `.msi` | Windows 10 / 11 |
