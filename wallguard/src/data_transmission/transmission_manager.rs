@@ -24,6 +24,10 @@ pub(crate) struct TransmissionManager {
 
     server_addr: String,
     platform: Platform,
+    /// True only when `RemoteDesktopManager` was successfully constructed
+    /// (i.e., enigo could connect to the display server).  Drives whether the
+    /// pseudo-RD service is advertised to the server.
+    rd_available: bool,
 }
 
 impl TransmissionManager {
@@ -33,6 +37,7 @@ impl TransmissionManager {
         token_provider: TokenProvider,
         server_addr: String,
         platform: Platform,
+        rd_available: bool,
     ) -> Self {
         Self {
             packet_capture: None,
@@ -46,6 +51,7 @@ impl TransmissionManager {
 
             server_addr,
             platform,
+            rd_available,
         }
     }
 
@@ -151,7 +157,7 @@ impl TransmissionManager {
         let interface = self.interface.clone();
         let token_provider = self.token_provider.clone();
         let mut receiver = terminate.subscribe();
-        let rd_available = self.platform.can_open_remote_desktop_session();
+        let rd_available = self.rd_available;
 
         self.services_monitoring = Some(terminate);
 

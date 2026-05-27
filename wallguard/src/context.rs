@@ -43,20 +43,41 @@ impl Context {
 
         let dump_dir = DumpDir::new(*DISK_SIZE / 2).await;
 
+        // Initialise RemoteDesktopManager before TransmissionManager so we can
+        // pass the *actual* rd_available flag (based on whether enigo connected)
+        // rather than just checking for an X11 socket that may not be usable.
+        #[cfg(not(target_os = "freebsd"))]
+        let remote_desktop_manager = if client_data.platform.can_open_remote_desktop_session() {
+            match RemoteDesktopManager::new() {
+                Ok(rdm) => Some(rdm),
+                Err(err) => {
+                    log::warn!(
+                        "Remote Desktop unavailable (display not accessible): {}",
+                        err.to_str()
+                    );
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        // On FreeBSD there is no remote_desktop_manager at all.
+        let rd_available = {
+            #[cfg(not(target_os = "freebsd"))]
+            { remote_desktop_manager.is_some() }
+            #[cfg(target_os = "freebsd")]
+            { false }
+        };
+
         let transmission_manager = TransmissionManager::new(
             server.clone(),
             dump_dir,
             token_provider.clone(),
             server_data.grpc_addr.ip().to_string(),
             client_data.platform,
+            rd_available,
         );
-
-        #[cfg(not(target_os = "freebsd"))]
-        let remote_desktop_manager = if client_data.platform.can_open_remote_desktop_session() {
-            Some(RemoteDesktopManager::new().unwrap())
-        } else {
-            None
-        };
 
         Ok(Self {
             token_provider,
