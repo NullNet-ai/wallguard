@@ -33,12 +33,18 @@ fn authorized_keys_path(username: &str) -> PathBuf {
 #[cfg(windows)]
 fn authorized_keys_path(username: &str) -> PathBuf {
     if username.eq_ignore_ascii_case("administrator") {
-        let programdata = std::env::var("PROGRAMDATA")
-            .unwrap_or_else(|_| r"C:\ProgramData".to_string());
-        PathBuf::from(format!(r"{}\ssh\administrators_authorized_keys", programdata))
+        let programdata =
+            std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
+        PathBuf::from(format!(
+            r"{}\ssh\administrators_authorized_keys",
+            programdata
+        ))
     } else {
         let system_drive = std::env::var("SYSTEMDRIVE").unwrap_or_else(|_| "C:".to_string());
-        PathBuf::from(format!(r"{}\Users\{}\.ssh\authorized_keys", system_drive, username))
+        PathBuf::from(format!(
+            r"{}\Users\{}\.ssh\authorized_keys",
+            system_drive, username
+        ))
     }
 }
 
@@ -115,8 +121,8 @@ pub async fn get_sshd_ports_from_sshd_t() -> io::Result<Vec<u16>> {
 /// explicit `Port` directive (22 is the OpenSSH default).
 #[cfg(windows)]
 pub async fn get_sshd_ports_from_sshd_t() -> io::Result<Vec<u16>> {
-    let programdata = std::env::var("PROGRAMDATA")
-        .unwrap_or_else(|_| r"C:\ProgramData".to_string());
+    let programdata =
+        std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
     let config_path = format!(r"{}\ssh\sshd_config", programdata);
 
     let content = match fs::read_to_string(&config_path).await {

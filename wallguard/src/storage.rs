@@ -67,8 +67,7 @@ static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
         // %PROGRAMDATA% (typically C:\ProgramData) is the correct location for
         // machine-wide service config on Windows.  %APPDATA% would be wrong here
         // because it is a per-user roaming path.
-        let base = std::env::var("PROGRAMDATA")
-            .unwrap_or_else(|_| r"C:\ProgramData".to_string());
+        let base = std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
         PathBuf::from(base).join("wallguard")
     }
 });
