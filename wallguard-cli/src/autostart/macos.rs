@@ -59,10 +59,7 @@ pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
         .args(["root:wheel", &path])
         .output()
         .await;
-    let _ = Command::new("chmod")
-        .args(["644", &path])
-        .output()
-        .await;
+    let _ = Command::new("chmod").args(["644", &path]).output().await;
 
     // Load (and enable) the daemon.
     Command::new("launchctl")
