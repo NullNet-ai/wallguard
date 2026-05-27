@@ -7,3 +7,8 @@ pub use freebsd::{disable_service, enable_service};
 mod linux;
 #[cfg(target_os = "linux")]
 pub use linux::{disable_service, enable_service};
+
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+pub use windows::{disable_service, enable_service};

@@ -2,7 +2,7 @@
 set -e
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <deb|freebsd> [version]"
+  echo "Usage: $0 <deb|freebsd|windows> [version]"
   exit 1
 fi
 
@@ -61,9 +61,17 @@ case "$mode" in
     rm $PKGDIR/+MANIFEST $PKGDIR/usr/local/bin/wallguard $PKGDIR/usr/local/bin/wallguard-cli
     ;;
 
+  windows)
+    echo "Windows packaging requires running packbuild.ps1 on Windows."
+    echo "Prerequisites: Rust toolchain + WiX Toolset v4 (winget install WixToolset.WiX)"
+    echo ""
+    echo "  .\\packbuild.ps1 -Version <version>"
+    exit 1
+    ;;
+
   *)
     echo "Unsupported mode: $mode"
-    echo "Usage: $0 <deb|freebsd> [version]"
+    echo "Usage: $0 <deb|freebsd|windows> [version]"
     exit 1
     ;;
 esac
