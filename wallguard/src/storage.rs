@@ -90,7 +90,11 @@ impl Storage {
         create_dir_all(&dir).await.handle_err(location!())?;
         set_permissions_700(&dir).await?;
 
-        let config = if file_path.exists() {
+        let file_exists = tokio::fs::try_exists(&file_path)
+            .await
+            .unwrap_or(false);
+
+        let config = if file_exists {
             set_permissions_600(&file_path).await?;
             read_to_string(&file_path)
                 .await
