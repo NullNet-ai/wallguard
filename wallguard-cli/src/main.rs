@@ -18,9 +18,12 @@ fn is_agent_running() -> bool {
     use sysinfo::{ProcessesToUpdate, System};
 
     let mut system = System::new_all();
-
     system.refresh_processes(ProcessesToUpdate::All, true);
 
+    // sysinfo includes the .exe extension in process names on Windows.
+    #[cfg(windows)]
+    let target_name = OsStr::new("wallguard.exe");
+    #[cfg(not(windows))]
     let target_name = OsStr::new("wallguard");
 
     system
@@ -208,7 +211,7 @@ pub async fn main() -> AnyResult<()> {
         }
         arguments::Command::Stop => {
             use std::ffi::OsStr;
-            use sysinfo::{ProcessesToUpdate, Signal, System};
+            use sysinfo::{ProcessesToUpdate, System};
 
             if !is_agent_running() {
                 eprintln!("WallGuard agent is not running.");
@@ -222,17 +225,22 @@ pub async fn main() -> AnyResult<()> {
             let mut system = System::new();
             system.refresh_processes(ProcessesToUpdate::All, true);
 
+            // sysinfo includes the .exe extension in process names on Windows.
+            #[cfg(windows)]
+            let target_name = OsStr::new("wallguard.exe");
+            #[cfg(not(windows))]
             let target_name = OsStr::new("wallguard");
 
             for process in system.processes().values() {
                 if process.name() == target_name {
-                    if process.kill_with(Signal::Kill).is_none() {
-                        eprintln!("Failed to send SIGKILL to WallGuard agent");
+                    // process.kill() is cross-platform; kill_with(Signal::Kill)
+                    // returns None on Windows because POSIX signals are unsupported.
+                    if !process.kill() {
+                        eprintln!("Failed to terminate WallGuard agent.");
                         std::process::exit(-1);
-                    } else {
-                        println!("WallGuard agent stopped successfully.");
-                        break;
                     }
+                    println!("WallGuard agent stopped successfully.");
+                    break;
                 }
             }
         }
