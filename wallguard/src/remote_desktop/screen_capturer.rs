@@ -206,18 +206,18 @@ mod wayland {
     #[derive(Default)]
     struct Session {
         // Wayland globals — populated during initialisation roundtrips.
-        shm:     Option<wl_shm::WlShm>,
-        output:  Option<wl_output::WlOutput>,
+        shm: Option<wl_shm::WlShm>,
+        output: Option<wl_output::WlOutput>,
         manager: Option<ZwlrScreencopyManagerV1>,
 
         // Per-frame values from zwlr_screencopy_frame_v1::Buffer event.
-        width:  u32,
+        width: u32,
         height: u32,
         stride: u32,
         format: u32, // raw wl_shm format value
 
         // Completion flags from Ready / Failed events.
-        ready:  bool,
+        ready: bool,
         failed: bool,
     }
 
@@ -232,7 +232,14 @@ mod wayland {
             _: &Connection,
             qh: &QueueHandle<Self>,
         ) {
-            let wl_registry::Event::Global { name, interface, version } = event else { return };
+            let wl_registry::Event::Global {
+                name,
+                interface,
+                version,
+            } = event
+            else {
+                return;
+            };
             match interface.as_str() {
                 "wl_shm" => {
                     state.shm = Some(registry.bind(name, 1, qh, ()));
@@ -258,17 +265,22 @@ mod wayland {
             _: &QueueHandle<Self>,
         ) {
             match event {
-                zwlr_screencopy_frame_v1::Event::Buffer { format, width, height, stride } => {
+                zwlr_screencopy_frame_v1::Event::Buffer {
+                    format,
+                    width,
+                    height,
+                    stride,
+                } => {
                     state.format = match format {
                         wayland_client::WEnum::Value(f) => f as u32,
                         wayland_client::WEnum::Unknown(n) => n,
                     };
-                    state.width  = width;
+                    state.width = width;
                     state.height = height;
                     state.stride = stride;
                 }
-                zwlr_screencopy_frame_v1::Event::Ready { .. } => state.ready  = true,
-                zwlr_screencopy_frame_v1::Event::Failed        => state.failed = true,
+                zwlr_screencopy_frame_v1::Event::Ready { .. } => state.ready = true,
+                zwlr_screencopy_frame_v1::Event::Failed => state.failed = true,
                 _ => {}
             }
         }
@@ -278,27 +290,35 @@ mod wayland {
     macro_rules! noop_dispatch {
         ($iface:ty, $ev:ty) => {
             impl Dispatch<$iface, ()> for Session {
-                fn event(_: &mut Self, _: &$iface, _: $ev, _: &(), _: &Connection, _: &QueueHandle<Self>) {}
+                fn event(
+                    _: &mut Self,
+                    _: &$iface,
+                    _: $ev,
+                    _: &(),
+                    _: &Connection,
+                    _: &QueueHandle<Self>,
+                ) {
+                }
             }
         };
     }
-    noop_dispatch!(wl_shm::WlShm,              wl_shm::Event);
-    noop_dispatch!(wl_shm_pool::WlShmPool,     wl_shm_pool::Event);
-    noop_dispatch!(wl_buffer::WlBuffer,        wl_buffer::Event);
-    noop_dispatch!(wl_output::WlOutput,        wl_output::Event);
-    noop_dispatch!(ZwlrScreencopyManagerV1,    zwlr_screencopy_manager_v1::Event);
+    noop_dispatch!(wl_shm::WlShm, wl_shm::Event);
+    noop_dispatch!(wl_shm_pool::WlShmPool, wl_shm_pool::Event);
+    noop_dispatch!(wl_buffer::WlBuffer, wl_buffer::Event);
+    noop_dispatch!(wl_output::WlOutput, wl_output::Event);
+    noop_dispatch!(ZwlrScreencopyManagerV1, zwlr_screencopy_manager_v1::Event);
 
     // ── WaylandCapturer ───────────────────────────────────────────────────────
 
     pub struct WaylandCapturer {
         event_queue: EventQueue<Session>,
-        qh:          QueueHandle<Session>,
-        session:     Session,
+        qh: QueueHandle<Session>,
+        session: Session,
     }
 
     impl WaylandCapturer {
         pub fn new() -> Result<Self, Error> {
-            let conn    = Connection::connect_to_env().handle_err(location!())?;
+            let conn = Connection::connect_to_env().handle_err(location!())?;
             let display = conn.display();
             let mut event_queue = conn.new_event_queue::<Session>();
             let qh = event_queue.handle();
@@ -308,18 +328,25 @@ mod wayland {
 
             // Two roundtrips: first populates the global list, second lets the
             // compositor process any pending acks.
-            event_queue.roundtrip(&mut session).handle_err(location!())?;
-            event_queue.roundtrip(&mut session).handle_err(location!())?;
+            event_queue
+                .roundtrip(&mut session)
+                .handle_err(location!())?;
+            event_queue
+                .roundtrip(&mut session)
+                .handle_err(location!())?;
 
             if session.shm.is_none() || session.output.is_none() || session.manager.is_none() {
-                return Err(
-                    "compositor missing required globals \
+                return Err("compositor missing required globals \
                      (wl_shm, wl_output, or zwlr_screencopy_manager_v1) — \
-                     wlr-screencopy may not be supported"
-                ).handle_err(location!());
+                     wlr-screencopy may not be supported")
+                .handle_err(location!());
             }
 
-            Ok(Self { event_queue, qh, session })
+            Ok(Self {
+                event_queue,
+                qh,
+                session,
+            })
         }
     }
 
@@ -327,22 +354,24 @@ mod wayland {
         fn capture(&mut self) -> Result<Screenshot, Error> {
             // Clone Wayland proxies upfront so we don't hold borrows into
             // `self.session` while also passing `&mut self.session` to roundtrip.
-            let output  = self.session.output.as_ref().unwrap().clone();
+            let output = self.session.output.as_ref().unwrap().clone();
             let manager = self.session.manager.as_ref().unwrap().clone();
-            let shm     = self.session.shm.as_ref().unwrap().clone();
+            let shm = self.session.shm.as_ref().unwrap().clone();
 
             // Reset per-frame state.
-            self.session.width  = 0;
+            self.session.width = 0;
             self.session.height = 0;
             self.session.stride = 0;
-            self.session.ready  = false;
+            self.session.ready = false;
             self.session.failed = false;
 
             // Ask the compositor for a screencopy frame (cursor not included).
             let frame = manager.capture_output(0, &output, &self.qh, ());
 
             // Roundtrip to receive the Buffer event (gives us dimensions + format).
-            self.event_queue.roundtrip(&mut self.session).handle_err(location!())?;
+            self.event_queue
+                .roundtrip(&mut self.session)
+                .handle_err(location!())?;
 
             if self.session.width == 0 {
                 return Err("no Buffer event received from compositor").handle_err(location!());
@@ -358,7 +387,9 @@ mod wayland {
             let map_ptr = unsafe {
                 nix::sys::mman::mmap(
                     None,
-                    NonZeroUsize::new(size).ok_or("zero-size frame").handle_err(location!())?,
+                    NonZeroUsize::new(size)
+                        .ok_or("zero-size frame")
+                        .handle_err(location!())?,
                     nix::sys::mman::ProtFlags::PROT_READ | nix::sys::mman::ProtFlags::PROT_WRITE,
                     nix::sys::mman::MapFlags::MAP_SHARED,
                     shm_fd.as_fd(),
@@ -369,28 +400,32 @@ mod wayland {
 
             // Create the Wayland SHM pool + buffer objects.
             let pool = shm.create_pool(shm_fd.as_fd(), size as i32, &self.qh, ());
-            let buf_fmt = wl_shm::Format::try_from(self.session.format)
-                .unwrap_or(wl_shm::Format::Xrgb8888);
-            let buffer = pool.create_buffer(
-                0, w as i32, h as i32, stride as i32, buf_fmt, &self.qh, (),
-            );
+            let buf_fmt =
+                wl_shm::Format::try_from(self.session.format).unwrap_or(wl_shm::Format::Xrgb8888);
+            let buffer =
+                pool.create_buffer(0, w as i32, h as i32, stride as i32, buf_fmt, &self.qh, ());
 
             // Trigger the copy; dispatch until Ready or Failed.
             frame.copy(&buffer);
             while !self.session.ready && !self.session.failed {
-                self.event_queue.roundtrip(&mut self.session).handle_err(location!())?;
+                self.event_queue
+                    .roundtrip(&mut self.session)
+                    .handle_err(location!())?;
             }
 
             let result = if self.session.failed {
                 Err("Wayland screencopy frame failed").handle_err(location!())
             } else {
-                let raw = unsafe { std::slice::from_raw_parts(map_ptr.as_ptr() as *const u8, size) };
+                let raw =
+                    unsafe { std::slice::from_raw_parts(map_ptr.as_ptr() as *const u8, size) };
                 let rgb = bgrx_to_rgb(raw, stride, w, h);
                 Ok(Screenshot::new(rgb, w as usize, h as usize))
             };
 
             // Cleanup — always runs whether capture succeeded or not.
-            unsafe { let _ = nix::sys::mman::munmap(map_ptr, size); }
+            unsafe {
+                let _ = nix::sys::mman::munmap(map_ptr, size);
+            }
             buffer.destroy();
             pool.destroy();
             frame.destroy();
@@ -417,8 +452,7 @@ mod wayland {
         // PID + monotonic counter → unique name even if two captures race.
         static COUNTER: AtomicU32 = AtomicU32::new(0);
         let n = COUNTER.fetch_add(1, Ordering::Relaxed);
-        let name =
-            CString::new(format!("/wallguard-{}-{n}", std::process::id())).unwrap();
+        let name = CString::new(format!("/wallguard-{}-{n}", std::process::id())).unwrap();
 
         let fd = shm_open(
             name.as_c_str(),
@@ -445,7 +479,7 @@ mod wayland {
                 let px = row_start + col * 4;
                 rgb.push(data[px + 2]); // R
                 rgb.push(data[px + 1]); // G
-                rgb.push(data[px]);     // B
+                rgb.push(data[px]); // B
             }
         }
         rgb
