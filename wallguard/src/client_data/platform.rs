@@ -198,10 +198,14 @@ fn x11_socket_exists() -> bool {
         let name = entry.file_name();
         let name = name.to_string_lossy();
         // Socket names are "X0", "X1", …
-        if let Some(num) = name.strip_prefix('X') && num.parse::<u32>().is_ok() {
+        if let Some(num) = name.strip_prefix('X')
+            && num.parse::<u32>().is_ok()
+        {
             if std::env::var_os("DISPLAY").is_none() {
                 // SAFETY: see doc-comment above.
-                unsafe { std::env::set_var("DISPLAY", format!(":{num}")); }
+                unsafe {
+                    std::env::set_var("DISPLAY", format!(":{num}"));
+                }
             }
             return true;
         }
