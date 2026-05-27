@@ -151,13 +151,14 @@ impl TransmissionManager {
         let interface = self.interface.clone();
         let token_provider = self.token_provider.clone();
         let mut receiver = terminate.subscribe();
+        let rd_available = self.platform.can_open_remote_desktop_session();
 
         self.services_monitoring = Some(terminate);
 
         tokio::spawn(async move {
             tokio::select! {
                 _ = receiver.recv() => {},
-                _ = monitor_services(interface, token_provider) => {}
+                _ = monitor_services(interface, token_provider, rd_available) => {}
             }
         });
     }
