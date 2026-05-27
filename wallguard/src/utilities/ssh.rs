@@ -143,10 +143,10 @@ pub async fn get_sshd_ports_from_sshd_t() -> io::Result<Vec<u16>> {
 
         // sshd_config keywords are case-insensitive.
         let lower = line.to_ascii_lowercase();
-        if let Some(rest) = lower.strip_prefix("port ") {
-            if let Ok(port) = rest.trim().parse::<u16>() {
-                ports.push(port);
-            }
+        if let Some(rest) = lower.strip_prefix("port ")
+            && let Ok(port) = rest.trim().parse::<u16>()
+        {
+            ports.push(port);
         }
     }
 

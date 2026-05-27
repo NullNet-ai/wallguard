@@ -123,12 +123,12 @@ fn has_x11_display() -> bool {
             return true;
         }
         // Native Quartz display (no XQuartz): ask CoreGraphics directly.
-        return has_quartz_display();
+        has_quartz_display()
     }
 
     #[cfg(target_os = "windows")]
     {
-        return has_windows_display();
+        has_windows_display()
     }
 
     #[cfg(target_os = "freebsd")]
@@ -136,7 +136,8 @@ fn has_x11_display() -> bool {
         if std::env::var_os("DISPLAY").is_some() {
             return true;
         }
-        return x11_socket_exists();
+
+        x11_socket_exists()
     }
 
     // All other targets: conservatively return false.
@@ -147,7 +148,7 @@ fn has_x11_display() -> bool {
         target_os = "freebsd",
     )))]
     {
-        return false;
+        false
     }
 }
 
