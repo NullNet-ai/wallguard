@@ -47,7 +47,7 @@ build_linux_bins() {
 
     local target="x86_64-unknown-linux-gnu"
 
-    if cargo zigbuild --version &>/dev/null 2>&1; then
+    if cargo-zigbuild --version &>/dev/null 2>&1; then
         echo "==> cargo-zigbuild found — targeting glibc 2.17 (max compat)"
         rustup target add "${target}" 2>/dev/null || true
         cargo zigbuild --target "${target}.2.17" \

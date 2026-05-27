@@ -44,7 +44,7 @@ jobs:
         run: |
           pip3 install ziglang
           cargo install cargo-zigbuild
-          cargo zigbuild --version   # fail fast if install did not work
+          cargo-zigbuild --version   # fail fast if install did not work
 
       - name: Build binaries with zigbuild (glibc ≥ 2.17)
         run: |
@@ -134,7 +134,7 @@ jobs:
         run: |
           pip3 install ziglang
           cargo install cargo-zigbuild
-          cargo zigbuild --version   # fail fast if install did not work
+          cargo-zigbuild --version   # fail fast if install did not work
 
       - name: Build binaries with zigbuild (glibc ≥ 2.17)
         run: |
