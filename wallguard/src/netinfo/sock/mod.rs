@@ -44,6 +44,12 @@ async fn get_sockets_info_impl() -> Vec<SocketInfo> {
     freebsd::get_sockets_info().await
 }
 
+// macOS socket enumeration is not yet implemented.
+#[cfg(target_os = "macos")]
+async fn get_sockets_info_impl() -> Vec<SocketInfo> {
+    vec![]
+}
+
 pub async fn get_sockets_info() -> Vec<SocketInfo> {
     get_sockets_info_impl().await
 }

@@ -223,7 +223,7 @@ fn x11_socket_exists() -> bool {
 #[cfg(target_os = "macos")]
 fn has_quartz_display() -> bool {
     #[link(name = "CoreGraphics", kind = "framework")]
-    extern "C" {
+    unsafe extern "C" {
         fn CGMainDisplayID() -> u32;
         fn CGDisplayIsActive(display: u32) -> bool;
     }
