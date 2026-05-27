@@ -174,7 +174,7 @@ jobs:
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build macOS DMG  (universal: x86_64 + aarch64)
+      - name: Build macOS DMG  (universal x86_64 + aarch64)
         run: ./packbuild.sh macos "$VERSION"
 
       - name: Get existing GitHub release
