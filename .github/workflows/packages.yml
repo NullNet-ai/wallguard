@@ -222,11 +222,6 @@ jobs:
           Expand-Archive -LiteralPath C:/npcap-sdk.zip -DestinationPath C:/npcap-sdk
           echo "LIB=C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
 
-      - name: Download Npcap runtime installer
-        run: |
-          Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-1.82.exe" `
-            -OutFile "packages/windows/npcap-installer.exe"
-
       - name: Install WiX Toolset v4
         run: dotnet tool install --global wix --version "4.*"
 
@@ -235,7 +230,7 @@ jobs:
 
       - name: Build Windows MSI package
         run: |
-          .\packbuild.ps1 -Version ${{ env.VERSION }} -NpcapVersion 1.82
+          .\packbuild.ps1 -Version ${{ env.VERSION }}
 
       - name: Get existing GitHub release
         id: get_release
