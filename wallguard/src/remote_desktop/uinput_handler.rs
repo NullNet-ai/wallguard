@@ -57,7 +57,7 @@ impl UinputHandler {
             .emit(&[
                 InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_X.0, x),
                 InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Y.0, y),
-                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+                InputEvent::new(EventType::SYNCHRONIZATION, 0, 0),
             ])
             .handle_err(location!())
     }
@@ -66,7 +66,7 @@ impl UinputHandler {
         self.pointer
             .emit(&[
                 InputEvent::new(EventType::KEY, btn.evdev_code(), 1),
-                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+                InputEvent::new(EventType::SYNCHRONIZATION, 0, 0),
             ])
             .handle_err(location!())
     }
@@ -75,7 +75,7 @@ impl UinputHandler {
         self.pointer
             .emit(&[
                 InputEvent::new(EventType::KEY, btn.evdev_code(), 0),
-                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+                InputEvent::new(EventType::SYNCHRONIZATION, 0, 0),
             ])
             .handle_err(location!())
     }
@@ -109,7 +109,7 @@ impl UinputHandler {
         self.keyboard
             .emit(&[
                 InputEvent::new(EventType::KEY, code, value),
-                InputEvent::new(EventType::SYNCHRONIZE, 0, 0),
+                InputEvent::new(EventType::SYNCHRONIZATION, 0, 0),
             ])
             .handle_err(location!())
     }

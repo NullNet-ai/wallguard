@@ -42,7 +42,10 @@ x11rb = "0.13"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Wayland screen capture via wlr-screencopy protocol (sway, hyprland, KDE Plasma, etc.)
-libwayshot = "0.4"
+# Uses wayland-client directly to avoid the gbm/EGL system-library dependency that
+# libwayshot pulls in — the SHM (CPU) buffer path needs no GPU stack.
+wayland-client = "0.31"
+wayland-protocols-wlr = "0.3"
 # Virtual uinput device for keyboard/mouse injection on Wayland (kernel-level, no X11 needed)
 evdev = "0.12"
 
@@ -51,4 +54,4 @@ is_elevated = "0.1.2"
 winapi = {version = "0.3.9", features = ["winerror", "iphlpapi", "handleapi", "tlhelp32", "wingdi", "winuser", "windef", "minwindef"]}
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.30.1", features = ["user"] }
+nix = { version = "0.30.1", features = ["user", "mman", "fs"] }

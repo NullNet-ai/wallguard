@@ -91,7 +91,7 @@ impl InputBackend {
     fn button(&mut self, btn: &str, press: bool) -> Result<(), Error> {
         match self {
             InputBackend::Enigo(e) => {
-                use enigo::{Button, Direction, Mouse};
+                use enigo::{Direction, Mouse};
                 let button = parse_enigo_button(btn)?;
                 let dir = if press {
                     Direction::Press
@@ -102,7 +102,6 @@ impl InputBackend {
             }
             #[cfg(target_os = "linux")]
             InputBackend::Uinput(u) => {
-                use super::uinput_handler::MouseButton;
                 let btn = parse_uinput_button(btn)?;
                 if press {
                     u.button_press(btn)
@@ -116,7 +115,7 @@ impl InputBackend {
     fn key(&mut self, key: &str, direction: KeyDir) -> Result<(), Error> {
         match self {
             InputBackend::Enigo(e) => {
-                use enigo::{Direction, Key, Keyboard};
+                use enigo::{Direction, Keyboard};
                 let k = parse_enigo_key(key);
                 let dir = match direction {
                     KeyDir::Press => Direction::Press,

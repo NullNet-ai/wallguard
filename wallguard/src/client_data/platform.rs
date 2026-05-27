@@ -87,6 +87,10 @@ impl Platform {
 ///
 /// `pub(crate)` so that `pseudo_rd` can use this as a cheap pre-filter before
 /// attempting the more expensive (and potentially noisy) `Enigo::new()` probe.
+/// Convenience wrapper: returns `true` when any display (X11 or Wayland) is
+/// reachable.  Call the individual functions when you need to distinguish
+/// which protocol is available.
+#[allow(dead_code)]
 pub(crate) fn has_desktop_environment() -> bool {
     has_x11_display() || has_wayland_display()
 }
