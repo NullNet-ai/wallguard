@@ -9,22 +9,22 @@ use serde::{Deserialize, Serialize};
 
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
-async fn set_permissions_600(path: &PathBuf) -> Result<(), Error> {
+async fn set_permissions_600(_path: &PathBuf) -> Result<(), Error> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        tokio::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))
+        tokio::fs::set_permissions(_path, std::fs::Permissions::from_mode(0o600))
             .await
             .handle_err(location!())?;
     }
     Ok(())
 }
 
-async fn set_permissions_700(path: &PathBuf) -> Result<(), Error> {
+async fn set_permissions_700(_path: &PathBuf) -> Result<(), Error> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        tokio::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
+        tokio::fs::set_permissions(_path, std::fs::Permissions::from_mode(0o700))
             .await
             .handle_err(location!())?;
     }
