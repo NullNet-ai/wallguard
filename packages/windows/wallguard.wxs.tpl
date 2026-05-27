@@ -94,22 +94,25 @@
         Only install Npcap when:
           • Npcap is not already present (NOT NPCAP_INSTALLED)
           • We are not in the middle of an uninstall (NOT REMOVE)
+        WiX v4: condition goes in the Condition attribute, not as inner text.
       -->
-      <Custom Action="InstallNpcap" Before="InstallFinalize">
-        NOT NPCAP_INSTALLED AND NOT REMOVE
-      </Custom>
+      <Custom Action="InstallNpcap"
+              Before="InstallFinalize"
+              Condition="NOT NPCAP_INSTALLED AND NOT REMOVE" />
     </InstallExecuteSequence>
 
   </Package>
 
   <!-- ── Directory tree ──────────────────────────────────────────────────── -->
+  <!--
+    WiX v4: use StandardDirectory instead of manually declaring TARGETDIR /
+    ProgramFiles64Folder as Directory elements (WIX5437).
+  -->
   <Fragment>
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFiles64Folder">
-        <!-- Installs to C:\Program Files\WallGuard\ -->
-        <Directory Id="INSTALLFOLDER" Name="WallGuard" />
-      </Directory>
-    </Directory>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <!-- Installs to C:\Program Files\WallGuard\ -->
+      <Directory Id="INSTALLFOLDER" Name="WallGuard" />
+    </StandardDirectory>
   </Fragment>
 
   <!-- ── Components ─────────────────────────────────────────────────────── -->
