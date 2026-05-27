@@ -7,7 +7,6 @@ use crate::control_channel::commands::{
     OpenUiSessionCommand, UpdateTokenCommand,
 };
 
-#[cfg(not(target_os = "freebsd"))]
 use crate::control_channel::commands::OpenRemoteDesktopSessionCommand;
 
 use crate::control_channel::post_startup::post_startup;
@@ -274,24 +273,13 @@ async fn handle_incoming_messages(
                     }
 
                     Message::OpenRemoteDesktopSessionCommand(token) => {
-                        #[cfg(not(target_os = "freebsd"))]
-                        {
-                            let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
+                        let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
 
-                            if let Err(err) = cmd.execute().await {
-                                log::error!(
-                                    "OpenRemoteDesktopSessionCommand execution failed: {}",
-                                    err.to_str()
-                                );
-                            }
-                        }
-
-                        #[cfg(target_os = "freebsd")]
-                        {
-                            log::warn!(
-                                "FreeBSD does not support remote desktop, ignoring OpenRemoteDesktopSessionCommand"
+                        if let Err(err) = cmd.execute().await {
+                            log::error!(
+                                "OpenRemoteDesktopSessionCommand execution failed: {}",
+                                err.to_str()
                             );
-                            let _ = token;
                         }
                     }
                     Message::ExecuteCliCommandRequest(request) => {

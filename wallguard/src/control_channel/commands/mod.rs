@@ -10,9 +10,7 @@ mod open_tty_session_command;
 mod open_ui_session_command;
 mod update_token_command;
 
-#[cfg(not(target_os = "freebsd"))]
 mod open_remote_desktop_session_command;
-#[cfg(not(target_os = "freebsd"))]
 pub use open_remote_desktop_session_command::*;
 
 pub use create_alias_command::*;

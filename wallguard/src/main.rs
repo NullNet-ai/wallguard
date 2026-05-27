@@ -24,7 +24,6 @@ mod token_provider;
 mod utilities;
 mod wg_server;
 
-#[cfg(not(target_os = "freebsd"))]
 mod remote_desktop;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
