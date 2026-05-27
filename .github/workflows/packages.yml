@@ -5,7 +5,21 @@ on:
     tags:
       - 'v*.*.*'
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared helper: extract the semver from the tag and export as $VERSION
+# ─────────────────────────────────────────────────────────────────────────────
+env:
+  CARGO_TERM_COLOR: always
+
+# ── Reusable step fragments (via anchors) are not supported in GitHub Actions,
+#    so each job repeats the version-extraction step.
+
 jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # Linux .deb  +  binary tarball  +  install.sh
+  # Binaries are built with cargo-zigbuild targeting glibc 2.17 so they run
+  # on Ubuntu 18.04+, Debian 10+, and any Linux with glibc >= 2.17.
+  # ───────────────────────────────────────────────────────────────────────────
   build-deb-and-release:
     runs-on: ubuntu-latest
     permissions:
@@ -13,38 +27,45 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Determine version from tag
-        id: version
         run: |
-          # github.ref is like "refs/tags/v1.2.3"
-          TAG=${GITHUB_REF#refs/tags/}
-          # strip a leading 'v' if present
-          VERSION=${TAG#v}
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "Using version: $VERSION"
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libpcap-dev protobuf-compiler \
+          sudo apt-get install -y \
+            libpcap-dev protobuf-compiler \
             libpipewire-0.3-dev libpipewire-0.3-modules libspa-0.2-dev \
             libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev \
             libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
 
       - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Build .deb package
+      # cargo-zigbuild pins the glibc requirement to 2.17 so the binary
+      # runs on Ubuntu 18.04 / Debian 10 and newer despite being compiled on
+      # the ubuntu-latest runner (which ships glibc 2.39 as of Ubuntu 24.04).
+      - name: Install cargo-zigbuild and Zig
         run: |
-          # pass the version to your script
-          ./packbuild.sh deb $VERSION
+          pip3 install ziglang --quiet
+          cargo install cargo-zigbuild --locked
+
+      - name: Add linux target
+        run: rustup target add x86_64-unknown-linux-gnu
+
+      - name: Build .deb package  (glibc ≥ 2.17)
+        run: ./packbuild.sh deb "$VERSION"
+
+      - name: Build binary tarball  (for install.sh fallback)
+        run: ./packbuild.sh tarball "$VERSION"
 
       - name: Get existing GitHub release
         id: get_release
@@ -54,7 +75,7 @@ jobs:
         with:
           tag: ${{ github.ref }}
 
-      - name: Upload Lionux package to Release
+      - name: Upload .deb to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,6 +85,139 @@ jobs:
           asset_name: "wallguard_${{ env.VERSION }}_amd64.deb"
           asset_content_type: application/octet-stream
 
+      - name: Upload binary tarball to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: "wallguard-${{ env.VERSION }}-linux-x86_64.tar.gz"
+          asset_name: "wallguard-${{ env.VERSION }}-linux-x86_64.tar.gz"
+          asset_content_type: application/octet-stream
+
+      - name: Upload install.sh to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: install.sh
+          asset_name: install.sh
+          asset_content_type: text/x-shellscript
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Linux .rpm  (Fedora / CentOS / RHEL)
+  # Same glibc 2.17 pinning as the .deb job.
+  # ───────────────────────────────────────────────────────────────────────────
+  build-rpm-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            libpcap-dev protobuf-compiler rpm \
+            libpipewire-0.3-dev libpipewire-0.3-modules libspa-0.2-dev \
+            libxcb1-dev libxcb-shm0-dev libxcb-randr0-dev \
+            libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-zigbuild and Zig
+        run: |
+          pip3 install ziglang --quiet
+          cargo install cargo-zigbuild --locked
+
+      - name: Add linux target
+        run: rustup target add x86_64-unknown-linux-gnu
+
+      - name: Build .rpm package  (glibc ≥ 2.17)
+        run: ./packbuild.sh rpm "$VERSION"
+
+      - name: Get existing GitHub release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag: ${{ github.ref }}
+
+      - name: Upload .rpm to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: "wallguard-${{ env.VERSION }}-1.x86_64.rpm"
+          asset_name: "wallguard-${{ env.VERSION }}-1.x86_64.rpm"
+          asset_content_type: application/octet-stream
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # macOS .dmg  (universal binary: Intel + Apple Silicon)
+  # ───────────────────────────────────────────────────────────────────────────
+  build-macos-and-release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version from tag
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Install system dependencies
+        run: |
+          brew install protobuf
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build macOS DMG  (universal: x86_64 + aarch64)
+        run: ./packbuild.sh macos "$VERSION"
+
+      - name: Get existing GitHub release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag: ${{ github.ref }}
+
+      - name: Upload .dmg to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: "wallguard-${{ env.VERSION }}-macos.dmg"
+          asset_name: "wallguard-${{ env.VERSION }}-macos.dmg"
+          asset_content_type: application/octet-stream
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Windows .msi  (unchanged from before)
+  # ───────────────────────────────────────────────────────────────────────────
   build-windows-and-release:
     runs-on: windows-latest
     permissions:
@@ -71,12 +225,11 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Determine version from tag
-        id: version
         run: |
           $TAG = "${{ github.ref }}" -replace "refs/tags/", ""
           $VERSION = $TAG -replace "^v", ""
@@ -93,9 +246,6 @@ jobs:
           echo "LIB=C:/npcap-sdk/Lib/x64" >> $env:GITHUB_ENV
 
       - name: Download Npcap runtime installer
-        # The runtime .exe is embedded into the MSI by packbuild.ps1 so that
-        # end-users get Npcap installed automatically alongside WallGuard.
-        # NOTE: silent redistribution requires the Npcap OEM licence.
         run: |
           Invoke-WebRequest -Uri "https://npcap.com/dist/npcap-1.82.exe" `
             -OutFile "packages/windows/npcap-installer.exe"
@@ -104,10 +254,7 @@ jobs:
         run: dotnet tool install --global wix --version "4.*"
 
       - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build Windows MSI package
         run: |
@@ -131,13 +278,14 @@ jobs:
           asset_name: "wallguard-${{ env.VERSION }}-x86_64.msi"
           asset_content_type: application/octet-stream
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # FreeBSD .pkg  (unchanged from before)
+  # ───────────────────────────────────────────────────────────────────────────
   build-freebsd-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
 
     steps:
       - name: Checkout code
@@ -147,19 +295,17 @@ jobs:
           submodules: recursive
 
       - name: Determine version from tag
-        id: version
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG#v}
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "Using version: $VERSION"
 
-      - name: Install Dependencies and Build FreeBSD package
+      - name: Install dependencies and build FreeBSD package
         uses: cross-platform-actions/action@v1.1.0
         with:
           operating_system: freebsd
           architecture: x86_64
-          version: 14.3
+          version: '14.3'
           cpu_count: 4
           memory: 16G
           environment_variables: VERSION
@@ -169,9 +315,8 @@ jobs:
             sudo pkg update
             sudo pkg install -y gmake cmake llvm libpcap protobuf bash
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            
             export PATH=$HOME/.cargo/bin:$PATH
-            bash ./packbuild.sh freebsd $VERSION
+            bash ./packbuild.sh freebsd "$VERSION"
 
       - name: Get existing GitHub release
         id: get_release
