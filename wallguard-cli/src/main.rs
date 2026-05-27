@@ -171,8 +171,8 @@ pub async fn main() -> AnyResult<()> {
             let log_path = String::from("/var/log/wallguard.log");
             #[cfg(windows)]
             let log_path = {
-                let base = std::env::var("PROGRAMDATA")
-                    .unwrap_or_else(|_| r"C:\ProgramData".to_string());
+                let base =
+                    std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
                 format!(r"{}\wallguard\wallguard.log", base)
             };
 
