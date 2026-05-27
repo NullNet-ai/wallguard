@@ -51,10 +51,7 @@ pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
 /// Stops and removes the Windows service registered by [`enable_service`].
 pub async fn disable_service(program: &str) -> io::Result<()> {
     // Best-effort stop — ignore errors if the service is not running.
-    let _ = Command::new("sc")
-        .args(["stop", program])
-        .output()
-        .await;
+    let _ = Command::new("sc").args(["stop", program]).output().await;
 
     let output = Command::new("sc")
         .args(["delete", program])
