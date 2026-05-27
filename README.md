@@ -35,8 +35,3 @@ cargo build --release -p wallguard -p wallguard-cli
 The agent binary (`wallguard`) and the control CLI (`wallguard-cli`) will be placed in `target/release/`. See `packbuild.sh` for the full packaging workflow and `CLAUDE.md` for development notes.
 
 WallGuard depends on a separate **datastore** service for persistence. Start that first:
-[https://github.com/NullNet-ai/datastore](https://github.com/NullNet-ai/datastore)
-
-## License
-
-Licensed under the **GNU Affero General Public License v3.0**. See [LICENSE](LICENSE) for the full text.
