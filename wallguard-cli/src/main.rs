@@ -167,16 +167,23 @@ pub async fn main() -> AnyResult<()> {
                 eprintln!("WARNING: Failed to register wallguard as a service");
             }
 
-            const LOG_PATH: &str = "/var/log/wallguard.log";
+            #[cfg(unix)]
+            let log_path = String::from("/var/log/wallguard.log");
+            #[cfg(windows)]
+            let log_path = {
+                let base = std::env::var("PROGRAMDATA")
+                    .unwrap_or_else(|_| r"C:\ProgramData".to_string());
+                format!(r"{}\wallguard\wallguard.log", base)
+            };
 
             let log_stderr = std::fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open(LOG_PATH)
+                .open(&log_path)
                 .map(Stdio::from)
                 .unwrap_or_else(|err| {
                     eprintln!(
-                        "WARNING: Could not open {LOG_PATH} ({err}); agent logs will be lost"
+                        "WARNING: Could not open {log_path} ({err}); agent logs will be lost"
                     );
                     Stdio::null()
                 });
@@ -195,7 +202,7 @@ pub async fn main() -> AnyResult<()> {
                 std::process::exit(-1);
             } else {
                 println!("WallGuard agent started successfully.");
-                println!("Logs are written to {LOG_PATH}.");
+                println!("Logs are written to {log_path}.");
                 println!("Check its status with `wallguard-cli status`.");
             }
         }
