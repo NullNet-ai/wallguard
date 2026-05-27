@@ -25,9 +25,8 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
         //   • The agent never panics at startup when no display is available.
         //   • The first session after a user logs in just works — no restart
         //     needed.
-        let mut rdm = RemoteDesktopManager::new().map_err(|err| {
+        let mut rdm = RemoteDesktopManager::new().inspect_err(|err| {
             log::warn!("Cannot open remote desktop session: {}", err.to_str());
-            err
         })?;
 
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {

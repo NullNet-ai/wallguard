@@ -1,5 +1,5 @@
 use super::screenshot::Screenshot;
-use nullnet_liberror::{Error, ErrorHandler, Location, location};
+use nullnet_liberror::Error;
 
 pub struct ScreenCapturer {
     inner: Box<dyn PlatformCapturer + Send>,
@@ -33,6 +33,7 @@ fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
 
 #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "windows")))]
 fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
+    use nullnet_liberror::{ErrorHandler, Location, location};
     Err("Screen capture is not supported on this platform").handle_err(location!())
 }
 

@@ -65,10 +65,6 @@ impl Platform {
         true
     }
 
-    pub fn can_open_remote_desktop_session(&self) -> bool {
-        has_desktop_environment()
-    }
-
     pub fn get_sysconf_files(&self) -> Vec<SystemConfigurationFile> {
         match self {
             Platform::PfSense | Platform::OpnSense => {
@@ -117,7 +113,7 @@ fn has_x11_display() -> bool {
         }
         // Scan /tmp/.X11-unix/ for sockets — catches system-service deployments
         // where DISPLAY is not exported into the environment.
-        return x11_socket_exists();
+        x11_socket_exists()
     }
 
     #[cfg(target_os = "macos")]
@@ -203,14 +199,12 @@ fn x11_socket_exists() -> bool {
         let name = entry.file_name();
         let name = name.to_string_lossy();
         // Socket names are "X0", "X1", …
-        if let Some(num) = name.strip_prefix('X') {
-            if num.parse::<u32>().is_ok() {
-                if std::env::var_os("DISPLAY").is_none() {
-                    // SAFETY: see doc-comment above.
-                    unsafe { std::env::set_var("DISPLAY", format!(":{num}")); }
-                }
-                return true;
+        if let Some(num) = name.strip_prefix('X') && num.parse::<u32>().is_ok() {
+            if std::env::var_os("DISPLAY").is_none() {
+                // SAFETY: see doc-comment above.
+                unsafe { std::env::set_var("DISPLAY", format!(":{num}")); }
             }
+            return true;
         }
     }
 
