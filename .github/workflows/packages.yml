@@ -5,21 +5,11 @@ on:
     tags:
       - 'v*.*.*'
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Shared helper: extract the semver from the tag and export as $VERSION
-# ─────────────────────────────────────────────────────────────────────────────
 env:
   CARGO_TERM_COLOR: always
 
-# ── Reusable step fragments (via anchors) are not supported in GitHub Actions,
-#    so each job repeats the version-extraction step.
-
 jobs:
-  # ───────────────────────────────────────────────────────────────────────────
-  # Linux .deb  +  binary tarball  +  install.sh
-  # Binaries are built with cargo-zigbuild targeting glibc 2.17 so they run
-  # on Ubuntu 18.04+, Debian 10+, and any Linux with glibc >= 2.17.
-  # ───────────────────────────────────────────────────────────────────────────
+
   build-deb-and-release:
     runs-on: ubuntu-latest
     permissions:
@@ -50,9 +40,6 @@ jobs:
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      # cargo-zigbuild pins the glibc requirement to 2.17 so the binary
-      # runs on Ubuntu 18.04 / Debian 10 and newer despite being compiled on
-      # the ubuntu-latest runner (which ships glibc 2.39 as of Ubuntu 24.04).
       - name: Install cargo-zigbuild and Zig
         run: |
           pip3 install ziglang --quiet
@@ -105,10 +92,6 @@ jobs:
           asset_name: install.sh
           asset_content_type: text/x-shellscript
 
-  # ───────────────────────────────────────────────────────────────────────────
-  # Linux .rpm  (Fedora / CentOS / RHEL)
-  # Same glibc 2.17 pinning as the .deb job.
-  # ───────────────────────────────────────────────────────────────────────────
   build-rpm-and-release:
     runs-on: ubuntu-latest
     permissions:
@@ -167,9 +150,6 @@ jobs:
           asset_name: "wallguard-${{ env.VERSION }}-1.x86_64.rpm"
           asset_content_type: application/octet-stream
 
-  # ───────────────────────────────────────────────────────────────────────────
-  # macOS .dmg  (universal binary: Intel + Apple Silicon)
-  # ───────────────────────────────────────────────────────────────────────────
   build-macos-and-release:
     runs-on: macos-latest
     permissions:
@@ -214,10 +194,7 @@ jobs:
           asset_path: "wallguard-${{ env.VERSION }}-macos.dmg"
           asset_name: "wallguard-${{ env.VERSION }}-macos.dmg"
           asset_content_type: application/octet-stream
-
-  # ───────────────────────────────────────────────────────────────────────────
-  # Windows .msi  (unchanged from before)
-  # ───────────────────────────────────────────────────────────────────────────
+          
   build-windows-and-release:
     runs-on: windows-latest
     permissions:
@@ -278,9 +255,6 @@ jobs:
           asset_name: "wallguard-${{ env.VERSION }}-x86_64.msi"
           asset_content_type: application/octet-stream
 
-  # ───────────────────────────────────────────────────────────────────────────
-  # FreeBSD .pkg  (unchanged from before)
-  # ───────────────────────────────────────────────────────────────────────────
   build-freebsd-and-release:
     runs-on: ubuntu-latest
     permissions:
