@@ -1,5 +1,5 @@
 use super::screenshot::Screenshot;
-use nullnet_liberror::Error;
+use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
 pub struct ScreenCapturer {
     inner: Box<dyn PlatformCapturer + Send>,
@@ -21,9 +21,9 @@ trait PlatformCapturer {
     fn capture(&mut self) -> Result<Screenshot, Error>;
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
-    Ok(Box::new(linux::X11Capturer::new()?))
+    Ok(Box::new(x11::X11Capturer::new()?))
 }
 
 #[cfg(target_os = "windows")]
@@ -31,15 +31,15 @@ fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
     Ok(Box::new(windows_backend::GdiCapturer::new()?))
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+#[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "windows")))]
 fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
     Err("Screen capture is not supported on this platform").handle_err(location!())
 }
 
-// ── Linux / X11 ──────────────────────────────────────────────────────────────
+// ── X11 (Linux + FreeBSD) ────────────────────────────────────────────────────
 
-#[cfg(target_os = "linux")]
-mod linux {
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+mod x11 {
     use super::{PlatformCapturer, Screenshot};
     use nullnet_liberror::{Error, ErrorHandler, Location, location};
     use x11rb::{
