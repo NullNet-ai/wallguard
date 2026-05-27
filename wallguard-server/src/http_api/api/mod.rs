@@ -7,6 +7,7 @@ mod delete_tunnel;
 mod enable_config_monitoring;
 mod enable_telemetry_monitoring;
 mod enable_traffic_monitoring;
+mod get_services;
 
 pub use authorize_device::*;
 pub use create_alias::*;
@@ -17,3 +18,4 @@ pub use delete_tunnel::*;
 pub use enable_config_monitoring::*;
 pub use enable_telemetry_monitoring::*;
 pub use enable_traffic_monitoring::*;
+pub use get_services::*;
