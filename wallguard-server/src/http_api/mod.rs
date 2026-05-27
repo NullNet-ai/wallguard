@@ -9,6 +9,7 @@ use crate::http_api::api::delete_tunnel;
 use crate::http_api::api::enable_config_monitoring;
 use crate::http_api::api::enable_telemetry_monitoring;
 use crate::http_api::api::enable_traffic_monitoring;
+use crate::http_api::api::get_services;
 
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, http, web};
@@ -42,6 +43,10 @@ pub async fn run_http_api(context: AppContext) {
             .wrap(cors)
             .route("/wallguard/api/v1/tunnel", web::post().to(create_tunnel))
             .route("/wallguard/api/v1/tunnel", web::delete().to(delete_tunnel))
+            .route(
+                "/wallguard/api/v1/services",
+                web::get().to(get_services),
+            )
             // .route(
             //     "/wallguard/api/v1/ssh_session",
             //     web::post().to(create_ssh_session),

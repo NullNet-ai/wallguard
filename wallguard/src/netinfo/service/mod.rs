@@ -6,6 +6,7 @@ use wallguard_common::protobuf::wallguard_service::{
 
 mod http;
 mod pseudo;
+mod pseudo_rd;
 mod ssh;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -14,6 +15,7 @@ pub enum Protocol {
     Https,
     Ssh,
     Tty,
+    RemoteDesktop,
 }
 
 #[derive(Debug)]
@@ -31,6 +33,7 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
                 Protocol::Https => ProtocolGrpc::Https.into(),
                 Protocol::Ssh => ProtocolGrpc::Ssh.into(),
                 Protocol::Tty => ProtocolGrpc::Tty.into(),
+                Protocol::RemoteDesktop => ProtocolGrpc::Rd.into(),
             },
             program: val.program,
             address: val.addr.ip().to_string(),
@@ -39,12 +42,16 @@ impl From<ServiceInfo> for ServiceInfoGrpc {
     }
 }
 
-pub async fn gather_info(mut sockets: Vec<SocketInfo>) -> Vec<ServiceInfo> {
+pub async fn gather_info(mut sockets: Vec<SocketInfo>, rd_available: bool) -> Vec<ServiceInfo> {
     let mut retval = vec![];
 
     retval.extend(http::filter(&mut sockets).await);
     retval.extend(ssh::filter(&mut sockets).await);
     retval.extend(pseudo::filter(&mut sockets));
+
+    if rd_available {
+        retval.extend(pseudo_rd::filter(&mut sockets));
+    }
 
     retval
 }

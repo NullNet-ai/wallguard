@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WallGuard — Remote Desktop</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --ok: #3fb950;
+    --err: #f85149;
+    --warn: #d29922;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.5 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── toolbar ── */
+  #toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  #toolbar input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font: inherit;
+    padding: 4px 8px;
+    outline: none;
+  }
+  #toolbar input:focus { border-color: var(--accent); }
+  #toolbar input::placeholder { color: var(--muted); }
+
+  .w-lg  { width: 190px; }
+  .w-md  { width: 140px; }
+  .w-sm  { width: 110px; }
+
+  #toolbar button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    padding: 4px 12px;
+    white-space: nowrap;
+  }
+  #toolbar button:hover { border-color: var(--accent); background: #21262d; }
+  #toolbar button:disabled { opacity: .4; cursor: default; }
+  #toolbar button.primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
+  #toolbar button.primary:hover { background: #388bfd; }
+
+  #sep { width: 1px; height: 22px; background: var(--border); margin: 0 2px; }
+
+  #status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--err); flex-shrink: 0;
+    transition: background .3s;
+  }
+  #status-dot.connecting { background: var(--warn); }
+  #status-dot.connected  { background: var(--ok); }
+
+  #status-text { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  /* ── main area ── */
+  #main {
+    flex: 1 1 0;
+    display: flex;
+    min-height: 0;
+  }
+
+  /* ── canvas pane ── */
+  #canvas-pane {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #canvas-pane canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    cursor: crosshair;
+    outline: none;
+  }
+
+  #canvas-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  /* ── messages pane ── */
+  #msg-pane {
+    flex: 0 0 300px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #msg-header {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #msg-header button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0;
+  }
+  #msg-header button:hover { color: var(--text); }
+
+  #msg-list {
+    flex: 1 1 0;
+    overflow-y: auto;
+    font-family: 'Cascadia Code', 'Fira Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .msg {
+    display: grid;
+    grid-template-columns: 54px 38px 1fr;
+    gap: 6px;
+    padding: 2px 10px;
+    border-bottom: 1px solid #1c2128;
+  }
+  .msg:last-child { border-bottom: none; }
+
+  .msg-ts   { color: var(--muted); }
+  .msg-dir  { font-weight: 700; font-size: 10px; }
+  .dir-in   { color: #73daca; }
+  .dir-out  { color: #9d7cd8; }
+  .dir-sys  { color: var(--accent); }
+  .dir-err  { color: var(--err); }
+  .msg-body { word-break: break-all; white-space: pre-wrap; color: var(--text); }
+
+  /* scrollbar */
+  #msg-list::-webkit-scrollbar { width: 5px; }
+  #msg-list::-webkit-scrollbar-track { background: transparent; }
+  #msg-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ TOOLBAR ═══ -->
+<div id="toolbar">
+  <input class="w-lg"  id="i-url"    placeholder="http://localhost:3000"  title="Base URL" />
+  <input class="w-lg"  id="i-token"  placeholder="Bearer token (JWT)" type="password" title="JWT" />
+  <div id="sep"></div>
+  <input class="w-md"  id="i-device"  placeholder="Device ID"  title="device_id" />
+  <button id="btn-fetch-services" title="GET /wallguard/api/v1/services">Fetch Services</button>
+  <input class="w-md"  id="i-service" placeholder="Service ID (RD)" title="service_id" />
+  <button class="primary" id="btn-create" title="POST /wallguard/api/v1/tunnel">Create tunnel</button>
+  <div id="sep"></div>
+  <input class="w-sm"  id="i-tunnel"  placeholder="Tunnel ID"  title="tunnel_id (auto-filled)" />
+  <input class="w-lg"  id="i-ws"      placeholder="ws://localhost:3000/wallguard/gateway/rd" title="WS base URL" />
+  <button class="primary" id="btn-connect">Connect</button>
+  <button id="btn-disconnect" disabled>Disconnect</button>
+  <div id="sep"></div>
+  <div id="status-dot"></div>
+  <span id="status-text">Idle</span>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+
+  <!-- canvas -->
+  <div id="canvas-pane">
+    <canvas id="rd-canvas" width="1280" height="720" tabindex="0"></canvas>
+    <div id="canvas-overlay">No stream — connect to a tunnel</div>
+  </div>
+
+  <!-- messages -->
+  <div id="msg-pane">
+    <div id="msg-header">
+      Messages
+      <button onclick="clearMessages()">clear</button>
+    </div>
+    <div id="msg-list"></div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  Config helpers
+// ══════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+
+function val(id)    { return $(id).value.trim(); }
+function baseUrl()  { return val('i-url').replace(/\/$/, '') || 'http://localhost:3000'; }
+function token()    { return val('i-token'); }
+function deviceId() { return val('i-device'); }
+function serviceId(){ return val('i-service'); }
+function tunnelId() { return val('i-tunnel'); }
+function wsBase()   { return val('i-ws') || 'ws://localhost:3000/wallguard/gateway/rd'; }
+
+// ══════════════════════════════════════════════
+//  Message log (max 100)
+// ══════════════════════════════════════════════
+const MAX_MSGS = 100;
+const msgEl = $('msg-list');
+let msgCount = 0;
+
+function addMsg(dir, body) {
+  const d = new Date();
+  const ts = d.toTimeString().slice(0, 8);
+  const row = document.createElement('div');
+  row.className = 'msg';
+  const dirClass = { '→': 'dir-out', '←': 'dir-in', 'SYS': 'dir-sys', 'ERR': 'dir-err' }[dir] || 'dir-sys';
+  row.innerHTML =
+    `<span class="msg-ts">${ts}</span>` +
+    `<span class="msg-dir ${dirClass}">${dir}</span>` +
+    `<span class="msg-body">${esc(body)}</span>`;
+  msgEl.appendChild(row);
+  msgCount++;
+  if (msgCount > MAX_MSGS) {
+    msgEl.removeChild(msgEl.firstChild);
+    msgCount--;
+  }
+  msgEl.scrollTop = msgEl.scrollHeight;
+}
+
+function clearMessages() { msgEl.innerHTML = ''; msgCount = 0; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════
+//  REST — create / delete tunnel
+// ══════════════════════════════════════════════
+async function createTunnel() {
+  const url = `${baseUrl()}/wallguard/api/v1/tunnel`;
+  addMsg('SYS', `POST ${url}`);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',
+                 ...(token() ? { Authorization: `Bearer ${token()}` } : {}) },
+      body: JSON.stringify({ device_id: deviceId(), service_id: serviceId() })
+    });
+    const text = await res.text();
+    if (!res.ok) { addMsg('ERR', `${res.status} ${text}`); return; }
+    const json = JSON.parse(text);
+    $('i-tunnel').value = json.tunnel_id || '';
+    addMsg('←', `${res.status} tunnel_id=${json.tunnel_id}`);
+  } catch (e) { addMsg('ERR', e.message); }
+}
+
+$('btn-create').onclick = createTunnel;
+
+async function fetchServices() {
+  const did = deviceId();
+  if (!did) { addMsg('ERR', 'Enter a Device ID first'); return; }
+  const url = `${baseUrl()}/wallguard/api/v1/services?device_id=${encodeURIComponent(did)}`;
+  addMsg('SYS', `GET ${url}`);
+  try {
+    const res = await fetch(url, {
+      headers: token() ? { Authorization: `Bearer ${token()}` } : {}
+    });
+    const text = await res.text();
+    if (!res.ok) { addMsg('ERR', `${res.status} ${text}`); return; }
+    const services = JSON.parse(text);
+    addMsg('←', `${services.length} service(s) returned`);
+    const rd = services.find(s => s.protocol === 'rd');
+    if (rd) {
+      $('i-service').value = rd.id;
+      addMsg('SYS', `RD service found → service_id=${rd.id} program=${rd.program}`);
+    } else {
+      addMsg('ERR', 'No RD service found for this device (is the agent a Desktop platform?)');
+      // Log all found protocols to help debug
+      const protos = services.map(s => s.protocol).join(', ');
+      if (protos) addMsg('SYS', `Found protocols: ${protos}`);
+    }
+  } catch (e) { addMsg('ERR', e.message); }
+}
+
+$('btn-fetch-services').onclick = fetchServices;
+
+// ══════════════════════════════════════════════
+//  WebSocket
+// ══════════════════════════════════════════════
+let ws = null;
+
+function setStatus(state, text) {
+  $('status-dot').className = state;          // '', 'connecting', 'connected'
+  $('status-text').textContent = text;
+}
+
+function wsUrl() {
+  // inject tunnel id as subdomain: ws://TUNNELID.host/path
+  const tid = tunnelId();
+  let base = wsBase();
+  if (tid) {
+    base = base.replace(/^(wss?:\/\/)(?!.*\.)/, `$1${tid}.`);
+    // fallback: if base already has a host, prepend as subdomain
+    if (!base.includes(tid)) {
+      base = base.replace(/^(wss?:\/\/)/, `$1${tid}.`);
+    }
+  }
+  return base;
+}
+
+function connect() {
+  if (ws) return;
+  const url = wsUrl();
+  addMsg('SYS', `WS → ${url}`);
+  setStatus('connecting', 'Connecting…');
+  $('btn-connect').disabled = true;
+
+  ws = new WebSocket(url);
+  ws.binaryType = 'arraybuffer';
+
+  ws.onopen = () => {
+    setStatus('connected', 'Connected');
+    $('btn-disconnect').disabled = false;
+    addMsg('SYS', 'WebSocket open');
+    initDecoder();
+  };
+  ws.onclose = e => {
+    setStatus('', 'Idle');
+    $('btn-connect').disabled = false;
+    $('btn-disconnect').disabled = true;
+    addMsg('SYS', `WS closed (${e.code})`);
+    ws = null;
+    destroyDecoder();
+  };
+  ws.onerror = () => addMsg('ERR', 'WebSocket error');
+  ws.onmessage = onWsMessage;
+}
+
+function disconnect() {
+  if (ws) ws.close(1000, 'User disconnect');
+}
+
+$('btn-connect').onclick    = connect;
+$('btn-disconnect').onclick = disconnect;
+
+// ══════════════════════════════════════════════
+//  Binary frame parser
+//  Layout: [u128 LE ms][u32 LE len][payload]
+// ══════════════════════════════════════════════
+function parseFrame(buf) {
+  if (buf.byteLength < 20) return null;
+  const v = new DataView(buf);
+  const lo = v.getBigUint64(0, true);
+  const hi = v.getBigUint64(8, true);
+  const ms = lo | (hi << 64n);
+  const len = v.getUint32(16, true);
+  if (buf.byteLength < 20 + len) return null;
+  return { ms, payload: new Uint8Array(buf, 20, len) };
+}
+
+// NAL unit scanner — returns array of {type, data}
+function scanNALs(payload) {
+  const nals = [];
+  let i = 0;
+  const startOf = pos => {
+    return payload[pos]===0 && payload[pos+1]===0 && payload[pos+2]===0 && payload[pos+3]===1;
+  };
+  while (i < payload.length - 4) {
+    if (startOf(i)) {
+      let end = payload.length;
+      for (let j = i + 4; j < payload.length - 3; j++) {
+        if (startOf(j)) { end = j; break; }
+      }
+      const nalData = payload.slice(i + 4, end);
+      nals.push({ type: nalData[0] & 0x1F, data: nalData });
+      i = end;
+    } else { i++; }
+  }
+  return nals;
+}
+
+function isKeyFrame(payload) {
+  return scanNALs(payload).some(n => n.type === 5);
+}
+
+function extractCodecString(payload) {
+  const sps = scanNALs(payload).find(n => n.type === 7);
+  if (!sps || sps.data.length < 4) return 'avc1.420034';
+  const p = sps.data[1].toString(16).padStart(2, '0');
+  const c = sps.data[2].toString(16).padStart(2, '0');
+  const l = sps.data[3].toString(16).padStart(2, '0');
+  return `avc1.${p}${c}${l}`;
+}
+
+// ══════════════════════════════════════════════
+//  H264 decoder (WebCodecs)
+// ══════════════════════════════════════════════
+const canvas  = $('rd-canvas');
+const ctx     = canvas.getContext('2d');
+const overlay = $('canvas-overlay');
+
+let decoder  = null;
+let decoderReady = false;
+let firstFrame = true;
+let frameN = 0;
+
+function initDecoder() {
+  if (!window.VideoDecoder) {
+    addMsg('SYS', 'WebCodecs not available — showing frame stats only');
+    return;
+  }
+  firstFrame = true;
+  decoderReady = false;
+}
+
+function ensureDecoder(codecStr) {
+  if (decoder) { decoder.close(); decoder = null; }
+  try {
+    decoder = new VideoDecoder({
+      output(frame) {
+        if (firstFrame) {
+          canvas.width  = frame.displayWidth;
+          canvas.height = frame.displayHeight;
+          overlay.style.display = 'none';
+          firstFrame = false;
+        }
+        ctx.drawImage(frame, 0, 0);
+        frame.close();
+      },
+      error(e) { addMsg('ERR', `Decoder: ${e.message}`); }
+    });
+    decoder.configure({ codec: codecStr, optimizeForLatency: true });
+    decoderReady = true;
+    addMsg('SYS', `Decoder configured: ${codecStr}`);
+  } catch(e) {
+    addMsg('ERR', `Decoder config failed (${codecStr}): ${e.message}`);
+    decoder = null;
+  }
+}
+
+function destroyDecoder() {
+  if (decoder) { try { decoder.close(); } catch{} decoder = null; }
+  decoderReady = false;
+  overlay.style.display = '';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// ══════════════════════════════════════════════
+//  WS message handler
+// ══════════════════════════════════════════════
+function onWsMessage(e) {
+  if (typeof e.data === 'string') {
+    addMsg('←', e.data.length > 200 ? e.data.slice(0, 200) + '…' : e.data);
+    return;
+  }
+
+  // binary frame
+  const frame = parseFrame(e.data);
+  if (!frame) {
+    addMsg('ERR', `Bad frame (${e.data.byteLength}B)`);
+    return;
+  }
+
+  frameN++;
+  const kf = isKeyFrame(frame.payload);
+
+  // lazy decoder init on first keyframe
+  if (!decoderReady && kf && window.VideoDecoder) {
+    ensureDecoder(extractCodecString(frame.payload));
+  }
+
+  if (decoder && decoderReady) {
+    try {
+      decoder.decode(new EncodedVideoChunk({
+        type: kf ? 'key' : 'delta',
+        timestamp: Number(frame.ms) * 1000, // µs
+        data: frame.payload
+      }));
+    } catch(err) {
+      addMsg('ERR', `decode: ${err.message}`);
+    }
+  }
+
+  // log every keyframe + every 30th frame
+  if (kf || frameN % 30 === 1) {
+    addMsg('←', `frame #${frameN} ${kf ? '[KEY]' : '     '} ts=${frame.ms}ms  ${frame.payload.length}B`);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  Mouse input → WS
+// ══════════════════════════════════════════════
+const BUTTON_MAP = { 0: 'left', 1: 'middle', 2: 'rigth' };  // 'rigth' matches server typo
+
+function canvasCoords(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: Math.round((e.clientX - r.left) * canvas.width  / r.width),
+    y: Math.round((e.clientY - r.top)  * canvas.height / r.height)
+  };
+}
+
+function wsSend(msg) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const json = JSON.stringify(msg);
+  ws.send(json);
+  addMsg('→', json);
+}
+
+canvas.onmousemove = e => {
+  const {x, y} = canvasCoords(e);
+  wsSend({ message_type: 'mousemove', button: BUTTON_MAP[e.buttons] || 'left', x, y });
+};
+canvas.onmousedown = e => {
+  canvas.focus();
+  const {x, y} = canvasCoords(e);
+  wsSend({ message_type: 'mousedown', button: BUTTON_MAP[e.button] || 'left', x, y });
+};
+canvas.onmouseup = e => {
+  const {x, y} = canvasCoords(e);
+  wsSend({ message_type: 'mouseup', button: BUTTON_MAP[e.button] || 'left', x, y });
+};
+canvas.oncontextmenu = e => e.preventDefault();
+
+// ══════════════════════════════════════════════
+//  Keyboard input → WS
+// ══════════════════════════════════════════════
+const SPECIAL_KEYS = new Set([
+  'backspace','control','meta','alt','tab','capslock','shift',
+  'escape','delete','enter',
+  'arrowup','arrowdown','arrowleft','arrowright',
+  'home','end','pageup','pagedown',
+  'f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12'
+]);
+
+function normaliseKey(key) {
+  const lower = key.toLowerCase();
+  return SPECIAL_KEYS.has(lower) ? lower : key; // pass single chars as-is
+}
+
+canvas.onkeydown = e => {
+  e.preventDefault();
+  wsSend({ message_type: 'keydown', key: normaliseKey(e.key), code: e.code });
+};
+canvas.onkeyup = e => {
+  e.preventDefault();
+  wsSend({ message_type: 'keyup', key: normaliseKey(e.key), code: e.code });
+};
+
+// Redirect key events to canvas when user is not typing in an input
+document.addEventListener('keydown', e => {
+  if (document.activeElement.tagName === 'INPUT') return;
+  if (document.activeElement !== canvas) canvas.focus();
+});
+
+// ══════════════════════════════════════════════
+//  Clipboard paste → WS
+// ══════════════════════════════════════════════
+canvas.addEventListener('paste', e => {
+  const text = e.clipboardData?.getData('text');
+  if (text) wsSend({ message_type: 'clipboard', content: text });
+  e.preventDefault();
+});
+
+// ══════════════════════════════════════════════
+//  Suppress mousemove spam in log
+// ══════════════════════════════════════════════
+// Override wsSend for mousemove to skip logging
+const _wsSend = wsSend;
+window.wsSend = function(msg) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify(msg));
+  if (msg.message_type !== 'mousemove') {
+    addMsg('→', JSON.stringify(msg));
+  }
+};
+
+// Patch canvas handlers to use the real wsSend
+canvas.onmousemove = e => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  const {x, y} = canvasCoords(e);
+  ws.send(JSON.stringify({ message_type: 'mousemove', button: BUTTON_MAP[e.buttons] || 'left', x, y }));
+};
+
+// ══════════════════════════════════════════════
+//  Init
+// ══════════════════════════════════════════════
+addMsg('SYS', 'Ready — fill in params and click Connect');
+</script>
+</body>
+</html>

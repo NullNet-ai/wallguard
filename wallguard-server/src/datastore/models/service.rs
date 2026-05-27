@@ -26,6 +26,7 @@ impl ServiceInfo {
                 Ok(ServiceProtocol::Http) => "http".into(),
                 Ok(ServiceProtocol::Https) => "https".into(),
                 Ok(ServiceProtocol::Tty) => "tty".into(),
+                Ok(ServiceProtocol::Rd) => "rd".into(),
                 _ => "unknown".into(),
             },
             ..Default::default()
