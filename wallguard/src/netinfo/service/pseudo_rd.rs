@@ -62,7 +62,7 @@ fn is_rd_available() -> bool {
         // X11 connect failed (no X11 server, or XWayland auth not available).
         // Check the Wayland compositor socket — WaylandCapturer::new() will
         // verify wlr-screencopy protocol support at actual session-open time.
-        return has_wayland_display();
+        has_wayland_display()
     }
 
     // All other platforms: use Enigo as the ground-truth probe.

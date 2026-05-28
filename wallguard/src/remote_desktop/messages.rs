@@ -34,7 +34,7 @@ pub struct ClipboardMessage {
 /// without XWayland), it falls back to the Linux uinput backend which injects
 /// events at kernel level and therefore works regardless of the display server.
 enum InputBackend {
-    Enigo(enigo::Enigo),
+    Enigo(Box<enigo::Enigo>),
     #[cfg(target_os = "linux")]
     Uinput(super::uinput_handler::UinputHandler),
 }
@@ -56,7 +56,7 @@ impl InputBackend {
         match Enigo::new(&Settings::default()) {
             Ok(e) => {
                 log::info!("Input backend: Enigo (X11/XWayland)");
-                Ok(InputBackend::Enigo(e))
+                Ok(InputBackend::Enigo(Box::new(e)))
             }
             Err(enigo_err) => {
                 #[cfg(target_os = "linux")]
