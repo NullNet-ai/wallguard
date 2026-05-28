@@ -5,7 +5,7 @@
 packet_dumps
 dumps
 *.pcap
-.cargo
+.cargo/credentials.toml
 *.deb
 *.pkg
 *.msi
