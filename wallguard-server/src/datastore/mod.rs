@@ -20,7 +20,7 @@ impl Datastore {
         let port = read_port_value_from_env(6000);
         let tls = real_tls_value_from_env(false);
 
-        let channel = connect(host.as_str(), port, tls).await?;
+        let channel = connect(host.as_str(), port, tls)?;
         let inner: StoreServiceClient<Channel> =
             StoreServiceClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
 
@@ -60,7 +60,7 @@ fn real_tls_value_from_env(default: bool) -> bool {
     }
 }
 
-async fn connect(host: &str, port: u16, tls: bool) -> Result<Channel, Error> {
+fn connect(host: &str, port: u16, tls: bool) -> Result<Channel, Error> {
     let protocol = if tls { "https" } else { "http" };
 
     let mut endpoint = Channel::from_shared(format!("{protocol}://{host}:{port}"))
@@ -73,8 +73,8 @@ async fn connect(host: &str, port: u16, tls: bool) -> Result<Channel, Error> {
             .handle_err(location!())?;
     }
 
-    let channel = endpoint.connect().await.handle_err(location!())?;
-
-    Ok(channel)
-    // Ok(StoreServiceClient::new(channel).max_decoding_message_size(50 * 1024 * 1024))
+    // connect_lazy defers the TCP handshake until first use and automatically
+    // reconnects when the datastore restarts (tower detects the broken h2 connection
+    // and re-dials on the next request).
+    Ok(endpoint.connect_lazy())
 }
