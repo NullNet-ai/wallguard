@@ -30,7 +30,11 @@ impl WallGuardService {
             }
         }
 
-        log::info!("Received {} pre-parsed connections", connections_count);
+        log::info!(
+            "Received {} pre-parsed connections from device {}",
+            connections_count,
+            token.device_id().unwrap_or("unknown")
+        );
 
         if !data.connections.is_empty() {
             let start = std::time::Instant::now();
