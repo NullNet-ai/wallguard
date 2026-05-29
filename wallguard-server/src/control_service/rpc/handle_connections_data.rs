@@ -33,7 +33,7 @@ impl WallGuardService {
         log::info!(
             "Received {} pre-parsed connections from device {}",
             connections_count,
-            token.device_id().unwrap_or("unknown")
+            token.account.device_id().unwrap_or("unknown")
         );
 
         if !data.connections.is_empty() {
