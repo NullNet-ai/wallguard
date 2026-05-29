@@ -19,7 +19,9 @@ pub fn ip_info_handler(
         if !is_cached {
             let context = context.clone();
             rt_handle.spawn(async move {
-                get_and_store_ip_info(ip, context).await.unwrap_or_default();
+                if let Err(e) = get_and_store_ip_info(ip, context).await {
+                    log::error!("Failed to get/store IP info for {ip}: {e:?}");
+                }
             });
         }
     }
@@ -39,6 +41,12 @@ async fn get_and_store_ip_info(ip: IpAddr, context: AppContext) -> Result<(), Er
         log::info!("Looking up IP information for {ip}");
         let ip_info = HANDLER.lookup(&ip).await?;
         log::info!("Looked up IP information for {ip}: {ip_info:?}");
+        let ip_info = if ip_info.country.is_none() && ip_info.asn.is_none() && ip_info.org.is_none() {
+            log::warn!("IP info API lookup returned empty result for {ip}, falling back to MMDB");
+            MMDB_HANDLER.lookup(&ip).await?
+        } else {
+            ip_info
+        };
         context
             .datastore
             .create_ip_info(&token.jwt, &ip_info, &ip)
@@ -100,3 +108,6 @@ static HANDLER: std::sync::LazyLock<IpInfoHandler> = std::sync::LazyLock::new(||
     )])
     .unwrap()
 });
+
+static MMDB_HANDLER: std::sync::LazyLock<IpInfoHandler> =
+    std::sync::LazyLock::new(|| IpInfoHandler::new(vec![]).unwrap());
