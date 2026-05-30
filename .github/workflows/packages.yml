@@ -63,43 +63,14 @@ jobs:
           WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh tarball "$VERSION"
 
-      - name: Get existing GitHub release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ github.ref }}
-
-      - name: Upload .deb to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard_${{ env.VERSION }}_amd64.deb"
-          asset_name: "wallguard_${{ env.VERSION }}_amd64.deb"
-          asset_content_type: application/octet-stream
-
-      - name: Upload binary tarball to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard-${{ env.VERSION }}-linux-x86_64.tar.gz"
-          asset_name: "wallguard-${{ env.VERSION }}-linux-x86_64.tar.gz"
-          asset_content_type: application/octet-stream
-
-      - name: Upload install.sh to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: install.sh
-          asset_name: install.sh
-          asset_content_type: text/x-shellscript
+          tag_name: ${{ github.ref_name }}
+          files: |
+            wallguard_${{ env.VERSION }}_amd64.deb
+            wallguard-${{ env.VERSION }}-linux-x86_64.tar.gz
+            install.sh
 
   build-rpm-and-release:
     runs-on: ubuntu-22.04
@@ -148,23 +119,12 @@ jobs:
           WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh rpm "$VERSION"
 
-      - name: Get existing GitHub release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ github.ref }}
-
-      - name: Upload .rpm to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard-${{ env.VERSION }}-1.x86_64.rpm"
-          asset_name: "wallguard-${{ env.VERSION }}-1.x86_64.rpm"
-          asset_content_type: application/octet-stream
+          tag_name: ${{ github.ref_name }}
+          files: |
+            wallguard-${{ env.VERSION }}-1.x86_64.rpm
 
   build-macos-and-release:
     runs-on: macos-latest
@@ -193,24 +153,13 @@ jobs:
       - name: Build macOS DMG  (universal x86_64 + aarch64)
         run: ./packbuild.sh macos "$VERSION"
 
-      - name: Get existing GitHub release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          files: |
+            wallguard-${{ env.VERSION }}-macos.dmg
 
-      - name: Upload .dmg to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard-${{ env.VERSION }}-macos.dmg"
-          asset_name: "wallguard-${{ env.VERSION }}-macos.dmg"
-          asset_content_type: application/octet-stream
-          
   build-windows-and-release:
     runs-on: windows-latest
     permissions:
@@ -254,23 +203,12 @@ jobs:
       - name: Build Windows MSI package
         run: .\packbuild.ps1 -Version ${{ env.VERSION }}
 
-      - name: Get existing GitHub release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ github.ref }}
-
-      - name: Upload Windows package to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard-${{ env.VERSION }}-x86_64.msi"
-          asset_name: "wallguard-${{ env.VERSION }}-x86_64.msi"
-          asset_content_type: application/octet-stream
+          tag_name: ${{ github.ref_name }}
+          files: |
+            wallguard-${{ env.VERSION }}-x86_64.msi
 
   build-freebsd-and-release:
     runs-on: ubuntu-latest
@@ -309,20 +247,9 @@ jobs:
             export PATH=$HOME/.cargo/bin:$PATH
             bash ./packbuild.sh freebsd "$VERSION"
 
-      - name: Get existing GitHub release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create or update GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag: ${{ github.ref }}
-
-      - name: Upload FreeBSD package to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
-          asset_path: "wallguard-${{ env.VERSION }}.pkg"
-          asset_name: "wallguard-${{ env.VERSION }}.pkg"
-          asset_content_type: application/octet-stream
+          tag_name: ${{ github.ref_name }}
+          files: |
+            wallguard-${{ env.VERSION }}.pkg
