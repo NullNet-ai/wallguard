@@ -41,7 +41,8 @@ async fn get_and_store_ip_info(ip: IpAddr, context: AppContext) -> Result<(), Er
         log::info!("Looking up IP information for {ip}");
         let ip_info = HANDLER.lookup(&ip).await?;
         log::info!("Looked up IP information for {ip}: {ip_info:?}");
-        let ip_info = if ip_info.country.is_none() && ip_info.asn.is_none() && ip_info.org.is_none() {
+        let ip_info = if ip_info.country.is_none() && ip_info.asn.is_none() && ip_info.org.is_none()
+        {
             log::warn!("IP info API lookup returned empty result for {ip}, falling back to MMDB");
             MMDB_HANDLER.lookup(&ip).await?
         } else {

@@ -77,8 +77,8 @@ async fn send_connections(
             token: token.unwrap(),
         };
 
-        if interface.handle_connections_data(data).await.is_err() {
-            log::error!("Failed to send connections");
+        if let Err(e) = interface.handle_connections_data(data).await {
+            log::error!("Failed to send connections: {e:?}");
             break;
         }
 
