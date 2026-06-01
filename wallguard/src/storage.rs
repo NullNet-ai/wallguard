@@ -57,7 +57,12 @@ struct ConfigStore {
 pub struct Storage;
 
 static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    #[cfg(unix)]
+    #[cfg(target_os = "macos")]
+    {
+        // On macOS the root user's home is /var/root, not /root.
+        PathBuf::from("/var/root/.config/wallguard")
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
     {
         // Daemon always runs as root on Unix.
         PathBuf::from("/root/.config/wallguard")
