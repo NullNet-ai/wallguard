@@ -99,13 +99,37 @@ impl Storage {
             set_permissions_600(&file_path).await;
             read_to_string(&file_path)
                 .await
+                .map_err(|e| {
+                    if e.kind() == std::io::ErrorKind::PermissionDenied {
+                        log::error!(
+                            "Cannot read config at {}. \
+                             If it was created by root, fix it with: sudo chown -R $USER {}",
+                            file_path.display(),
+                            dir.display()
+                        );
+                    }
+                    e
+                })
                 .ok()
                 .and_then(|s| serde_json::from_str::<ConfigStore>(&s).ok())
                 .unwrap_or_default()
         } else {
             let default = ConfigStore::default();
             let json = serde_json::to_string_pretty(&default).handle_err(location!())?;
-            let mut file = File::create(&file_path).await.handle_err(location!())?;
+            let mut file = File::create(&file_path)
+                .await
+                .map_err(|e| {
+                    if e.kind() == std::io::ErrorKind::PermissionDenied {
+                        log::error!(
+                            "Cannot create config at {}. \
+                             If this directory was created by root, fix it with: sudo chown -R $USER {}",
+                            file_path.display(),
+                            dir.display()
+                        );
+                    }
+                    e
+                })
+                .handle_err(location!())?;
             file.write_all(json.as_bytes())
                 .await
                 .handle_err(location!())?;
