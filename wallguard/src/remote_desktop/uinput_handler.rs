@@ -37,6 +37,16 @@ impl UinputHandler {
         let screen_w = screen_w.unwrap_or(1920);
         let screen_h = screen_h.unwrap_or(1080);
 
+        if let Err(e) = std::fs::OpenOptions::new().write(true).open("/dev/uinput") {
+            if e.kind() == std::io::ErrorKind::PermissionDenied {
+                log::error!(
+                    "Cannot open /dev/uinput: permission denied.\n  \
+                     Add your user to the input group and re-login:\n  \
+                     sudo usermod -aG input $USER"
+                );
+            }
+        }
+
         let keyboard = build_keyboard()?;
         let pointer = build_pointer(screen_w, screen_h)?;
 
