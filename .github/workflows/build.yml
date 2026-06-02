@@ -97,7 +97,7 @@ jobs:
         submodules: recursive
 
     - name: Install Dependencies & Run CI
-      uses: cross-platform-actions/action@v1.1.0
+      uses: cross-platform-actions/action@v1.2.0
       with:
         operating_system: freebsd
         architecture: x86_64
