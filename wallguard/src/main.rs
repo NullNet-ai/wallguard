@@ -37,7 +37,23 @@ fn check_privileges() {
         }
     }
 
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
+    {
+        use caps::{CapSet, Capability};
+        let has_net_raw =
+            caps::has_cap(None, CapSet::Effective, Capability::CAP_NET_RAW).unwrap_or(false);
+        let has_net_admin =
+            caps::has_cap(None, CapSet::Effective, Capability::CAP_NET_ADMIN).unwrap_or(false);
+        if !has_net_raw || !has_net_admin {
+            println!(
+                "wallguard requires CAP_NET_RAW and CAP_NET_ADMIN capabilities. Run:\n  \
+                 sudo setcap cap_net_raw,cap_net_admin+eip /usr/local/bin/wallguard"
+            );
+            std::process::exit(-1);
+        }
+    }
+
+    #[cfg(all(unix, not(target_os = "linux")))]
     {
         if !nix::unistd::Uid::effective().is_root() {
             println!("This program must be run as root. Exiting ...");

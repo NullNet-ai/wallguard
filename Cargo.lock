@@ -804,6 +804,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "caps"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd1ddba47aba30b6a889298ad0109c3b8dcb0e8fc993b459daa7067d46f865e0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6389,6 +6398,7 @@ name = "wallguard"
 version = "1.1.11"
 dependencies = [
  "async-channel",
+ "caps",
  "chrono",
  "clap",
  "copypasta",
@@ -6433,9 +6443,9 @@ name = "wallguard-cli"
 version = "1.1.11"
 dependencies = [
  "anyhow",
+ "caps",
  "clap",
  "is_elevated",
- "nix 0.31.3",
  "prost",
  "sysinfo 0.37.2",
  "tokio",

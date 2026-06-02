@@ -1,19 +1,13 @@
-#[cfg(target_os = "freebsd")]
-mod freebsd;
-#[cfg(target_os = "freebsd")]
-pub use freebsd::{disable_service, enable_service};
+// TODO: autostart / service registration is not yet implemented.
+// The platform-specific implementations (linux.rs, macos.rs, freebsd.rs, windows.rs)
+// are kept for reference but not compiled.
 
-#[cfg(target_os = "linux")]
-mod linux;
-#[cfg(target_os = "linux")]
-pub use linux::{disable_service, enable_service};
+use std::io;
 
-#[cfg(target_os = "macos")]
-mod macos;
-#[cfg(target_os = "macos")]
-pub use macos::{disable_service, enable_service};
+pub async fn enable_service(_program: &str, _args: &[&str]) -> io::Result<()> {
+    Err(io::Error::other("autostart not yet implemented"))
+}
 
-#[cfg(windows)]
-mod windows;
-#[cfg(windows)]
-pub use windows::{disable_service, enable_service};
+pub async fn disable_service(_program: &str) -> io::Result<()> {
+    Err(io::Error::other("autostart not yet implemented"))
+}

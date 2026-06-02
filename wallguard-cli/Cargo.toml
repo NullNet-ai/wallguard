@@ -16,5 +16,6 @@ sysinfo = "0.37.2"
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
 
-[target.'cfg(unix)'.dependencies]
-nix = { version = "0.31.3", features = ["user"] }
+[target.'cfg(target_os = "linux")'.dependencies]
+caps = "0.5"
+

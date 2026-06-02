@@ -48,6 +48,8 @@ wayland-client = "0.31"
 wayland-protocols-wlr = "0.3"
 # Virtual uinput device for keyboard/mouse injection on Wayland (kernel-level, no X11 needed)
 evdev = "0.12"
+# Linux POSIX capabilities — used to check for CAP_NET_RAW / CAP_NET_ADMIN at startup
+caps = "0.5"
 
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
