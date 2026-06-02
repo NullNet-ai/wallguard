@@ -9,26 +9,24 @@ use serde::{Deserialize, Serialize};
 
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 
-async fn set_permissions_600(_path: &PathBuf) -> Result<(), Error> {
+async fn set_permissions_600(_path: &PathBuf) {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        tokio::fs::set_permissions(_path, std::fs::Permissions::from_mode(0o600))
-            .await
-            .handle_err(location!())?;
+        if let Err(e) = tokio::fs::set_permissions(_path, std::fs::Permissions::from_mode(0o600)).await {
+            log::warn!("Could not set permissions on {}: {e}", _path.display());
+        }
     }
-    Ok(())
 }
 
-async fn set_permissions_700(_path: &PathBuf) -> Result<(), Error> {
+async fn set_permissions_700(_path: &PathBuf) {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        tokio::fs::set_permissions(_path, std::fs::Permissions::from_mode(0o700))
-            .await
-            .handle_err(location!())?;
+        if let Err(e) = tokio::fs::set_permissions(_path, std::fs::Permissions::from_mode(0o700)).await {
+            log::warn!("Could not set permissions on {}: {e}", _path.display());
+        }
     }
-    Ok(())
 }
 
 #[allow(clippy::enum_variant_names)]
@@ -93,12 +91,12 @@ impl Storage {
         let file_path = Self::file_path();
 
         create_dir_all(&dir).await.handle_err(location!())?;
-        set_permissions_700(&dir).await?;
+        set_permissions_700(&dir).await;
 
         let file_exists = tokio::fs::try_exists(&file_path).await.unwrap_or(false);
 
         let config = if file_exists {
-            set_permissions_600(&file_path).await?;
+            set_permissions_600(&file_path).await;
             read_to_string(&file_path)
                 .await
                 .ok()
@@ -111,7 +109,7 @@ impl Storage {
             file.write_all(json.as_bytes())
                 .await
                 .handle_err(location!())?;
-            set_permissions_600(&file_path).await?;
+            set_permissions_600(&file_path).await;
             default
         };
 
