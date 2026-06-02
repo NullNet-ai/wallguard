@@ -45,9 +45,12 @@ fn check_privileges() {
         let has_net_admin =
             caps::has_cap(None, CapSet::Effective, Capability::CAP_NET_ADMIN).unwrap_or(false);
         if !has_net_raw || !has_net_admin {
+            let exe = std::env::current_exe()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|_| "/usr/local/bin/wallguard".to_string());
             println!(
                 "wallguard requires CAP_NET_RAW and CAP_NET_ADMIN capabilities. Run:\n  \
-                 sudo setcap cap_net_raw,cap_net_admin+eip /usr/local/bin/wallguard"
+                 sudo setcap cap_net_raw,cap_net_admin+eip {exe}"
             );
             std::process::exit(-1);
         }
