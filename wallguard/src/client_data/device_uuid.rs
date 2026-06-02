@@ -22,8 +22,20 @@ pub fn retrieve_device_uuid() -> Option<String> {
     #[cfg(target_os = "macos")]
     return retrieve_device_uuid_via_ioreg();
 
-    // Linux / FreeBSD fallback: invoke dmidecode.
-    #[cfg(not(target_os = "macos"))]
+    // Linux: try sysfs and machine-id before dmidecode (work without root).
+    #[cfg(target_os = "linux")]
+    {
+        if let Some(uuid) = retrieve_device_uuid_via_sysfs() {
+            return Some(uuid);
+        }
+        if let Some(uuid) = retrieve_device_uuid_via_dmidecode() {
+            return Some(uuid);
+        }
+        return retrieve_device_uuid_via_machine_id();
+    }
+
+    // FreeBSD fallback: invoke dmidecode.
+    #[cfg(target_os = "freebsd")]
     retrieve_device_uuid_via_dmidecode()
 }
 
@@ -61,8 +73,28 @@ fn retrieve_device_uuid_via_ioreg() -> Option<String> {
     None
 }
 
+/// Reads the hardware UUID from `/sys/class/dmi/id/product_uuid` (world-readable on Linux ≥ 4.14).
+#[cfg(target_os = "linux")]
+fn retrieve_device_uuid_via_sysfs() -> Option<String> {
+    let uuid = std::fs::read_to_string("/sys/class/dmi/id/product_uuid")
+        .ok()?
+        .trim()
+        .to_string();
+    if uuid.is_empty() { None } else { Some(uuid) }
+}
+
+/// Reads `/etc/machine-id` as a last-resort UUID (always readable, stable per machine).
+#[cfg(target_os = "linux")]
+fn retrieve_device_uuid_via_machine_id() -> Option<String> {
+    let id = std::fs::read_to_string("/etc/machine-id")
+        .ok()?
+        .trim()
+        .to_string();
+    if id.is_empty() { None } else { Some(id) }
+}
+
 /// Attempts to retrieve the device UUID by spawning `dmidecode`.
-#[cfg(not(target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
 fn retrieve_device_uuid_via_dmidecode() -> Option<String> {
     let output = std::process::Command::new("dmidecode")
         .args(["-s", "system-uuid"])
