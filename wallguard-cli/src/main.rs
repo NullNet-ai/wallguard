@@ -196,7 +196,7 @@ pub async fn main() -> AnyResult<()> {
                     Stdio::null()
                 });
 
-            if Command::new("wallguard")
+            if let Err(err) = Command::new("wallguard")
                 .arg("--control-channel-url")
                 .arg(&control_channel_url)
                 .arg("--platform")
@@ -204,9 +204,11 @@ pub async fn main() -> AnyResult<()> {
                 .stdout(Stdio::null())
                 .stderr(log_stderr)
                 .spawn()
-                .is_err()
             {
-                eprintln!("Failed to spawn WallGuard agent.");
+                eprintln!("Failed to spawn WallGuard agent: {err}");
+                eprintln!(
+                    "Make sure the 'wallguard' binary is installed at /usr/local/bin/wallguard"
+                );
                 std::process::exit(-1);
             } else {
                 println!("WallGuard agent started successfully.");
