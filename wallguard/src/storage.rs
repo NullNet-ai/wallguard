@@ -64,8 +64,8 @@ static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        // Daemon always runs as root on Unix.
-        PathBuf::from("/root/.config/wallguard")
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/root"));
+        home.join(".config/wallguard")
     }
     #[cfg(windows)]
     {
