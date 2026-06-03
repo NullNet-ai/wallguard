@@ -24,20 +24,14 @@ trait PlatformCapturer {
 #[cfg(target_os = "linux")]
 fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
     use crate::client_data::platform::has_wayland_display;
+    use nullnet_liberror::{ErrorHandler, Location, location};
 
-    // Prefer native Wayland capture when the compositor socket is reachable.
-    // libwayshot uses the wlr-screencopy protocol — no portal, no D-Bus dialog.
     if has_wayland_display() {
-        match wayland::WaylandCapturer::new() {
-            Ok(c) => {
-                log::info!("Screen capture: using Wayland (wlr-screencopy) backend");
-                return Ok(Box::new(c));
-            }
-            Err(e) => log::debug!(
-                "Wayland capturer unavailable ({}); falling back to X11",
-                e.to_str()
-            ),
-        }
+        // On Wayland the only working path is wlr-screencopy.
+        // XWayland's root window is a virtual surface — X11 GetImage never
+        // returns real pixels in a Wayland session, so there is no X11 fallback.
+        log::info!("Screen capture: using Wayland (wlr-screencopy) backend");
+        return Ok(Box::new(wayland::WaylandCapturer::new()?));
     }
 
     log::info!("Screen capture: using X11 backend");
