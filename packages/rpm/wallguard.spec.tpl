@@ -8,7 +8,7 @@ URL:            https://github.com/NullNet-ai/wallguard
 # Pre-built binaries — no source compilation needed.
 %global debug_package %{nil}
 
-Requires: libpcap
+Requires: libpcap, pipewire-libs, dbus-libs, libcap
 
 %description
 WallGuard is an agent-connector to the NullNet system that provides
