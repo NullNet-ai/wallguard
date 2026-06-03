@@ -77,7 +77,7 @@ deb() {
     cp "$BIN_DIR/wallguard"     "$PKGDIR/usr/local/bin/"
     cp "$BIN_DIR/wallguard-cli" "$PKGDIR/usr/local/bin/"
 
-    dpkg-deb --build "$PKGDIR" .
+    dpkg-deb -Zxz --build "$PKGDIR" .
 
     # clean up staged files (keep template)
     rm "$PKGDIR/usr/local/bin/wallguard" "$PKGDIR/usr/local/bin/wallguard-cli"
