@@ -212,6 +212,15 @@ fn x11_socket_exists() -> bool {
                     std::env::set_var("DISPLAY", format!(":{num}"));
                 }
             }
+            // If XAUTHORITY is not set, point it at the conventional location
+            // so the X11 client can find the MIT-MAGIC-COOKIE for this display.
+            if std::env::var_os("XAUTHORITY").is_none() {
+                if let Some(home) = dirs::home_dir() {
+                    unsafe {
+                        std::env::set_var("XAUTHORITY", home.join(".Xauthority"));
+                    }
+                }
+            }
             return true;
         }
     }

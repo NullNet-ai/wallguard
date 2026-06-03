@@ -316,9 +316,25 @@ mod wayland {
         session: Session,
     }
 
+    fn wayland_socket_path() -> Option<std::path::PathBuf> {
+        let display = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
+        if display.starts_with('/') {
+            return Some(std::path::PathBuf::from(display));
+        }
+        let runtime = std::env::var("XDG_RUNTIME_DIR")
+            .unwrap_or_else(|_| format!("/run/user/{}", nix::unistd::getuid()));
+        Some(std::path::PathBuf::from(runtime).join(display))
+    }
+
     impl WaylandCapturer {
         pub fn new() -> Result<Self, Error> {
-            let conn = Connection::connect_to_env().handle_err(location!())?;
+            let socket_path = wayland_socket_path()
+                .ok_or("Cannot resolve Wayland socket path")
+                .handle_err(location!())?;
+            let stream = std::os::unix::net::UnixStream::connect(&socket_path)
+                .handle_err(location!())?;
+            stream.set_nonblocking(true).handle_err(location!())?;
+            let conn = Connection::from_socket(stream).handle_err(location!())?;
             let display = conn.display();
             let mut event_queue = conn.new_event_queue::<Session>();
             let qh = event_queue.handle();
