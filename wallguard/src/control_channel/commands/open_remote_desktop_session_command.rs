@@ -1,4 +1,5 @@
 use crate::control_channel::command::ExecutableCommand;
+use crate::remote_desktop::RemoteDesktopManager;
 use crate::{context::Context, reverse_tunnel::TunnelInstance};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
@@ -19,13 +20,13 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
     async fn execute(self) -> Result<(), Error> {
         log::debug!("Received OpenRemoteDesktopSessionCommand");
 
-        let mut rdm = self
-            .context
-            .rdm
-            .clone()
-            .ok_or("Remote desktop unavailable (screen capture could not be initialized at startup)")
-            .inspect_err(|err| log::warn!("Cannot open remote desktop session: {err}"))
-            .map_err(|e| nullnet_liberror::Error::new(e, nullnet_liberror::location!()))?;
+        let mut rdm = match self.context.rdm.clone() {
+            Some(rdm) => rdm,
+            None => {
+                log::warn!("Cannot open remote desktop session: screen capture not initialized at startup");
+                return Err("Remote desktop unavailable").handle_err(location!());
+            }
+        };
 
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());

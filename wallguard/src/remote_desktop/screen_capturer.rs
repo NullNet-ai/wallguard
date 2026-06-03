@@ -5,6 +5,12 @@ pub struct ScreenCapturer {
     inner: Box<dyn PlatformCapturer + Send>,
 }
 
+impl std::fmt::Debug for ScreenCapturer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ScreenCapturer").finish_non_exhaustive()
+    }
+}
+
 impl ScreenCapturer {
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
@@ -686,8 +692,8 @@ mod portal {
     // ── Portal session setup (async) ──────────────────────────────────────────
 
     async fn portal_setup() -> Result<(OwnedFd, u32), Error> {
-        use ashpd::desktop::screencast::{CursorMode, PersistMode, Screencast, SourceType};
-        use ashpd::WindowIdentifier;
+        use ashpd::desktop::screencast::{CursorMode, Screencast, SourceType};
+        use ashpd::desktop::PersistMode;
 
         let proxy = Screencast::new().await.handle_err(location!())?;
         let session = proxy.create_session().await.handle_err(location!())?;
@@ -695,7 +701,7 @@ mod portal {
         proxy
             .select_sources(
                 &session,
-                CursorMode::Hidden.into(),
+                CursorMode::Hidden,
                 SourceType::Monitor.into(),
                 false,
                 None,
@@ -705,7 +711,7 @@ mod portal {
             .handle_err(location!())?;
 
         let response = proxy
-            .start(&session, &WindowIdentifier::default())
+            .start(&session, None)
             .await
             .handle_err(location!())?
             .response()
@@ -738,18 +744,11 @@ mod portal {
         use pipewire::{
             context::Context,
             main_loop::MainLoop,
-            properties,
-            spa::{
-                format::{FormatProperties, MediaSubtype, MediaType},
-                param::ParamType,
-                pod::{serialize::PodSerializer, Object, Property, PropertyFlags, Value},
-                utils::Direction,
-                video::VideoFormat,
-            },
+            spa::utils::Direction,
             stream::{Stream, StreamFlags},
         };
 
-        unsafe { pipewire::init() };
+        pipewire::init();
 
         let main_loop = MainLoop::new(None).handle_err(location!())?;
         let context = Context::new(&main_loop).handle_err(location!())?;
@@ -758,7 +757,7 @@ mod portal {
         let stream = Stream::new(
             &core,
             "wallguard-screen-capture",
-            properties! {
+            pipewire::properties::properties! {
                 "media.type" => "Video",
                 "media.category" => "Capture",
                 "media.role" => "Screen",
@@ -820,40 +819,40 @@ mod portal {
     fn build_format_pod() -> Result<Vec<u8>, Error> {
         use nullnet_liberror::{ErrorHandler, Location, location};
         use pipewire::spa::{
-            format::{FormatProperties, MediaSubtype, MediaType},
-            param::ParamType,
             pod::{serialize::PodSerializer, Object, Property, PropertyFlags, Value},
-            sys::SPA_TYPE_OBJECT_Format,
-            video::VideoFormat,
+            sys::{
+                SPA_FORMAT_VIDEO_format, SPA_FORMAT_mediaSubtype, SPA_FORMAT_mediaType,
+                SPA_MEDIA_SUBTYPE_raw, SPA_MEDIA_TYPE_video, SPA_PARAM_EnumFormat,
+                SPA_TYPE_OBJECT_Format, SPA_VIDEO_FORMAT_BGRA,
+            },
         };
 
         let obj = Object {
             type_: SPA_TYPE_OBJECT_Format,
-            id: ParamType::EnumFormat.as_raw(),
+            id: SPA_PARAM_EnumFormat,
             properties: vec![
                 Property {
-                    key: FormatProperties::MediaType.as_raw(),
+                    key: SPA_FORMAT_mediaType,
                     flags: PropertyFlags::empty(),
-                    value: Value::Id(MediaType::Video.as_raw()),
+                    value: Value::Id(pipewire::spa::utils::Id(SPA_MEDIA_TYPE_video)),
                 },
                 Property {
-                    key: FormatProperties::MediaSubtype.as_raw(),
+                    key: SPA_FORMAT_mediaSubtype,
                     flags: PropertyFlags::empty(),
-                    value: Value::Id(MediaSubtype::Raw.as_raw()),
+                    value: Value::Id(pipewire::spa::utils::Id(SPA_MEDIA_SUBTYPE_raw)),
                 },
                 Property {
-                    key: FormatProperties::VideoFormat.as_raw(),
+                    key: SPA_FORMAT_VIDEO_format,
                     flags: PropertyFlags::empty(),
-                    value: Value::Id(VideoFormat::BGRA.as_raw()),
+                    value: Value::Id(pipewire::spa::utils::Id(SPA_VIDEO_FORMAT_BGRA)),
                 },
             ],
         };
 
-        PodSerializer::serialize(std::io::Cursor::new(Vec::new()), &Value::Object(obj))
+        Ok(PodSerializer::serialize(std::io::Cursor::new(Vec::new()), &Value::Object(obj))
             .handle_err(location!())?
             .0
-            .into_inner()
-            .pipe(Ok)
+            .into_inner())
     }
 
     fn bgra_to_rgb(data: &[u8]) -> Vec<u8> {
