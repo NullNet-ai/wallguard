@@ -662,9 +662,31 @@ mod portal {
 
     impl PortalCapturer {
         pub fn new() -> Result<Self, Error> {
-            let (fd, node_id) = tokio::task::block_in_place(|| {
+            // Log current dumpable state and drop effective capabilities before
+            // calling the portal. The XDG portal reads /proc/<pid>/root to
+            // verify the caller; setcap sets dumpable=0 which blocks that read.
+            // Dropping effective caps lets the kernel re-evaluate privilege level.
+            #[cfg(target_os = "linux")]
+            let saved_caps = {
+                let dumpable = unsafe { libc::prctl(libc::PR_GET_DUMPABLE, 0, 0, 0, 0) };
+                log::debug!("Portal setup: dumpable={dumpable}");
+                let saved = caps::read(None, caps::CapSet::Effective).ok();
+                if let Err(e) = caps::clear(None, caps::CapSet::Effective) {
+                    log::warn!("Could not drop effective caps for portal setup: {e}");
+                }
+                saved
+            };
+
+            let result = tokio::task::block_in_place(|| {
                 tokio::runtime::Handle::current().block_on(portal_setup())
-            })?;
+            });
+
+            #[cfg(target_os = "linux")]
+            if let Some(caps) = saved_caps {
+                let _ = caps::set(None, caps::CapSet::Effective, &caps);
+            }
+
+            let (fd, node_id) = result?;
 
             let frame_buf = Arc::new(Mutex::new(None::<Screenshot>));
             let buf = frame_buf.clone();
