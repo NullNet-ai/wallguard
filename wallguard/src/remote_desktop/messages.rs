@@ -1,4 +1,4 @@
-use copypasta::{ClipboardContext, ClipboardProvider};
+use arboard::Clipboard;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use serde::{Deserialize, Serialize};
 use std::{fmt, sync::Arc};
@@ -146,7 +146,7 @@ enum KeyDir {
 #[derive(Clone)]
 pub struct MessageHandler {
     input: Arc<Mutex<InputBackend>>,
-    clctx: Arc<Mutex<ClipboardContext>>,
+    clctx: Option<Arc<Mutex<Clipboard>>>,
 }
 
 impl fmt::Debug for MessageHandler {
@@ -160,10 +160,16 @@ impl fmt::Debug for MessageHandler {
 impl MessageHandler {
     pub fn new() -> Result<Self, Error> {
         let input = InputBackend::new()?;
-        let clctx = ClipboardContext::new().handle_err(location!())?;
+        let clctx = match Clipboard::new() {
+            Ok(ctx) => Some(Arc::new(Mutex::new(ctx))),
+            Err(e) => {
+                log::warn!("Clipboard unavailable ({e}); paste sync disabled");
+                None
+            }
+        };
         Ok(Self {
             input: Arc::new(Mutex::new(input)),
-            clctx: Arc::new(Mutex::new(clctx)),
+            clctx,
         })
     }
 
@@ -225,10 +231,13 @@ impl MessageHandler {
     }
 
     async fn on_clipboard_message(&self, message: ClipboardMessage) -> Result<(), Error> {
-        self.clctx
+        let Some(clctx) = &self.clctx else {
+            return Ok(());
+        };
+        clctx
             .lock()
             .await
-            .set_contents(message.content)
+            .set_text(message.content)
             .handle_err(location!())
     }
 }
