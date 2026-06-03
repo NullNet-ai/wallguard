@@ -54,6 +54,10 @@ caps = "0.5"
 ashpd = { version = "0.10", default-features = false, features = ["tokio"] }
 # PipeWire video stream consumer (frame delivery from the portal)
 pipewire = { version = "0.8", features = [] }
+# Screenshot portal via raw D-Bus (last-resort fallback; works even with setcap)
+dbus = "0.9"
+# PNG decoding for screenshot portal frames
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"

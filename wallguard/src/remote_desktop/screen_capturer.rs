@@ -32,21 +32,25 @@ fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
     use crate::client_data::platform::has_wayland_display;
 
     if has_wayland_display() {
-        // Try wlr-screencopy first (no dialog, works on KDE Plasma 6 / sway / hyprland).
+        // 1. wlr-screencopy: no dialog, works on KDE Plasma 6 / sway / hyprland.
         match wayland::WaylandCapturer::new() {
             Ok(c) => {
                 log::info!("Screen capture: wlr-screencopy backend");
                 return Ok(Box::new(c));
             }
-            Err(e) => log::info!(
-                "wlr-screencopy unavailable ({}); falling back to XDG portal",
-                e.to_str()
-            ),
+            Err(e) => log::info!("wlr-screencopy unavailable ({})", e.to_str()),
         }
-        // XDG Desktop Portal + PipeWire: works on GNOME and KDE Plasma 5/6.
-        // Shows a one-time user-approval dialog.
-        log::info!("Screen capture: XDG portal + PipeWire backend");
-        return Ok(Box::new(portal::PortalCapturer::new()?));
+        // 2. XDG portal + PipeWire streaming (ashpd/zbus).
+        match portal::PortalCapturer::new() {
+            Ok(c) => {
+                log::info!("Screen capture: XDG portal + PipeWire backend");
+                return Ok(Box::new(c));
+            }
+            Err(e) => log::info!("Portal streaming unavailable ({})", e.to_str()),
+        }
+        // 3. Screenshot portal via raw D-Bus — works even with setcap binaries.
+        log::info!("Screen capture: Screenshot portal (D-Bus) backend");
+        return Ok(Box::new(screenshot_portal::ScreenshotPortalCapturer::new()?));
     }
 
     log::info!("Screen capture: X11 backend");
@@ -885,5 +889,153 @@ mod portal {
             rgb.push(px[0]); // B
         }
         rgb
+    }
+}
+
+// ── Screenshot portal via raw D-Bus ──────────────────────────────────────────
+//
+// Uses org.freedesktop.portal.Screenshot to take periodic screenshots.
+// Unlike the PipeWire streaming path, this works with setcap binaries because
+// the dbus crate's connection credentials pass the portal's /proc/<pid>/root
+// check. Runs in a background thread at ~10 FPS; capture() returns latest frame.
+
+#[cfg(target_os = "linux")]
+mod screenshot_portal {
+    use super::{PlatformCapturer, Screenshot};
+    use dbus::arg::{PropMap, RefArg, Variant};
+    use dbus::blocking::Connection;
+    use dbus::channel::MatchingReceiver;
+    use dbus::message::{MatchRule, Message};
+    use nullnet_liberror::{Error, ErrorHandler, Location, location};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    pub struct ScreenshotPortalCapturer {
+        frame_buf: Arc<Mutex<Option<Screenshot>>>,
+        _thread: std::thread::JoinHandle<()>,
+    }
+
+    impl ScreenshotPortalCapturer {
+        pub fn new() -> Result<Self, Error> {
+            // Verify the portal is reachable before spawning the thread.
+            let conn = Connection::new_session()
+                .map_err(|e| format!("D-Bus session bus unavailable: {e}"))
+                .handle_err(location!())?;
+            take_screenshot(&conn, 0)?; // triggers the one-time approval dialog
+
+            let frame_buf = Arc::new(Mutex::new(None::<Screenshot>));
+            let buf = frame_buf.clone();
+
+            let thread = std::thread::Builder::new()
+                .name("wallguard-screenshot-portal".into())
+                .spawn(move || {
+                    let conn = match Connection::new_session() {
+                        Ok(c) => c,
+                        Err(e) => {
+                            log::error!("Screenshot portal thread: D-Bus connect failed: {e}");
+                            return;
+                        }
+                    };
+                    let mut counter = 1u32;
+                    loop {
+                        counter = counter.wrapping_add(1);
+                        match capture_frame(&conn, counter) {
+                            Ok(frame) => *buf.lock().unwrap() = Some(frame),
+                            Err(e) => log::warn!("Screenshot portal: {}", e.to_str()),
+                        }
+                        std::thread::sleep(Duration::from_millis(100));
+                    }
+                })
+                .handle_err(location!())?;
+
+            Ok(Self { frame_buf, _thread: thread })
+        }
+    }
+
+    impl PlatformCapturer for ScreenshotPortalCapturer {
+        fn capture(&mut self) -> Result<Screenshot, Error> {
+            let lock = self.frame_buf.lock().unwrap();
+            Ok(lock.clone().unwrap_or_default())
+        }
+    }
+
+    fn capture_frame(conn: &Connection, index: u32) -> Result<Screenshot, Error> {
+        let path = take_screenshot(conn, index)?;
+        let img = image::open(&path)
+            .map_err(|e| format!("Failed to decode screenshot: {e}"))
+            .handle_err(location!())?;
+        let _ = std::fs::remove_file(&path);
+        let rgb = img.to_rgb8();
+        let (w, h) = (rgb.width() as usize, rgb.height() as usize);
+        Ok(Screenshot::new(rgb.into_raw(), w, h))
+    }
+
+    fn take_screenshot(conn: &Connection, index: u32) -> Result<PathBuf, Error> {
+        let proxy = conn.with_proxy(
+            "org.freedesktop.portal.Desktop",
+            "/org/freedesktop/portal/desktop",
+            Duration::from_secs(30),
+        );
+
+        let handle_token = format!("wg_{index}");
+        let mut options: PropMap = HashMap::new();
+        options.insert(
+            "handle_token".into(),
+            Variant(Box::new(handle_token) as Box<dyn RefArg>),
+        );
+        options.insert(
+            "interactive".into(),
+            Variant(Box::new(false) as Box<dyn RefArg>),
+        );
+
+        let (request_path,): (dbus::Path,) = proxy
+            .method_call("org.freedesktop.portal.Screenshot", "Screenshot", ("", &options))
+            .map_err(|e| format!("Screenshot portal call failed: {e}"))
+            .handle_err(location!())?;
+
+        let result: Arc<Mutex<Option<(u32, PropMap)>>> = Arc::new(Mutex::new(None));
+        let result_clone = result.clone();
+
+        let mut rule = MatchRule::new_signal("org.freedesktop.portal.Request", "Response");
+        rule.path = Some(request_path.into_static());
+
+        let token = conn.start_receive(
+            rule,
+            Box::new(move |msg: Message, _: &Connection| {
+                if let Ok((code, map)) = msg.read2::<u32, PropMap>() {
+                    *result_clone.lock().unwrap() = Some((code, map));
+                }
+                true
+            }),
+        );
+
+        loop {
+            conn.process(Duration::from_millis(100))
+                .map_err(|e| format!("D-Bus process error: {e}"))
+                .handle_err(location!())?;
+            if result.lock().unwrap().is_some() {
+                break;
+            }
+        }
+        conn.stop_receive(token);
+
+        let (code, results) = result.lock().unwrap().take().unwrap();
+        if code != 0 {
+            return Err(format!("Screenshot portal returned code {code}"))
+                .handle_err(location!());
+        }
+
+        let uri = results
+            .get("uri")
+            .and_then(|v| v.0.as_str().map(String::from))
+            .ok_or("Screenshot portal response missing 'uri'")
+            .handle_err(location!())?;
+
+        uri.strip_prefix("file://")
+            .map(PathBuf::from)
+            .ok_or_else(|| format!("Unexpected URI from portal: {uri}"))
+            .handle_err(location!())
     }
 }
