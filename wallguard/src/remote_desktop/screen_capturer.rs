@@ -24,17 +24,26 @@ trait PlatformCapturer {
 #[cfg(target_os = "linux")]
 fn create_capturer() -> Result<Box<dyn PlatformCapturer + Send>, Error> {
     use crate::client_data::platform::has_wayland_display;
-    use nullnet_liberror::{ErrorHandler, Location, location};
 
     if has_wayland_display() {
-        // On Wayland the only working path is wlr-screencopy.
-        // XWayland's root window is a virtual surface — X11 GetImage never
-        // returns real pixels in a Wayland session, so there is no X11 fallback.
-        log::info!("Screen capture: using Wayland (wlr-screencopy) backend");
-        return Ok(Box::new(wayland::WaylandCapturer::new()?));
+        // Try wlr-screencopy first (no dialog, works on KDE Plasma 6 / sway / hyprland).
+        match wayland::WaylandCapturer::new() {
+            Ok(c) => {
+                log::info!("Screen capture: wlr-screencopy backend");
+                return Ok(Box::new(c));
+            }
+            Err(e) => log::info!(
+                "wlr-screencopy unavailable ({}); falling back to XDG portal",
+                e.to_str()
+            ),
+        }
+        // XDG Desktop Portal + PipeWire: works on GNOME and KDE Plasma 5/6.
+        // Shows a one-time user-approval dialog.
+        log::info!("Screen capture: XDG portal + PipeWire backend");
+        return Ok(Box::new(portal::PortalCapturer::new()?));
     }
 
-    log::info!("Screen capture: using X11 backend");
+    log::info!("Screen capture: X11 backend");
     Ok(Box::new(x11::X11Capturer::new()?))
 }
 
@@ -625,4 +634,236 @@ mod windows_backend {
             Ok(Screenshot::new(rgb, w, h))
         }
     }
+}
+
+// ── XDG Desktop Portal + PipeWire (Linux fallback) ───────────────────────────
+//
+// Used when wlr-screencopy is unavailable (GNOME/Mutter, KDE Plasma 5).
+// Shows a one-time compositor screen-sharing dialog; subsequent sessions
+// reuse the PipeWire node without prompting.
+
+#[cfg(target_os = "linux")]
+mod portal {
+    use super::{PlatformCapturer, Screenshot};
+    use nullnet_liberror::{Error, ErrorHandler, Location, location};
+    use std::os::fd::OwnedFd;
+    use std::sync::{Arc, Mutex};
+
+    pub struct PortalCapturer {
+        frame_buf: Arc<Mutex<Option<Screenshot>>>,
+        _pw_thread: std::thread::JoinHandle<()>,
+    }
+
+    impl PortalCapturer {
+        pub fn new() -> Result<Self, Error> {
+            let (fd, node_id) = tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(portal_setup())
+            })?;
+
+            let frame_buf = Arc::new(Mutex::new(None::<Screenshot>));
+            let buf = frame_buf.clone();
+
+            let pw_thread = std::thread::Builder::new()
+                .name("wallguard-pipewire".into())
+                .spawn(move || {
+                    if let Err(e) = pw_capture(fd, node_id, buf) {
+                        log::error!("PipeWire capture thread: {}", e.to_str());
+                    }
+                })
+                .handle_err(location!())?;
+
+            Ok(Self { frame_buf, _pw_thread: pw_thread })
+        }
+    }
+
+    impl PlatformCapturer for PortalCapturer {
+        fn capture(&mut self) -> Result<Screenshot, Error> {
+            let lock = self.frame_buf.lock().unwrap();
+            Ok(lock.clone().unwrap_or_default())
+        }
+    }
+
+    // ── Portal session setup (async) ──────────────────────────────────────────
+
+    async fn portal_setup() -> Result<(OwnedFd, u32), Error> {
+        use ashpd::desktop::screencast::{CursorMode, PersistMode, Screencast, SourceType};
+        use ashpd::WindowIdentifier;
+
+        let proxy = Screencast::new().await.handle_err(location!())?;
+        let session = proxy.create_session().await.handle_err(location!())?;
+
+        proxy
+            .select_sources(
+                &session,
+                CursorMode::Hidden.into(),
+                SourceType::Monitor.into(),
+                false,
+                None,
+                PersistMode::DoNot,
+            )
+            .await
+            .handle_err(location!())?;
+
+        let response = proxy
+            .start(&session, &WindowIdentifier::default())
+            .await
+            .handle_err(location!())?
+            .response()
+            .handle_err(location!())?;
+
+        let stream = response
+            .streams()
+            .iter()
+            .next()
+            .ok_or("portal returned no streams")
+            .handle_err(location!())?;
+
+        let node_id = stream.pipe_wire_node_id();
+        let fd = proxy
+            .open_pipe_wire_remote(&session)
+            .await
+            .handle_err(location!())?;
+
+        log::info!("Portal screencast: PipeWire node {node_id}");
+        Ok((fd, node_id))
+    }
+
+    // ── PipeWire frame consumer ───────────────────────────────────────────────
+
+    fn pw_capture(
+        fd: OwnedFd,
+        node_id: u32,
+        frame_buf: Arc<Mutex<Option<Screenshot>>>,
+    ) -> Result<(), Error> {
+        use pipewire::{
+            context::Context,
+            main_loop::MainLoop,
+            properties,
+            spa::{
+                format::{FormatProperties, MediaSubtype, MediaType},
+                param::ParamType,
+                pod::{serialize::PodSerializer, Object, Property, PropertyFlags, Value},
+                utils::Direction,
+                video::VideoFormat,
+            },
+            stream::{Stream, StreamFlags},
+        };
+
+        unsafe { pipewire::init() };
+
+        let main_loop = MainLoop::new(None).handle_err(location!())?;
+        let context = Context::new(&main_loop).handle_err(location!())?;
+        let core = context.connect_fd(fd, None).handle_err(location!())?;
+
+        let stream = Stream::new(
+            &core,
+            "wallguard-screen-capture",
+            properties! {
+                "media.type" => "Video",
+                "media.category" => "Capture",
+                "media.role" => "Screen",
+            },
+        )
+        .handle_err(location!())?;
+
+        let _listener = stream
+            .add_local_listener_with_user_data(frame_buf)
+            .process(|stream, frame_buf| {
+                let Some(mut buffer) = stream.dequeue_buffer() else {
+                    return;
+                };
+                let datas = buffer.datas_mut();
+                let Some(data) = datas.first_mut() else { return };
+                let chunk = data.chunk();
+                let size = chunk.size() as usize;
+                let stride = chunk.stride() as usize;
+                let offset = chunk.offset() as usize;
+
+                if size == 0 || stride < 4 {
+                    return;
+                }
+
+                // BGRA: 4 bytes/pixel → width = stride / 4
+                let width = stride / 4;
+                let height = size / stride;
+
+                if let Some(bytes) = data.data() {
+                    let slice = &bytes[offset..offset + size.min(bytes.len() - offset)];
+                    let rgb = bgra_to_rgb(slice);
+                    *frame_buf.lock().unwrap() =
+                        Some(Screenshot::new(rgb, width, height));
+                }
+            })
+            .register()
+            .handle_err(location!())?;
+
+        // Negotiate BGRA video format with the compositor.
+        let fmt_bytes = build_format_pod()?;
+        let param = pipewire::spa::pod::Pod::from_bytes(&fmt_bytes)
+            .ok_or("could not build format pod")
+            .handle_err(location!())?;
+        let mut params = [param];
+
+        stream
+            .connect(
+                Direction::Input,
+                Some(node_id),
+                StreamFlags::AUTOCONNECT | StreamFlags::MAP_BUFFERS,
+                &mut params,
+            )
+            .handle_err(location!())?;
+
+        main_loop.run();
+        Ok(())
+    }
+
+    fn build_format_pod() -> Result<Vec<u8>, Error> {
+        use nullnet_liberror::{ErrorHandler, Location, location};
+        use pipewire::spa::{
+            format::{FormatProperties, MediaSubtype, MediaType},
+            param::ParamType,
+            pod::{serialize::PodSerializer, Object, Property, PropertyFlags, Value},
+            sys::SPA_TYPE_OBJECT_Format,
+            video::VideoFormat,
+        };
+
+        let obj = Object {
+            type_: SPA_TYPE_OBJECT_Format,
+            id: ParamType::EnumFormat.as_raw(),
+            properties: vec![
+                Property {
+                    key: FormatProperties::MediaType.as_raw(),
+                    flags: PropertyFlags::empty(),
+                    value: Value::Id(MediaType::Video.as_raw()),
+                },
+                Property {
+                    key: FormatProperties::MediaSubtype.as_raw(),
+                    flags: PropertyFlags::empty(),
+                    value: Value::Id(MediaSubtype::Raw.as_raw()),
+                },
+                Property {
+                    key: FormatProperties::VideoFormat.as_raw(),
+                    flags: PropertyFlags::empty(),
+                    value: Value::Id(VideoFormat::BGRA.as_raw()),
+                },
+            ],
+        };
+
+        PodSerializer::serialize(std::io::Cursor::new(Vec::new()), &Value::Object(obj))
+            .handle_err(location!())?
+            .0
+            .into_inner()
+            .pipe(Ok)
+    }
+
+    fn bgra_to_rgb(data: &[u8]) -> Vec<u8> {
+        let mut rgb = Vec::with_capacity(data.len() / 4 * 3);
+        for px in data.chunks_exact(4) {
+            rgb.push(px[2]); // R
+            rgb.push(px[1]); // G
+            rgb.push(px[0]); // B
+        }
+        rgb
+    }
+}
 }
