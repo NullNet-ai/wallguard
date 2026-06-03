@@ -72,6 +72,16 @@ async fn main() {
         .expect("Failed to install rustls crypto provider");
 
     check_privileges();
+
+    // setcap capabilities cause Linux to set PR_SET_DUMPABLE=0, which prevents
+    // other processes (including the XDG Desktop Portal daemon) from reading
+    // /proc/<pid>/root to verify the caller's identity. Restore dumpability so
+    // the portal can authorise our screen-capture request.
+    #[cfg(target_os = "linux")]
+    unsafe {
+        libc::prctl(libc::PR_SET_DUMPABLE, 1, 0, 0, 0);
+    }
+
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let arguments = match Arguments::try_parse() {
