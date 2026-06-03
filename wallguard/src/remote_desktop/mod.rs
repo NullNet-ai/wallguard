@@ -31,12 +31,14 @@ pub struct RemoteDesktopManager {
     force_keyframe: Arc<AtomicBool>,
     terminate: broadcast::Sender<()>,
     msg_handler: MessageHandler,
+    capturer: Arc<Mutex<ScreenCapturer>>,
 }
 
 impl RemoteDesktopManager {
     pub fn new() -> Result<Self, Error> {
         let (terminate, _) = broadcast::channel(1);
         let msg_handler = MessageHandler::new()?;
+        let capturer = ScreenCapturer::new()?;
 
         Ok(Self {
             terminate,
@@ -44,6 +46,7 @@ impl RemoteDesktopManager {
             counter: Default::default(),
             force_keyframe: Arc::new(AtomicBool::new(false)),
             msg_handler,
+            capturer: Arc::new(Mutex::new(capturer)),
         })
     }
 
@@ -144,7 +147,6 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
     let api = OpenH264API::from_source();
     let config = EncoderConfig::new().skip_frames(false);
     let mut encoder = Encoder::with_api_config(api, config).handle_err(location!())?;
-    let mut capturer = ScreenCapturer::new()?;
     let mut frame_count: u64 = 0;
 
     loop {
@@ -156,7 +158,7 @@ async fn capture_loop_impl(manager: RemoteDesktopManager) -> Result<(), Error> {
             continue;
         }
 
-        let screenshot = capturer.screenshot()?;
+        let screenshot = manager.capturer.lock().await.screenshot()?;
         if screenshot.is_empty() {
             tokio::time::sleep(target_frame_duration).await;
             continue;

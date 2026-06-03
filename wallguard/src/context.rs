@@ -3,6 +3,7 @@ use crate::constants::DISK_SIZE;
 use crate::daemon::Daemon;
 use crate::data_transmission::dump_dir::DumpDir;
 use crate::data_transmission::transmission_manager::TransmissionManager;
+use crate::remote_desktop::RemoteDesktopManager;
 use crate::reverse_tunnel::ReverseTunnel;
 use crate::server_data::ServerData;
 use crate::token_provider::TokenProvider;
@@ -19,6 +20,7 @@ pub struct Context {
     pub daemon: Arc<Mutex<Daemon>>,
     pub client_data: ClientData,
     pub(crate) transmission_manager: Arc<Mutex<TransmissionManager>>,
+    pub(crate) rdm: Option<RemoteDesktopManager>,
 }
 
 impl Context {
@@ -45,6 +47,17 @@ impl Context {
             client_data.platform,
         );
 
+        let rdm = match RemoteDesktopManager::new() {
+            Ok(rdm) => {
+                log::info!("Remote desktop manager initialized");
+                Some(rdm)
+            }
+            Err(e) => {
+                log::warn!("Remote desktop unavailable: {}", e.to_str());
+                None
+            }
+        };
+
         Ok(Self {
             token_provider,
             server,
@@ -52,6 +65,7 @@ impl Context {
             daemon,
             client_data,
             transmission_manager: Arc::new(Mutex::new(transmission_manager)),
+            rdm,
         })
     }
 }

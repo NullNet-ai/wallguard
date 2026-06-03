@@ -1,5 +1,4 @@
 use crate::control_channel::command::ExecutableCommand;
-use crate::remote_desktop::RemoteDesktopManager;
 use crate::{context::Context, reverse_tunnel::TunnelInstance};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
@@ -20,14 +19,13 @@ impl ExecutableCommand for OpenRemoteDesktopSessionCommand {
     async fn execute(self) -> Result<(), Error> {
         log::debug!("Received OpenRemoteDesktopSessionCommand");
 
-        // Create a fresh RemoteDesktopManager for this session.  Doing this
-        // on-demand (rather than caching it in Context) means:
-        //   • The agent never panics at startup when no display is available.
-        //   • The first session after a user logs in just works — no restart
-        //     needed.
-        let mut rdm = RemoteDesktopManager::new().inspect_err(|err| {
-            log::warn!("Cannot open remote desktop session: {}", err.to_str());
-        })?;
+        let mut rdm = self
+            .context
+            .rdm
+            .clone()
+            .ok_or("Remote desktop unavailable (screen capture could not be initialized at startup)")
+            .inspect_err(|err| log::warn!("Cannot open remote desktop session: {err}"))
+            .map_err(|e| nullnet_liberror::Error::new(e, nullnet_liberror::location!()))?;
 
         let Ok(tunnel) = self.context.tunnel.request_channel(&self.token).await else {
             return Err("Cant establish tunnel connection").handle_err(location!());
