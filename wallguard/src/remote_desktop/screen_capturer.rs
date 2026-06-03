@@ -114,20 +114,18 @@ mod x11 {
 
     impl PlatformCapturer for X11Capturer {
         fn capture(&mut self) -> Result<Screenshot, Error> {
-            let reply = self
+            let reply = match self
                 .conn
-                .get_image(
-                    ImageFormat::Z_PIXMAP,
-                    self.root,
-                    0,
-                    0,
-                    self.width,
-                    self.height,
-                    !0u32,
-                )
+                .get_image(ImageFormat::Z_PIXMAP, self.root, 0, 0, self.width, self.height, !0u32)
                 .handle_err(location!())?
                 .reply()
-                .handle_err(location!())?;
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    log::warn!("X11 GetImage failed ({e:?}); skipping frame");
+                    return Ok(Screenshot::new(vec![], self.width as usize, self.height as usize));
+                }
+            };
 
             let rgb = raw_to_rgb(&reply.data, self.bits_per_pixel);
 
