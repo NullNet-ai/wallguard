@@ -331,6 +331,7 @@ mod wayland {
             let socket_path = wayland_socket_path()
                 .ok_or("Cannot resolve Wayland socket path")
                 .handle_err(location!())?;
+            log::debug!("Wayland: connecting to {}", socket_path.display());
             let stream = std::os::unix::net::UnixStream::connect(&socket_path)
                 .handle_err(location!())?;
             stream.set_nonblocking(true).handle_err(location!())?;
@@ -352,9 +353,20 @@ mod wayland {
                 .handle_err(location!())?;
 
             if session.shm.is_none() || session.output.is_none() || session.manager.is_none() {
-                return Err("compositor missing required globals \
-                     (wl_shm, wl_output, or zwlr_screencopy_manager_v1) — \
-                     wlr-screencopy may not be supported")
+                let missing: Vec<&str> = [
+                    session.shm.is_none().then_some("wl_shm"),
+                    session.output.is_none().then_some("wl_output"),
+                    session.manager.is_none().then_some("zwlr_screencopy_manager_v1"),
+                ]
+                .into_iter()
+                .flatten()
+                .collect();
+                return Err(format!(
+                    "compositor did not advertise: {} — \
+                     GNOME/Mutter does not support wlr-screencopy; \
+                     KWin only advertises it to the session-user UID",
+                    missing.join(", ")
+                ))
                 .handle_err(location!());
             }
 
