@@ -10,10 +10,7 @@ mod sock;
 
 const TIME_INTERVAL: Duration = Duration::from_secs(60);
 
-pub async fn monitor_services(
-    interface: WGServer,
-    token_provider: TokenProvider,
-) {
+pub async fn monitor_services(interface: WGServer, token_provider: TokenProvider) {
     log::info!("Staring services monitoring ...");
 
     loop {
