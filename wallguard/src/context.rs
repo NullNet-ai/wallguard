@@ -26,6 +26,7 @@ impl Context {
         daemon: Arc<Mutex<Daemon>>,
         client_data: ClientData,
         server_data: ServerData,
+        batch_size: usize,
     ) -> Result<Self, Error> {
         let token_provider = TokenProvider::new();
 
@@ -43,6 +44,7 @@ impl Context {
             token_provider.clone(),
             server_data.grpc_addr.ip().to_string(),
             client_data.platform,
+            batch_size,
         );
 
         Ok(Self {

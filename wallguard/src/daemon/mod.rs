@@ -22,15 +22,18 @@ pub struct Daemon {
     server_data: ServerData,
     state: DaemonState,
     connect_handle: Option<tokio::task::JoinHandle<()>>,
+    batch_size: usize,
 }
 
 impl Daemon {
     pub async fn run(client_data: ClientData, server_data: ServerData) -> Result<(), Error> {
+        let batch_size = server_data.batch_size;
         let daemon = Arc::new(Mutex::new(Daemon {
             client_data,
             server_data,
             state: DaemonState::default(),
             connect_handle: None,
+            batch_size,
         }));
 
         if let Some(code) = Storage::get_value(Secret::InstallationCode).await {
@@ -81,6 +84,7 @@ impl Daemon {
             this.clone(),
             lock.client_data.clone(),
             lock.server_data.clone(),
+            lock.batch_size,
         )
         .await
         .map_err(|err| err.to_str().to_string())?;

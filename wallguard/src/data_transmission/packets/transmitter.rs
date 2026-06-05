@@ -1,5 +1,5 @@
 use super::parser::parse_packets;
-use crate::constants::{BATCH_SIZE, DATA_TRANSMISSION_INTERVAL_SECONDS, QUEUE_SIZE};
+use crate::constants::{DATA_TRANSMISSION_INTERVAL_SECONDS, QUEUE_SIZE};
 use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
 use crate::data_transmission::item_buffer::ItemBuffer;
 use crate::timer::Timer;
@@ -15,21 +15,22 @@ pub(crate) async fn transmit_packets(
     token_provider: TokenProvider,
     dump_dir: DumpDir,
     client: WGServer,
+    batch_size: usize,
 ) {
     // PacketInfo doesn't implement Clone so we use a plain Vec for the raw accumulation window
-    let mut raw_batch: Vec<PacketInfo> = Vec::with_capacity(BATCH_SIZE);
+    let mut raw_batch: Vec<PacketInfo> = Vec::with_capacity(batch_size);
     let mut connection_queue: ItemBuffer<Connection> = ItemBuffer::new(QUEUE_SIZE);
     let mut timer = Timer::new(DATA_TRANSMISSION_INTERVAL_SECONDS);
 
     while let Ok(packet) = rx.recv().await {
         raw_batch.push(packet);
-        if raw_batch.len() >= BATCH_SIZE || timer.is_expired() {
+        if raw_batch.len() >= batch_size || timer.is_expired() {
             timer.reset();
 
             let connections = parse_packets(std::mem::take(&mut raw_batch));
             connection_queue.extend(connections);
 
-            send_connections(&client, &mut connection_queue, &token_provider).await;
+            send_connections(&client, &mut connection_queue, &token_provider, batch_size).await;
 
             if connection_queue.is_full() {
                 log::warn!(
@@ -62,6 +63,7 @@ async fn send_connections(
     interface: &WGServer,
     connection_queue: &mut ItemBuffer<Connection>,
     token_provider: &TokenProvider,
+    batch_size: usize,
 ) {
     while !connection_queue.is_empty() {
         let token = token_provider.get().await;
@@ -71,7 +73,7 @@ async fn send_connections(
             break;
         }
 
-        let range = ..min(connection_queue.len(), BATCH_SIZE);
+        let range = ..min(connection_queue.len(), batch_size);
         let data = ConnectionsData {
             connections: connection_queue.get(range),
             token: token.unwrap(),

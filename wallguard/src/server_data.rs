@@ -7,6 +7,7 @@ const DEFAULT_PORT: u16 = 50051;
 #[derive(Debug, Clone)]
 pub struct ServerData {
     pub(crate) grpc_addr: SocketAddr,
+    pub(crate) batch_size: usize,
 }
 
 impl TryFrom<&Arguments> for ServerData {
@@ -45,6 +46,9 @@ impl TryFrom<&Arguments> for ServerData {
             }
         };
 
-        Ok(Self { grpc_addr })
+        Ok(Self {
+            grpc_addr,
+            batch_size: arguments.batch_size,
+        })
     }
 }

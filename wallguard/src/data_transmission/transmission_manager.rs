@@ -24,6 +24,7 @@ pub(crate) struct TransmissionManager {
 
     server_addr: String,
     platform: Platform,
+    batch_size: usize,
 }
 
 impl TransmissionManager {
@@ -33,6 +34,7 @@ impl TransmissionManager {
         token_provider: TokenProvider,
         server_addr: String,
         platform: Platform,
+        batch_size: usize,
     ) -> Self {
         Self {
             packet_capture: None,
@@ -46,6 +48,7 @@ impl TransmissionManager {
 
             server_addr,
             platform,
+            batch_size,
         }
     }
 
@@ -85,8 +88,9 @@ impl TransmissionManager {
         let token = self.token_provider.clone();
         let dump_dir = self.dump_dir.clone();
         let interface = self.interface.clone();
+        let batch_size = self.batch_size;
         tokio::spawn(async move {
-            transmit_packets(rx, token, dump_dir, interface).await;
+            transmit_packets(rx, token, dump_dir, interface, batch_size).await;
         });
     }
 

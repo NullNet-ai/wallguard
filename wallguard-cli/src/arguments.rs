@@ -55,6 +55,10 @@ pub enum Command {
         /// Target platform
         #[arg(long, value_enum, default_value_t = Platform::Generic)]
         platform: Platform,
+
+        /// Maximum number of packets per batch sent to the server
+        #[arg(long)]
+        batch_size: Option<usize>,
     },
 
     /// Get agent version

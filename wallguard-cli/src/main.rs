@@ -145,6 +145,7 @@ pub async fn main() -> AnyResult<()> {
         arguments::Command::Start {
             control_channel_url,
             platform,
+            batch_size,
         } => {
             if is_agent_running() {
                 println!("Agent is already running");
@@ -154,18 +155,23 @@ pub async fn main() -> AnyResult<()> {
             const DEFAULT_SERVER_URL: &str = "localhost:50051";
 
             let control_channel_url = control_channel_url.unwrap_or(DEFAULT_SERVER_URL.into());
+            let batch_size_str = batch_size.map(|n| n.to_string());
+            let platform_str = platform.to_string();
 
-            if autostart::enable_service(
-                "wallguard",
-                &[
-                    "--control-channel-url",
-                    control_channel_url.as_str(),
-                    "--platform",
-                    platform.to_string().as_str(),
-                ],
-            )
-            .await
-            .is_err()
+            let mut service_args = vec![
+                "--control-channel-url",
+                control_channel_url.as_str(),
+                "--platform",
+                platform_str.as_str(),
+            ];
+            if let Some(ref s) = batch_size_str {
+                service_args.push("--batch-size");
+                service_args.push(s.as_str());
+            }
+
+            if autostart::enable_service("wallguard", &service_args)
+                .await
+                .is_err()
             {
                 eprintln!("WARNING: Failed to register wallguard as a service");
             }
@@ -196,15 +202,17 @@ pub async fn main() -> AnyResult<()> {
                     Stdio::null()
                 });
 
-            if let Err(err) = Command::new("wallguard")
-                .arg("--control-channel-url")
+            let mut cmd = Command::new("wallguard");
+            cmd.arg("--control-channel-url")
                 .arg(&control_channel_url)
                 .arg("--platform")
-                .arg(platform.to_string())
-                .stdout(Stdio::null())
-                .stderr(log_stderr)
-                .spawn()
-            {
+                .arg(platform.to_string());
+            if let Some(n) = batch_size {
+                cmd.arg("--batch-size").arg(n.to_string());
+            }
+            cmd.stdout(Stdio::null()).stderr(log_stderr);
+
+            if let Err(err) = cmd.spawn() {
                 eprintln!("Failed to spawn WallGuard agent: {err}");
                 eprintln!(
                     "Make sure the 'wallguard' binary is installed at /usr/local/bin/wallguard"

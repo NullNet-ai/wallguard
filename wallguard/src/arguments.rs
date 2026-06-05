@@ -1,3 +1,4 @@
+use crate::constants::BATCH_SIZE;
 use clap::Parser;
 
 /// Application configuration from CLI arguments
@@ -14,4 +15,8 @@ pub struct Arguments {
     /// Target platform
     #[arg(long)]
     pub platform: String,
+
+    /// Maximum number of packets per batch sent to the server
+    #[arg(long, default_value_t = BATCH_SIZE)]
+    pub batch_size: usize,
 }
