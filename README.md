@@ -32,6 +32,6 @@ You will need Rust (latest stable), `protobuf-compiler`, and `libpcap-dev` (or t
 cargo build --release -p wallguard -p wallguard-cli
 ```
 
-The agent binary (`wallguard`) and the control CLI (`wallguard-cli`) will be placed in `target/release/`. See `packbuild.sh` for the full packaging workflow and `CLAUDE.md` for development notes.
+The agent binary (`wallguard`) and the control CLI (`wallguard-cli`) will be placed in `target/release/`. See `packbuild.sh` for the full packaging workflow.
 
 WallGuard depends on a separate **datastore** service for persistence. Start that first:
