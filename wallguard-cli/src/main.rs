@@ -176,32 +176,6 @@ pub async fn main() -> AnyResult<()> {
                 eprintln!("WARNING: Failed to register wallguard as a service");
             }
 
-            #[cfg(unix)]
-            let log_path = String::from("/var/log/wallguard.log");
-            #[cfg(windows)]
-            let log_path = {
-                let base =
-                    std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
-                format!(r"{}\wallguard\wallguard.log", base)
-            };
-
-            // Ensure the log directory exists before opening the file.
-            if let Some(log_dir) = std::path::Path::new(&log_path).parent() {
-                let _ = std::fs::create_dir_all(log_dir);
-            }
-
-            let log_stderr = std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&log_path)
-                .map(Stdio::from)
-                .unwrap_or_else(|err| {
-                    eprintln!(
-                        "WARNING: Could not open {log_path} ({err}); agent logs will be lost"
-                    );
-                    Stdio::null()
-                });
-
             let mut cmd = Command::new("wallguard");
             cmd.arg("--control-channel-url")
                 .arg(&control_channel_url)
@@ -210,7 +184,7 @@ pub async fn main() -> AnyResult<()> {
             if let Some(n) = batch_size {
                 cmd.arg("--batch-size").arg(n.to_string());
             }
-            cmd.stdout(Stdio::null()).stderr(log_stderr);
+            cmd.stdout(Stdio::null()).stderr(Stdio::null());
 
             if let Err(err) = cmd.spawn() {
                 eprintln!("Failed to spawn WallGuard agent: {err}");
@@ -220,7 +194,7 @@ pub async fn main() -> AnyResult<()> {
                 std::process::exit(-1);
             } else {
                 println!("WallGuard agent started successfully.");
-                println!("Logs are written to {log_path}.");
+                println!("Logs are written to /var/log/wallguard.log.");
                 println!("Check its status with `wallguard-cli status`.");
             }
         }

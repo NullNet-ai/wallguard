@@ -28,6 +28,35 @@ mod remote_desktop;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+fn init_logger() {
+    #[cfg(unix)]
+    let log_dir = std::path::PathBuf::from("/var/log");
+    #[cfg(windows)]
+    let log_dir = {
+        let base = std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
+        std::path::PathBuf::from(base).join("wallguard")
+    };
+
+    use flexi_logger::{Cleanup, Criterion, Duplicate, FileSpec, Logger, Naming};
+    Logger::try_with_env_or_str("info")
+        .expect("Failed to configure logger")
+        .log_to_file(
+            FileSpec::default()
+                .directory(log_dir)
+                .basename("wallguard")
+                .suffix("log")
+                .suppress_timestamp(),
+        )
+        .rotate(
+            Criterion::Size(10 * 1024 * 1024), // rotate at 10 MiB
+            Naming::Timestamps,
+            Cleanup::KeepLogFiles(5),
+        )
+        .duplicate_to_stderr(Duplicate::Error)
+        .start()
+        .expect("Failed to start logger");
+}
+
 fn check_privileges() {
     #[cfg(windows)]
     {
@@ -53,7 +82,8 @@ async fn main() {
         .expect("Failed to install rustls crypto provider");
 
     check_privileges();
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    init_logger();
+
 
     let arguments = match Arguments::try_parse() {
         Ok(args) => args,

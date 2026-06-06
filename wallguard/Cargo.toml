@@ -7,7 +7,7 @@ license = "AGPL-3.0-only"
 [dependencies]
 clap = { version = "4.5.57", features = ["derive"] }
 dirs = "6.0.0"
-env_logger = "0.11.8"
+flexi_logger = "0.29"
 log = "0.4.29"
 sha2 = "0.10.9"
 portable-pty = "0.9.0"
