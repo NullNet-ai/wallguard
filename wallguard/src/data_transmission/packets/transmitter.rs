@@ -79,11 +79,19 @@ async fn send_connections(
             token: token.unwrap(),
         };
 
+        let sent = range.end;
+
         if let Err(e) = interface.handle_connections_data(data).await {
             log::error!("Failed to send connections: {e:?}");
             break;
         }
 
         connection_queue.drain(range);
+
+        log::info!(
+            "Sent {} connections, {} remaining in queue",
+            sent,
+            connection_queue.len()
+        );
     }
 }
