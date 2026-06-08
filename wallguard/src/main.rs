@@ -84,7 +84,6 @@ async fn main() {
     check_privileges();
     init_logger();
 
-
     let arguments = match Arguments::try_parse() {
         Ok(args) => args,
         Err(err) => {
