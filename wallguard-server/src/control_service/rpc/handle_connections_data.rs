@@ -31,7 +31,8 @@ impl WallGuardService {
         }
 
         log::info!(
-            "Received {} pre-parsed connections from device {}",
+            "[{}] Received {} pre-parsed connections from device {}",
+            chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ"),
             connections_count,
             token.account.device_id().unwrap_or("unknown")
         );
@@ -44,7 +45,8 @@ impl WallGuardService {
                 .await
                 .map_err(|e| Status::internal(format!("Datastore operation failed: {e:?}")))?;
             log::info!(
-                "create_connections: inserted {} records in {}ms",
+                "[{}] create_connections: inserted {} records in {}ms",
+                chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ"),
                 connections_count,
                 start.elapsed().as_millis()
             );
