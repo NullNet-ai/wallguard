@@ -27,7 +27,7 @@ impl WallGuardService {
                 .datastore
                 .create_system_resources(&token.jwt, data.resources, device.id)
                 .await
-                .map_err(|e| Status::internal("Datastore operation failed: {e}"))?;
+                .map_err(|e| Status::internal(format!("Datastore operation failed: {e}")))?;
             log::info!(
                 "create_system_resources: inserted {} records in {}ms",
                 resources_count,

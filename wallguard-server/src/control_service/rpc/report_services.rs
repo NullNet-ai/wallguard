@@ -63,13 +63,13 @@ impl WallGuardService {
             .datastore
             .delete_services(&token.jwt, &to_delete)
             .await
-            .map_err(|e| Status::internal("Datastore operation failed: {e}"))?;
+            .map_err(|e| Status::internal(format!("Datastore operation failed: {e}")))?;
 
         self.context
             .datastore
             .create_services(&token.jwt, &to_insert)
             .await
-            .map_err(|e| Status::internal("Datastore operation failed: {e}"))?;
+            .map_err(|e| Status::internal(format!("Datastore operation failed: {e}")))?;
 
         Ok(Response::new(()))
     }

@@ -42,7 +42,7 @@ impl WallGuardService {
                 .datastore
                 .create_connections(&token.jwt, &token, data)
                 .await
-                .map_err(|e| Status::internal("Datastore operation failed: {e}"))?;
+                .map_err(|e| Status::internal(format!("Datastore operation failed: {e}")))?;
             log::info!(
                 "create_connections: inserted {} records in {}ms",
                 connections_count,
