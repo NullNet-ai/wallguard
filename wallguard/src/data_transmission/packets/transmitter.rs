@@ -83,7 +83,8 @@ async fn send_connections(
 
         if let Err(e) = interface.handle_connections_data(data).await {
             log::error!(
-                "[{}] Failed to send connections: {e:?}",
+                "[{}] Failed to send connections (Queue size {}): {e:?}",
+                connection_queue.len(),
                 chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ")
             );
             break;
