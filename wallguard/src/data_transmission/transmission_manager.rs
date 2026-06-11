@@ -1,5 +1,6 @@
 use crate::client_data::Platform;
 use crate::constants::SNAPLEN;
+use crate::data_transmission::grpc_handler::handle_connection_and_retransmission;
 use crate::data_transmission::packets::transmitter::transmit_packets;
 use crate::data_transmission::resources::transmitter::transmit_system_resources;
 use crate::data_transmission::sysconfig;
@@ -50,6 +51,15 @@ impl TransmissionManager {
             platform,
             batch_size,
         }
+    }
+
+    pub(crate) fn start_retransmission_handler(&self) {
+        let interface = self.interface.clone();
+        let dump_dir = self.dump_dir.clone();
+        let token_provider = self.token_provider.clone();
+        tokio::spawn(async move {
+            handle_connection_and_retransmission(interface, dump_dir, token_provider).await;
+        });
     }
 
     pub(crate) fn has_services_monitoring(&self) -> bool {

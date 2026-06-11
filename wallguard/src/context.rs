@@ -46,6 +46,7 @@ impl Context {
             client_data.platform,
             batch_size,
         );
+        transmission_manager.start_retransmission_handler();
 
         Ok(Self {
             token_provider,
