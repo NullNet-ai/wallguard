@@ -15,6 +15,7 @@ impl Datastore {
             device_heartbeats: Some(DeviceHeartbeats {
                 device_id: Some(heartbeat.device_id.clone()),
                 status: Some(String::from("Active")),
+                timestamp: Some(heartbeat.timestamp.clone()),
                 ..Default::default()
             }),
             params: Some(CreateParams {
