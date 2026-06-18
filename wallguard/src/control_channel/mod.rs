@@ -151,7 +151,7 @@ async fn healthcheck(outbound: OutboundStream) -> Result<(), Error> {
             message: Some(Message::Heartbeat(())),
         };
 
-        log::debug!("Sending heartbeat");
+        log::info!("Sending heartbeat");
 
         outbound
             .lock()
