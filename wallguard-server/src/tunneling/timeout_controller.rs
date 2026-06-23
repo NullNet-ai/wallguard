@@ -5,13 +5,15 @@ use tokio::sync::Mutex;
 pub struct TimeoutController {
     idle_timeout: u64,
     awake_interval: u64,
+    active_terminal_timeout: Option<u64>,
+    hard_timeout: Option<u64>,
     tunnels: Arc<Mutex<HashMap<String, WallguardTunnel>>>,
 }
 
 impl TimeoutController {
     pub fn new(tunnels: Arc<Mutex<HashMap<String, WallguardTunnel>>>) -> Self {
-        const DEFAULT_IDLE_TIMEOUT: u64 = 300; // 5 minutes
-        const DEFAULT_AWAKE_INTERVAL: u64 = 30; // 30 seconds
+        const DEFAULT_IDLE_TIMEOUT: u64 = 300;
+        const DEFAULT_AWAKE_INTERVAL: u64 = 30;
 
         let idle_timeout = std::env::var("TUNNEL_CONTROLLER_IDLE_TIMEOUT")
             .ok()
@@ -23,15 +25,21 @@ impl TimeoutController {
             .and_then(|v| v.parse::<u64>().ok())
             .unwrap_or(DEFAULT_AWAKE_INTERVAL);
 
+        let active_terminal_timeout = std::env::var("TUNNEL_CONTROLLER_ACTIVE_TERMINAL_TIMEOUT")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok());
+
+        let hard_timeout = std::env::var("TUNNEL_CONTROLLER_HARD_TIMEOUT")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok());
+
         Self {
             idle_timeout,
             awake_interval,
+            active_terminal_timeout,
+            hard_timeout,
             tunnels,
         }
-    }
-
-    pub fn idle_timeout_duration(&self) -> Duration {
-        Duration::from_secs(self.idle_timeout)
     }
 
     pub fn awake_interval_duration(&self) -> Duration {
@@ -72,7 +80,9 @@ impl TimeoutController {
                                 tun.data.created_at
                             };
 
-                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration()) {
+                            if is_idle_expired(timestamp, self.idle_timeout)
+                                || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
                             }
                         }
@@ -101,9 +111,17 @@ impl TimeoutController {
                                 tun.data.created_at
                             };
 
-                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())
-                                && !tun.has_active_terminals()
-                            {
+                            let expired = if tun.has_active_terminals() {
+                                is_lifetime_expired(
+                                    tun.data.created_at,
+                                    self.active_terminal_timeout,
+                                ) || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            } else {
+                                is_idle_expired(timestamp, self.idle_timeout)
+                                    || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            };
+
+                            if expired {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
                             }
                         }
@@ -132,9 +150,17 @@ impl TimeoutController {
                                 tun.data.created_at
                             };
 
-                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())
-                                && !tun.has_active_terminals()
-                            {
+                            let expired = if tun.has_active_terminals() {
+                                is_lifetime_expired(
+                                    tun.data.created_at,
+                                    self.active_terminal_timeout,
+                                ) || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            } else {
+                                is_idle_expired(timestamp, self.idle_timeout)
+                                    || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            };
+
+                            if expired {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
                             }
                         }
@@ -163,9 +189,17 @@ impl TimeoutController {
                                 tun.data.created_at
                             };
 
-                            if timestamp < Self::cutoff_timestamp(self.idle_timeout_duration())
-                                && !tun.has_active_viewers()
-                            {
+                            let expired = if tun.has_active_viewers() {
+                                is_lifetime_expired(
+                                    tun.data.created_at,
+                                    self.active_terminal_timeout,
+                                ) || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            } else {
+                                is_idle_expired(timestamp, self.idle_timeout)
+                                    || is_lifetime_expired(tun.data.created_at, self.hard_timeout)
+                            };
+
+                            if expired {
                                 expired_ids.push(tun.data.tunnel_data.id.clone());
                             }
                         }
@@ -186,16 +220,23 @@ impl TimeoutController {
             }
         });
     }
+}
 
-    fn cutoff_timestamp(idle_timeout: Duration) -> u64 {
-        use std::time::{SystemTime, UNIX_EPOCH};
+fn cutoff_timestamp(timeout_secs: u64) -> u64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    now.checked_sub(Duration::from_secs(timeout_secs))
+        .unwrap_or(Duration::from_secs(0))
+        .as_secs()
+}
 
-        let cutoff = now
-            .checked_sub(idle_timeout)
-            .unwrap_or(Duration::from_secs(0));
+fn is_idle_expired(last_access: u64, idle_timeout_secs: u64) -> bool {
+    last_access < cutoff_timestamp(idle_timeout_secs)
+}
 
-        cutoff.as_secs()
-    }
+fn is_lifetime_expired(created_at: u64, timeout_secs: Option<u64>) -> bool {
+    timeout_secs
+        .map(|t| created_at < cutoff_timestamp(t))
+        .unwrap_or(false)
 }
