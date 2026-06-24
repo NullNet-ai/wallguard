@@ -2,7 +2,7 @@ use crate::{app_context::AppContext, reverse_tunnel::TunnelInstance};
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::time::Duration;
 
-const DEFAULT_TIMEOUT: Duration = Duration::from_millis(1_000);
+const DEFAULT_TIMEOUT: Duration = Duration::from_millis(5_000);
 
 #[derive(Debug, Clone)]
 enum TunnelType {
