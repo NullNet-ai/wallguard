@@ -59,7 +59,7 @@ async-trait = "0.1.89"
 pingora = {version = "0.8.0", features = ["proxy", "openssl"] }
 
 [build-dependencies]
-tonic-build = "0.13.1"
+tonic-build = "0.14.6"
 
 [badges]
 maintenance = { status = "actively-developed" }
