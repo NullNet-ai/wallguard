@@ -25,8 +25,13 @@ pub mod status {
         Error(super::Error),
     }
 }
-#[derive(Clone, Copy, PartialEq, ::prost::Message)]
-pub struct Connected {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Connected {
+    #[prost(string, optional, tag = "1")]
+    pub device_id: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, optional, tag = "2")]
+    pub device_uuid: ::core::option::Option<::prost::alloc::string::String>,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Error {
     #[prost(string, tag = "1")]

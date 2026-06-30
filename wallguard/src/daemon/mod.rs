@@ -55,8 +55,8 @@ impl Daemon {
             .handle_err(location!())
     }
 
-    pub(crate) fn get_status(&self) -> Status {
-        self.state.clone().into()
+    pub(crate) async fn get_status(&self) -> Status {
+        self.state.clone().into_status().await
     }
 
     pub(crate) async fn join_org(

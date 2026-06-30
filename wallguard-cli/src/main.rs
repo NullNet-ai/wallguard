@@ -90,8 +90,16 @@ pub async fn main() -> AnyResult<()> {
                 State::Idle(_) => {
                     println!("  STATE    : IDLE");
                 }
-                State::Connected(_) => {
+                State::Connected(data) => {
                     println!("  STATE    : CONNECTED");
+                    println!(
+                        "  DEVICE ID: {}",
+                        data.device_id.as_deref().unwrap_or("unknown")
+                    );
+                    println!(
+                        "  UUID     : {}",
+                        data.device_uuid.as_deref().unwrap_or("unknown")
+                    );
                 }
                 State::Error(error) => {
                     println!("  STATE    : ERROR");

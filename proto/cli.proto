@@ -26,7 +26,10 @@ message Status {
     }
 }
 
-message Connected {}
+message Connected {
+    optional string device_id = 1;
+    optional string device_uuid = 2;
+}
 
 message Error {
     string message = 1;

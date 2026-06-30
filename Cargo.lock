@@ -6411,6 +6411,7 @@ name = "wallguard"
 version = "1.3.0"
 dependencies = [
  "async-channel",
+ "base64",
  "chrono",
  "clap",
  "copypasta",

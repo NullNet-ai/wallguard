@@ -1,3 +1,4 @@
+use base64::Engine as _;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -26,6 +27,26 @@ impl TokenProvider {
 
     pub async fn get(&self) -> Option<String> {
         self.token.read().await.clone()
+    }
+
+    /// Extracts the device ID from the JWT's `account.device.id` claim.
+    pub async fn device_id(&self) -> Option<String> {
+        let jwt = self.get().await?;
+        Self::decode_device_id(&jwt)
+    }
+
+    fn decode_device_id(jwt: &str) -> Option<String> {
+        let payload = jwt.split('.').nth(1)?;
+        let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(payload)
+            .ok()?;
+        let claims: serde_json::Value = serde_json::from_slice(&decoded).ok()?;
+        claims
+            .get("account")?
+            .get("device")?
+            .get("id")?
+            .as_str()
+            .map(String::from)
     }
 
     pub async fn obtain(&self, strategy: RetrievalStrategy) -> Option<String> {

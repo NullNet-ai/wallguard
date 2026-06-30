@@ -27,7 +27,7 @@ impl WallguardCli for CliServer {
         &self,
         _: tonic::Request<()>,
     ) -> Result<tonic::Response<Status>, tonic::Status> {
-        let status = self.inner.lock().await.get_status();
+        let status = self.inner.lock().await.get_status().await;
         Ok(tonic::Response::from(status))
     }
 

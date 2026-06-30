@@ -15,13 +15,17 @@ pub enum DaemonState {
     Error(String),
 }
 
-impl From<DaemonState> for Status {
-    fn from(state: DaemonState) -> Status {
-        let state = match state {
+impl DaemonState {
+    pub(crate) async fn into_status(self) -> Status {
+        let state = match self {
             DaemonState::Idle => State::Idle(()),
             DaemonState::Connecting => State::Connecting(()),
-            DaemonState::Connected(_) => {
-                let data = Connected {};
+            DaemonState::Connected(control_channel) => {
+                let context = control_channel.get_context();
+                let data = Connected {
+                    device_id: context.token_provider.device_id().await,
+                    device_uuid: Some(context.client_data.uuid.clone()),
+                };
                 State::Connected(data)
             }
             DaemonState::Error(message) => {
