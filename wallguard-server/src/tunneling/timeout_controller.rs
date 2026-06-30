@@ -15,23 +15,17 @@ impl TimeoutController {
         const DEFAULT_IDLE_TIMEOUT: u64 = 300;
         const DEFAULT_AWAKE_INTERVAL: u64 = 30;
 
-        let idle_timeout = std::env::var("TUNNEL_CONTROLLER_IDLE_TIMEOUT")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok())
-            .unwrap_or(DEFAULT_IDLE_TIMEOUT);
+        let idle_timeout =
+            read_timeout_env("TUNNEL_CONTROLLER_IDLE_TIMEOUT").unwrap_or(DEFAULT_IDLE_TIMEOUT);
+        let awake_interval =
+            read_timeout_env("TUNNEL_CONTROLLER_AWAKE_INTERVAL").unwrap_or(DEFAULT_AWAKE_INTERVAL);
+        let active_terminal_timeout = read_timeout_env("TUNNEL_CONTROLLER_ACTIVE_TERMINAL_TIMEOUT");
+        let hard_timeout = read_timeout_env("TUNNEL_CONTROLLER_HARD_TIMEOUT");
 
-        let awake_interval = std::env::var("TUNNEL_CONTROLLER_AWAKE_INTERVAL")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok())
-            .unwrap_or(DEFAULT_AWAKE_INTERVAL);
-
-        let active_terminal_timeout = std::env::var("TUNNEL_CONTROLLER_ACTIVE_TERMINAL_TIMEOUT")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok());
-
-        let hard_timeout = std::env::var("TUNNEL_CONTROLLER_HARD_TIMEOUT")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok());
+        log::info!(
+            "TimeoutController: idle_timeout={idle_timeout}s, awake_interval={awake_interval}s, \
+             active_terminal_timeout={active_terminal_timeout:?}s, hard_timeout={hard_timeout:?}s"
+        );
 
         Self {
             idle_timeout,
@@ -219,6 +213,25 @@ impl TimeoutController {
                 tokio::time::sleep(self.awake_interval_duration()).await;
             }
         });
+    }
+}
+
+/// Reads a `u64` seconds value from an env var, trimming surrounding whitespace
+/// (common with values sourced from files/secrets that include a trailing newline).
+/// Logs a warning instead of silently disabling the timeout if the var is set but
+/// not a valid non-negative integer.
+fn read_timeout_env(name: &str) -> Option<u64> {
+    let raw = std::env::var(name).ok()?;
+    let trimmed = raw.trim();
+
+    match trimmed.parse::<u64>() {
+        Ok(value) => Some(value),
+        Err(_) => {
+            log::warn!(
+                "{name} is set to {raw:?}, which is not a valid number of seconds; ignoring it"
+            );
+            None
+        }
     }
 }
 
