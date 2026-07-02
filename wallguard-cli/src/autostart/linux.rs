@@ -5,6 +5,10 @@ use tokio::process::Command;
 
 const SYSTEMD_DIR: &str = "/etc/systemd/system";
 
+// TODO: temporarily unused while the call site in main.rs is commented
+// out for testing; remove this allow (and on create_unit_file below) when
+// re-enabled.
+#[allow(dead_code)]
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let service_name = format!("{}.service", program);
     let service_path = format!("{}/{}", SYSTEMD_DIR, service_name);
@@ -32,6 +36,7 @@ pub async fn disable_service(program: &str) -> io::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 async fn create_unit_file(program: &str, args: &[&str], path: &str) -> io::Result<()> {
     let flags = args.join(" ");
 
