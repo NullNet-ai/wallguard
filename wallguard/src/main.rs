@@ -57,6 +57,29 @@ fn init_logger() {
         .expect("Failed to start logger");
 }
 
+/// Ensures this is the only running instance of the agent, regardless of
+/// whether it was launched directly, via `wallguard-cli start`, or by the
+/// OS service manager (systemd/launchd/rc.d/Windows service). Exits the
+/// process if another instance already holds the lock.
+fn acquire_single_instance_lock() -> wallguard_common::single_instance::InstanceLock {
+    let lock_path = wallguard_common::single_instance::agent_lock_path();
+
+    match wallguard_common::single_instance::InstanceLock::try_acquire(&lock_path) {
+        Ok(Some(lock)) => lock,
+        Ok(None) => {
+            log::error!("Another instance of the WallGuard agent is already running. Exiting.");
+            std::process::exit(1);
+        }
+        Err(err) => {
+            log::error!(
+                "Failed to acquire single-instance lock at {}: {err}",
+                lock_path.display()
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
 fn check_privileges() {
     #[cfg(windows)]
     {
@@ -83,6 +106,10 @@ async fn main() {
 
     check_privileges();
     init_logger();
+
+    // Must happen before any other startup work (storage, network, org
+    // join) so a duplicate instance never does anything besides exit.
+    let _instance_lock = acquire_single_instance_lock();
 
     let arguments = match Arguments::try_parse() {
         Ok(args) => args,

@@ -1,4 +1,4 @@
-use anyhow::{Ok, Result as AnyResult};
+use anyhow::Result as AnyResult;
 use arguments::Arguments;
 use clap::Parser;
 use std::process::{Command, Stdio};
@@ -30,6 +30,24 @@ fn is_agent_running() -> bool {
         .processes()
         .values()
         .any(|proc| proc.name() == target_name)
+}
+
+/// Polls the single-instance lock up to `attempts` times, `delay` apart,
+/// returning `true` as soon as it's found held by another process.
+async fn agent_lock_held_within(
+    lock_path: &std::path::Path,
+    attempts: u32,
+    delay: Duration,
+) -> bool {
+    use std::result::Result::Ok;
+
+    for _ in 0..attempts {
+        match wallguard_common::single_instance::InstanceLock::try_acquire(lock_path) {
+            Ok(None) => return true,
+            _ => tokio::time::sleep(delay).await,
+        }
+    }
+    false
 }
 
 async fn cli_connect() -> Client {
@@ -71,6 +89,8 @@ fn check_privileges() {
 
 #[tokio::main]
 pub async fn main() -> AnyResult<()> {
+    use std::result::Result::Ok;
+
     check_privileges();
     let arguments = Arguments::parse();
 
@@ -155,9 +175,24 @@ pub async fn main() -> AnyResult<()> {
             platform,
             batch_size,
         } => {
-            if is_agent_running() {
-                println!("Agent is already running");
-                return Ok(());
+            let lock_path = wallguard_common::single_instance::agent_lock_path();
+
+            // Consult the same lock the agent itself acquires on startup:
+            // this is atomic (unlike a process-name scan) and catches an
+            // agent started by any means (service manager, manual run, ...).
+            match wallguard_common::single_instance::InstanceLock::try_acquire(&lock_path) {
+                // Not currently running. `_lock` is scoped to this arm, so it
+                // is dropped (and the flock released) right here — well
+                // before we get to `enable_service`/spawning the agent below.
+                Ok(Some(_lock)) => {}
+                Ok(None) => {
+                    println!("Agent is already running");
+                    return Ok(());
+                }
+                Err(err) => {
+                    eprintln!("Failed to check WallGuard agent state: {err}");
+                    std::process::exit(-1);
+                }
             }
 
             const DEFAULT_SERVER_URL: &str = "localhost:50051";
@@ -177,11 +212,24 @@ pub async fn main() -> AnyResult<()> {
                 service_args.push(s.as_str());
             }
 
-            if autostart::enable_service("wallguard", &service_args)
-                .await
-                .is_err()
-            {
-                eprintln!("WARNING: Failed to register wallguard as a service");
+            // TODO: re-enable once done testing.
+            // if autostart::enable_service("wallguard", &service_args)
+            //     .await
+            //     .is_err()
+            // {
+            //     eprintln!("WARNING: Failed to register wallguard as a service");
+            // }
+
+            // On some platforms (e.g. macOS launchd with RunAtLoad) enabling
+            // the service also starts it immediately. Give it a moment to
+            // acquire the single-instance lock before falling back to
+            // spawning it ourselves — otherwise every `start` would launch
+            // a second, doomed copy that immediately loses the lock race.
+            if agent_lock_held_within(&lock_path, 5, Duration::from_millis(100)).await {
+                println!("WallGuard agent started successfully.");
+                println!("Logs are written to /var/log/wallguard.log.");
+                println!("Check its status with `wallguard-cli status`.");
+                return Ok(());
             }
 
             let mut cmd = Command::new("wallguard");

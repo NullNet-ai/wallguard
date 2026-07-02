@@ -56,26 +56,7 @@ struct ConfigStore {
 
 pub struct Storage;
 
-static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    #[cfg(target_os = "macos")]
-    {
-        // On macOS the root user's home is /var/root, not /root.
-        PathBuf::from("/var/root/.config/wallguard")
-    }
-    #[cfg(all(unix, not(target_os = "macos")))]
-    {
-        // Daemon always runs as root on Unix.
-        PathBuf::from("/root/.config/wallguard")
-    }
-    #[cfg(windows)]
-    {
-        // %PROGRAMDATA% (typically C:\ProgramData) is the correct location for
-        // machine-wide service config on Windows.  %APPDATA% would be wrong here
-        // because it is a per-user roaming path.
-        let base = std::env::var("PROGRAMDATA").unwrap_or_else(|_| r"C:\ProgramData".to_string());
-        PathBuf::from(base).join("wallguard")
-    }
-});
+static STORAGE_PATH: Lazy<PathBuf> = Lazy::new(wallguard_common::single_instance::state_dir);
 
 static STORE: Lazy<Mutex<Option<ConfigStore>>> = Lazy::new(|| Mutex::new(None));
 
