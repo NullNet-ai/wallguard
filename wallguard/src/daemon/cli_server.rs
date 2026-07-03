@@ -101,4 +101,22 @@ impl WallguardCli for CliServer {
             value: VERSION.into(),
         }))
     }
+
+    async fn shutdown(
+        &self,
+        _: tonic::Request<()>,
+    ) -> Result<tonic::Response<CommonResponse>, tonic::Status> {
+        let response = match Daemon::shutdown(self.inner.clone()).await {
+            Ok(_) => CommonResponse {
+                success: true,
+                message: String::from("OK"),
+            },
+            Err(message) => CommonResponse {
+                success: false,
+                message,
+            },
+        };
+
+        Ok(tonic::Response::from(response))
+    }
 }

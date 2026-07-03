@@ -66,4 +66,11 @@ pub enum Command {
 
     /// Stop the running service
     Stop,
+
+    /// Update WallGuard to the latest released version
+    Update {
+        /// Only report whether a newer version is available; do not install it
+        #[arg(long)]
+        check: bool,
+    },
 }
