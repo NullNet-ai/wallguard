@@ -237,6 +237,18 @@ pub async fn main() -> AnyResult<()> {
                 false => eprintln!("Failed to leave organization: {}", response.message),
             }
         }
+        arguments::Command::Reconnect => {
+            let mut client = cli_connect().await;
+            let response = client.reconnect(()).await?.into_inner();
+
+            match response.success {
+                true => {
+                    println!("Reconnecting.");
+                    println!("Run `wallguard-cli status` to check progress.");
+                }
+                false => eprintln!("Failed to reconnect: {}", response.message),
+            }
+        }
         arguments::Command::Version => {
             let mut client = cli_connect().await;
 

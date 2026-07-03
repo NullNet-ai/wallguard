@@ -11,6 +11,7 @@ service WallguardCli {
     rpc LeaveOrg(google.protobuf.Empty) returns (CommonResponse);
     rpc GetVersion(google.protobuf.Empty) returns (Version);
     rpc Shutdown(google.protobuf.Empty) returns (CommonResponse);
+    rpc Reconnect(google.protobuf.Empty) returns (CommonResponse);
 }
 
 message CommonResponse {

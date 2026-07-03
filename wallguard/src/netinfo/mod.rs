@@ -39,7 +39,7 @@ pub async fn monitor_services(interface: WGServer, token_provider: TokenProvider
 
             if let Err(e) = async {
                 interface
-                    .get_interface(false)
+                    .get_interface()
                     .await?
                     .report_services(message)
                     .await

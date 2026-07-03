@@ -119,4 +119,22 @@ impl WallguardCli for CliServer {
 
         Ok(tonic::Response::from(response))
     }
+
+    async fn reconnect(
+        &self,
+        _: tonic::Request<()>,
+    ) -> Result<tonic::Response<CommonResponse>, tonic::Status> {
+        let response = match Daemon::reconnect(self.inner.clone()).await {
+            Ok(_) => CommonResponse {
+                success: true,
+                message: String::from("OK"),
+            },
+            Err(message) => CommonResponse {
+                success: false,
+                message,
+            },
+        };
+
+        Ok(tonic::Response::from(response))
+    }
 }

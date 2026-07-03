@@ -103,6 +103,37 @@ impl Daemon {
         Ok(())
     }
 
+    /// Retries connecting after the agent gave up following its bounded
+    /// retries (see `DaemonState::Error`). Only valid from `Error`; use
+    /// `join_org` to connect for the first time and `leave_org` to cancel
+    /// an in-progress or established connection.
+    pub(crate) async fn reconnect(this: Arc<Mutex<Daemon>>) -> Result<(), String> {
+        let mut lock = this.lock().await;
+
+        if !matches!(lock.state, DaemonState::Error(_)) {
+            return Err("Not in an error state; nothing to reconnect.".into());
+        }
+
+        if Storage::get_value(Secret::InstallationCode).await.is_none() {
+            return Err("No installation code found.".into());
+        }
+
+        let context = Context::new(
+            this.clone(),
+            lock.client_data.clone(),
+            lock.server_data.clone(),
+            lock.batch_size,
+        )
+        .await
+        .map_err(|err| err.to_str().to_string())?;
+
+        lock.state = DaemonState::Connecting;
+        let handle = tokio::spawn(async move { Daemon::connect(context, 0).await });
+        lock.connect_handle = Some(handle);
+
+        Ok(())
+    }
+
     pub(crate) async fn leave_org(this: Arc<Mutex<Daemon>>) -> Result<(), String> {
         let mut this = this.lock().await;
 
@@ -192,7 +223,7 @@ impl Daemon {
 
         context.server.reset().await;
 
-        if context.server.get_interface(true).await.is_err() {
+        if context.server.get_interface().await.is_err() {
             Daemon::on_error(daemon, "Failed to connect to the server").await;
             return;
         }

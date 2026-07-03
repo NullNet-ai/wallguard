@@ -46,6 +46,9 @@ pub enum Command {
     /// Leave the current organization
     Leave,
 
+    /// Retry connecting after the agent gave up (state: ERROR)
+    Reconnect,
+
     /// Start the service with optional configuration
     Start {
         /// URL for the control channel

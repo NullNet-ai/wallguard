@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tonic::Request;
 use tonic::Streaming;
 use tonic::codegen::tokio_stream::wrappers::ReceiverStream;
-use tonic::transport::Channel;
+use tonic::transport::{Channel, Endpoint};
 
 use crate::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
 use crate::protobuf::wallguard_service::ServicesMessage;
@@ -15,6 +15,17 @@ use crate::protobuf::wallguard_service::{
     ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse,
     SystemResourcesData,
 };
+
+/// `Endpoint::timeout` only bounds individual requests made over an
+/// already-established channel; it does not bound the initial TCP/TLS
+/// handshake done by `connect()`. Without this, a connection attempt that
+/// gets silently dropped (rather than actively refused) can hang forever.
+async fn connect_with_timeout(ep: Endpoint) -> Result<Channel, Error> {
+    match tokio::time::timeout(Duration::from_secs(10), ep.connect()).await {
+        Ok(result) => result.handle_err(location!()),
+        Err(_) => Err("Timed out connecting to the server").handle_err(location!()),
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct WallGuardGrpcInterface {
@@ -29,10 +40,9 @@ impl WallGuardGrpcInterface {
         let channel = {
             let ep = Channel::from_shared(addr)
                 .expect("Failed to parse address")
-                .keep_alive_timeout(Duration::from_secs(10));
-            #[cfg(not(debug_assertions))]
-            let ep = ep.timeout(Duration::from_secs(10));
-            ep.connect().await.handle_err(location!())?
+                .keep_alive_timeout(Duration::from_secs(10))
+                .timeout(Duration::from_secs(10));
+            connect_with_timeout(ep).await?
         };
 
         let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
@@ -47,10 +57,9 @@ impl WallGuardGrpcInterface {
         let channel = {
             let ep = Channel::from_shared(addr)
                 .expect("Failed to parse address")
-                .keep_alive_timeout(Duration::from_secs(10));
-            #[cfg(not(debug_assertions))]
-            let ep = ep.timeout(Duration::from_secs(10));
-            ep.connect().await.handle_err(location!())?
+                .keep_alive_timeout(Duration::from_secs(10))
+                .timeout(Duration::from_secs(10));
+            connect_with_timeout(ep).await?
         };
 
         let client = WallGuardClient::new(channel).max_decoding_message_size(50 * 1024 * 1024);
