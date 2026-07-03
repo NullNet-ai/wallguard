@@ -9,6 +9,7 @@ use tokio::process::Command;
 ///
 /// The service is registered with `start= demand` so it does not run at boot
 /// unless explicitly enabled.  Use `wallguard-cli start` to launch it.
+#[allow(dead_code)]
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     // Resolve the binary path relative to this executable's directory.
     let exe_dir = std::env::current_exe()
