@@ -2,6 +2,10 @@ use std::io;
 use std::path::PathBuf;
 use tokio::{fs, process::Command};
 
+// TODO: temporarily unused while the call site in main.rs is commented
+// out for testing; remove this allow (and on enable_service below) when
+// re-enabled.
+#[allow(dead_code)]
 pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let script_path = format!("/usr/local/etc/rc.d/{}.sh", program);
 
@@ -51,6 +55,7 @@ pub async fn remove_rcd_script(program: &str) -> io::Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let flags = args.join(" ");
     create_rcd_script(program, &flags).await?;

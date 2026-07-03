@@ -1,6 +1,6 @@
 [package]
 name = "wallguard-cli"
-version = "1.3.1"
+version = "1.3.3"
 edition = "2024"
 license = "AGPL-3.0-only"
 
@@ -12,9 +12,19 @@ clap = {version = "4.5.57", features = ["derive"]}
 anyhow = "1.0.98"
 wallguard-common = { path = "../wallguard-common" }
 sysinfo = "0.37.2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+semver = "1.0"
+sha2 = "0.10.9"
+serde.workspace = true
+serde_json.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.3", features = ["user"] }
+
+[target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
+flate2 = "1"
+tar = "0.4"

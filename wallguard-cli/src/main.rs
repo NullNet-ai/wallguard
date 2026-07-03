@@ -10,6 +10,7 @@ use wallguard_common::protobuf::wallguard_cli::{
 
 mod arguments;
 mod autostart;
+mod update;
 
 type Client = WallguardCliClient<Channel>;
 
@@ -48,6 +49,79 @@ async fn agent_lock_held_within(
         }
     }
     false
+}
+
+/// Polls the single-instance lock up to `attempts` times, `delay` apart,
+/// returning `true` as soon as it's found free (i.e. the agent process has
+/// actually exited, not just acknowledged a shutdown request).
+pub(crate) async fn wait_for_lock_free(
+    lock_path: &std::path::Path,
+    attempts: u32,
+    delay: Duration,
+) -> bool {
+    use std::result::Result::Ok;
+
+    for _ in 0..attempts {
+        match wallguard_common::single_instance::InstanceLock::try_acquire(lock_path) {
+            Ok(Some(_lock)) => return true,
+            _ => tokio::time::sleep(delay).await,
+        }
+    }
+    false
+}
+
+/// Best-effort snapshot of the currently running agent's command-line
+/// arguments, so `update` can restart it the same way it was running
+/// without needing any persisted config (none exists today — `start`'s
+/// arguments aren't saved anywhere either).
+pub(crate) fn capture_agent_args() -> Option<Vec<String>> {
+    use std::ffi::OsStr;
+    use sysinfo::{ProcessesToUpdate, System};
+
+    let mut system = System::new_all();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    #[cfg(windows)]
+    let target_name = OsStr::new("wallguard.exe");
+    #[cfg(not(windows))]
+    let target_name = OsStr::new("wallguard");
+
+    system.processes().values().find_map(|proc| {
+        if proc.name() == target_name {
+            Some(
+                proc.cmd()
+                    .iter()
+                    .map(|s| s.to_string_lossy().into_owned())
+                    .collect(),
+            )
+        } else {
+            None
+        }
+    })
+}
+
+/// Hard-kills the running agent process by name. This is the same
+/// unconditional kill `Command::Stop` uses; it does not touch service
+/// registration (see `autostart::disable_service` for that) and does not
+/// attempt a graceful RPC-based shutdown first (see `update` for that).
+pub(crate) fn hard_kill_agent() -> bool {
+    use std::ffi::OsStr;
+    use sysinfo::{ProcessesToUpdate, System};
+
+    let mut system = System::new();
+    system.refresh_processes(ProcessesToUpdate::All, true);
+
+    #[cfg(windows)]
+    let target_name = OsStr::new("wallguard.exe");
+    #[cfg(not(windows))]
+    let target_name = OsStr::new("wallguard");
+
+    for process in system.processes().values() {
+        if process.name() == target_name {
+            return process.kill();
+        }
+    }
+    true // nothing to kill counts as success
 }
 
 async fn cli_connect() -> Client {
@@ -255,9 +329,6 @@ pub async fn main() -> AnyResult<()> {
             }
         }
         arguments::Command::Stop => {
-            use std::ffi::OsStr;
-            use sysinfo::{ProcessesToUpdate, System};
-
             if !is_agent_running() {
                 eprintln!("WallGuard agent is not running.");
                 std::process::exit(-1);
@@ -267,26 +338,16 @@ pub async fn main() -> AnyResult<()> {
                 eprintln!("WARNING: Error occured while trying to unregister wallguard service");
             }
 
-            let mut system = System::new();
-            system.refresh_processes(ProcessesToUpdate::All, true);
-
-            // sysinfo includes the .exe extension in process names on Windows.
-            #[cfg(windows)]
-            let target_name = OsStr::new("wallguard.exe");
-            #[cfg(not(windows))]
-            let target_name = OsStr::new("wallguard");
-
-            for process in system.processes().values() {
-                if process.name() == target_name {
-                    // process.kill() is cross-platform; kill_with(Signal::Kill)
-                    // returns None on Windows because POSIX signals are unsupported.
-                    if !process.kill() {
-                        eprintln!("Failed to terminate WallGuard agent.");
-                        std::process::exit(-1);
-                    }
-                    println!("WallGuard agent stopped successfully.");
-                    break;
-                }
+            if !hard_kill_agent() {
+                eprintln!("Failed to terminate WallGuard agent.");
+                std::process::exit(-1);
+            }
+            println!("WallGuard agent stopped successfully.");
+        }
+        arguments::Command::Update { check } => {
+            if let Err(err) = update::run(check).await {
+                eprintln!("Update failed: {err:#}");
+                std::process::exit(-1);
             }
         }
     }

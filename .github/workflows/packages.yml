@@ -58,10 +58,17 @@ jobs:
           WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh deb "$VERSION"
 
-      - name: Package binary tarball  (for install.sh fallback)
+      - name: Package binary tarball  (for install.sh fallback and wallguard-cli update)
         env:
           WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh tarball "$VERSION"
+
+      - name: Compute checksums
+        run: |
+          sha256sum \
+            "wallguard_${VERSION}_amd64.deb" \
+            "wallguard-${VERSION}-linux-x86_64.tar.gz" \
+            > SHA256SUMS-deb
 
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3
@@ -70,6 +77,7 @@ jobs:
           files: |
             wallguard_${{ env.VERSION }}_amd64.deb
             wallguard-${{ env.VERSION }}-linux-x86_64.tar.gz
+            SHA256SUMS-deb
             install.sh
 
   build-rpm-and-release:
@@ -119,12 +127,16 @@ jobs:
           WALLGUARD_BIN_DIR: target/x86_64-unknown-linux-gnu/release
         run: ./packbuild.sh rpm "$VERSION"
 
+      - name: Compute checksums
+        run: sha256sum "wallguard-${VERSION}-1.x86_64.rpm" > SHA256SUMS-rpm
+
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           files: |
             wallguard-${{ env.VERSION }}-1.x86_64.rpm
+            SHA256SUMS-rpm
 
   build-macos-and-release:
     runs-on: macos-latest
@@ -203,12 +215,25 @@ jobs:
       - name: Build Windows MSI package
         run: .\packbuild.ps1 -Version ${{ env.VERSION }}
 
+      - name: Package raw binaries  (for wallguard-cli update)
+        run: |
+          Compress-Archive -Path target/release/wallguard.exe, target/release/wallguard-cli.exe `
+            -DestinationPath "wallguard-${{ env.VERSION }}-windows-x86_64.zip"
+
+      - name: Compute checksums
+        run: |
+          Get-FileHash "wallguard-${{ env.VERSION }}-x86_64.msi", "wallguard-${{ env.VERSION }}-windows-x86_64.zip" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Encoding ascii SHA256SUMS-windows
+
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           files: |
             wallguard-${{ env.VERSION }}-x86_64.msi
+            wallguard-${{ env.VERSION }}-windows-x86_64.zip
+            SHA256SUMS-windows
 
   build-freebsd-and-release:
     runs-on: ubuntu-latest
@@ -247,9 +272,16 @@ jobs:
             export PATH=$HOME/.cargo/bin:$PATH
             bash ./packbuild.sh freebsd "$VERSION"
 
+            # Raw binary bundle for `wallguard-cli update` (self-update doesn't
+            # go through `pkg`, see the `.pkg`'s manifest for the packaged form).
+            tar -czf "wallguard-${VERSION}-freebsd-x86_64.tar.gz" -C target/release wallguard wallguard-cli
+            sha256 -r "wallguard-${VERSION}.pkg" "wallguard-${VERSION}-freebsd-x86_64.tar.gz" > SHA256SUMS-freebsd
+
       - name: Create or update GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           files: |
             wallguard-${{ env.VERSION }}.pkg
+            wallguard-${{ env.VERSION }}-freebsd-x86_64.tar.gz
+            SHA256SUMS-freebsd

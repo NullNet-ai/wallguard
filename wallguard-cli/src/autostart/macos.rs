@@ -15,6 +15,7 @@ fn plist_path() -> String {
 /// The plist is owned by root:wheel with mode 644, as required by launchd
 /// for daemons in that directory.  The service is set to start at boot
 /// (RunAtLoad = true) and restart on exit (KeepAlive = true).
+#[allow(dead_code)]
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let exe_path = format!("/usr/local/bin/{}", program);
     let path = plist_path();

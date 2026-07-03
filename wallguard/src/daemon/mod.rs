@@ -23,17 +23,20 @@ pub struct Daemon {
     state: DaemonState,
     connect_handle: Option<tokio::task::JoinHandle<()>>,
     batch_size: usize,
+    shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
 impl Daemon {
     pub async fn run(client_data: ClientData, server_data: ServerData) -> Result<(), Error> {
         let batch_size = server_data.batch_size;
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
         let daemon = Arc::new(Mutex::new(Daemon {
             client_data,
             server_data,
             state: DaemonState::default(),
             connect_handle: None,
             batch_size,
+            shutdown_tx: Some(shutdown_tx),
         }));
 
         if let Some(code) = Storage::get_value(Secret::InstallationCode).await {
@@ -50,7 +53,10 @@ impl Daemon {
 
         tonic::transport::Server::builder()
             .add_service(cli_server)
-            .serve(addr)
+            .serve_with_shutdown(addr, async {
+                let _ = shutdown_rx.await;
+                log::info!("Shutdown requested, stopping CLI server");
+            })
             .await
             .handle_err(location!())
     }
@@ -128,6 +134,36 @@ impl Daemon {
                 this.state = DaemonState::Idle;
                 Ok(())
             }
+        }
+    }
+
+    /// Gracefully tears down any active connection and stops the CLI gRPC
+    /// server, allowing `main` to exit and release the single-instance lock.
+    /// Unlike `leave_org`, the stored installation code is kept so the agent
+    /// automatically rejoins its organization the next time it starts.
+    pub(crate) async fn shutdown(this: Arc<Mutex<Daemon>>) -> Result<(), String> {
+        let mut lock = this.lock().await;
+
+        match &lock.state {
+            DaemonState::Connecting => {
+                if let Some(handle) = lock.connect_handle.take() {
+                    handle.abort();
+                }
+            }
+            DaemonState::Connected(control_channel) => {
+                control_channel.terminate().await;
+            }
+            DaemonState::Idle | DaemonState::Error(_) => {}
+        }
+
+        lock.state = DaemonState::Idle;
+
+        match lock.shutdown_tx.take() {
+            Some(tx) => {
+                let _ = tx.send(());
+                Ok(())
+            }
+            None => Err("Shutdown already in progress.".into()),
         }
     }
 
