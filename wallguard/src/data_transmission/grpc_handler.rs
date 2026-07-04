@@ -26,8 +26,14 @@ pub(crate) async fn handle_connection_and_retransmission(
 
         let token = token_provider.get().await.unwrap();
 
+        let files = dump_dir.get_files_sorted().await;
+        if files.is_empty() {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            continue;
+        }
+
         // send packets accumulated in dump files
-        'file_loop: for file in dump_dir.get_files_sorted().await {
+        'file_loop: for file in files {
             let Ok(string) = fs::read_to_string(file.path()).await else {
                 continue;
             };
