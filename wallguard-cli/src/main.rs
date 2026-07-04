@@ -10,6 +10,7 @@ use wallguard_common::protobuf::wallguard_cli::{
 
 mod arguments;
 mod autostart;
+mod config;
 mod update;
 
 type Client = WallguardCliClient<Channel>;
@@ -281,9 +282,35 @@ pub async fn main() -> AnyResult<()> {
                 }
             }
 
-            const DEFAULT_SERVER_URL: &str = "localhost:50051";
+            let mut cached = config::StartConfig::load();
 
-            let control_channel_url = control_channel_url.unwrap_or(DEFAULT_SERVER_URL.into());
+            let Some(control_channel_url) =
+                control_channel_url.or_else(|| cached.control_channel_url.clone())
+            else {
+                eprintln!(
+                    "No server URL configured yet. Provide one with --control-channel-url on the first `start`."
+                );
+                std::process::exit(-1);
+            };
+
+            let platform = platform.unwrap_or_else(|| {
+                cached
+                    .platform
+                    .clone()
+                    .unwrap_or(arguments::Platform::Generic)
+            });
+
+            let batch_size = batch_size.or(cached.batch_size);
+
+            // Persist the effective values (whatever was just passed, or
+            // whatever was already cached) so the next `start` can omit them.
+            cached.control_channel_url = Some(control_channel_url.clone());
+            cached.platform = Some(platform.clone());
+            cached.batch_size = batch_size;
+            if let Err(err) = cached.save() {
+                eprintln!("WARNING: Failed to persist start configuration: {err}");
+            }
+
             let batch_size_str = batch_size.map(|n| n.to_string());
             let platform_str = platform.to_string();
 

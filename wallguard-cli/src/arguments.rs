@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Debug, Parser)]
@@ -9,7 +10,7 @@ pub struct Arguments {
     pub command: Command,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, Serialize, Deserialize)]
 pub enum Platform {
     Pfsense,
     Opnsense,
@@ -56,8 +57,8 @@ pub enum Command {
         control_channel_url: Option<String>,
 
         /// Target platform
-        #[arg(long, value_enum, default_value_t = Platform::Generic)]
-        platform: Platform,
+        #[arg(long, value_enum)]
+        platform: Option<Platform>,
 
         /// Maximum number of packets per batch sent to the server
         #[arg(long)]
