@@ -200,7 +200,7 @@ async fn apply_update(version: &str) -> AnyResult<()> {
     let lock_path = wallguard_common::single_instance::agent_lock_path();
     let came_up = crate::agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await;
     let new_version = if came_up {
-        agent_reported_version().await
+        poll_agent_version(20, Duration::from_millis(500)).await
     } else {
         None
     };
@@ -428,6 +428,24 @@ async fn agent_reported_version() -> Option<String> {
         .await
         .ok()
         .map(|r| r.into_inner().value)
+}
+
+/// Retries `agent_reported_version` instead of asking once. The
+/// single-instance lock is acquired at the very top of the agent's
+/// `main()`, well before it resolves `control_channel_url` (a blocking DNS
+/// lookup for hostnames), joins its org, and finally binds the CLI gRPC
+/// server — so a lock-is-held signal does not mean the server is ready to
+/// answer `GetVersion` yet. Polling for a while absorbs that startup
+/// latency instead of misreading it as "the new version failed to come up".
+#[cfg(any(target_os = "linux", target_os = "freebsd", windows))]
+async fn poll_agent_version(attempts: u32, delay: Duration) -> Option<String> {
+    for _ in 0..attempts {
+        if let Some(version) = agent_reported_version().await {
+            return Some(version);
+        }
+        tokio::time::sleep(delay).await;
+    }
+    None
 }
 
 #[cfg(all(test, any(target_os = "linux", target_os = "freebsd")))]
