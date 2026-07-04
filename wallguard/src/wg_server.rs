@@ -55,7 +55,10 @@ impl WGServer {
                 }
 
                 attempt += 1;
-                log::warn!("Failed to connect to the server (attempt {attempt}/{MAX_RETRIES}), retrying in {}s", RETRY_DELAY.as_secs());
+                log::warn!(
+                    "Failed to connect to the server (attempt {attempt}/{MAX_RETRIES}), retrying in {}s",
+                    RETRY_DELAY.as_secs()
+                );
                 tokio::time::sleep(RETRY_DELAY).await;
                 continue;
             }
@@ -112,9 +115,6 @@ impl WGServer {
     }
 
     pub async fn handle_config_data(&self, data: ConfigSnapshot) -> Result<(), Error> {
-        self.get_interface()
-            .await?
-            .handle_config_data(data)
-            .await
+        self.get_interface().await?.handle_config_data(data).await
     }
 }
