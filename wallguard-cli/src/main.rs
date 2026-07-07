@@ -72,9 +72,11 @@ pub(crate) async fn wait_for_lock_free(
 }
 
 /// Best-effort snapshot of the currently running agent's command-line
-/// arguments, so `update` can restart it the same way it was running
-/// without needing any persisted config (none exists today — `start`'s
-/// arguments aren't saved anywhere either).
+/// arguments (excluding argv[0], the executable path itself — callers pass
+/// this straight to `Command::args()` after already setting the binary via
+/// `Command::new()`, so including it would inject a stray leading argument
+/// that the agent's clap parser would reject), so `update`/`restart` can
+/// respawn it the same way it was running.
 pub(crate) fn capture_agent_args() -> Option<Vec<String>> {
     use std::ffi::OsStr;
     use sysinfo::{ProcessesToUpdate, System};
@@ -92,6 +94,7 @@ pub(crate) fn capture_agent_args() -> Option<Vec<String>> {
             Some(
                 proc.cmd()
                     .iter()
+                    .skip(1)
                     .map(|s| s.to_string_lossy().into_owned())
                     .collect(),
             )
@@ -99,6 +102,51 @@ pub(crate) fn capture_agent_args() -> Option<Vec<String>> {
             None
         }
     })
+}
+
+/// Pretty-prints a captured `--flag value` argv list (see
+/// `capture_agent_args`). wallguard's own arguments are all `--long value`
+/// pairs (no bare boolean flags), but a value is only paired up if it
+/// doesn't itself look like a flag, so this degrades gracefully if that
+/// ever changes.
+fn print_agent_args(args: &[String]) {
+    let mut i = 0;
+    while i < args.len() {
+        let flag = &args[i];
+        match args.get(i + 1).filter(|v| !v.starts_with("--")) {
+            Some(value) => {
+                println!("  {flag:<22} : {value}");
+                i += 2;
+            }
+            None => {
+                println!("  {flag}");
+                i += 1;
+            }
+        }
+    }
+}
+
+/// Falls back to the last configuration passed to `start` when the agent's
+/// live argv can't be read (e.g. it's not currently running). This may not
+/// reflect the actual running process if it was started some other way.
+fn print_cached_start_args() {
+    let cached = config::StartConfig::load();
+
+    if cached.control_channel_url.is_none() && cached.platform.is_none() {
+        println!("  (unavailable)");
+        return;
+    }
+
+    println!("  (last known `start` configuration — agent not running or its argv is unreadable)");
+    if let Some(url) = &cached.control_channel_url {
+        println!("  --control-channel-url : {url}");
+    }
+    if let Some(platform) = &cached.platform {
+        println!("  --platform             : {platform}");
+    }
+    if let Some(batch_size) = cached.batch_size {
+        println!("  --batch-size           : {batch_size}");
+    }
 }
 
 /// Hard-kills the running agent process by name. This is the same
@@ -219,6 +267,13 @@ pub async fn main() -> AnyResult<()> {
                 State::Connecting(_) => {
                     println!("  STATE    : CONNECTING");
                 }
+            }
+
+            println!();
+            println!("Arguments:");
+            match capture_agent_args() {
+                Some(args) if !args.is_empty() => print_agent_args(&args),
+                _ => print_cached_start_args(),
             }
         }
         arguments::Command::Capabilities => {
