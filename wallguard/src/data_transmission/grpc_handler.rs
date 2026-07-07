@@ -45,18 +45,22 @@ pub(crate) async fn handle_connection_and_retransmission(
 
             while dump.size() != 0 {
                 let range = ..min(dump.size(), BATCH_SIZE);
+                // `dump.set_token` above already updated the token field in
+                // place, so only the (cheap) token string needs cloning here
+                // — cloning the whole item via `..c.clone()` used to clone
+                // the entire, not-yet-drained items vector on every batch.
                 let send_res = match &dump {
                     DumpItem::Connections(c) => {
                         let msg = ConnectionsData {
+                            token: c.token.clone(),
                             connections: c.connections.get(range).unwrap_or_default().to_vec(),
-                            ..c.clone()
                         };
                         interface.handle_connections_data(msg).await
                     }
                     DumpItem::Resources(r) => {
                         let msg = SystemResourcesData {
+                            token: r.token.clone(),
                             resources: r.resources.get(range).unwrap_or_default().to_vec(),
-                            ..r.clone()
                         };
                         interface.handle_system_resources_data(msg).await
                     }
@@ -66,10 +70,14 @@ pub(crate) async fn handle_connection_and_retransmission(
                     }
                 };
                 if send_res.is_err() {
-                    // server is down again, try again later
+                    // Server rejected the send even though `is_connected()`
+                    // still reports true (e.g. an invalid/expired token) —
+                    // back off before retrying instead of immediately
+                    // re-reading and re-sending the same file in a tight loop.
                     log::warn!("Failed to send dump. Reconnecting...",);
                     // update dump file with unsent items
                     dump_dir.update_items_dump_file(file.path(), dump).await;
+                    tokio::time::sleep(Duration::from_secs(10)).await;
                     break 'file_loop;
                 }
                 // remove sent items from dump
