@@ -125,6 +125,22 @@ pub(crate) fn hard_kill_agent() -> bool {
     true // nothing to kill counts as success
 }
 
+/// Same connection `cli_connect` uses, but returns `None` on failure instead
+/// of exiting the process — used by `restart`, where an unreachable RPC
+/// server should fall back to a hard kill rather than abort the command.
+async fn try_connect() -> Option<Client> {
+    const EXPECTED_ADDR: &str = "http://127.0.0.1:54056";
+
+    let channel = Channel::from_shared(EXPECTED_ADDR)
+        .ok()?
+        .timeout(Duration::from_secs(5))
+        .connect()
+        .await
+        .ok()?;
+
+    Some(WallguardCliClient::new(channel))
+}
+
 async fn cli_connect() -> Client {
     use std::result::Result::Ok;
 
@@ -382,6 +398,49 @@ pub async fn main() -> AnyResult<()> {
                 std::process::exit(-1);
             }
             println!("WallGuard agent stopped successfully.");
+        }
+        arguments::Command::Restart => {
+            if !is_agent_running() {
+                eprintln!("WallGuard agent is not running. Use `wallguard-cli start` instead.");
+                std::process::exit(-1);
+            }
+
+            let captured_args = capture_agent_args();
+            let lock_path = wallguard_common::single_instance::agent_lock_path();
+
+            println!("Stopping WallGuard agent...");
+            if let Some(mut client) = try_connect().await {
+                let _ = client.shutdown(()).await;
+            }
+
+            if !wait_for_lock_free(&lock_path, 20, Duration::from_millis(500)).await {
+                println!("Agent did not shut down gracefully in time, forcing termination...");
+                if !hard_kill_agent() {
+                    eprintln!("Failed to terminate WallGuard agent.");
+                    std::process::exit(-1);
+                }
+            }
+
+            println!("Starting WallGuard agent...");
+            let mut cmd = Command::new("wallguard");
+            cmd.args(captured_args.as_deref().unwrap_or(&[]))
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
+
+            if let Err(err) = cmd.spawn() {
+                eprintln!("Failed to spawn WallGuard agent: {err}");
+                eprintln!(
+                    "Make sure the 'wallguard' binary is installed at /usr/local/bin/wallguard"
+                );
+                std::process::exit(-1);
+            }
+
+            if agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await {
+                println!("WallGuard agent restarted successfully.");
+            } else {
+                eprintln!("WallGuard agent did not come back up. Check /var/log/wallguard.log.");
+                std::process::exit(-1);
+            }
         }
         arguments::Command::Update { check } => {
             if let Err(err) = update::run(check).await {

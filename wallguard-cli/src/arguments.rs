@@ -71,6 +71,9 @@ pub enum Command {
     /// Stop the running service
     Stop,
 
+    /// Restart the running service, preserving its current configuration
+    Restart,
+
     /// Update WallGuard to the latest released version
     Update {
         /// Only report whether a newer version is available; do not install it
