@@ -3,8 +3,8 @@ use crate::control_channel::command::ExecutableCommand;
 use crate::control_channel::commands::{
     CreateAliasCommand, CreateFilterRuleCommand, CreateNatRuleCommand,
     EnableConfigurationMonitoringCommand, EnableNetworkMonitoringCommand,
-    EnableTelemetryMonitoringCommand, ExecuteCliCommand, OpenTtySessionCommand,
-    OpenUiSessionCommand, UpdateTokenCommand,
+    EnableTelemetryMonitoringCommand, OpenTtySessionCommand, OpenUiSessionCommand,
+    UpdateTokenCommand,
 };
 
 use crate::control_channel::commands::OpenRemoteDesktopSessionCommand;
@@ -134,7 +134,7 @@ async fn control_stream(context: Context, installation_code: &str) -> Result<(),
             log::warn!("Healthcheck terminated");
             r1
         }
-        r2 = handle_incoming_messages(inbound, outbound, context) => {
+        r2 = handle_incoming_messages(inbound, context) => {
             log::warn!("Message handling terminated");
             r2
         }
@@ -164,11 +164,7 @@ async fn healthcheck(outbound: OutboundStream) -> Result<(), Error> {
     }
 }
 
-async fn handle_incoming_messages(
-    inbound: InboundStream,
-    outbound: OutboundStream,
-    context: Context,
-) -> Result<(), Error> {
+async fn handle_incoming_messages(inbound: InboundStream, context: Context) -> Result<(), Error> {
     use server_message::Message;
 
     loop {
@@ -280,13 +276,6 @@ async fn handle_incoming_messages(
                                 "OpenRemoteDesktopSessionCommand execution failed: {}",
                                 err.to_str()
                             );
-                        }
-                    }
-                    Message::ExecuteCliCommandRequest(request) => {
-                        let cmd = ExecuteCliCommand::new(outbound.clone(), request);
-
-                        if let Err(err) = cmd.execute().await {
-                            log::error!("ExecuteCliCommand execution failed: {}", err.to_str());
                         }
                     }
                     Message::AuthorizationRejectedMessage(_) => {

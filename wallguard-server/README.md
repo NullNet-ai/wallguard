@@ -17,6 +17,4 @@
 | `CONTROL_SERVICE_PORT` | Port to bind control service to |
 | `HTTP_PROXY_HOST` | HTTP proxy host |
 | `HTTP_PROXY_PORT` | HTTP proxy port |
-| `MCP_SERVER_HOST` | MCP server hostname or IP address |
-| `MCP_SERVER_PORT` | MCP server port |
 | `IP_INFO_API_KEY` | API key for IP info service |

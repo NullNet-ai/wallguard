@@ -2,7 +2,6 @@ use crate::app_context::AppContext;
 use crate::control_service::run_control_service;
 use crate::http_api::run_http_api;
 use crate::http_proxy_v2::run_http_proxy;
-use crate::mcp::run_mcp_server;
 use crate::reverse_tunnel::run_tunnel_acceptor;
 use nullnet_liberror::Error;
 
@@ -42,7 +41,6 @@ pub async fn linux_main() {
         _ = tokio::signal::ctrl_c() => {},
         _ = run_control_service(app_context.clone()) => {},
         _ = run_http_api(app_context.clone()) => {},
-        _ = run_mcp_server(app_context.clone()) => {},
         _ = run_http_proxy(app_context.clone()) => {},
         _ = run_tunnel_acceptor(app_context.clone()) => {},
     }

@@ -3,7 +3,6 @@ use std::fmt::{Display, Formatter, Result};
 #[derive(Debug, Clone, Copy)]
 pub enum DBTable {
     Devices,
-    RemoteAccessSessions,
     Accounts,
     IpInfos,
     Connections,
@@ -28,7 +27,6 @@ impl Display for DBTable {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let table_name = match self {
             DBTable::Devices => "devices",
-            DBTable::RemoteAccessSessions => "device_remote_access_sessions",
             DBTable::Accounts => "accounts",
             DBTable::IpInfos => "ip_infos",
             DBTable::Connections => "connections",

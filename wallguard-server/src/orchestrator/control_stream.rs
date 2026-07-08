@@ -1,13 +1,12 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::time::Duration;
-use tokio::sync::broadcast;
 
 use crate::app_context::AppContext;
 use crate::datastore::HeartbeatModel;
 use crate::orchestrator::client::{InboundStream, OutboundStream};
 use crate::token_provider::TokenProvider;
 use wallguard_common::protobuf::wallguard_commands::{
-    ExecuteCliCommandResponse, ServerMessage, client_message, server_message,
+    ServerMessage, client_message, server_message,
 };
 
 const TOKEN_UPDATE_TIME: Duration = Duration::from_secs(60);
@@ -18,7 +17,6 @@ pub(crate) async fn control_stream(
     inbound: InboundStream,
     outbound: OutboundStream,
     context: AppContext,
-    channel: broadcast::Sender<ExecuteCliCommandResponse>,
 ) {
     log::info!("Starting a control stream for device ID {device_id}, Instance {instance_id}");
 
@@ -35,15 +33,7 @@ pub(crate) async fn control_stream(
         log::error!("Failed to obtain system device token");
     }
 
-    if let Err(err) = authstream(
-        inbound,
-        outbound,
-        context.clone(),
-        channel,
-        device_id.clone(),
-    )
-    .await
-    {
+    if let Err(err) = authstream(inbound, outbound, context.clone(), device_id.clone()).await {
         log::error!(
             "Control stream for client with device ID '{}' failed: {}",
             device_id,
@@ -84,7 +74,6 @@ async fn authstream(
     mut inbound: InboundStream,
     outbound: OutboundStream,
     context: AppContext,
-    channel: broadcast::Sender<ExecuteCliCommandResponse>,
     device_id: String,
 ) -> Result<(), Error> {
     let message = inbound
@@ -133,11 +122,6 @@ async fn authstream(
                         };
 
                         match msg {
-                            client_message::Message::ExecuteCliCommandResponse(response) => {
-                                if let Err(err) = channel.send(response) {
-                                    log::error!("Failed to send response to the channel: {err}");
-                                }
-                            },
                             client_message::Message::Heartbeat(()) => {
                                 log::debug!("Received a heartbeat from {device_id}");
 

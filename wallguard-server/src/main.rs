@@ -5,7 +5,6 @@ cfg_if::cfg_if! {
         mod datastore;
         mod http_api;
         mod http_proxy_v2;
-        mod mcp;
         mod orchestrator;
         mod reverse_tunnel;
         mod token;

@@ -21,7 +21,6 @@ mod obtain_device;
 mod obtain_installation_code;
 mod obtain_service;
 mod obtain_services;
-mod obtain_session;
 mod obtain_tunnel;
 mod redeem_installation_code;
 mod register_device;

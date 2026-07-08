@@ -12,7 +12,7 @@ readme = "README.md"
 repository = "https://github.com/NullNet-ai/wallguard-server"
 #documentation = ""
 license = "AGPL-3.0-only"
-keywords = ["firewall", "network", "manager", "centralized", "monitor", "agent", "mcp-server"]
+keywords = ["firewall", "network", "manager", "centralized", "monitor", "agent"]
 categories = ["network-programming"]
 publish = false
 
@@ -44,14 +44,6 @@ tokio-rustls.workspace = true
 russh.workspace = true
 
 webrtc = "0.14.0"
-rmcp = { version = "0.11.0", features = [
-    "server", 
-    "transport-streamable-http-server-session", 
-    "transport-streamable-http-server", 
-    "schemars"
-    ] }
-tokio-util = "0.7.17"
-axum = "0.8.6"
 cfg-if = "1.0.4"
 async-trait = "0.1.89"
 
