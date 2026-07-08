@@ -101,7 +101,7 @@ jobs:
       with:
         operating_system: freebsd
         architecture: x86_64
-        version: 14.3
+        version: 14.4
         cpu_count: 4
         memory: 16G
         environment_variables:
