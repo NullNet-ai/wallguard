@@ -1,15 +1,22 @@
 use std::io;
 use tokio::process::Command;
 
-/// Registers `program` as a Windows service via `sc.exe`.
+/// The Task Scheduler task name used for the WallGuard agent.
+const TASK_NAME: &str = "WallGuard";
+
+/// Registers `program` to run at boot via Task Scheduler.
+///
+/// wallguard.exe is a plain console app — it never calls
+/// `StartServiceCtrlDispatcher` — so it cannot be registered as a real SCM
+/// service (`sc create` would look right but SCM kills it ~30s after boot
+/// with error 1053 once it fails to respond as a service). Task Scheduler
+/// runs arbitrary executables as SYSTEM on a boot trigger, with no SCM
+/// dispatcher requirement, and can restart it on failure — the Windows
+/// equivalent of systemd's `Restart=always` / launchd's `KeepAlive`.
 ///
 /// The binary is located by looking in the same directory as the current
 /// executable (wallguard-cli.exe and wallguard.exe are installed side-by-side
 /// by the MSI into `C:\Program Files\WallGuard\`).
-///
-/// The service is registered with `start= demand` so it does not run at boot
-/// unless explicitly enabled.  Use `wallguard-cli start` to launch it.
-#[allow(dead_code)]
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     // Resolve the binary path relative to this executable's directory.
     let exe_dir = std::env::current_exe()
@@ -19,29 +26,55 @@ pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
         .to_path_buf();
 
     let bin_path = exe_dir.join(format!("{}.exe", program));
+    let arguments = args.join(" ");
 
-    // Build the full binPath value: "C:\...\wallguard.exe" [--arg value …]
-    let mut bin_path_value = format!("\"{}\"", bin_path.display());
-    if !args.is_empty() {
-        bin_path_value.push(' ');
-        bin_path_value.push_str(&args.join(" "));
+    let xml_path = std::env::temp_dir().join(format!("{program}-task.xml"));
+    let xml = task_xml(&bin_path.display().to_string(), &arguments);
+    tokio::fs::write(&xml_path, xml).await?;
+
+    let create = Command::new("schtasks")
+        .args(["/Create", "/TN", TASK_NAME, "/XML"])
+        .arg(&xml_path)
+        .arg("/F")
+        .output()
+        .await?;
+
+    let _ = tokio::fs::remove_file(&xml_path).await;
+
+    if !create.status.success() {
+        return Err(io::Error::other(format!(
+            "schtasks /Create failed:\n{}",
+            String::from_utf8_lossy(&create.stderr)
+        )));
     }
 
-    let output = Command::new("sc")
-        .arg("create")
-        .arg(program)
-        .arg("binPath=")
-        .arg(&bin_path_value)
-        .arg("displayname=")
-        .arg("WallGuard Agent")
-        .arg("start=")
-        .arg("demand")
+    // The boot trigger only fires on the *next* boot; run it now so the
+    // agent is supervised by Task Scheduler immediately instead of the
+    // caller falling back to a bare, unsupervised spawn.
+    let _ = Command::new("schtasks")
+        .args(["/Run", "/TN", TASK_NAME])
+        .output()
+        .await;
+
+    Ok(())
+}
+
+/// Stops and removes the scheduled task registered by [`enable_service`].
+pub async fn disable_service(_program: &str) -> io::Result<()> {
+    // Best-effort stop — ignore errors if the task is not currently running.
+    let _ = Command::new("schtasks")
+        .args(["/End", "/TN", TASK_NAME])
+        .output()
+        .await;
+
+    let output = Command::new("schtasks")
+        .args(["/Delete", "/TN", TASK_NAME, "/F"])
         .output()
         .await?;
 
     if !output.status.success() {
         return Err(io::Error::other(format!(
-            "sc create failed:\n{}",
+            "schtasks /Delete failed:\n{}",
             String::from_utf8_lossy(&output.stderr)
         )));
     }
@@ -49,22 +82,51 @@ pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     Ok(())
 }
 
-/// Stops and removes the Windows service registered by [`enable_service`].
-pub async fn disable_service(program: &str) -> io::Result<()> {
-    // Best-effort stop — ignore errors if the service is not running.
-    let _ = Command::new("sc").args(["stop", program]).output().await;
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
 
-    let output = Command::new("sc")
-        .args(["delete", program])
-        .output()
-        .await?;
-
-    if !output.status.success() {
-        return Err(io::Error::other(format!(
-            "sc delete failed:\n{}",
-            String::from_utf8_lossy(&output.stderr)
-        )));
-    }
-
-    Ok(())
+/// Builds a Task Scheduler 2.0 task definition that starts `command` at
+/// boot as SYSTEM, with highest privileges, and restarts it on failure.
+fn task_xml(command: &str, arguments: &str) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <Triggers>
+    <BootTrigger>
+      <Enabled>true</Enabled>
+    </BootTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>S-1-5-18</UserId>
+      <LogonType>ServiceAccount</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <RestartOnFailure>
+      <Interval>PT1M</Interval>
+      <Count>999</Count>
+    </RestartOnFailure>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>{command}</Command>
+      <Arguments>{arguments}</Arguments>
+    </Exec>
+  </Actions>
+</Task>
+"#,
+        command = xml_escape(command),
+        arguments = xml_escape(arguments),
+    )
 }
