@@ -2,10 +2,6 @@ use std::io;
 use std::path::PathBuf;
 use tokio::{fs, process::Command};
 
-// TODO: temporarily unused while the call site in main.rs is commented
-// out for testing; remove this allow (and on enable_service below) when
-// re-enabled.
-#[allow(dead_code)]
 pub async fn create_rcd_script(program: &str, args: &str) -> io::Result<()> {
     let script_path = format!("/usr/local/etc/rc.d/{}.sh", program);
 
@@ -55,15 +51,37 @@ pub async fn remove_rcd_script(program: &str) -> io::Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
 pub async fn enable_service(program: &str, args: &[&str]) -> io::Result<()> {
     let flags = args.join(" ");
     create_rcd_script(program, &flags).await?;
+
+    // Explicitly persist `<program>_enable="YES"` to /etc/rc.conf (rather
+    // than relying on the rc.d script's own default), then start it now so
+    // the agent is supervised by rc.d immediately instead of running as a
+    // bare orphan process until the next reboot.
+    run_service(program, "enable").await?;
+    run_service(program, "start").await?;
 
     Ok(())
 }
 
 pub async fn disable_service(program: &str) -> io::Result<()> {
     remove_rcd_script(program).await?;
+    Ok(())
+}
+
+async fn run_service(program: &str, action: &str) -> io::Result<()> {
+    let output = Command::new("service")
+        .args([program, action])
+        .output()
+        .await?;
+
+    if !output.status.success() {
+        return Err(io::Error::other(format!(
+            "service {program} {action} failed:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        )));
+    }
+
     Ok(())
 }

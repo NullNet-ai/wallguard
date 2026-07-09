@@ -396,19 +396,20 @@ pub async fn main() -> AnyResult<()> {
                 service_args.push(s.as_str());
             }
 
-            // TODO: re-enable once done testing.
-            // if autostart::enable_service("wallguard", &service_args)
-            //     .await
-            //     .is_err()
-            // {
-            //     eprintln!("WARNING: Failed to register wallguard as a service");
-            // }
+            if autostart::enable_service("wallguard", &service_args)
+                .await
+                .is_err()
+            {
+                eprintln!("WARNING: Failed to register wallguard as a service");
+            }
 
-            // On some platforms (e.g. macOS launchd with RunAtLoad) enabling
-            // the service also starts it immediately. Give it a moment to
-            // acquire the single-instance lock before falling back to
-            // spawning it ourselves — otherwise every `start` would launch
-            // a second, doomed copy that immediately loses the lock race.
+            // `enable_service` also starts the agent immediately on every
+            // platform (systemd `enable --now`, FreeBSD `service start`,
+            // macOS launchd with RunAtLoad, Windows `schtasks /Run`). Give
+            // it a moment to acquire the single-instance lock before
+            // falling back to spawning it ourselves — otherwise every
+            // `start` would launch a second, doomed copy that immediately
+            // loses the lock race.
             if agent_lock_held_within(&lock_path, 5, Duration::from_millis(100)).await {
                 println!("WallGuard agent started successfully.");
                 println!("Logs are written to /var/log/wallguard.log.");

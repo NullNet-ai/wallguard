@@ -27,10 +27,13 @@
       C:\Program Files\WallGuard\
   • Appends that directory to the system PATH so both binaries are
     accessible from any terminal.
-  • Does NOT register a Windows service — that is handled at runtime by
+  • Does NOT register boot-time autostart — that is handled at runtime by
       wallguard-cli start
-    which calls `sc create` (see autostart/windows.rs), mirroring the
-    systemd / rc.d approach used on Linux / FreeBSD.
+    which registers a Task Scheduler boot task running as SYSTEM (see
+    autostart/windows.rs). wallguard.exe is a plain console app, not an
+    SCM-aware service, so it uses Task Scheduler rather than `sc create`
+    — conceptually mirroring the systemd / rc.d approach used on
+    Linux / FreeBSD.
   • On uninstall, the PATH entry is removed automatically.
 
   UpgradeCode must remain constant across all versions of WallGuard.
