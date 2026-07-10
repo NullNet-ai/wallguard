@@ -1967,9 +1967,9 @@ checksum = "dea2df4cf52843e0452895c455a1a2cfbb842a1e7329671acf418fdc53ed4c59"
 
 [[package]]
 name = "etherparse"
-version = "0.19.0"
+version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b119b9796ff800751a220394b8b3613f26dd30c48f254f6837e64c464872d1c7"
+checksum = "aeebdb565da33451794551a771bd0b4e6f416d3182adc3ed2837f614d6168f9a"
 dependencies = [
  "arrayvec",
 ]
@@ -3556,9 +3556,9 @@ dependencies = [
 
 [[package]]
 name = "nullnet-traffic-monitor"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bee421eb91c7d3e626e84685bf5eab9ad6eb1285dc9c351cd7c3159acb7ef47c"
+checksum = "66d14dc5d5b78e2d90f3feb23031b7cdffa6688203cd1ca0459fc5a5347f0bea"
 dependencies = [
  "async-channel",
  "chrono",
