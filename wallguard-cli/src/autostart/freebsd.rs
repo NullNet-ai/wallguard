@@ -70,6 +70,25 @@ pub async fn disable_service(program: &str) -> io::Result<()> {
     Ok(())
 }
 
+/// Restarts the agent through rc.d if it is registered as a supervised
+/// service, returning `Ok(false)` if no rc.d script is registered so the
+/// caller can fall back to a bare spawn.
+///
+/// FreeBSD's rc.d has no restart-on-exit supervision (unlike systemd's
+/// `Restart=always` or launchd's `KeepAlive`), so there's no race to avoid
+/// here — this exists so the update/restart flow can go through `service`
+/// rather than bypass it, for consistency with the other platforms.
+pub async fn restart_via_service_manager(program: &str) -> io::Result<bool> {
+    let script_path = PathBuf::from("/usr/local/etc/rc.d").join(format!("{program}.sh"));
+
+    if !script_path.exists() {
+        return Ok(false);
+    }
+
+    run_service(program, "restart").await?;
+    Ok(true)
+}
+
 async fn run_service(program: &str, action: &str) -> io::Result<()> {
     let output = Command::new("service")
         .args([program, action])

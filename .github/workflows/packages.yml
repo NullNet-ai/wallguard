@@ -10,8 +10,30 @@ env:
 
 jobs:
 
+  check-version:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches wallguard/Cargo.toml version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          TAG_VERSION="${TAG#v}"
+          CARGO_VERSION=$(grep -m1 '^version' wallguard/Cargo.toml | sed -E 's/version = "(.*)"/\1/')
+          echo "Tag version:         $TAG_VERSION"
+          echo "Cargo.toml version:  $CARGO_VERSION"
+          if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+            echo "::error::Tag v$TAG_VERSION does not match wallguard/Cargo.toml version v$CARGO_VERSION." \
+              "The agent binary reports its version from Cargo.toml at compile time, so a mismatch here" \
+              "makes 'wallguard-cli update' fail its post-update health check every time. Bump" \
+              "wallguard/Cargo.toml's version and push that commit before (re)tagging."
+            exit 1
+          fi
+
   build-deb-and-release:
     runs-on: ubuntu-22.04
+    needs: check-version
     permissions:
       contents: write
 
@@ -82,6 +104,7 @@ jobs:
 
   build-rpm-and-release:
     runs-on: ubuntu-22.04
+    needs: check-version
     permissions:
       contents: write
 
@@ -140,6 +163,7 @@ jobs:
 
   build-macos-and-release:
     runs-on: macos-latest
+    needs: check-version
     permissions:
       contents: write
 
@@ -174,6 +198,7 @@ jobs:
 
   build-windows-and-release:
     runs-on: windows-latest
+    needs: check-version
     permissions:
       contents: write
 
@@ -237,6 +262,7 @@ jobs:
 
   build-freebsd-and-release:
     runs-on: ubuntu-latest
+    needs: check-version
     permissions:
       contents: write
     timeout-minutes: 45

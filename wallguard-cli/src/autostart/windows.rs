@@ -82,6 +82,15 @@ pub async fn disable_service(_program: &str) -> io::Result<()> {
     Ok(())
 }
 
+/// Always returns `Ok(false)`: unlike systemd/launchd, Task Scheduler's
+/// `RestartOnFailure` only fires on a nonzero exit code, and a graceful
+/// shutdown exits 0 — so there's no restart-on-exit race to avoid here.
+/// Kept only so callers can share one code path across platforms, always
+/// falling back to a bare spawn on Windows.
+pub async fn restart_via_service_manager(_program: &str) -> io::Result<bool> {
+    Ok(false)
+}
+
 fn xml_escape(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")

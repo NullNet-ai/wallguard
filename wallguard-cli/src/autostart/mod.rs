@@ -1,12 +1,12 @@
 #[cfg(target_os = "freebsd")]
 mod freebsd;
 #[cfg(target_os = "freebsd")]
-pub use freebsd::{disable_service, enable_service};
+pub use freebsd::{disable_service, enable_service, restart_via_service_manager};
 
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
-pub use linux::{disable_service, enable_service};
+pub use linux::{disable_service, enable_service, restart_via_service_manager};
 
 #[cfg(target_os = "macos")]
 mod macos;
@@ -16,4 +16,4 @@ pub use macos::{disable_service, enable_service};
 #[cfg(windows)]
 mod windows;
 #[cfg(windows)]
-pub use windows::{disable_service, enable_service};
+pub use windows::{disable_service, enable_service, restart_via_service_manager};

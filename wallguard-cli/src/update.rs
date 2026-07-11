@@ -195,7 +195,7 @@ async fn apply_update(version: &str) -> AnyResult<()> {
     }
 
     println!("Restarting WallGuard agent...");
-    spawn_agent(&live_binary, captured_args.as_deref().unwrap_or(&[]))?;
+    restart_agent(&live_binary, captured_args.as_deref().unwrap_or(&[])).await?;
 
     let lock_path = wallguard_common::single_instance::agent_lock_path();
     let came_up = crate::agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await;
@@ -205,7 +205,7 @@ async fn apply_update(version: &str) -> AnyResult<()> {
         None
     };
 
-    if came_up && new_version.as_deref() == Some(version) {
+    if came_up && new_version.as_deref().is_some_and(|v| versions_match(v, version)) {
         let _ = std::fs::remove_file(&backup_path);
         println!("WallGuard successfully updated to v{version}.");
         return Ok(());
@@ -253,7 +253,7 @@ async fn rollback(
         )
     })?;
 
-    spawn_agent(live_binary, captured_args.unwrap_or(&[]))?;
+    restart_agent(live_binary, captured_args.unwrap_or(&[])).await?;
 
     let lock_path = wallguard_common::single_instance::agent_lock_path();
     if crate::agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await {
@@ -266,6 +266,30 @@ async fn rollback(
             live_binary.display()
         )
     }
+}
+
+/// Restarts the agent, preferring the platform's service manager
+/// (systemd/rc.d) over a bare spawn if the agent is registered as a
+/// supervised service — see each platform's `restart_via_service_manager`
+/// for why (in short: a bare spawn racing systemd's `Restart=always` can
+/// lose that race under I/O contention and end up with the wrong process
+/// holding the single-instance lock). Falls back to a bare spawn for
+/// installs that were never brought up via `wallguard-cli start`, or on
+/// platforms where the service manager can't race a bare spawn anyway.
+///
+/// Note: when restarting via the service manager, the args baked into its
+/// unit file (from the last `start`) are used, not `args` — this can only
+/// differ if the agent is currently running with args that were never
+/// persisted via `start`, an unsupported/unusual setup.
+#[cfg(any(target_os = "linux", target_os = "freebsd", windows))]
+async fn restart_agent(binary: &Path, args: &[String]) -> AnyResult<()> {
+    if crate::autostart::restart_via_service_manager("wallguard")
+        .await
+        .unwrap_or(false)
+    {
+        return Ok(());
+    }
+    spawn_agent(binary, args)
 }
 
 #[cfg(any(target_os = "linux", target_os = "freebsd", windows))]
@@ -437,6 +461,27 @@ async fn agent_reported_version() -> Option<String> {
 /// server — so a lock-is-held signal does not mean the server is ready to
 /// answer `GetVersion` yet. Polling for a while absorbs that startup
 /// latency instead of misreading it as "the new version failed to come up".
+/// Compares a version reported by the agent's `GetVersion` RPC against the
+/// expected release version by semver value rather than exact string
+/// equality, so a leading `v`, incidental whitespace, or a difference in
+/// zero-padding doesn't fail the health check for what is actually the same
+/// version. Falls back to a trimmed string comparison if either side isn't
+/// valid semver, rather than silently treating an unparsable version as a
+/// match.
+#[cfg(any(target_os = "linux", target_os = "freebsd", windows))]
+fn versions_match(reported: &str, expected: &str) -> bool {
+    let normalize = |s: &str| s.trim().trim_start_matches('v').to_string();
+    let (reported, expected) = (normalize(reported), normalize(expected));
+
+    match (
+        semver::Version::parse(&reported),
+        semver::Version::parse(&expected),
+    ) {
+        (Ok(r), Ok(e)) => r == e,
+        _ => reported == expected,
+    }
+}
+
 #[cfg(any(target_os = "linux", target_os = "freebsd", windows))]
 async fn poll_agent_version(attempts: u32, delay: Duration) -> Option<String> {
     for _ in 0..attempts {
@@ -462,6 +507,24 @@ mod tests {
             sha256_hex(b""),
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         );
+    }
+
+    #[test]
+    fn versions_match_ignores_v_prefix_and_whitespace() {
+        assert!(versions_match("1.3.8", "1.3.8"));
+        assert!(versions_match("v1.3.8", "1.3.8"));
+        assert!(versions_match(" 1.3.8 \n", "1.3.8"));
+    }
+
+    #[test]
+    fn versions_match_rejects_different_versions() {
+        assert!(!versions_match("1.3.5", "1.3.8"));
+    }
+
+    #[test]
+    fn versions_match_falls_back_to_string_equality_for_invalid_semver() {
+        assert!(versions_match("not-a-version", "not-a-version"));
+        assert!(!versions_match("not-a-version", "1.3.8"));
     }
 
     #[test]

@@ -61,6 +61,28 @@ WantedBy=multi-user.target
     Ok(())
 }
 
+/// Restarts the agent through systemd if it is registered as a supervised
+/// unit (i.e. `wallguard-cli start` has run at least once), returning
+/// `Ok(false)` if no unit is registered so the caller can fall back to a
+/// bare spawn.
+///
+/// This exists to avoid racing systemd's own `Restart=always` timer: after a
+/// graceful shutdown, systemd restarts the unit `RestartSec` later
+/// regardless of exit code, so a separate unsupervised spawn done at the
+/// same time can end up fighting it for the single-instance lock. Asking
+/// systemd itself to restart makes it the only actor doing so.
+pub async fn restart_via_service_manager(program: &str) -> io::Result<bool> {
+    let service_name = format!("{program}.service");
+    let service_path = format!("{SYSTEMD_DIR}/{service_name}");
+
+    if !Path::new(&service_path).exists() {
+        return Ok(false);
+    }
+
+    run_systemctl(&["restart", &service_name]).await?;
+    Ok(true)
+}
+
 async fn run_systemctl(args: &[&str]) -> io::Result<()> {
     let output = Command::new("systemctl").args(args).output().await?;
 
