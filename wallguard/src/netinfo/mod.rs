@@ -9,6 +9,10 @@ mod service;
 mod sock;
 
 const TIME_INTERVAL: Duration = Duration::from_secs(60);
+// Services are a live snapshot, not a history log: on failure we don't persist
+// and replay the stale list (it may include services that are down by the
+// time we retry) — instead we back off briefly and re-scan for a fresh one.
+const RETRY_INTERVAL: Duration = Duration::from_secs(5);
 
 pub async fn monitor_services(interface: WGServer, token_provider: TokenProvider) {
     log::info!("Staring services monitoring ...");
@@ -27,7 +31,7 @@ pub async fn monitor_services(interface: WGServer, token_provider: TokenProvider
                 Ok(t) => t,
                 Err(e) => {
                     log::error!("monitor_services: token acquisition failed: {e:?}");
-                    tokio::time::sleep(TIME_INTERVAL).await;
+                    tokio::time::sleep(RETRY_INTERVAL).await;
                     continue;
                 }
             };
@@ -37,16 +41,10 @@ pub async fn monitor_services(interface: WGServer, token_provider: TokenProvider
                 token,
             };
 
-            if let Err(e) = async {
-                interface
-                    .get_interface()
-                    .await?
-                    .report_services(message)
-                    .await
-            }
-            .await
-            {
-                log::error!("monitor_services: reporting failed: {e:?}");
+            if let Err(e) = interface.report_services(message).await {
+                log::error!("monitor_services: reporting failed: {e:?}. Retrying shortly with a fresh scan.");
+                tokio::time::sleep(RETRY_INTERVAL).await;
+                continue;
             }
         }
 

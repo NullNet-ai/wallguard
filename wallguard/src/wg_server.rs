@@ -5,7 +5,7 @@ use tonic::Streaming;
 use wallguard_common::protobuf::wallguard_commands::{ClientMessage, ServerMessage};
 use wallguard_common::protobuf::wallguard_service::{
     ConfigSnapshot, ConnectionsData, DeviceSettingsRequest, DeviceSettingsResponse,
-    SystemResourcesData,
+    ServicesMessage, SystemResourcesData,
 };
 use wallguard_common::wallguard_interface::WallGuardGrpcInterface;
 
@@ -116,5 +116,9 @@ impl WGServer {
 
     pub async fn handle_config_data(&self, data: ConfigSnapshot) -> Result<(), Error> {
         self.get_interface().await?.handle_config_data(data).await
+    }
+
+    pub async fn report_services(&self, data: ServicesMessage) -> Result<(), Error> {
+        self.get_interface().await?.report_services(data).await
     }
 }
