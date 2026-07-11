@@ -42,7 +42,9 @@ pub async fn monitor_services(interface: WGServer, token_provider: TokenProvider
             };
 
             if let Err(e) = interface.report_services(message).await {
-                log::error!("monitor_services: reporting failed: {e:?}. Retrying shortly with a fresh scan.");
+                log::error!(
+                    "monitor_services: reporting failed: {e:?}. Retrying shortly with a fresh scan."
+                );
                 tokio::time::sleep(RETRY_INTERVAL).await;
                 continue;
             }
