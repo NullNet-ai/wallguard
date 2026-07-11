@@ -281,7 +281,7 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Install dependencies and build FreeBSD package
-        uses: cross-platform-actions/action@v1.1.0
+        uses: cross-platform-actions/action@v1.3.0
         with:
           operating_system: freebsd
           architecture: x86_64
