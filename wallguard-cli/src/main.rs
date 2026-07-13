@@ -61,6 +61,24 @@ async fn agent_lock_held_within(
     false
 }
 
+/// Polls the agent's gRPC server up to `attempts` times, `delay` apart,
+/// returning `true` as soon as it responds. Prefer this over
+/// `agent_lock_held_within` when there's time to spare: it never takes the
+/// single-instance lock itself, so unlike a lock probe it can't collide
+/// with the agent's own first acquisition attempt and make it think a
+/// duplicate instance is already running.
+pub(crate) async fn agent_responds_within(attempts: u32, delay: Duration) -> bool {
+    for _ in 0..attempts {
+        if let Some(mut client) = try_connect().await
+            && client.get_version(()).await.is_ok()
+        {
+            return true;
+        }
+        tokio::time::sleep(delay).await;
+    }
+    false
+}
+
 /// Polls the single-instance lock up to `attempts` times, `delay` apart,
 /// returning `true` as soon as it's found free (i.e. the agent process has
 /// actually exited, not just acknowledged a shutdown request).
@@ -500,7 +518,7 @@ pub async fn main() -> AnyResult<()> {
                 std::process::exit(-1);
             }
 
-            if agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await {
+            if agent_responds_within(20, Duration::from_millis(500)).await {
                 println!("WallGuard agent restarted successfully.");
             } else {
                 eprintln!("WallGuard agent did not come back up. Check /var/log/wallguard.log.");
