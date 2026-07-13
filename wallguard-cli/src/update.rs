@@ -197,15 +197,15 @@ async fn apply_update(version: &str) -> AnyResult<()> {
     println!("Restarting WallGuard agent...");
     restart_agent(&live_binary, captured_args.as_deref().unwrap_or(&[])).await?;
 
-    let lock_path = wallguard_common::single_instance::agent_lock_path();
-    let came_up = crate::agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await;
-    let new_version = if came_up {
-        poll_agent_version(20, Duration::from_millis(500)).await
-    } else {
-        None
-    };
+    // Polls the agent's gRPC server directly rather than probing the
+    // single-instance lock first: taking that lock ourselves, even just to
+    // peek and immediately release it, races the agent's own first
+    // acquisition attempt and can make it think a duplicate instance is
+    // already running. Reading the version over the wire never contends
+    // for the lock at all.
+    let new_version = poll_agent_version(20, Duration::from_millis(500)).await;
 
-    if came_up && new_version.as_deref().is_some_and(|v| versions_match(v, version)) {
+    if new_version.as_deref().is_some_and(|v| versions_match(v, version)) {
         let _ = std::fs::remove_file(&backup_path);
         println!("WallGuard successfully updated to v{version}.");
         return Ok(());
@@ -255,8 +255,11 @@ async fn rollback(
 
     restart_agent(live_binary, captured_args.unwrap_or(&[])).await?;
 
-    let lock_path = wallguard_common::single_instance::agent_lock_path();
-    if crate::agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await {
+    // See the comment in `apply_update`: probe over gRPC, not the lock.
+    if poll_agent_version(20, Duration::from_millis(500))
+        .await
+        .is_some()
+    {
         println!("Rolled back to the previous version successfully.");
         Ok(())
     } else {

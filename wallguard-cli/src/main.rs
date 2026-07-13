@@ -46,8 +46,35 @@ async fn agent_lock_held_within(
     for _ in 0..attempts {
         match wallguard_common::single_instance::InstanceLock::try_acquire(lock_path) {
             Ok(None) => return true,
-            _ => tokio::time::sleep(delay).await,
+            // `Ok(Some(lock))` means nobody holds it yet — the agent hasn't
+            // come up. Drop the guard we just took out *before* sleeping:
+            // a match scrutinee's temporary otherwise lives until the end
+            // of the chosen arm, so leaving this as a bare `_ => sleep(...)`
+            // would hold our own lock for the entire `delay`, blocking the
+            // very agent this function is waiting for and making it exit
+            // thinking a duplicate instance is already running.
+            Ok(Some(lock)) => drop(lock),
+            Err(_) => {}
         }
+        tokio::time::sleep(delay).await;
+    }
+    false
+}
+
+/// Polls the agent's gRPC server up to `attempts` times, `delay` apart,
+/// returning `true` as soon as it responds. Prefer this over
+/// `agent_lock_held_within` when there's time to spare: it never takes the
+/// single-instance lock itself, so unlike a lock probe it can't collide
+/// with the agent's own first acquisition attempt and make it think a
+/// duplicate instance is already running.
+pub(crate) async fn agent_responds_within(attempts: u32, delay: Duration) -> bool {
+    for _ in 0..attempts {
+        if let Some(mut client) = try_connect().await
+            && client.get_version(()).await.is_ok()
+        {
+            return true;
+        }
+        tokio::time::sleep(delay).await;
     }
     false
 }
@@ -491,7 +518,7 @@ pub async fn main() -> AnyResult<()> {
                 std::process::exit(-1);
             }
 
-            if agent_lock_held_within(&lock_path, 20, Duration::from_millis(500)).await {
+            if agent_responds_within(20, Duration::from_millis(500)).await {
                 println!("WallGuard agent restarted successfully.");
             } else {
                 eprintln!("WallGuard agent did not come back up. Check /var/log/wallguard.log.");
