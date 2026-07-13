@@ -46,8 +46,17 @@ async fn agent_lock_held_within(
     for _ in 0..attempts {
         match wallguard_common::single_instance::InstanceLock::try_acquire(lock_path) {
             Ok(None) => return true,
-            _ => tokio::time::sleep(delay).await,
+            // `Ok(Some(lock))` means nobody holds it yet — the agent hasn't
+            // come up. Drop the guard we just took out *before* sleeping:
+            // a match scrutinee's temporary otherwise lives until the end
+            // of the chosen arm, so leaving this as a bare `_ => sleep(...)`
+            // would hold our own lock for the entire `delay`, blocking the
+            // very agent this function is waiting for and making it exit
+            // thinking a duplicate instance is already running.
+            Ok(Some(lock)) => drop(lock),
+            Err(_) => {}
         }
+        tokio::time::sleep(delay).await;
     }
     false
 }
