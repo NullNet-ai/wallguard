@@ -6675,7 +6675,7 @@ dependencies = [
 
 [[package]]
 name = "wallguard"
-version = "1.3.8"
+version = "1.3.10"
 dependencies = [
  "async-channel",
  "base64",
@@ -6720,7 +6720,7 @@ dependencies = [
 
 [[package]]
 name = "wallguard-cli"
-version = "1.3.8"
+version = "1.3.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -6743,7 +6743,7 @@ dependencies = [
 
 [[package]]
 name = "wallguard-common"
-version = "1.3.8"
+version = "1.3.10"
 dependencies = [
  "bincode",
  "fs4",
@@ -6761,7 +6761,7 @@ dependencies = [
 
 [[package]]
 name = "wallguard-server"
-version = "1.3.8"
+version = "1.3.10"
 dependencies = [
  "actix-cors",
  "actix-web",
