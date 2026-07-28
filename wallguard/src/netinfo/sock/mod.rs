@@ -1,25 +1,11 @@
 use std::net::SocketAddr;
 
-#[cfg(target_os = "linux")]
-mod linux;
-
-#[cfg(target_os = "freebsd")]
-mod freebsd;
-
-#[cfg(target_os = "windows")]
-mod windows;
+use listeners::{Listener, Protocol as ListenersProtocol, SocketState};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Protocol {
     Tcp,
     Udp,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) enum IpVersion {
-    V4,
-    V6,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -29,27 +15,31 @@ pub struct SocketInfo {
     pub sockaddr: SocketAddr,
 }
 
-#[cfg(target_os = "linux")]
-async fn get_sockets_info_impl() -> Vec<SocketInfo> {
-    linux::get_sockets_info().await
-}
+fn into_socket_info(listener: Listener) -> Option<SocketInfo> {
+    let protocol = match listener.protocol {
+        // UDP has no listening state of its own, so every UDP socket is kept
+        // (matches the previous per-platform implementations' behavior).
+        ListenersProtocol::UDP => Protocol::Udp,
+        // Only TCP sockets actively accepting connections are candidate services.
+        ListenersProtocol::TCP if listener.state == SocketState::Listen => Protocol::Tcp,
+        ListenersProtocol::TCP => return None,
+    };
 
-#[cfg(target_os = "windows")]
-async fn get_sockets_info_impl() -> Vec<SocketInfo> {
-    windows::get_sockets_info()
-}
-
-#[cfg(target_os = "freebsd")]
-async fn get_sockets_info_impl() -> Vec<SocketInfo> {
-    freebsd::get_sockets_info().await
-}
-
-// macOS socket enumeration is not yet implemented.
-#[cfg(target_os = "macos")]
-async fn get_sockets_info_impl() -> Vec<SocketInfo> {
-    vec![]
+    Some(SocketInfo {
+        process_name: listener.process.name,
+        protocol,
+        sockaddr: listener.socket,
+    })
 }
 
 pub async fn get_sockets_info() -> Vec<SocketInfo> {
-    get_sockets_info_impl().await
+    tokio::task::spawn_blocking(|| {
+        listeners::get_all()
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(into_socket_info)
+            .collect()
+    })
+    .await
+    .unwrap_or_default()
 }

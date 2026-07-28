@@ -212,8 +212,15 @@ fn read_named_disk_totals(names: &[String]) -> Option<(u64, u64)> {
         let Some(device_name) = c_buf_to_string(&device.device_name) else {
             continue;
         };
-        let full_name = format!("{device_name}{}", device.unit_number);
-        if names.iter().any(|n| *n == full_name) {
+        // Avoid allocating a fresh "{device_name}{unit_number}" String for
+        // every GEOM provider on the system (there can be dozens once
+        // partitions/labels are counted) just to compare it against the
+        // handful of names we actually care about.
+        let is_named_disk = names.iter().any(|n| {
+            n.strip_prefix(device_name.as_str())
+                .is_some_and(|suffix| suffix.parse::<c_int>() == Ok(device.unit_number))
+        });
+        if is_named_disk {
             read_bytes = read_bytes.saturating_add(device.bytes[DEVSTAT_READ]);
             written_bytes = written_bytes.saturating_add(device.bytes[DEVSTAT_WRITE]);
         }

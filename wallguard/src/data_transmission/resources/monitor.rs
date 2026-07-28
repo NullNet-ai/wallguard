@@ -59,7 +59,7 @@ pub(crate) fn poll_system_resources(interval_msec: u64) -> Receiver<SystemResour
             disks.refresh_specifics(true, *DISK_REFRESH_KIND);
             components.refresh(true);
 
-            let mut cpu_usages = HashMap::new();
+            let mut cpu_usages = HashMap::with_capacity(sys.cpus().len());
             for cpu in sys.cpus() {
                 let usage = cpu.cpu_usage();
                 cpu_usages.insert(cpu.name().to_string(), usage);
@@ -88,7 +88,7 @@ pub(crate) fn poll_system_resources(interval_msec: u64) -> Receiver<SystemResour
                 written_bytes = wb;
             }
 
-            let mut temperatures = HashMap::new();
+            let mut temperatures = HashMap::with_capacity(components.len());
             for component in &components {
                 let temperature = component.temperature();
                 temperatures.insert(component.label().to_string(), temperature);

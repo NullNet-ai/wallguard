@@ -55,22 +55,29 @@ impl DumpDir {
     pub(crate) async fn dump_item_to_file(&self, dump_item: DumpItem) {
         let now = chrono::Utc::now().to_rfc3339();
         let file_path = self.get_file_path(&now, &dump_item);
-        tokio::fs::write(
-            file_path,
-            serde_json::to_string(&dump_item).expect("Failed to serialize item"),
-        )
+        // Serializing a dump item (up to the full queue, e.g. 1M records) is
+        // CPU-bound work; run it on the blocking pool so it can't stall the
+        // tokio runtime that also drives gRPC/heartbeat traffic.
+        let json = tokio::task::spawn_blocking(move || {
+            serde_json::to_string(&dump_item).expect("Failed to serialize item")
+        })
         .await
-        .expect("Failed to write dump file");
+        .expect("Serialization task panicked");
+        tokio::fs::write(file_path, json)
+            .await
+            .expect("Failed to write dump file");
     }
 
     pub(crate) async fn update_items_dump_file(&self, file_path: PathBuf, mut dump: DumpItem) {
         dump.set_token(String::new());
-        tokio::fs::write(
-            file_path,
-            serde_json::to_string(&dump).expect("Failed to serialize items"),
-        )
+        let json = tokio::task::spawn_blocking(move || {
+            serde_json::to_string(&dump).expect("Failed to serialize items")
+        })
         .await
-        .expect("Failed to write dump file");
+        .expect("Serialization task panicked");
+        tokio::fs::write(file_path, json)
+            .await
+            .expect("Failed to write dump file");
     }
 }
 

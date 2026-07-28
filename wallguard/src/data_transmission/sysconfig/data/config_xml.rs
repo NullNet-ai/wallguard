@@ -7,6 +7,10 @@ const FILE_PATH: &str = "/conf/config.xml";
 #[derive(Debug, Default, Clone)]
 pub struct ConfigXml {
     content: String,
+    // Cached digest of `content`, so each poll only hashes the freshly-read
+    // bytes once instead of re-hashing the (already-known) previous content
+    // from scratch every 500ms tick just to compare it against itself.
+    digest: [u8; 32],
 }
 
 impl FileToMonitor for ConfigXml {
@@ -18,12 +22,13 @@ impl FileToMonitor for ConfigXml {
     }
 
     async fn update(&mut self) -> Result<bool, Error> {
-        let prev = utilities::hash::sha256_digest_bytes(&self.content);
         let content = tokio::fs::read(FILE_PATH).await.handle_err(location!())?;
-
         self.content = String::from_utf8_lossy(content.as_slice()).into();
-        let curr = utilities::hash::sha256_digest_bytes(&self.content);
 
-        Ok(prev != curr)
+        let digest = utilities::hash::sha256_digest_bytes(&self.content);
+        let changed = digest != self.digest;
+        self.digest = digest;
+
+        Ok(changed)
     }
 }
