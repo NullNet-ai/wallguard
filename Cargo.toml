@@ -10,12 +10,20 @@ members = [
 tokio = { version = "1.43.0", features = ["full"] }
 tonic = { version = "0.13.1", features = ["_tls-any", "tls-native-roots"] }
 prost = "0.13.5"
-rustls = { version = "0.23.27", features = ["ring"]}
+# default-features pulls in aws_lc_rs (aws-lc-sys compiles a large C/asm
+# crypto library) on top of ring, even though wallguard/wallguard-server
+# explicitly install the `ring` CryptoProvider at startup — the aws-lc-rs
+# build is pure dead weight that was blowing past the FreeBSD CI runner's
+# disk quota. Only "ring" is actually used, so build only "ring".
+rustls = { version = "0.23.27", default-features = false, features = ["ring", "logging", "std", "tls12"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.150"
 nullnet-liberror = "0.1.1"
-tokio-rustls = "0.26.2"
-russh = "0.62.2"
+tokio-rustls = { version = "0.26.2", default-features = false, features = ["ring", "logging", "tls12"] }
+# default-features pulls in the aws-lc-rs crypto backend (aws-lc-sys compiles
+# a large C/asm library); swap for the "ring" backend instead, matching the
+# rustls setup above, to avoid building two separate crypto backends.
+russh = { version = "0.62.2", default-features = false, features = ["flate2", "ring", "rsa"] }
 
 [profile.release]
 opt-level = "z"
