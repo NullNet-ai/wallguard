@@ -91,12 +91,12 @@ fn disk_label_mapping() -> std::collections::HashMap<String, String> {
                 last_id.clear();
                 last_id.push_str(id);
             }
-        } else if kind == "2" && !last_id.is_empty() {
-            if let Some("LABEL") = parts.next()
-                && let Some(path) = parts.next()
-            {
-                mapping.insert(format!("/dev/{path}"), last_id.clone());
-            }
+        } else if kind == "2"
+            && !last_id.is_empty()
+            && let Some("LABEL") = parts.next()
+            && let Some(path) = parts.next()
+        {
+            mapping.insert(format!("/dev/{path}"), last_id.clone());
         }
     }
     mapping

@@ -47,7 +47,7 @@ impl TimeoutController {
 
                 let lock = self.tunnels.lock().await;
 
-                for (_, tunnel) in lock.iter() {
+                for tunnel in lock.values() {
                     match tunnel {
                         WallguardTunnel::Http(http_tunnel) => {
                             let tun = http_tunnel.lock().await;
