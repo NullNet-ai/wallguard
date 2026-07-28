@@ -28,20 +28,32 @@ pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut services = Vec::new();
     let mut remaining = Vec::with_capacity(sockets.len());
 
+    // Probe every candidate socket concurrently rather than awaiting each one
+    // sequentially — otherwise cost scales linearly (up to SSH_TIMEOUT per
+    // socket) with the number of open listening ports every scan cycle.
+    let mut set = tokio::task::JoinSet::new();
     for socket in sockets.drain(..) {
-        if matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
-            && is_ssh(socket.sockaddr).await
-        {
+        set.spawn(async move {
+            let matched = matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
+                && is_ssh(socket.sockaddr).await;
+            (socket, matched)
+        });
+    }
+
+    while let Some(joined) = set.join_next().await {
+        let Ok((socket, matched)) = joined else {
+            continue;
+        };
+
+        if matched {
             services.push(ServiceInfo {
                 addr: socket.sockaddr,
                 protocol: Protocol::Ssh,
                 program: socket.process_name.clone(),
             });
-
-            continue;
+        } else {
+            remaining.push(socket);
         }
-
-        remaining.push(socket);
     }
 
     *sockets = remaining;

@@ -37,30 +37,42 @@ pub(crate) async fn handle_connection_and_retransmission(
             let Ok(string) = fs::read_to_string(file.path()).await else {
                 continue;
             };
-            let Ok(mut dump) = serde_json::from_str::<DumpItem>(&string) else {
+            // Deserializing a dump file (up to the full queue, e.g. 1M
+            // records) is CPU-bound; keep it off the tokio runtime so it
+            // can't stall gRPC/heartbeat traffic sharing the same executor.
+            let Ok(Ok(mut dump)) =
+                tokio::task::spawn_blocking(move || serde_json::from_str::<DumpItem>(&string))
+                    .await
+            else {
                 continue;
             };
             // update auth token of items retrieved from disk
             dump.set_token(token.clone());
 
-            while dump.size() != 0 {
-                let range = ..min(dump.size(), BATCH_SIZE);
-                // `dump.set_token` above already updated the token field in
-                // place, so only the (cheap) token string needs cloning here
-                // — cloning the whole item via `..c.clone()` used to clone
-                // the entire, not-yet-drained items vector on every batch.
+            // Batches are sliced by a `sent` offset rather than drained from
+            // the front on every iteration: draining a Vec's front repeatedly
+            // shifts the remaining tail down each time (O(remaining) per
+            // batch), which turns replaying a large backlog file into an
+            // O(n^2) sequence of memmoves. Slicing leaves the vector
+            // untouched until a single drain(..sent) at the end.
+            let total = dump.size();
+            let mut sent = 0;
+            let mut failed = false;
+
+            while sent < total {
+                let range = ..min(total - sent, BATCH_SIZE);
                 let send_res = match &dump {
                     DumpItem::Connections(c) => {
                         let msg = ConnectionsData {
                             token: c.token.clone(),
-                            connections: c.connections.get(range).unwrap_or_default().to_vec(),
+                            connections: c.connections[sent..][range].to_vec(),
                         };
                         interface.handle_connections_data(msg).await
                     }
                     DumpItem::Resources(r) => {
                         let msg = SystemResourcesData {
                             token: r.token.clone(),
-                            resources: r.resources.get(range).unwrap_or_default().to_vec(),
+                            resources: r.resources[sent..][range].to_vec(),
                         };
                         interface.handle_system_resources_data(msg).await
                     }
@@ -75,13 +87,18 @@ pub(crate) async fn handle_connection_and_retransmission(
                     // back off before retrying instead of immediately
                     // re-reading and re-sending the same file in a tight loop.
                     log::warn!("Failed to send dump. Reconnecting...",);
-                    // update dump file with unsent items
-                    dump_dir.update_items_dump_file(file.path(), dump).await;
-                    tokio::time::sleep(Duration::from_secs(10)).await;
-                    break 'file_loop;
+                    failed = true;
+                    break;
                 }
-                // remove sent items from dump
-                dump.drain(range);
+                sent += range.end;
+            }
+
+            if failed {
+                // remove the items that did get sent, in one shot, and persist the rest
+                dump.drain(..sent);
+                dump_dir.update_items_dump_file(file.path(), dump).await;
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                break 'file_loop;
             }
 
             log::info!("Dump file '{:?}' sent successfully", file.file_name());

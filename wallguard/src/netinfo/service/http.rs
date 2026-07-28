@@ -110,22 +110,37 @@ pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut services = Vec::new();
     let mut remaining = Vec::with_capacity(sockets.len());
 
+    // Probe every candidate socket concurrently instead of awaiting each TLS
+    // handshake + HTTP probe one at a time: sequential probing made this scale
+    // linearly (up to TIMEOUT_VALUE per socket) with the number of open
+    // listening ports every scan cycle.
+    let mut set = tokio::task::JoinSet::new();
     for socket in sockets.drain(..) {
-        if matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
-            && let Some((protocol, code)) = detect_protocol(socket.sockaddr).await
-        {
-            if (200..300).contains(&code) {
+        set.spawn(async move {
+            let detected = if matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp) {
+                detect_protocol(socket.sockaddr).await
+            } else {
+                None
+            };
+            (socket, detected)
+        });
+    }
+
+    while let Some(joined) = set.join_next().await {
+        let Ok((socket, detected)) = joined else {
+            continue;
+        };
+
+        match detected {
+            Some((protocol, code)) if (200..300).contains(&code) => {
                 services.push(ServiceInfo {
                     addr: socket.sockaddr,
                     protocol,
                     program: socket.process_name.clone(),
                 });
             }
-
-            continue;
+            _ => remaining.push(socket),
         }
-
-        remaining.push(socket);
     }
 
     *sockets = remaining;

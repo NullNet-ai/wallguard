@@ -3138,6 +3138,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
+name = "listeners"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e06a2deee6dfb82d91999635c5cdd263563c62a0b85c71b4afd43dbb939382e"
+dependencies = [
+ "byteorder",
+ "cc",
+ "libc",
+ "rustix",
+ "windows 0.62.2",
+]
+
+[[package]]
 name = "litemap"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3542,16 +3555,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
-]
-
-[[package]]
-name = "nullnet-libresmon"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11eb36074a3ff5aaf8d47507d0f241fd3dfaf977594232753bef57f33ea21dc6"
-dependencies = [
- "async-channel",
- "sysinfo 0.35.2",
 ]
 
 [[package]]
@@ -6076,20 +6079,6 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.35.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c3ffa3e4ff2b324a57f7aeb3c349656c7b127c3c189520251a648102a92496e"
-dependencies = [
- "libc",
- "memchr",
- "ntapi",
- "objc2-core-foundation",
- "objc2-io-kit",
- "windows 0.61.3",
-]
-
-[[package]]
-name = "sysinfo"
 version = "0.37.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16607d5caffd1c07ce073528f9ed972d88db15dd44023fa57142963be3feb11f"
@@ -6689,12 +6678,12 @@ dependencies = [
  "flexi_logger",
  "is_elevated",
  "libc",
+ "listeners",
  "log",
  "md5",
  "nftables",
  "nix 0.31.3",
  "nullnet-liberror",
- "nullnet-libresmon",
  "nullnet-traffic-monitor",
  "once_cell",
  "openh264",
@@ -6705,7 +6694,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "smbios-lib",
- "sysinfo 0.37.2",
+ "sysinfo",
  "tokio",
  "tokio-rustls",
  "tonic",
@@ -6733,7 +6722,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.10.9",
- "sysinfo 0.37.2",
+ "sysinfo",
  "tar",
  "tokio",
  "tonic",

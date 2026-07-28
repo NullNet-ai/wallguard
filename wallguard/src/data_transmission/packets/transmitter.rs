@@ -27,7 +27,12 @@ pub(crate) async fn transmit_packets(
         if raw_batch.len() >= batch_size || timer.is_expired() {
             timer.reset();
 
-            let connections = parse_packets(std::mem::take(&mut raw_batch));
+            // Swap in a fresh, pre-sized buffer rather than `mem::take`ing
+            // (which would leave a 0-capacity Vec behind) so the next
+            // accumulation cycle doesn't have to regrow from scratch back up
+            // to `batch_size` on every flush.
+            let batch = std::mem::replace(&mut raw_batch, Vec::with_capacity(batch_size));
+            let connections = parse_packets(batch);
             connection_queue.extend(connections);
 
             send_connections(&client, &mut connection_queue, &token_provider, batch_size).await;

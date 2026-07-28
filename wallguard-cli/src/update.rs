@@ -205,7 +205,10 @@ async fn apply_update(version: &str) -> AnyResult<()> {
     // for the lock at all.
     let new_version = poll_agent_version(20, Duration::from_millis(500)).await;
 
-    if new_version.as_deref().is_some_and(|v| versions_match(v, version)) {
+    if new_version
+        .as_deref()
+        .is_some_and(|v| versions_match(v, version))
+    {
         let _ = std::fs::remove_file(&backup_path);
         println!("WallGuard successfully updated to v{version}.");
         return Ok(());

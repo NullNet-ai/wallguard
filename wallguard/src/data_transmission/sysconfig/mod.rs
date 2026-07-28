@@ -124,8 +124,15 @@ async fn upload_all(
         snapshot.push(file.take_snapshot());
     }
 
+    // Parsing a firewall config (nftables ruleset / pfSense-OPNsense XML) is
+    // CPU-bound and can be sizeable; run it on the blocking pool so a slow
+    // parse can't stall the tokio runtime shared with gRPC/heartbeat traffic.
+    let configuration = tokio::task::spawn_blocking(move || Fireparse::parse(snapshot, platform))
+        .await
+        .handle_err(location!())??;
+
     let data = ConfigSnapshot {
-        configuration: Some(Fireparse::parse(snapshot, platform)?),
+        configuration: Some(configuration),
         token: token_provider
             .get()
             .await
@@ -142,8 +149,12 @@ async fn upload_all(
 async fn update_all(files: &mut [SystemConfigurationFile]) -> Result<bool, Error> {
     let mut retval = false;
 
+    // `retval ||= ...` would short-circuit and skip update() on the
+    // remaining files once one returns true — every file must always be
+    // refreshed so its cached content/digest stays current.
     for file in files.iter_mut() {
-        retval = retval || file.update().await?;
+        let changed = file.update().await?;
+        retval = retval || changed;
     }
 
     Ok(retval)

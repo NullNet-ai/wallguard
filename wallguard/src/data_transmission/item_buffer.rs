@@ -1,28 +1,34 @@
+use std::collections::VecDeque;
 use std::ops::RangeTo;
 
+// Backed by a VecDeque (not a Vec) so that repeatedly draining a batch off
+// the front — the access pattern every caller uses — costs O(batch), not
+// O(remaining length): a Vec::drain(..batch) has to shift the whole
+// remaining tail down on every call, which turns catching up a large backlog
+// into an O(n^2) sequence of memmoves.
 pub(crate) struct ItemBuffer<T> {
-    buffer: Vec<T>,
+    buffer: VecDeque<T>,
     size: usize,
 }
 
 impl<T: Clone> ItemBuffer<T> {
     pub(crate) fn new(size: usize) -> Self {
         Self {
-            buffer: Vec::with_capacity(size),
+            buffer: VecDeque::with_capacity(size),
             size,
         }
     }
 
     pub(crate) fn push(&mut self, item: T) {
-        self.buffer.push(item);
+        self.buffer.push_back(item);
     }
 
     pub(crate) fn take(&mut self) -> Vec<T> {
-        std::mem::take(&mut self.buffer)
+        Vec::from(std::mem::take(&mut self.buffer))
     }
 
     pub(crate) fn get(&mut self, range: RangeTo<usize>) -> Vec<T> {
-        self.buffer.get(range).unwrap_or_default().to_vec()
+        self.buffer.iter().take(range.end).cloned().collect()
     }
 
     pub(crate) fn extend(&mut self, items: Vec<T>) {

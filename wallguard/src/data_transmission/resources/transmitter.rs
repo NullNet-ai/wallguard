@@ -1,6 +1,7 @@
 use crate::constants::QUEUE_SIZE_RESOURCES;
 use crate::data_transmission::dump_dir::{DumpDir, DumpItem};
 use crate::data_transmission::item_buffer::ItemBuffer;
+use crate::data_transmission::resources::monitor::SystemResources;
 use crate::token_provider::TokenProvider;
 use crate::wg_server::WGServer;
 use async_channel::Receiver;
@@ -8,7 +9,7 @@ use chrono::Utc;
 use wallguard_common::protobuf::wallguard_service::{SystemResource, SystemResourcesData};
 
 pub(crate) async fn transmit_system_resources(
-    rx: Receiver<nullnet_libresmon::SystemResources>,
+    rx: Receiver<SystemResources>,
     token_provider: TokenProvider,
     dump_dir: DumpDir,
     client: WGServer,
