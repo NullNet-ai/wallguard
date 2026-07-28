@@ -34,9 +34,8 @@ pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
     let mut set = tokio::task::JoinSet::new();
     for socket in sockets.drain(..) {
         set.spawn(async move {
-            let matched =
-                matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
-                    && is_ssh(socket.sockaddr).await;
+            let matched = matches!(socket.protocol, crate::netinfo::sock::Protocol::Tcp)
+                && is_ssh(socket.sockaddr).await;
             (socket, matched)
         });
     }

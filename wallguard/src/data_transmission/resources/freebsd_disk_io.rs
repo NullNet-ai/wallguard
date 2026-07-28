@@ -46,14 +46,7 @@ fn sysctl_string(name: &str) -> Option<String> {
     let c_name = CString::new(name).ok()?;
     let mut len: size_t = 0;
     unsafe {
-        if libc::sysctlbyname(
-            c_name.as_ptr(),
-            null_mut(),
-            &mut len,
-            null_mut(),
-            0,
-        ) != 0
-        {
+        if libc::sysctlbyname(c_name.as_ptr(), null_mut(), &mut len, null_mut(), 0) != 0 {
             return None;
         }
         let mut buf = vec![0u8; len];
@@ -124,7 +117,10 @@ fn strip_partition_suffix(device: &str) -> String {
 /// Resolves a `zpool status` leaf device entry (a raw name like "ada0p3", or a
 /// label like "gpt/zfs0" / "gptid/<uuid>") to the base GEOM disk name that
 /// devstat actually tracks.
-fn resolve_base_disk(leaf: &str, label_mapping: &std::collections::HashMap<String, String>) -> Option<String> {
+fn resolve_base_disk(
+    leaf: &str,
+    label_mapping: &std::collections::HashMap<String, String>,
+) -> Option<String> {
     if leaf.contains('/') {
         label_mapping.get(&format!("/dev/{leaf}")).cloned()
     } else {
