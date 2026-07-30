@@ -54,12 +54,27 @@ pub async fn await_authorization(
 
     match message {
         server_message::Message::DeviceAuthorizedMessage(data) => {
-            if let Some(app_id) = data.app_id {
-                Storage::set_value(Secret::AppId, &app_id).await?;
-            }
+            let app_id = match data.app_id {
+                Some(app_id) => {
+                    Storage::set_value(Secret::AppId, &app_id).await?;
+                    Some(app_id)
+                }
+                None => Storage::get_value(Secret::AppId).await,
+            };
 
-            if let Some(app_secret) = data.app_secret {
-                Storage::set_value(Secret::AppSecret, &app_secret).await?;
+            let app_secret = match data.app_secret {
+                Some(app_secret) => {
+                    Storage::set_value(Secret::AppSecret, &app_secret).await?;
+                    Some(app_secret)
+                }
+                None => Storage::get_value(Secret::AppSecret).await,
+            };
+
+            if app_id.is_none() || app_secret.is_none() {
+                return Err(
+                    "Server approved device without providing credentials, and none are cached locally",
+                )
+                .handle_err(location!());
             }
 
             Ok(Verdict::Approved)

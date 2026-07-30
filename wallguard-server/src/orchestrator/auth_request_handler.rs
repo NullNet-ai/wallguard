@@ -26,6 +26,11 @@ macro_rules! fail_with_status {
         let _ = $outbound.send(Err(tonic::Status::internal($msg))).await;
         return;
     }};
+    ($outbound:expr, $msg:expr, $err:expr) => {{
+        log::error!("{}: {}", $msg, $err.to_str());
+        let _ = $outbound.send(Err(tonic::Status::internal($msg))).await;
+        return;
+    }};
 }
 
 pub struct AuthReqHandler {
@@ -237,12 +242,13 @@ impl AuthReqHandler {
             ..Default::default()
         };
 
-        let Ok(instance_id) = context
+        let instance_id = match context
             .datastore
             .create_device_instance(token, &device_instance)
             .await
-        else {
-            fail_with_status!(outbound, "Failed to create device instance")
+        {
+            Ok(instance_id) => instance_id,
+            Err(err) => fail_with_status!(outbound, "Failed to create device instance", err),
         };
 
         let instance = Arc::new(Mutex::new(Instance::new(
