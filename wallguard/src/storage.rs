@@ -76,15 +76,38 @@ impl Storage {
         create_dir_all(&dir).await.handle_err(location!())?;
         set_permissions_700(&dir).await?;
 
-        let file_exists = tokio::fs::try_exists(&file_path).await.unwrap_or(false);
+        let file_exists = match tokio::fs::try_exists(&file_path).await {
+            Ok(exists) => exists,
+            Err(err) => {
+                log::warn!(
+                    "Failed to check if {} exists: {err}; treating it as absent",
+                    file_path.display()
+                );
+                false
+            }
+        };
 
         let config = if file_exists {
             set_permissions_600(&file_path).await?;
-            read_to_string(&file_path)
-                .await
-                .ok()
-                .and_then(|s| serde_json::from_str::<ConfigStore>(&s).ok())
-                .unwrap_or_default()
+            match read_to_string(&file_path).await {
+                Ok(contents) => match serde_json::from_str::<ConfigStore>(&contents) {
+                    Ok(config) => config,
+                    Err(err) => {
+                        log::warn!(
+                            "Failed to parse {}: {err}; falling back to an empty config",
+                            file_path.display()
+                        );
+                        ConfigStore::default()
+                    }
+                },
+                Err(err) => {
+                    log::warn!(
+                        "Failed to read {}: {err}; falling back to an empty config",
+                        file_path.display()
+                    );
+                    ConfigStore::default()
+                }
+            }
         } else {
             let default = ConfigStore::default();
             let json = serde_json::to_string_pretty(&default).handle_err(location!())?;
