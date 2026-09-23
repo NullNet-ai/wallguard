@@ -11,6 +11,7 @@ use crate::{data_transmission::dump_dir::DumpDir, token_provider::TokenProvider}
 use async_channel::Receiver;
 use nullnet_traffic_monitor::PacketInfo;
 use tokio::sync::broadcast;
+use tokio::task::AbortHandle;
 
 #[derive(Debug, Clone)]
 pub(crate) struct TransmissionManager {
@@ -18,6 +19,7 @@ pub(crate) struct TransmissionManager {
     resource_monitoring: Option<Receiver<SystemResources>>,
     sysconf_monitoring: Option<broadcast::Sender<()>>,
     services_monitoring: Option<broadcast::Sender<()>>,
+    retransmission: Option<AbortHandle>,
 
     interface: WGServer,
     dump_dir: DumpDir,
@@ -42,6 +44,7 @@ impl TransmissionManager {
             resource_monitoring: None,
             sysconf_monitoring: None,
             services_monitoring: None,
+            retransmission: None,
 
             interface,
             dump_dir,
@@ -53,13 +56,28 @@ impl TransmissionManager {
         }
     }
 
-    pub(crate) fn start_retransmission_handler(&self) {
+    pub(crate) fn start_retransmission_handler(&mut self) {
+        if self.retransmission.is_some() {
+            return;
+        }
+
         let interface = self.interface.clone();
         let dump_dir = self.dump_dir.clone();
         let token_provider = self.token_provider.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             handle_connection_and_retransmission(interface, dump_dir, token_provider).await;
         });
+        self.retransmission = Some(handle.abort_handle());
+    }
+
+    /// The retransmission loop never exits on its own; it has to be aborted
+    /// when its context is discarded, or it keeps that context's gRPC
+    /// channel (and TCP connection) alive for the rest of the process.
+    pub(crate) fn terminate_retransmission_handler(&mut self) {
+        if let Some(handle) = self.retransmission.take() {
+            log::info!("Terminating retransmission handler");
+            handle.abort();
+        }
     }
 
     pub(crate) fn has_services_monitoring(&self) -> bool {

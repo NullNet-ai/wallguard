@@ -11,6 +11,7 @@ use tokio::{
 };
 
 use crate::utilities::hash::sha256_digest_bytes;
+use crate::utilities::net;
 
 pub struct TunnelInstance {
     pub(crate) stream: TcpStream,
@@ -63,9 +64,10 @@ impl ReverseTunnel {
     pub async fn request_channel(&self, token: &str) -> Result<TunnelInstance, Error> {
         let digest = sha256_digest_bytes(token);
 
-        let mut stream = TcpStream::connect(self.addr)
-            .await
-            .handle_err(location!())?;
+        // Bounded connect + keepalive: tunnels are long-lived, and without
+        // keepalive a tunnel whose server side vanished without a FIN/RST
+        // blocks its session task (and holds its sockets) forever.
+        let mut stream = net::connect(self.addr).await.handle_err(location!())?;
 
         stream.write_all(&digest).await.handle_err(location!())?;
 

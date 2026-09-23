@@ -38,7 +38,7 @@ impl Context {
 
         let dump_dir = DumpDir::new(*DISK_SIZE / 2).await;
 
-        let transmission_manager = TransmissionManager::new(
+        let mut transmission_manager = TransmissionManager::new(
             server.clone(),
             dump_dir,
             token_provider.clone(),
@@ -56,5 +56,23 @@ impl Context {
             client_data,
             transmission_manager: Arc::new(Mutex::new(transmission_manager)),
         })
+    }
+
+    /// Stops every background task owned by this context and drops its gRPC
+    /// channel. Must be called before the context is replaced or abandoned:
+    /// the tasks hold clones of `server`, so otherwise they keep the old
+    /// connection open indefinitely.
+    pub async fn teardown(&self) {
+        let mut manager = self.transmission_manager.lock().await;
+
+        manager.terminate_packet_capture();
+        manager.terminate_resource_monitoring();
+        manager.terminate_sysconfig_monitoring();
+        manager.terminate_services_monitoring();
+        manager.terminate_retransmission_handler();
+
+        drop(manager);
+
+        self.server.reset().await;
     }
 }

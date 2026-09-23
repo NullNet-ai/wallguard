@@ -213,25 +213,45 @@ async fn handle_incoming_messages(inbound: InboundStream, context: Context) -> R
                             );
                         }
                     }
+                    // Session commands dial local services and the tunnel
+                    // acceptor, so they run in their own tasks: executed
+                    // inline, one slow connect would stall every command
+                    // queued behind it on the control channel.
                     Message::OpenSshSessionCommand(ssh_session_data) => {
                         let cmd = OpenSshSessionCommand::new(context.clone(), ssh_session_data);
 
-                        if let Err(err) = cmd.execute().await {
-                            log::error!("OpenSshSessionCommand execution failed: {}", err.to_str());
-                        }
+                        tokio::spawn(async move {
+                            if let Err(err) = cmd.execute().await {
+                                log::error!(
+                                    "OpenSshSessionCommand execution failed: {}",
+                                    err.to_str()
+                                );
+                            }
+                        });
                     }
                     Message::OpenTtySessionCommand(tunnel_token) => {
                         let cmd = OpenTtySessionCommand::new(context.clone(), tunnel_token);
-                        if let Err(err) = cmd.execute().await {
-                            log::error!("OpenTtySessionCommand execution failed: {}", err.to_str());
-                        }
+
+                        tokio::spawn(async move {
+                            if let Err(err) = cmd.execute().await {
+                                log::error!(
+                                    "OpenTtySessionCommand execution failed: {}",
+                                    err.to_str()
+                                );
+                            }
+                        });
                     }
                     Message::OpenUiSessionCommand(ui_session_data) => {
                         let cmd = OpenUiSessionCommand::new(context.clone(), ui_session_data);
 
-                        if let Err(err) = cmd.execute().await {
-                            log::error!("OpenUiSessionCommand execution failed: {}", err.to_str());
-                        }
+                        tokio::spawn(async move {
+                            if let Err(err) = cmd.execute().await {
+                                log::error!(
+                                    "OpenUiSessionCommand execution failed: {}",
+                                    err.to_str()
+                                );
+                            }
+                        });
                     }
                     Message::CreateFilterRule(rule) => {
                         let cmd = CreateFilterRuleCommand::new(rule, context.clone());
@@ -271,12 +291,14 @@ async fn handle_incoming_messages(inbound: InboundStream, context: Context) -> R
                     Message::OpenRemoteDesktopSessionCommand(token) => {
                         let cmd = OpenRemoteDesktopSessionCommand::new(context.clone(), token);
 
-                        if let Err(err) = cmd.execute().await {
-                            log::error!(
-                                "OpenRemoteDesktopSessionCommand execution failed: {}",
-                                err.to_str()
-                            );
-                        }
+                        tokio::spawn(async move {
+                            if let Err(err) = cmd.execute().await {
+                                log::error!(
+                                    "OpenRemoteDesktopSessionCommand execution failed: {}",
+                                    err.to_str()
+                                );
+                            }
+                        });
                     }
                     Message::AuthorizationRejectedMessage(_) => {
                         Err("Unexpected message").handle_err(location!())?

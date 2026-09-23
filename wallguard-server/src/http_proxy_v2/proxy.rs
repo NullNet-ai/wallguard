@@ -1,4 +1,6 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::app_context::AppContext;
 use crate::datastore::{ServiceInfo, TunnelType};
@@ -8,6 +10,11 @@ use crate::tunneling::tunnel_common::WallguardTunnel;
 use pingora::prelude::*;
 use pingora::upstreams::peer::HttpPeer;
 use tonic::async_trait;
+
+/// Pooled upstream connections idle for longer than this are closed. Each
+/// one pins a tunnel socket plus a local socket on the agent, and Pingora's
+/// default is to keep idle pooled connections until the upstream closes.
+const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 
 pub struct Proxy {
     context: AppContext,
@@ -79,6 +86,16 @@ impl ProxyHttp for Proxy {
         drop(td);
 
         peer.options.custom_l4 = Some(Arc::new(Connector::new(tunnel)));
+
+        // Pingora's pool key covers the address, scheme, SNI and TLS
+        // settings but not `custom_l4`, so two tunnels to the same service
+        // address (every device's webgui on 127.0.0.1:443, say) would share
+        // pooled connections: a request for one device could be sent down
+        // another device's tunnel. Keying the pool on the tunnel prevents it.
+        let mut hasher = DefaultHasher::new();
+        tunnel_id.hash(&mut hasher);
+        peer.group_key = hasher.finish();
+        peer.options.idle_timeout = Some(POOL_IDLE_TIMEOUT);
 
         peer.options.verify_cert = false;
         peer.options.verify_hostname = false;

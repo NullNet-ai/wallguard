@@ -22,6 +22,9 @@ pub struct Daemon {
     server_data: ServerData,
     state: DaemonState,
     connect_handle: Option<tokio::task::JoinHandle<()>>,
+    /// The context of the current (or last) connection attempt, kept so it
+    /// can be torn down when it is replaced or the org is left.
+    context: Option<Context>,
     batch_size: usize,
     shutdown_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
@@ -35,6 +38,7 @@ impl Daemon {
             server_data,
             state: DaemonState::default(),
             connect_handle: None,
+            context: None,
             batch_size,
             shutdown_tx: Some(shutdown_tx),
         }));
@@ -86,6 +90,8 @@ impl Daemon {
             .await
             .map_err(|err| err.to_str().to_string())?;
 
+        lock.teardown_context().await;
+
         let context = Context::new(
             this.clone(),
             lock.client_data.clone(),
@@ -94,6 +100,7 @@ impl Daemon {
         )
         .await
         .map_err(|err| err.to_str().to_string())?;
+        lock.context = Some(context.clone());
 
         // Set state and store the task handle atomically so leave_org can abort it.
         lock.state = DaemonState::Connecting;
@@ -118,6 +125,8 @@ impl Daemon {
             return Err("No installation code found.".into());
         }
 
+        lock.teardown_context().await;
+
         let context = Context::new(
             this.clone(),
             lock.client_data.clone(),
@@ -126,6 +135,7 @@ impl Daemon {
         )
         .await
         .map_err(|err| err.to_str().to_string())?;
+        lock.context = Some(context.clone());
 
         lock.state = DaemonState::Connecting;
         let handle = tokio::spawn(async move { Daemon::connect(context, 0).await });
@@ -145,6 +155,7 @@ impl Daemon {
                     handle.abort();
                 }
                 let _ = Storage::delete_value(Secret::InstallationCode).await;
+                this.teardown_context().await;
                 this.state = DaemonState::Idle;
                 Ok(())
             }
@@ -155,6 +166,7 @@ impl Daemon {
                     .map_err(|err| err.to_str().to_string())?;
 
                 control_channel.terminate().await;
+                this.teardown_context().await;
 
                 this.state = DaemonState::Idle;
                 Ok(())
@@ -162,6 +174,7 @@ impl Daemon {
 
             DaemonState::Error(_) => {
                 let _ = Storage::delete_value(Secret::InstallationCode).await;
+                this.teardown_context().await;
                 this.state = DaemonState::Idle;
                 Ok(())
             }
@@ -187,6 +200,7 @@ impl Daemon {
             DaemonState::Idle | DaemonState::Error(_) => {}
         }
 
+        lock.teardown_context().await;
         lock.state = DaemonState::Idle;
 
         match lock.shutdown_tx.take() {
@@ -195,6 +209,12 @@ impl Daemon {
                 Ok(())
             }
             None => Err("Shutdown already in progress.".into()),
+        }
+    }
+
+    async fn teardown_context(&mut self) {
+        if let Some(context) = self.context.take() {
+            context.teardown().await;
         }
     }
 

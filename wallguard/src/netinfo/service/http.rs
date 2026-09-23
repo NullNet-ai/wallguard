@@ -1,4 +1,4 @@
-use crate::netinfo::service::ServiceInfo;
+use crate::netinfo::service::Protocol;
 use crate::netinfo::sock::SocketInfo;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -7,18 +7,19 @@ use std::time::Duration;
 use rustls::pki_types::ServerName;
 use rustls::{ClientConfig, RootCertStore};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tokio_rustls::TlsConnector;
 use wallguard_common::cert_verifier::AcceptAllVerifier;
 
 const TIMEOUT_VALUE: Duration = Duration::from_millis(200);
 
-fn create_http_request(addr: SocketAddr) -> String {
-    format!(
-        "HEAD / HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
-        addr.ip()
-    )
+fn create_http_request(target: SocketAddr) -> String {
+    let host = match target {
+        SocketAddr::V4(v4) => v4.ip().to_string(),
+        SocketAddr::V6(v6) => format!("[{}]", v6.ip()),
+    };
+
+    format!("HEAD / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n")
 }
 
 async fn send_and_check_http_response(
@@ -47,11 +48,9 @@ async fn send_and_check_http_response(
 }
 
 async fn is_http_impl(addr: SocketAddr) -> Option<i32> {
-    let Ok(mut stream) = TcpStream::connect(addr).await else {
-        return None;
-    };
+    let (mut stream, target) = super::connect_probe(addr).await?;
 
-    let request = create_http_request(addr);
+    let request = create_http_request(target);
     send_and_check_http_response(&mut stream, &request).await
 }
 
@@ -74,16 +73,17 @@ fn create_tls_connector() -> TlsConnector {
 }
 
 async fn is_https_impl(addr: SocketAddr) -> Option<i32> {
-    let Ok(stream) = TcpStream::connect(addr).await else {
-        return None;
-    };
+    let (stream, target) = super::connect_probe(addr).await?;
 
     let connector = create_tls_connector();
-    let Ok(mut tls_stream) = connector.connect(ServerName::from(addr.ip()), stream).await else {
+    let Ok(mut tls_stream) = connector
+        .connect(ServerName::from(target.ip()), stream)
+        .await
+    else {
         return None;
     };
 
-    let request = create_http_request(addr);
+    let request = create_http_request(target);
     send_and_check_http_response(&mut tls_stream, &request).await
 }
 
@@ -93,20 +93,15 @@ async fn is_https(addr: SocketAddr) -> Option<i32> {
         .unwrap_or(None)
 }
 
-async fn detect_protocol(addr: SocketAddr) -> Option<(crate::netinfo::service::Protocol, i32)> {
-    if let Some(retval) = is_https(addr)
-        .await
-        .map(|code| (crate::netinfo::service::Protocol::Https, code))
-    {
+async fn detect_protocol(addr: SocketAddr) -> Option<(Protocol, i32)> {
+    if let Some(retval) = is_https(addr).await.map(|code| (Protocol::Https, code)) {
         Some(retval)
     } else {
-        is_http(addr)
-            .await
-            .map(|code| (crate::netinfo::service::Protocol::Http, code))
+        is_http(addr).await.map(|code| (Protocol::Http, code))
     }
 }
 
-pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
+pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<(SocketInfo, Protocol)> {
     let mut services = Vec::new();
     let mut remaining = Vec::with_capacity(sockets.len());
 
@@ -133,11 +128,7 @@ pub(super) async fn filter(sockets: &mut Vec<SocketInfo>) -> Vec<ServiceInfo> {
 
         match detected {
             Some((protocol, code)) if (200..300).contains(&code) => {
-                services.push(ServiceInfo {
-                    addr: socket.sockaddr,
-                    protocol,
-                    program: socket.process_name.clone(),
-                });
+                services.push((socket, protocol));
             }
             _ => remaining.push(socket),
         }

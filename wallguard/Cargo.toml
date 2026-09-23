@@ -37,6 +37,7 @@ rustls.workspace = true
 tokio-rustls.workspace = true
 whoami = "2.0.2"
 listeners = "0.6"
+socket2 = "0.6"
 
 [target.'cfg(any(target_os = "linux", target_os = "freebsd"))'.dependencies]
 x11rb = "0.13"

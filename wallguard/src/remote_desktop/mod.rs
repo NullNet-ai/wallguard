@@ -59,6 +59,10 @@ impl RemoteDesktopManager {
 
         if lock.is_empty() {
             let manager_clone = self.clone();
+            // Subscribe before spawning: if the only client disconnects
+            // before the capture thread gets scheduled, a signal sent to a
+            // not-yet-subscribed receiver is lost and the loop runs forever.
+            let terminate_receiver = self.terminate.subscribe();
             std::thread::spawn(move || {
                 let rt = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -66,7 +70,7 @@ impl RemoteDesktopManager {
                     .unwrap();
 
                 rt.block_on(async move {
-                    capture_loop(manager_clone).await;
+                    capture_loop(manager_clone, terminate_receiver).await;
                 });
             });
         }
@@ -111,9 +115,11 @@ impl RemoteDesktopManager {
     }
 }
 
-async fn capture_loop(manager: RemoteDesktopManager) {
+async fn capture_loop(
+    manager: RemoteDesktopManager,
+    mut terminate_receiver: broadcast::Receiver<()>,
+) {
     let cleanup = manager.clone();
-    let mut terminate_receiver = manager.terminate.subscribe();
     tokio::select! {
         _ = terminate_receiver.recv() => {
             log::info!("RemoteDesktopManager: capture_loop received termination signal.")
