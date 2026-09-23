@@ -36,6 +36,8 @@ impl ExecutableCommand for OpenTtySessionCommand {
                 _ = stream_to_pty(reader, pty.writer) => {},
                 _ = pty_to_stream(writer, pty.reader) => {},
             }
+
+            pty.child.terminate().await;
         });
 
         Ok(())

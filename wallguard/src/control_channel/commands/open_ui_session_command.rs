@@ -1,9 +1,15 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::net::SocketAddr;
-use tokio::net::TcpStream;
+use std::time::Duration;
 use wallguard_common::protobuf::wallguard_commands::UiSessionData;
 
+use crate::utilities::net;
 use crate::{context::Context, control_channel::command::ExecutableCommand};
+
+/// Each UI tunnel carries one pooled upstream HTTP connection from the
+/// server's proxy. One that has carried nothing for this long is an
+/// abandoned keep-alive connection, not an active page.
+const UI_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 
 pub struct OpenUiSessionCommand {
     context: Context,
@@ -24,9 +30,11 @@ impl ExecutableCommand for OpenUiSessionCommand {
             .parse()
             .handle_err(location!())?;
 
-        let mut local_stream = TcpStream::connect(addr).await.handle_err(location!())?;
+        // The address comes from service discovery and is the listener's
+        // bind address, e.g. `::` for a dual-stack wildcard listener.
+        let local_stream = net::connect_local(addr).await.handle_err(location!())?;
 
-        let Ok(mut tunnel) = self
+        let Ok(tunnel) = self
             .context
             .tunnel
             .request_channel(&self.data.tunnel_token)
@@ -36,7 +44,7 @@ impl ExecutableCommand for OpenUiSessionCommand {
         };
 
         tokio::spawn(async move {
-            let _ = tokio::io::copy_bidirectional(&mut tunnel, &mut local_stream).await;
+            net::relay(tunnel, local_stream, Some(UI_IDLE_TIMEOUT)).await;
         });
 
         Ok(())

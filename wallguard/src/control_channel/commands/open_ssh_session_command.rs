@@ -1,8 +1,8 @@
 use crate::context::Context;
 use crate::control_channel::command::ExecutableCommand;
 use crate::utilities;
+use crate::utilities::net;
 use nullnet_liberror::{ErrorHandler, Location, location};
-use tokio::net::TcpStream;
 use wallguard_common::protobuf::wallguard_commands::SshSessionData;
 
 pub struct OpenSshSessionCommand {
@@ -33,12 +33,11 @@ impl ExecutableCommand for OpenSshSessionCommand {
             }
         };
 
-        let Ok(mut sshd_stream) = TcpStream::connect(format!("127.0.0.1:{}", ports[0])).await
-        else {
+        let Ok(sshd_stream) = net::connect(format!("127.0.0.1:{}", ports[0])).await else {
             return Err("Cant establish sshd connection").handle_err(location!());
         };
 
-        let Ok(mut tunnel_stream) = self
+        let Ok(tunnel_stream) = self
             .context
             .tunnel
             .request_channel(&self.data.tunnel_token)
@@ -48,7 +47,9 @@ impl ExecutableCommand for OpenSshSessionCommand {
         };
 
         tokio::spawn(async move {
-            let _ = tokio::io::copy_bidirectional(&mut tunnel_stream, &mut sshd_stream).await;
+            // No idle cutoff: an open SSH terminal may legitimately sit idle
+            // for hours. Dead peers are caught by TCP keepalive instead.
+            net::relay(tunnel_stream, sshd_stream, None).await;
         });
 
         Ok(())

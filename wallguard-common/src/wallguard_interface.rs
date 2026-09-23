@@ -21,10 +21,25 @@ use crate::protobuf::wallguard_service::{
 /// handshake done by `connect()`. Without this, a connection attempt that
 /// gets silently dropped (rather than actively refused) can hang forever.
 async fn connect_with_timeout(ep: Endpoint) -> Result<Channel, Error> {
+    let ep = configure_endpoint(ep);
     match tokio::time::timeout(Duration::from_secs(10), ep.connect()).await {
         Ok(result) => result.handle_err(location!()),
         Err(_) => Err("Timed out connecting to the server").handle_err(location!()),
     }
+}
+
+/// `keep_alive_timeout` on its own is inert: it is the deadline for a ping
+/// ack, and pings are only sent once `http2_keep_alive_interval` is set.
+/// Without pings (or TCP keepalive) a connection that dies without a FIN/RST
+/// goes unnoticed until the kernel's retransmission timeout, if it is
+/// writing at all, and forever if it is idle.
+fn configure_endpoint(ep: Endpoint) -> Endpoint {
+    ep.connect_timeout(Duration::from_secs(10))
+        .tcp_keepalive(Some(Duration::from_secs(60)))
+        .http2_keep_alive_interval(Duration::from_secs(30))
+        .keep_alive_timeout(Duration::from_secs(10))
+        .keep_alive_while_idle(true)
+        .timeout(Duration::from_secs(10))
 }
 
 #[derive(Clone, Debug)]
@@ -38,10 +53,7 @@ impl WallGuardGrpcInterface {
         let addr = format!("http://{addr}:{port}");
 
         let channel = {
-            let ep = Channel::from_shared(addr)
-                .expect("Failed to parse address")
-                .keep_alive_timeout(Duration::from_secs(10))
-                .timeout(Duration::from_secs(10));
+            let ep = Channel::from_shared(addr).expect("Failed to parse address");
             connect_with_timeout(ep).await?
         };
 
@@ -55,10 +67,7 @@ impl WallGuardGrpcInterface {
         let addr = format!("http://{addr}");
 
         let channel = {
-            let ep = Channel::from_shared(addr)
-                .expect("Failed to parse address")
-                .keep_alive_timeout(Duration::from_secs(10))
-                .timeout(Duration::from_secs(10));
+            let ep = Channel::from_shared(addr).expect("Failed to parse address");
             connect_with_timeout(ep).await?
         };
 

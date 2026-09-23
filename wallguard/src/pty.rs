@@ -1,5 +1,5 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
-use portable_pty::{CommandBuilder, NativePtySystem, PtySize, PtySystem};
+use portable_pty::{Child, CommandBuilder, NativePtySystem, PtySize, PtySystem};
 use std::sync::Mutex;
 use std::{
     io::{Read, Write},
@@ -9,10 +9,28 @@ use std::{
 pub type PtyReader = Arc<Mutex<Box<dyn Read + Send>>>;
 pub type PtyWriter = Arc<Mutex<Box<dyn Write + Send>>>;
 
-#[derive(Clone)]
 pub struct Pty {
     pub reader: PtyReader,
     pub writer: PtyWriter,
+    pub child: PtyChild,
+}
+
+/// Handle to the shell running on the PTY's slave side.
+///
+/// The shell must be killed explicitly when its session ends: while it is
+/// alive it keeps the slave open, so a reader blocked on the master never
+/// sees EOF and the blocking-pool thread running it is never released.
+pub struct PtyChild(Box<dyn Child + Send + Sync>);
+
+impl PtyChild {
+    /// Kills the shell (a no-op if it already exited) and reaps it.
+    pub async fn terminate(mut self) {
+        let _ = tokio::task::spawn_blocking(move || {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        })
+        .await;
+    }
 }
 
 fn default_shell() -> &'static str {
@@ -43,7 +61,7 @@ impl Pty {
             })
             .handle_err(location!())?;
 
-        let _ = pty
+        let child = pty
             .slave
             .spawn_command(CommandBuilder::new(command))
             .handle_err(location!())?;
@@ -54,6 +72,7 @@ impl Pty {
         Ok(Self {
             reader: Arc::new(Mutex::new(reader)),
             writer: Arc::new(Mutex::new(writer)),
+            child: PtyChild(child),
         })
     }
 }
