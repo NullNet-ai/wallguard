@@ -144,7 +144,7 @@ mod x11 {
             32 => {
                 // BGRX: blue=byte[0], green=byte[1], red=byte[2], unused=byte[3]
                 let mut rgb = Vec::with_capacity(data.len() / 4 * 3);
-                for chunk in data.chunks_exact(4) {
+                for chunk in data.as_chunks::<4>().0 {
                     rgb.push(chunk[2]); // R
                     rgb.push(chunk[1]); // G
                     rgb.push(chunk[0]); // B
@@ -154,7 +154,7 @@ mod x11 {
             24 => {
                 // BGR: blue=byte[0], green=byte[1], red=byte[2]
                 let mut rgb = Vec::with_capacity(data.len());
-                for chunk in data.chunks_exact(3) {
+                for chunk in data.as_chunks::<3>().0 {
                     rgb.push(chunk[2]); // R
                     rgb.push(chunk[1]); // G
                     rgb.push(chunk[0]); // B
@@ -164,7 +164,7 @@ mod x11 {
             _ => {
                 // Fallback: assume 32bpp BGRX
                 let mut rgb = Vec::with_capacity(data.len() / 4 * 3);
-                for chunk in data.chunks_exact(4) {
+                for chunk in data.as_chunks::<4>().0 {
                     rgb.push(chunk[2]);
                     rgb.push(chunk[1]);
                     rgb.push(chunk[0]);
