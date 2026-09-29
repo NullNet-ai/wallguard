@@ -17,8 +17,10 @@ impl TimeoutController {
 
         let idle_timeout =
             read_timeout_env("TUNNEL_CONTROLLER_IDLE_TIMEOUT").unwrap_or(DEFAULT_IDLE_TIMEOUT);
-        let awake_interval =
-            read_timeout_env("TUNNEL_CONTROLLER_AWAKE_INTERVAL").unwrap_or(DEFAULT_AWAKE_INTERVAL);
+        // A zero interval would turn the controller into a busy loop over the tunnels lock.
+        let awake_interval = read_timeout_env("TUNNEL_CONTROLLER_AWAKE_INTERVAL")
+            .unwrap_or(DEFAULT_AWAKE_INTERVAL)
+            .max(1);
         let active_terminal_timeout = read_timeout_env("TUNNEL_CONTROLLER_ACTIVE_TERMINAL_TIMEOUT");
         let hard_timeout = read_timeout_env("TUNNEL_CONTROLLER_HARD_TIMEOUT");
 
