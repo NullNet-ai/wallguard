@@ -5,6 +5,17 @@ use wallguard_common::protobuf::wallguard_service::DeviceSettingsRequest;
 pub async fn post_startup(context: Context) {
     log::info!("Post startup procedure init");
 
+    // Started before anything below can bail out: service reporting doesn't
+    // depend on device settings, and `monitor_services` acquires its own
+    // token and retries on failure. Starting it last meant a slow token or a
+    // failed settings fetch left the agent reporting no services at all
+    // until the control channel reconnected.
+    context
+        .transmission_manager
+        .lock()
+        .await
+        .start_services_monitoring();
+
     let timeout = Duration::from_secs(10);
 
     let token = context
@@ -62,10 +73,4 @@ pub async fn post_startup(context: Context) {
             .await
             .start_packet_capture();
     }
-
-    context
-        .transmission_manager
-        .lock()
-        .await
-        .start_services_monitoring();
 }
