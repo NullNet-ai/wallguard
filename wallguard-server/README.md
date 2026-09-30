@@ -9,7 +9,7 @@
 | `DATASTORE_HOST` | Hostname or IP of the datastore |
 | `DATASTORE_PORT` | Port of the datastore |
 | `DATASTORE_TLS` | Whether to use TLS / secure connection to datastore |
-| `STORE_TELEMETRY_IN_DATASTORE` | Set to `false` to accept connections and system resources data without saving it to the datastore (default `true`) |
+| `STORE_TELEMETRY_IN_DATASTORE` | Set to `false` to accept connections, system resources and heartbeats without saving them to the datastore (default `true`) |
 | `ROOT_ACCOUNT_ID` | Datastore root account ID |
 | `ROOT_ACCOUNT_SECRET` | Datastore root account secret |
 | `SYSTEM_ACCOUNT_ID` | Datastore system account ID |
