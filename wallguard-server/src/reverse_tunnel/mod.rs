@@ -1,6 +1,7 @@
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
 use tokio::sync::Mutex;
@@ -15,6 +16,15 @@ mod tunnel_token;
 pub use tunnel_instance::TunnelInstance;
 
 use crate::app_context::AppContext;
+
+/// How long a freshly accepted connection may take to send its token hash.
+/// Without a bound, idle connections (scanners, half-open agents) pile up and
+/// eventually exhaust the process's file descriptors.
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Pause after a failed `accept()`. Errors such as EMFILE are persistent, so
+/// retrying immediately turns the accept loop into a CPU-bound spin.
+const ACCEPT_ERROR_BACKOFF: Duration = Duration::from_millis(100);
 
 pub type ListenersMap = Arc<Mutex<HashMap<TokenHash, oneshot::Sender<TunnelInstance>>>>;
 
@@ -63,8 +73,13 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
         .handle_err(location!())?;
 
     loop {
-        let Ok((mut stream, _)) = listener.accept().await else {
-            continue;
+        let mut stream = match listener.accept().await {
+            Ok((stream, _)) => stream,
+            Err(err) => {
+                log::error!("Tunnel acceptor: failed to accept connection: {err}");
+                tokio::time::sleep(ACCEPT_ERROR_BACKOFF).await;
+                continue;
+            }
         };
 
         let ctx = context.clone();
@@ -75,7 +90,10 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
              * Send Confirmation or Rejection message to the client
              */
 
-            let Ok(hash) = TokenHash::read_from_stream(&mut stream).await else {
+            let Ok(Ok(hash)) =
+                tokio::time::timeout(HANDSHAKE_TIMEOUT, TokenHash::read_from_stream(&mut stream))
+                    .await
+            else {
                 log::error!("Failed to read token hash from newely accepted TCP stream");
                 let _ = stream.shutdown().await;
                 return;
