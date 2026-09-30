@@ -15,7 +15,7 @@ impl WallGuardService {
         let token =
             Token::from_jwt(&data.token).map_err(|_| Status::internal("Malformed JWT token"))?;
 
-        if !self.store_telemetry {
+        if !self.context.store_telemetry {
             log::info!(
                 "Accepted {} connections from device {} (not stored: STORE_TELEMETRY_IN_DATASTORE=false)",
                 data.connections.len(),

@@ -125,7 +125,9 @@ async fn authstream(
                             client_message::Message::Heartbeat(()) => {
                                 log::debug!("Received a heartbeat from {device_id}");
 
-                                if let Ok(token) = context.sysdev_token_provider.get().await {
+                                if !context.store_telemetry {
+                                    log::debug!("Heartbeat from {device_id} not stored: STORE_TELEMETRY_IN_DATASTORE=false");
+                                } else if let Ok(token) = context.sysdev_token_provider.get().await {
                                     let data = HeartbeatModel::from_device_id(device_id.clone());
                                     if context
                                         .datastore

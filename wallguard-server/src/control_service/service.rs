@@ -1,5 +1,4 @@
 use crate::app_context::AppContext;
-use crate::control_service::config::store_telemetry_in_datastore;
 use crate::traffic_handler::ip_info::ip_info_handler;
 use nullnet_liberror::{Error, ErrorHandler, Location, location};
 use std::net::{IpAddr, SocketAddr};
@@ -23,7 +22,6 @@ const IP_INFO_CACHE_SIZE: usize = 10_000;
 pub struct WallGuardService {
     pub(crate) context: AppContext,
     pub(crate) ip_info_tx: mpsc::Sender<Option<IpAddr>>,
-    pub(crate) store_telemetry: bool,
 }
 
 impl WallGuardService {
@@ -36,18 +34,9 @@ impl WallGuardService {
             ip_info_handler(&ip_info_rx, IP_INFO_CACHE_SIZE, &handle, ctx);
         });
 
-        let store_telemetry = store_telemetry_in_datastore();
-        if !store_telemetry {
-            log::warn!(
-                "STORE_TELEMETRY_IN_DATASTORE=false: connections and system resources \
-                 will be accepted but not saved to the datastore"
-            );
-        }
-
         Self {
             context,
             ip_info_tx,
-            store_telemetry,
         }
     }
 
