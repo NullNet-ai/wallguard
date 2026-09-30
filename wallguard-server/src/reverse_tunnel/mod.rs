@@ -6,8 +6,8 @@ use tokio::io::AsyncWriteExt;
 
 use tokio::sync::Mutex;
 use tokio::sync::oneshot;
-use tunnel_token::TokenHash;
 use tunnel_token::TunnelToken;
+use tunnel_token::{HandshakeFailure, TokenHash};
 
 mod config;
 mod tunnel_instance;
@@ -73,8 +73,8 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
         .handle_err(location!())?;
 
     loop {
-        let mut stream = match listener.accept().await {
-            Ok((stream, _)) => stream,
+        let (mut stream, peer) = match listener.accept().await {
+            Ok(accepted) => accepted,
             Err(err) => {
                 log::error!("Tunnel acceptor: failed to accept connection: {err}");
                 tokio::time::sleep(ACCEPT_ERROR_BACKOFF).await;
@@ -90,13 +90,23 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
              * Send Confirmation or Rejection message to the client
              */
 
-            let Ok(Ok(hash)) =
-                tokio::time::timeout(HANDSHAKE_TIMEOUT, TokenHash::read_from_stream(&mut stream))
-                    .await
-            else {
-                log::error!("Failed to read token hash from newely accepted TCP stream");
-                let _ = stream.shutdown().await;
-                return;
+            log::debug!("Tunnel acceptor: accepted connection from {peer}");
+
+            let hash = match TokenHash::read_from_stream(&mut stream, HANDSHAKE_TIMEOUT).await {
+                Ok(hash) => hash,
+                Err(err) => {
+                    // A connection that closes without sending anything is
+                    // usually a port probe or TCP health check, not an agent.
+                    if matches!(err.failure, HandshakeFailure::Closed) && err.received.is_empty() {
+                        log::info!(
+                            "Tunnel handshake from {peer}: connection closed without sending data"
+                        );
+                    } else {
+                        log::error!("Tunnel handshake from {peer} failed: {err}");
+                    }
+                    let _ = stream.shutdown().await;
+                    return;
+                }
             };
 
             let mut tunnel = TunnelInstance::from(stream);
@@ -105,12 +115,16 @@ pub async fn run_tunnel_acceptor(context: AppContext) -> Result<(), Error> {
                 Some(channel) => {
                     if let Err(mut tunnel) = channel.send(tunnel) {
                         let _ = tunnel.shutdown().await;
-                        log::error!("Failed to send tunnel instance");
+                        log::error!(
+                            "Failed to hand over tunnel from {peer}: the requester is no longer waiting"
+                        );
+                    } else {
+                        log::debug!("Tunnel acceptor: tunnel from {peer} established");
                     }
                 }
                 None => {
                     log::warn!(
-                        "Received tunnel connection with unknown token hash: {:?}",
+                        "Received tunnel connection from {peer} with unknown token hash: {:?}",
                         hash
                     );
 
