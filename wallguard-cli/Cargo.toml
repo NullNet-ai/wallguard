@@ -14,7 +14,7 @@ wallguard-common = { path = "../wallguard-common" }
 sysinfo = "0.37.2"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 semver = "1.0"
-sha2 = "0.10.9"
+sha2 = "0.11.0"
 serde.workspace = true
 serde_json.workspace = true
 
