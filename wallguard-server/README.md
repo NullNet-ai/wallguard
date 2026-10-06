@@ -18,4 +18,3 @@
 | `CONTROL_SERVICE_PORT` | Port to bind control service to |
 | `HTTP_PROXY_HOST` | HTTP proxy host |
 | `HTTP_PROXY_PORT` | HTTP proxy port |
-| `IP_INFO_API_KEY` | API key for IP info service |
