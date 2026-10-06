@@ -23,7 +23,7 @@ tokio-rustls = { version = "0.26.2", default-features = false, features = ["ring
 # default-features pulls in the aws-lc-rs crypto backend (aws-lc-sys compiles
 # a large C/asm library); swap for the "ring" backend instead, matching the
 # rustls setup above, to avoid building two separate crypto backends.
-russh = { version = "0.62.2", default-features = false, features = ["flate2", "ring", "rsa"] }
+russh = { version = "0.63.2", default-features = false, features = ["flate2", "ring", "rsa"] }
 
 [profile.release]
 opt-level = "z"
