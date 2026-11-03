@@ -20,7 +20,7 @@ serde_json.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 is_elevated = "0.1.2"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.3", features = ["user"] }
